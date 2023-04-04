@@ -72,12 +72,18 @@ void TestMessageFormat2::testStaticFormat2()
     /*
       See msgfmt.h -- add a new MessageFormat2 class with a format() method that takes a hash table of arguments
      */
-    
-    UnicodeString pattern =
-        "At {$when :datetime timestyle=default} on {$when :datetime datestyle=default}, there was "
-        "{$what} on planet {$planet :number kind=integer}.}";
-    
-    MessageFormat2 result = MessageFormat2(pattern, errorCode);
+
+    /*
+        UnicodeString pattern =
+            "At {$when :datetime timestyle=default} on {$when :datetime datestyle=default}, there was "
+            "{$what} on planet {$planet :number kind=integer}.}";
+    */
+
+    UnicodeString pattern = "{$when :datetime timestyle=default}";
+
+    UParseError parseError;
+    MessageFormat2 result = MessageFormat2(pattern, parseError, errorCode);
+
 /*        
     result = MessageFormat::format(
                                    "At {$when :datetime timestyle=default} on {$when :datetime datestyle=default}, there was {$what} on planet {$planet :number kind=integer}.}",
@@ -87,6 +93,7 @@ void TestMessageFormat2::testStaticFormat2()
 */
     if (U_FAILURE(errorCode)) {
         dataerrln("TestMessageFormat2::testStaticFormat #1 - %s", u_errorName(errorCode));
+        dataerrln("TestMessageFormat2::testStaticFormat #1 - %d %d", parseError.line, parseError.offset);
         logln(UnicodeString("TestMessageFormat2::testStaticFormat failed test #1 with error code ")+(int32_t)errorCode);
         return;
     }
