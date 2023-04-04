@@ -14,7 +14,7 @@
 
 #include "unicode/unistr.h"
 #include "unicode/fmtable.h"
-#include "unicode/msgfmt.h"
+#include "unicode/msgfmt2.h"
 #include "intltest.h"
 
 /**

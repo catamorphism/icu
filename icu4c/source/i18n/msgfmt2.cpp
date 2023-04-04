@@ -84,12 +84,6 @@ static const char16_t _ESCAPED_BACKSLASH[] = {
 #define ID_MATCH UNICODE_STRING_SIMPLE("match")        
         
 using namespace MessageFormatData;
-/*
-using Literal = MessageFormat2::MessageFormatDataModel::Literal;
-using Annotation = MessageFormat2::MessageFormatDataModel::Annotation;
-using Option = MessageFormat2::MessageFormatDataModel::Option;
-using OPTION_KIND = MessageFormat2::MessageFormatDataModel::OPTION_KIND;
-*/
 
 // -------------------------------------
 // UOBJECT_DEFINE_RTTI_IMPLEMENTATION(MessageFormat2)
@@ -143,6 +137,7 @@ MessageFormat2::format(const UHashtable* arguments,
     // TODO
     U_ASSERT(arguments);
 //    appendTo.append(reinterpret_cast<const char16_t*>(""), 0, -1);
+
     success = U_ZERO_ERROR;
     return appendTo;
 }
