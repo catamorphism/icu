@@ -466,10 +466,15 @@ class U_I18N_API MessageFormat2 /* : public Format */ {
 
     MessageFormat2() = delete; // default constructor not implemented
 
-    MessageFormatDataModel* parse(const UnicodeString &) const;
-    MessageFormatDataModel* parse(const UnicodeString &, UParseError&, UErrorCode&) const;
+    /*
+      TODO: For now, this should really be called "validate()" rather than "parse()".
+     */
+    void parse(const UnicodeString &, UParseError&, UErrorCode&) const;
 
-    MessageFormatDataModel *dataModel;
+    /***
+        TODO: For now, the parser is only a validator and the data model is not constructed.
+     ***/
+//    MessageFormatDataModel *dataModel;
 
 }; // class MessageFormat2
 

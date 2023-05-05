@@ -78,7 +78,8 @@ static const char16_t _ESCAPED_BACKSLASH[] = {
 #define PIPE UNICODE_STRING_SIMPLE("|")
 #define EQUALS UNICODE_STRING_SIMPLE("=")
 #define LBRACE UNICODE_STRING_SIMPLE("{")
-#define RBRACE UNICODE_STRING_SIMPLE("}")    
+#define RBRACE UNICODE_STRING_SIMPLE("}")
+#define RPAREN UNICODE_STRING_SIMPLE(")")
 #define ID_LET UNICODE_STRING_SIMPLE("let")
 #define ID_WHEN UNICODE_STRING_SIMPLE("when")
 #define ID_MATCH UNICODE_STRING_SIMPLE("match")        
@@ -118,7 +119,11 @@ common/messagepattern.cpp
 
 icu4j/main/classes/core/src/com/ibm/icu/message2
 */
-    dataModel = parse(pattern, parseError, success);
+
+/**
+TODO: For now, all this does is validate the pattern
+**/
+  parse(pattern, parseError, success);
    // applyPattern(pattern, success);
 }
 
@@ -144,13 +149,6 @@ MessageFormat2::format(const UHashtable* arguments,
 
 // -------------------------------------
 // Parses the source pattern
-
-MessageFormatDataModel*
-MessageFormat2::parse(const UnicodeString& source) const {
-    UErrorCode ec = U_ZERO_ERROR;
-    UParseError parseError;
-    return parse(source, parseError, ec);
-}
 
 void setParseError(UParseError& parseError, uint32_t index) {
     // See MessagePattern::setParseError(UParseError *parseError, int32_t index) {
@@ -221,6 +219,15 @@ bool nextTokenIs(const UnicodeString& token, const UnicodeString& source, uint32
     tokenPos++;
   }
   return true;
+}
+
+void parseToken(char16_t c, const UnicodeString &source, uint32_t &index, UParseError &parseError,
+                UErrorCode &errorCode) {
+    if (source[index] == c) {
+        index++;
+        return;
+    }
+    ERROR(parseError, errorCode, index);
 }
 
 void parseToken(const UnicodeString& token,
@@ -417,147 +424,199 @@ void parseOption(const UnicodeString &source, uint32_t &index, UParseError& pars
 }
 
 void parseOptions(const UnicodeString &source, uint32_t &index, UParseError& parseError,
-                 UErrorCode &errorCode, UHashtable& options) {  
+                 UErrorCode &errorCode) {
   while (isNameStart(source[index])) {
       UnicodeString lhs;
       OPTION_KIND kind;
       UnicodeString rhs;
       RETURN_IF_HELPER_FAILS(parseOption(source, index, parseError, errorCode, lhs, kind, rhs));
-      Option opt(kind, rhs);
-      uhash_put(&options, &lhs, &opt, &errorCode);
-      if (U_FAILURE(errorCode)) {
+  }
+}
+
+bool annotationFollows(const UnicodeString &source, uint32_t index) {
+  switch (source[index]) {
+  case ':':
+  case '+':
+  case '-': {
+      return true;
+  }
+  default: {
+      return false;
+  }
+  }
+}
+
+void parseReservedEscape(const UnicodeString &source, uint32_t index, UParseError &parseError,
+                         UErrorCode &errorCode) {
+  // Begins with two backslashes
+  parseToken(BACKSLASH, source, index, parseError, errorCode);
+  parseToken(BACKSLASH, source, index, parseError, errorCode);
+  // Expect a '{', '|' or '}'
+  switch (source[index]) {
+  case '{':
+  case '}':
+  case '|': {
+        // Consume the character
+      index++;
+      return;
+    }
+    default: {
+      // No other characters are allowed here
+      ERROR(parseError, errorCode, index);
+      return;
+    }
+  }
+}
+
+bool isReservedStart(const UnicodeString &source, uint32_t index) {
+    switch (source[index]) {
+    case '!':
+    case '@':
+    case '#':
+    case '%':
+    case '^':
+    case '&':
+    case '*':
+    case '<':
+    case '>':
+    case '?':
+    case '~':
+      return true;
+    default:
+      return false;
+    }
+}
+
+bool isReservedChar(char16_t c) {
+    return (inRange(c, 0x0000, 0x0008)     // Omit HTAB and LF
+            || inRange(c, 0x000B, 0x000C)  // Omit CR
+            || inRange(c, 0x000E, 0x0019)  // Omit SP
+            || inRange(c, 0x0021, 0x005B)  // Omit backslash
+            || inRange(c, 0x005D, 0x007A) // Omit { | }
+            || inRange(c, 0x007E, 0xD7FF) // Omit surrogates
+            || c >= 0xE000);
+}
+
+void parseReserved(const UnicodeString &source, uint32_t index,
+                   UParseError &parseError, UErrorCode &errorCode) {
+    if (!isReservedStart(source, index)) {
         ERROR(parseError, errorCode, index);
-      }
-  }
+        return;
+    }
+    // Consume reservedStart
+    index++;
+    // Parse optional whitespace before body
+    // An annotation is always followed by ')'
+    while (!nextTokenIs(RPAREN, source, index)) {
+        RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
+        // The do...while loop enforces that there is at least one character following
+        // the whitespace
+        do {
+            if (isReservedChar(source[index])) {
+                // consume the char
+                index++;
+            } else if (source[index] == BACKSLASH) {
+              RETURN_IF_HELPER_FAILS(parseReservedEscape(source, index, parseError, errorCode));
+            } else {
+              UnicodeString result;
+              RETURN_IF_HELPER_FAILS(parseLiteralString(source, index, parseError, errorCode, result));
+            }
+        }
+        while (!isWhitespace(source[index]) && !nextTokenIs(RPAREN, source, index));
+    }
 }
 
-bool annotationFollows(const UnicodeString &source, uint32_t index) { return (source[index] == ':'); }
+void parseAnnotation(const UnicodeString &source, uint32_t &index, UParseError &parseError,
+                     UErrorCode &errorCode) {
+    if (annotationFollows(source, index)) {
+        // Function call
+        UnicodeString functionName;
+        RETURN_IF_HELPER_FAILS(parseFunction(source, index, parseError, errorCode, functionName));
 
-Annotation *parseAnnotation(const UnicodeString &source, uint32_t &index, UParseError& parseError,
-                            UErrorCode &errorCode) {
-  UnicodeString functionName;
-  RETURN_NULL_IF_HELPER_FAILS(parseFunction(source, index, parseError, errorCode, functionName));
+        if (!isWhitespace(source[index])) {
+          // Options, if present, must be preceded by whitespace
+          ERROR(parseError, errorCode, index);
+          return;
+        }
+        RETURN_IF_HELPER_FAILS(parseRequiredWhitespace(source, index, parseError, errorCode));
 
-  if (!isWhitespace(source[index])) {
-    // Options, if present, must be preceded by whitespace
-    ERROR(parseError, errorCode, index);
-    return nullptr;
-  }
-
-  RETURN_NULL_IF_HELPER_FAILS(parseRequiredWhitespace(source, index, parseError, errorCode));
-
-  UHashtable *options;
-  RETURN_NULL_IF_HELPER_FAILS(options = uhash_open(uhash_hashChars, uhash_compareChars, nullptr, &errorCode));
-  RETURN_NULL_IF_HELPER_FAILS(parseOptions(source, index, parseError, errorCode, *options));
-  
-  Annotation *a = createAnnotation(functionName, options, errorCode);
-  if (!a) {
-      errorCode = U_MEMORY_ALLOCATION_ERROR;
-      delete options;
-      return nullptr;
-  }
-  return a;
+        RETURN_IF_HELPER_FAILS(parseOptions(source, index, parseError, errorCode));
+        return;
+    }
+    // Must be reserved
+    RETURN_IF_HELPER_FAILS(parseReserved(source, index, parseError, errorCode));
+    return;
 }
 
-Literal* parseLiteralWithAnnotation(const UnicodeString& source,
+void parseLiteralWithAnnotation(const UnicodeString& source,
                                 uint32_t &index,
                                 UParseError& parseError,
                                 UErrorCode& errorCode) {
   UnicodeString s;
-  RETURN_NULL_IF_HELPER_FAILS(parseLiteralString(source, index, parseError, errorCode, s));
+  RETURN_IF_HELPER_FAILS(parseLiteralString(source, index, parseError, errorCode, s));
 
-  RETURN_NULL_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
+  RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 
   if (annotationFollows(source, index)) {
-    Annotation* a;
-    RETURN_NULL_IF_HELPER_FAILS(a = parseAnnotation(source, index, parseError, errorCode));
-    if (!a) {
-      errorCode = U_MEMORY_ALLOCATION_ERROR;
-      return nullptr;
-    }
-    return createLiteral(s, a, errorCode);
+    parseAnnotation(source, index, parseError, errorCode);
   }
-  return createLiteral(s, errorCode);
 }
 
-Variable* parseVariableWithAnnotation(const UnicodeString &source, uint32_t &index, UParseError& parseError,
+void parseVariableWithAnnotation(const UnicodeString &source, uint32_t &index, UParseError& parseError,
                                  UErrorCode &errorCode) {
   UnicodeString varName;
-  RETURN_NULL_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode, varName));
+  RETURN_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode, varName));
 
-  RETURN_NULL_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
+  RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 
   if (annotationFollows(source, index)) {
-      Annotation *a = parseAnnotation(source, index, parseError, errorCode);
-      if (U_FAILURE(errorCode)) {
-          return nullptr;
-      }
-      Variable* v = createVariable(varName, a, errorCode);
-      if (!v) {
-          errorCode = U_MEMORY_ALLOCATION_ERROR;
-          delete a;
-          return nullptr;
-      }
-      return v;
+    parseAnnotation(source, index, parseError, errorCode);
   }
-
-  Variable* v = createVariable(varName, errorCode);
-  if (!v) {
-      errorCode = U_MEMORY_ALLOCATION_ERROR;
-      return nullptr;
-  }
-  return v;
 }
 
 void parseExpression(const UnicodeString& source,
                      uint32_t &index,
                      UParseError& parseError,
-                     UErrorCode& errorCode,
-                     Expression& result) {
+                     UErrorCode& errorCode) {
   
   // literal '|', variable '$' or annotation ':'
   switch(source[index]) {
     case '|': {
-      RETURN_IF_HELPER_FAILS(result = *parseLiteralWithAnnotation(source, index, parseError, errorCode));
+        RETURN_IF_HELPER_FAILS(parseLiteralWithAnnotation(source, index, parseError, errorCode));
+        break;
     }
     case '$': {
-      RETURN_IF_HELPER_FAILS(result = *parseVariableWithAnnotation(source, index, parseError, errorCode));
+        RETURN_IF_HELPER_FAILS(parseVariableWithAnnotation(source, index, parseError, errorCode));
+        break;
     }
     case ':': {
-      RETURN_IF_HELPER_FAILS(result = *parseAnnotation(source, index, parseError, errorCode));
+        RETURN_IF_HELPER_FAILS(parseAnnotation(source, index, parseError, errorCode));
+        break;
     }
     default: {
-      errorCode = U_MESSAGE_PARSE_ERROR;
+        errorCode = U_MESSAGE_PARSE_ERROR;
+        break;
     }
   }
 }
 
-
-// MessageFormatDeclarations* = UHashTable* variable expression
-Declarations*
+void
 parseDeclarations(const UnicodeString& source,
                                   uint32_t &index,
                                   UParseError& parseError,
                                   UErrorCode& errorCode) {
-  RETURN_NULL_IF_HELPER_FAILS(UHashtable* t = uhash_open(uhash_hashChars, uhash_compareChars, nullptr, &errorCode));
 
-  RETURN_NULL_IF_HELPER_FAILS(Declarations* decls = Declarations::create(t, errorCode));
   while (nextTokenIs(ID_LET, source, index)) {
-    RETURN_NULL_IF_HELPER_FAILS(parseToken(ID_LET, source, index, parseError, errorCode));
+    RETURN_IF_HELPER_FAILS(parseToken(ID_LET, source, index, parseError, errorCode));
     
-    RETURN_NULL_IF_HELPER_FAILS(parseRequiredWhitespace(source, index, parseError, errorCode));
+    RETURN_IF_HELPER_FAILS(parseRequiredWhitespace(source, index, parseError, errorCode));
     UnicodeString variableName; 
-    RETURN_NULL_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode, variableName));
-    RETURN_NULL_IF_HELPER_FAILS(parseTokenWithWhitespace(EQUALS, source, index, parseError, errorCode));
-    RETURN_NULL_IF_HELPER_FAILS(parseToken(LBRACE, source, index, parseError, errorCode));
-    Expression expression;
-    RETURN_NULL_IF_HELPER_FAILS(parseExpression(source, index, parseError, errorCode, expression));
-    RETURN_NULL_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
-    
-    RETURN_NULL_IF_HELPER_FAILS(decls->addDeclaration(variableName, expression, errorCode));
+    RETURN_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode, variableName));
+    RETURN_IF_HELPER_FAILS(parseTokenWithWhitespace(EQUALS, source, index, parseError, errorCode));
+    RETURN_IF_HELPER_FAILS(parseToken(LBRACE, source, index, parseError, errorCode));
+    RETURN_IF_HELPER_FAILS(parseExpression(source, index, parseError, errorCode));
+    RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
   }
-
-  return decls;  
 }
 
 bool isTextChar(char16_t c) {
@@ -644,26 +703,22 @@ void parsePatternParts(const UnicodeString& source,
 void parseKey(const UnicodeString& source,
               uint32_t &index,
               UParseError& parseError,
-              UErrorCode& errorCode,
-              Key* &key) {
+              UErrorCode& errorCode) {
   // Literal | nmtoken | '*'
   switch (source[index]) {
     case '|': {
       UnicodeString literalStr;
       RETURN_IF_HELPER_FAILS(parseLiteralString(source, index, parseError, errorCode, literalStr));
-      key = new KeyLiteral(literalStr);
       break;
     }
     case '*': {
       index++;
-      key = new KeyWildcard();
       break;
     }
     default: {
       // nmtoken
       UnicodeString nameStr;
       RETURN_IF_HELPER_FAILS(parseNmtoken(source, index, parseError, errorCode, nameStr));
-      key = new KeyName(nameStr);
       break;
     }
   }
@@ -672,14 +727,11 @@ void parseKey(const UnicodeString& source,
 void parseNonEmptyKeys(const UnicodeString& source,
                        uint32_t &index,
                        UParseError& parseError,
-                       UErrorCode& errorCode,
-                       Keys& keys) {
+                       UErrorCode& errorCode) {
 
   // Need parseRequiredWhitespace before the first key...
   RETURN_IF_HELPER_FAILS(parseRequiredWhitespace(source, index, parseError, errorCode));
-  Key* k;
-  RETURN_IF_HELPER_FAILS(parseKey(source, index, parseError, errorCode, k));
-  ALLOCATION_ERROR_IF_HELPER_FAILS(keys.addKey(k, errorCode));
+  RETURN_IF_HELPER_FAILS(parseKey(source, index, parseError, errorCode));
 
   // Before all other keys, it's ambiguous whether whitespace is the required whitespace
   // before `key` or the optional whitespace before `pattern`. So instead, we exit from
@@ -691,173 +743,39 @@ void parseNonEmptyKeys(const UnicodeString& source,
       // then we're done parsing the keys and a pattern follows -- break
       return;
     }
-    RETURN_IF_HELPER_FAILS(parseKey(source, index, parseError, errorCode, k));
-    ALLOCATION_ERROR_IF_HELPER_FAILS(keys.addKey(k, errorCode));
+    RETURN_IF_HELPER_FAILS(parseKey(source, index, parseError, errorCode));
   }
 }
-
-
-bool matchesMarkup(PatternToken* tok, UnicodeString& name) {
-  switch(tok->kind) {
-    case PT_PLACEHOLDER: {
-      PlaceholderPatternToken* pt = (PlaceholderPatternToken*) tok;
-      switch(pt->kind) {
-      case P_MARKUP_START:
-        return ((PlaceholderTokens::MarkupStart*) tok)->markupName == name;
-      default:
-        return false;
-      }
-    }
-  default:
-    return false;
-  }
-}
-
-// UVector<PatternToken>
-void constructPatternTree(uint32_t index, UParseError& parseError, UErrorCode &errorCode, const UVector &tokens, Pattern &p) {
-    ALLOCATION_ERROR_IF_HELPER_FAILS(UStack markup(errorCode)); // PlaceholderPatternToken
-
-    p = Pattern::createPattern(errorCode);
-
-    for (int32_t i = 0; i < tokens.size(); i++) {
-        switch (((PatternToken *)tokens[i])->kind) {
-        case PT_TEXT: {
-          ALLOCATION_ERROR_IF_HELPER_FAILS(p->addPart(new TextPattern(*((TextPatternToken*) tokens[i])), errorCode));
-          break;
-        }
-        case PT_PLACEHOLDER: {
-          switch (((PlaceholderPatternToken*)tokens[i])->kind) {
-          case P_MARKUP_START: {
-            ALLOCATION_ERROR_IF_HELPER_FAILS(markup.push(tokens[i], errorCode));
-            break;
-          }
-          case P_MARKUP_END: {
-            ALLOCATION_ERROR_IF_HELPER_FAILS(UVector* markupChildren = new UVector(errorCode)); // UVector<PatternPart>
-            markupChildren->setDeleter(uprv_deleteUObject);
-            PlaceholderTokens::MarkupEnd* currentToken = (PlaceholderTokens::MarkupEnd*) tokens[i];  
-            while (!matchesMarkup(((PatternToken*) markup.peek()), currentToken->markupName)) {
-              PatternToken* child = (PatternToken*) markup.pop();
-              ALLOCATION_ERROR_IF_HELPER_FAILS(markupChildren->insertElementAt(child, 0, errorCode));
-            }
-            // Top of stack should match this tag's name
-            PatternToken* possibleOpener = (PatternToken*) markup.pop();
-            if (!matchesMarkup(possibleOpener, currentToken->markupName)) {
-              MISMATCHED_MARKUP(parseError, errorCode, currentToken->index);
-              return;
-            }
-            // There's a match -- push the new node onto the stack
-            PlaceholderTokens::MarkupStart* startToken = (PlaceholderTokens::MarkupStart*) possibleOpener;
-            ALLOCATION_ERROR_IF_HELPER_FAILS(p->addPart(new Markup(startToken->markupName, startToken->options, markupChildren), errorCode));
-            break;
-          }
-          case P_PLACEHOLDER_EXPRESSION: {
-            // If we're inside a markup tag, push this to the markup stack; it will be
-            // converted when we see the close tag
-            if (!markup.empty()) {
-              ALLOCATION_ERROR_IF_HELPER_FAILS(markup.push(tokens[i], errorCode));
-            } else {
-              // push directly to the result vector
-              ALLOCATION_ERROR_IF_HELPER_FAILS(p->addPart(new PlaceholderExpression(*((PlaceholderTokens::PlaceholderExpression*) tokens[i])), errorCode));
-            }
-            break;
-          }
-          } // switch(((PlaceholderPatternToken*)tokens[i])->kind)
-        } // case PT_PLACEHOLDER
-        } // switch (((PatternToken *)tokens[i])->kind) {
-    } // for
-    if (!markup.empty()) {
-        ERROR(parseError, errorCode, index);
-        return;
-    }
-}
-
-void parsePatternParts(const UnicodeString &source, uint32_t &index, UParseError& parseError,
-                       UErrorCode &errorCode, UVector& parts) {
-    // parts: UVector<PatternToken>
-    // We use addElement and not adoptElement here because the elements will eventually be copied
-    // into another vector
-  while(source[index] != '}') {  
-    // Text or placeholder
-    switch(source[index]) {
-    case '{': {
-      // Placeholder
-      RETURN_IF_HELPER_FAILS(parseToken(LBRACE, source, index, parseError, errorCode));
-      RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
-      // Expression or markup
-      switch(source[index++]) {
-        case '+': {
-          UnicodeString markupName;
-          uint32_t markupStartIndex = index;
-          RETURN_IF_HELPER_FAILS(parseName(source, index, parseError, errorCode, markupName));
-          UHashtable *options;
-          RETURN_IF_HELPER_FAILS(options = uhash_open(uhash_hashChars, uhash_compareChars, nullptr, &errorCode));
-          RETURN_IF_HELPER_FAILS(parseOptions(source, index, parseError, errorCode, *options));
-          RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
-          RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
-          ALLOCATION_ERROR_IF_HELPER_FAILS(parts.addElement(new PlaceholderTokens::MarkupStart(markupName, options, markupStartIndex), errorCode));
-          break;
-        }
-        case '-': {
-          UnicodeString markupName;
-          uint32_t markupStartIndex = index;
-          RETURN_IF_HELPER_FAILS(parseName(source, index, parseError, errorCode, markupName));
-          RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
-          RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
-          ALLOCATION_ERROR_IF_HELPER_FAILS(parts.addElement(new PlaceholderTokens::MarkupEnd(markupName, markupStartIndex), errorCode));
-          break;
-        }          
-      default: {
-        // Must be expression
-        Expression expr;
-        uint32_t exprStartIndex = index;
-        RETURN_IF_HELPER_FAILS(parseExpression(source, index, parseError, errorCode, expr));
-        RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
-        RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
-        ALLOCATION_ERROR_IF_HELPER_FAILS(parts.addElement(new PlaceholderTokens::PlaceholderExpression(expr, exprStartIndex), errorCode));
-        break;
-      } // default
-      } // switch(source[index])
-      break; // case '{'
-    }
-  default: {
-    // Text
-    UnicodeString text;
-    uint32_t textStartIndex = index;
-    RETURN_IF_HELPER_FAILS(parseText(source, index, parseError, errorCode, text));
-    ALLOCATION_ERROR_IF_HELPER_FAILS(parts.addElement(new TextPatternToken(text, textStartIndex), errorCode));
-    break;
-  } // default
-  } // switch(source[index])
-}  // while
-} // parsePatternParts()
 
 void parsePattern(const UnicodeString& source,
                   uint32_t &index,
                   UParseError& parseError,
-                  UErrorCode& errorCode,
-                  Pattern& p) {
+                  UErrorCode& errorCode) {
   RETURN_IF_HELPER_FAILS(parseToken(LBRACE, source, index, parseError, errorCode));
-  RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 
-  // For clarity, parse the pattern in two stages:
-  // First, tokenize it into text and placeholders
-  // Then create the tree representing nested markups
-
-  ALLOCATION_ERROR_IF_HELPER_FAILS(UVector patternParts(errorCode));
-// elements will be owned by this->dataModel -- don't delete elements
-//  patternParts.setDeleter(uprv_deleteUObject);
-  RETURN_IF_HELPER_FAILS(parsePatternParts(source, index, parseError, errorCode, patternParts));
-  RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
-
-  RETURN_IF_HELPER_FAILS(constructPatternTree(index, parseError, errorCode, patternParts, p));
+  while (!nextTokenIs(RBRACE, source, index)) {
+    switch (source[index]) {
+    case LEFT_CURLY_BRACE: {
+      // Must be expression
+      parseExpression(source, index, parseError, errorCode);
+      break;
+    }
+    default: {
+      // Must be text
+      UnicodeString text;
+      parseText(source, index, parseError, errorCode, text);
+      break;
+    }
+    }
+  }
+  // Consume the closing brace
+  index++;
 }
-
 
 void parseSelectors(const UnicodeString& source,
                     uint32_t &index,
                     UParseError& parseError,
-                    UErrorCode& errorCode,
-                    Selectors* & s) {
+                    UErrorCode& errorCode) {
   RETURN_IF_HELPER_FAILS(parseToken(ID_MATCH, source, index, parseError, errorCode));
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 
@@ -867,16 +785,12 @@ void parseSelectors(const UnicodeString& source,
     return;
   }
 
-  ALLOCATION_ERROR_IF_HELPER_FAILS(s = Selectors::create(errorCode));
-
   // Parse selectors
   while(source[index] == '{') {
     // Consume the '{'
     index++;
     RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
-    Expression* expr = new Expression();
-    RETURN_IF_HELPER_FAILS(parseExpression(source, index, parseError, errorCode, *expr));
-    ALLOCATION_ERROR_IF_HELPER_FAILS(s->addSelector(expr, errorCode));
+    RETURN_IF_HELPER_FAILS(parseExpression(source, index, parseError, errorCode));
     RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
     RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
   }
@@ -892,40 +806,32 @@ void parseSelectors(const UnicodeString& source,
 
   while (nextTokenIs(ID_WHEN, source, index)) {
     // At least one key is required
-    ALLOCATION_ERROR_IF_HELPER_FAILS(Keys* keys = Keys::createKeys(errorCode));
-    RETURN_IF_HELPER_FAILS(parseNonEmptyKeys(source, index, parseError, errorCode, *keys));
+    RETURN_IF_HELPER_FAILS(parseNonEmptyKeys(source, index, parseError, errorCode));
     RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
-    Pattern* p;
-    RETURN_IF_HELPER_FAILS(parsePattern(source, index, parseError, errorCode, p));
-    ALLOCATION_ERROR_IF_HELPER_FAILS(s->addVariant(new Variant(keys, p), errorCode));
+    RETURN_IF_HELPER_FAILS(parsePattern(source, index, parseError, errorCode));
   }
   
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 }
   
-MessageFormatData::Body* parseBody(const UnicodeString& source,
-                       uint32_t &index,
-                       UParseError& parseError,
-                       UErrorCode& errorCode) {
+void parseBody(const UnicodeString& source,
+               uint32_t &index,
+               UParseError& parseError,
+               UErrorCode& errorCode) {
   // pattern or selectors
   switch (source[index]) {
     case '{': {
       // Pattern
-      Pattern p;
-      RETURN_NULL_IF_HELPER_FAILS(parsePattern(source, index, parseError, errorCode, p));
-      return new Message2Pattern(p);
+      RETURN_IF_HELPER_FAILS(parsePattern(source, index, parseError, errorCode));
+      return;
     }
     default: {
       if (nextTokenIs(ID_MATCH, source, index)) {
-        Selectors* s = Selectors::create(errorCode);
-        if (U_FAILURE(errorCode)) {
-          return nullptr;
-        }
-        RETURN_NULL_IF_HELPER_FAILS(parseSelectors(source, index, parseError, errorCode, s));
-        return s;
+        RETURN_IF_HELPER_FAILS(parseSelectors(source, index, parseError, errorCode));
+        return;
       } else {
         ERROR(parseError, errorCode, index);
-        return nullptr;
+        return;
       }
     }
   }
@@ -935,24 +841,24 @@ MessageFormatData::Body* parseBody(const UnicodeString& source,
 // Parses the source string and returns the parsed representation,
 // which is owned by the caller.
 
-MessageFormatDataModel*
-MessageFormat2::parse(const UnicodeString& source,
+/*** TODO
+
+For now, this is only a validator (it doesn't build a data model).
+***/
+void MessageFormat2::parse(const UnicodeString& source,
                       UParseError& parseError,
                       UErrorCode& errorCode) const
 {
   uint32_t index = 0;
-  RETURN_NULL_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
-  RETURN_NULL_IF_HELPER_FAILS(Declarations* declarations = parseDeclarations(source, index, parseError, errorCode));
-  RETURN_NULL_IF_HELPER_FAILS(Body* body = parseBody(source, index, parseError, errorCode));
-  RETURN_NULL_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
+  RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
+  RETURN_IF_HELPER_FAILS(parseDeclarations(source, index, parseError, errorCode));
+  RETURN_IF_HELPER_FAILS(parseBody(source, index, parseError, errorCode));
+  RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 
   // Ensure that the entire input has been consumed
   if (((int32_t) index) != source.length() - 1) {
     errorCode = U_MESSAGE_PARSE_ERROR;
-    return nullptr;
   }
-
-  return new MessageFormatDataModel(*declarations, *body);
 }
 
 
