@@ -45,24 +45,14 @@ static const char16_t ID_WHEN[] = {
 };
 */
 
-#define RETURN_NULL_IF_HELPER_FAILS(call) \
-  call; \
-  if (U_FAILURE(errorCode)) \
-    return nullptr;
-
 #define RETURN_IF_HELPER_FAILS(call) \
   call; \
   if (U_FAILURE(errorCode)) \
     return;
 
-#define ALLOCATION_ERROR_IF_HELPER_FAILS(call) call; if (U_FAILURE(errorCode)) { setParseError(parseError, index); errorCode = U_MEMORY_ALLOCATION_ERROR; return; }
-
 #define ERROR(parseError, errorCode, index) \
   setParseError(parseError, index); \
   errorCode = U_MESSAGE_PARSE_ERROR;
-
-// TODO: use a more specific error message
-#define MISMATCHED_MARKUP(parseError, errorCode, index) ERROR(parseError, errorCode, index)
 
 U_NAMESPACE_BEGIN
 /*
@@ -185,6 +175,10 @@ void parseWhitespaceMaybeRequired(bool required,
 
   while (isWhitespace(source[index])) {
       sawWhitespace = true;
+      // Increment line number in parse error if we consume a newline
+      if (source[index] == LF) {
+        (parseError.line)++;
+      }
       index++;
   }
 
@@ -533,14 +527,13 @@ void parseAnnotation(const UnicodeString &source, uint32_t &index, UParseError &
         UnicodeString functionName;
         RETURN_IF_HELPER_FAILS(parseFunction(source, index, parseError, errorCode, functionName));
 
-        if (!isWhitespace(source[index])) {
-          // Options, if present, must be preceded by whitespace
-          ERROR(parseError, errorCode, index);
+        // Options, if present, must be preceded by whitespace
+        if (isWhitespace(source[index])) {
+          RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
+          RETURN_IF_HELPER_FAILS(parseOptions(source, index, parseError, errorCode));
           return;
         }
-        RETURN_IF_HELPER_FAILS(parseRequiredWhitespace(source, index, parseError, errorCode));
-
-        RETURN_IF_HELPER_FAILS(parseOptions(source, index, parseError, errorCode));
+        // Otherwise, assume there are no options and return
         return;
     }
     // Must be reserved
@@ -574,30 +567,35 @@ void parseVariableWithAnnotation(const UnicodeString &source, uint32_t &index, U
   }
 }
 
-void parseExpression(const UnicodeString& source,
-                     uint32_t &index,
-                     UParseError& parseError,
-                     UErrorCode& errorCode) {
-  
-  // literal '|', variable '$' or annotation ':'
+void parseExpression(const UnicodeString &source, uint32_t &index, UParseError &parseError,
+                     UErrorCode &errorCode) {
+  // Parse opening brace
+  RETURN_IF_HELPER_FAILS(parseToken(LBRACE, source, index, parseError, errorCode));
+  // literal '|', variable '$' or annotation ':'/'+'/'-'
   switch(source[index]) {
-    case '|': {
-        RETURN_IF_HELPER_FAILS(parseLiteralWithAnnotation(source, index, parseError, errorCode));
-        break;
-    }
-    case '$': {
-        RETURN_IF_HELPER_FAILS(parseVariableWithAnnotation(source, index, parseError, errorCode));
-        break;
-    }
-    case ':': {
-        RETURN_IF_HELPER_FAILS(parseAnnotation(source, index, parseError, errorCode));
-        break;
-    }
-    default: {
-        errorCode = U_MESSAGE_PARSE_ERROR;
-        break;
-    }
+  case '|': {
+    // Literal
+    RETURN_IF_HELPER_FAILS(parseLiteralWithAnnotation(source, index, parseError, errorCode));
+    break;
   }
+  case '$': {
+    // Variable
+    RETURN_IF_HELPER_FAILS(parseVariableWithAnnotation(source, index, parseError, errorCode));
+    break;
+  }
+  default: {
+    if (annotationFollows(source, index)) {
+      // Function name
+      RETURN_IF_HELPER_FAILS(parseAnnotation(source, index, parseError, errorCode));
+      break;
+    }
+    // Not a literal, variable or annotation -- error out
+    ERROR(parseError, errorCode, index);
+    return;
+  }
+  }
+  // Parse closing brace
+  RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));    
 }
 
 void
@@ -787,12 +785,9 @@ void parseSelectors(const UnicodeString& source,
 
   // Parse selectors
   while(source[index] == '{') {
-    // Consume the '{'
-    index++;
     RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
     RETURN_IF_HELPER_FAILS(parseExpression(source, index, parseError, errorCode));
     RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
-    RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
   }
 
   // Parse variants
@@ -805,13 +800,14 @@ void parseSelectors(const UnicodeString& source,
   }
 
   while (nextTokenIs(ID_WHEN, source, index)) {
+    // Consume the "when"
+    parseToken(ID_WHEN, source, index, parseError, errorCode);
     // At least one key is required
     RETURN_IF_HELPER_FAILS(parseNonEmptyKeys(source, index, parseError, errorCode));
     RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
     RETURN_IF_HELPER_FAILS(parsePattern(source, index, parseError, errorCode));
+    RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
   }
-  
-  RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 }
   
 void parseBody(const UnicodeString& source,
@@ -850,13 +846,14 @@ void MessageFormat2::parse(const UnicodeString& source,
                       UErrorCode& errorCode) const
 {
   uint32_t index = 0;
+  parseError.line = 0;
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
   RETURN_IF_HELPER_FAILS(parseDeclarations(source, index, parseError, errorCode));
   RETURN_IF_HELPER_FAILS(parseBody(source, index, parseError, errorCode));
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 
   // Ensure that the entire input has been consumed
-  if (((int32_t) index) != source.length() - 1) {
+  if (((int32_t) index) != source.length()) {
     errorCode = U_MESSAGE_PARSE_ERROR;
   }
 }
