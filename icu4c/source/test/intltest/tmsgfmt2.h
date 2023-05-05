@@ -28,6 +28,8 @@ public:
      * test MessageFormat with various given patterns
      **/
     void testStaticFormat2(void);
+    void testValidPatterns(void);
+    void testMatchGender(void);
 };
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

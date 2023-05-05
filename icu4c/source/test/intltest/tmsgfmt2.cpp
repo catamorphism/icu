@@ -49,12 +49,62 @@
 #include <stdio.h>
 #include "uhash.h"
 
+/**
+   TODO: For now, this just tests that valid messages are validated by the parser
+   and that a certain set is not validated (with correct error diagnostics)
+**/
+UnicodeString validTestCases[] = {
+  /* From Mf2IcuTest.java */
+  "{There are {$count} files on {$where}}",
+  "{At {$when :datetime timestyle=default} on {$when :datetime datestyle=default}, \
+      there was {$what} on planet {$planet :number kind=integer}.}",
+  "{The disk \"{$diskName}\" contains {$fileCount} file(s).}",
+  "match {$userGender :select}\n\
+     when female {{$userName} est all\u00E9e \u00E0 Paris.} \
+     when  *     {{$userName} est all\u00E9 \u00E0 Paris.}",
+};
+
+#define NUM_VALID_TEST_CASES 4
+
 void
 TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
                                   const char* &name, char* /*par*/) {
     TESTCASE_AUTO_BEGIN;
+    TESTCASE_AUTO(testMatchGender);
     TESTCASE_AUTO(testStaticFormat2);
+    TESTCASE_AUTO(testValidPatterns);
     TESTCASE_AUTO_END;
+}
+
+void TestMessageFormat2::testMatchGender() {
+  UParseError parseError;
+  IcuTestErrorCode errorCode(*this, "testMatchGender");
+
+  uint32_t i = 3;
+  MessageFormat2(validTestCases[i], parseError, errorCode);
+
+  if (U_FAILURE(errorCode)) {
+    dataerrln("TestMessageFormat2::testValidPatterns #%d - %s", i, u_errorName(errorCode));
+    dataerrln("TestMessageFormat2::testValidPatterns #%d - %d %d", i, parseError.line, parseError.offset);
+    logln(UnicodeString("TestMessageFormat2::testValidPatterns failed test #") + ((int32_t) i) + UnicodeString(" with error code ")+(int32_t)errorCode);
+    return;
+  }
+}
+
+void TestMessageFormat2::testValidPatterns() {
+  UParseError parseError;
+  for (uint32_t i = 0; i < NUM_VALID_TEST_CASES; i++) {
+    IcuTestErrorCode errorCode(*this, "testValidPatterns");
+
+    MessageFormat2(validTestCases[i], parseError, errorCode);
+
+    if (U_FAILURE(errorCode)) {
+        dataerrln("TestMessageFormat2::testValidPatterns #%d - %s", i, u_errorName(errorCode));
+        dataerrln("TestMessageFormat2::testValidPatterns #%d - %d %d", i, parseError.line, parseError.offset);
+        logln(UnicodeString("TestMessageFormat2::testValidPatterns failed test #") + ((int32_t) i) + UnicodeString(" with error code ")+(int32_t)errorCode);
+        return;
+    }
+  }
 }
 
 void TestMessageFormat2::testStaticFormat2()
@@ -79,7 +129,7 @@ void TestMessageFormat2::testStaticFormat2()
             "{$what} on planet {$planet :number kind=integer}.}";
     */
 
-    UnicodeString pattern = "{$when :datetime timestyle=default}";
+    UnicodeString pattern = "{{$when :datetime timestyle=default}}";
 
     UParseError parseError;
     MessageFormat2 result = MessageFormat2(pattern, parseError, errorCode);
@@ -96,6 +146,16 @@ void TestMessageFormat2::testStaticFormat2()
         dataerrln("TestMessageFormat2::testStaticFormat #1 - %d %d", parseError.line, parseError.offset);
         logln(UnicodeString("TestMessageFormat2::testStaticFormat failed test #1 with error code ")+(int32_t)errorCode);
         return;
+    }
+
+    pattern = "{{$when &datetime timestyle=default}}";
+    result = MessageFormat2(pattern, parseError, errorCode);
+    if (!U_FAILURE(errorCode)) {
+        dataerrln("TestMessageFormat2::testStaticFormat #2 - expected test to fail, but it passed");
+        logln(UnicodeString("TestMessageFormat2::testStaticFormat failed test #2 with error code ")+(int32_t)errorCode);
+        return;
+    } else {
+      errorCode.reset();
     }
 
     const UnicodeString expected(
