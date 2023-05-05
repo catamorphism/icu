@@ -91,7 +91,8 @@ using namespace MessageFormatData;
 // -------------------------------------
 // Creates a MessageFormat instance based on the pattern.
 
-MessageFormat2::MessageFormat2(const UnicodeString& pattern,
+MessageFormat2::MessageFormat2(const UnicodeString &pattern,
+                               UParseError& parseError,
                                UErrorCode& success)
 /*
 : fLocale(Locale::getDefault()),  // Uses the default locale
@@ -117,8 +118,7 @@ common/messagepattern.cpp
 
 icu4j/main/classes/core/src/com/ibm/icu/message2
 */
-    UParseError parseError;
-    dataModel = parse(pattern, &parseError, success);
+    dataModel = parse(pattern, parseError, success);
    // applyPattern(pattern, success);
 }
 
@@ -149,16 +149,16 @@ MessageFormatDataModel*
 MessageFormat2::parse(const UnicodeString& source) const {
     UErrorCode ec = U_ZERO_ERROR;
     UParseError parseError;
-    return parse(source, &parseError, ec);
+    return parse(source, parseError, ec);
 }
 
-void setParseError(UParseError *parseError, uint32_t index) {
+void setParseError(UParseError& parseError, uint32_t index) {
     // See MessagePattern::setParseError(UParseError *parseError, int32_t index) {
     // TODO: fill this in with more useful information
-    parseError->offset = index;
-    parseError->line = 0;
-    parseError->preContext[0] = 0;
-    parseError->postContext[0] = 0;    
+    parseError.offset = index;
+    parseError.line = 0;
+    parseError.preContext[0] = 0;
+    parseError.postContext[0] = 0;
 }
 
 bool isWhitespace(char16_t c) {
@@ -181,11 +181,14 @@ bool inRange(char16_t c, char16_t first, char16_t last) {
 void parseWhitespaceMaybeRequired(bool required,
                                   const UnicodeString& source,
                                   uint32_t &index,
-                                  UParseError* parseError,
+                                  UParseError& parseError,
                                   UErrorCode& errorCode) {
   bool sawWhitespace = false;
 
-  while (isWhitespace(source[index++])) { sawWhitespace = true; }
+  while (isWhitespace(source[index])) {
+      sawWhitespace = true;
+      index++;
+  }
 
   if (!sawWhitespace && required) {
     ERROR(parseError, errorCode, index);
@@ -194,14 +197,14 @@ void parseWhitespaceMaybeRequired(bool required,
 
 void parseRequiredWhitespace(const UnicodeString& source,
                              uint32_t &index,
-                             UParseError* parseError,
+                             UParseError& parseError,
                              UErrorCode& errorCode) {
   parseWhitespaceMaybeRequired(true, source, index, parseError, errorCode);
 }
 
 void parseWhitespace(const UnicodeString& source,
                      uint32_t &index,
-                     UParseError* parseError,
+                     UParseError& parseError,
                      UErrorCode& errorCode) {
   parseWhitespaceMaybeRequired(false, source, index, parseError, errorCode);
 }
@@ -223,7 +226,7 @@ bool nextTokenIs(const UnicodeString& token, const UnicodeString& source, uint32
 void parseToken(const UnicodeString& token,
                 const UnicodeString& source,
                 uint32_t &index,
-                UParseError *parseError,
+                UParseError& parseError,
                 UErrorCode& errorCode) {
   uint32_t tokenPos = 0;
 
@@ -240,7 +243,7 @@ void parseToken(const UnicodeString& token,
 void parseTokenWithWhitespace(const UnicodeString& token,
                               const UnicodeString& source,
                               uint32_t &index,
-                              UParseError *parseError,
+                              UParseError& parseError,
                               UErrorCode& errorCode) {
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
   RETURN_IF_HELPER_FAILS(parseToken(token, source, index, parseError, errorCode));
@@ -285,7 +288,7 @@ bool isNameChar(char16_t c) {
 
 void parseNmtoken(const UnicodeString& source,
                   uint32_t &index,
-                  UParseError *parseError,
+                  UParseError& parseError,
                   UErrorCode& errorCode,
                   UnicodeString& result) {
 
@@ -301,7 +304,7 @@ void parseNmtoken(const UnicodeString& source,
 
 void parseName(const UnicodeString& source,
                uint32_t &index,
-               UParseError *parseError,
+               UParseError& parseError,
                UErrorCode& errorCode,
                UnicodeString& result) {
   if (!isNameStart(source[index])) {
@@ -314,7 +317,7 @@ void parseName(const UnicodeString& source,
 
 void parseVariableName(const UnicodeString& source,
                        uint32_t &index,
-                       UParseError *parseError,
+                       UParseError& parseError,
                        UErrorCode& errorCode,
                        UnicodeString& result) {
   if (source[index++] != '$') {
@@ -327,7 +330,7 @@ void parseVariableName(const UnicodeString& source,
 
 void parseFunction(const UnicodeString& source,
                        uint32_t &index,
-                       UParseError *parseError,
+                       UParseError& parseError,
                        UErrorCode& errorCode,
                        UnicodeString& result) {
   if (source[index++] != ':') {
@@ -340,7 +343,7 @@ void parseFunction(const UnicodeString& source,
 
 void parseLiteralEscape(const UnicodeString& source,
                         uint32_t &index,
-                        UParseError *parseError,
+                        UParseError& parseError,
                         UErrorCode& errorCode,
                         UnicodeString& s) {
   U_ASSERT(source[index] == BACKSLASH);
@@ -370,7 +373,7 @@ bool isLiteralChar(char16_t c) {
 //            || inRange(c, 0xE000, 0x10FFFF)); see comment in isNameStart()
 }
 
-void parseLiteralString(const UnicodeString &source, uint32_t &index, UParseError *parseError,
+void parseLiteralString(const UnicodeString &source, uint32_t &index, UParseError& parseError,
                         UErrorCode &errorCode, UnicodeString &result) { 
   RETURN_IF_HELPER_FAILS(parseToken(PIPE, source, index, parseError, errorCode));
 
@@ -386,7 +389,7 @@ void parseLiteralString(const UnicodeString &source, uint32_t &index, UParseErro
 }
 
 
-void parseOption(const UnicodeString &source, uint32_t &index, UParseError *parseError,
+void parseOption(const UnicodeString &source, uint32_t &index, UParseError& parseError,
                  UErrorCode &errorCode, UnicodeString& lhs, OPTION_KIND& kind, UnicodeString& rhs) {
   RETURN_IF_HELPER_FAILS(parseName(source, index, parseError, errorCode, lhs));
 
@@ -413,7 +416,7 @@ void parseOption(const UnicodeString &source, uint32_t &index, UParseError *pars
   }
 }
 
-void parseOptions(const UnicodeString &source, uint32_t &index, UParseError *parseError,
+void parseOptions(const UnicodeString &source, uint32_t &index, UParseError& parseError,
                  UErrorCode &errorCode, UHashtable& options) {  
   while (isNameStart(source[index])) {
       UnicodeString lhs;
@@ -430,7 +433,7 @@ void parseOptions(const UnicodeString &source, uint32_t &index, UParseError *par
 
 bool annotationFollows(const UnicodeString &source, uint32_t index) { return (source[index] == ':'); }
 
-Annotation *parseAnnotation(const UnicodeString &source, uint32_t &index, UParseError *parseError,
+Annotation *parseAnnotation(const UnicodeString &source, uint32_t &index, UParseError& parseError,
                             UErrorCode &errorCode) {
   UnicodeString functionName;
   RETURN_NULL_IF_HELPER_FAILS(parseFunction(source, index, parseError, errorCode, functionName));
@@ -458,7 +461,7 @@ Annotation *parseAnnotation(const UnicodeString &source, uint32_t &index, UParse
 
 Literal* parseLiteralWithAnnotation(const UnicodeString& source,
                                 uint32_t &index,
-                                UParseError *parseError,
+                                UParseError& parseError,
                                 UErrorCode& errorCode) {
   UnicodeString s;
   RETURN_NULL_IF_HELPER_FAILS(parseLiteralString(source, index, parseError, errorCode, s));
@@ -477,7 +480,7 @@ Literal* parseLiteralWithAnnotation(const UnicodeString& source,
   return createLiteral(s, errorCode);
 }
 
-Variable* parseVariableWithAnnotation(const UnicodeString &source, uint32_t &index, UParseError *parseError,
+Variable* parseVariableWithAnnotation(const UnicodeString &source, uint32_t &index, UParseError& parseError,
                                  UErrorCode &errorCode) {
   UnicodeString varName;
   RETURN_NULL_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode, varName));
@@ -508,7 +511,7 @@ Variable* parseVariableWithAnnotation(const UnicodeString &source, uint32_t &ind
 
 void parseExpression(const UnicodeString& source,
                      uint32_t &index,
-                     UParseError *parseError,
+                     UParseError& parseError,
                      UErrorCode& errorCode,
                      Expression& result) {
   
@@ -534,7 +537,7 @@ void parseExpression(const UnicodeString& source,
 Declarations*
 parseDeclarations(const UnicodeString& source,
                                   uint32_t &index,
-                                  UParseError *parseError,
+                                  UParseError& parseError,
                                   UErrorCode& errorCode) {
   RETURN_NULL_IF_HELPER_FAILS(UHashtable* t = uhash_open(uhash_hashChars, uhash_compareChars, nullptr, &errorCode));
 
@@ -567,7 +570,7 @@ bool isTextChar(char16_t c) {
 }
 
 void parseTextEscape(const UnicodeString &source, uint32_t &index,
-                     UParseError* parseError,
+                     UParseError& parseError,
                      UErrorCode& errorCode,
                      UnicodeString& text) {
   U_ASSERT(source[index] == BACKSLASH);
@@ -593,7 +596,7 @@ void parseTextEscape(const UnicodeString &source, uint32_t &index,
 }
 
 void parseText(const UnicodeString &source, uint32_t &index,
-               UParseError* parseError,
+               UParseError& parseError,
                UErrorCode& errorCode,
                UnicodeString& text) {
   while(isTextChar(source[index]) || source[index] == BACKSLASH) {
@@ -613,7 +616,7 @@ void parseText(const UnicodeString &source, uint32_t &index,
 /*
 void parsePatternParts(const UnicodeString& source,
                   uint32_t &index,
-                  UParseError *parseError,
+                  UParseError& parseError,
                   UErrorCode& errorCode,
                   UVector& parts) {
     // Parse the *(text / placeholder) sequence in a pattern
@@ -640,7 +643,7 @@ void parsePatternParts(const UnicodeString& source,
 
 void parseKey(const UnicodeString& source,
               uint32_t &index,
-              UParseError *parseError,
+              UParseError& parseError,
               UErrorCode& errorCode,
               Key* &key) {
   // Literal | nmtoken | '*'
@@ -668,7 +671,7 @@ void parseKey(const UnicodeString& source,
 
 void parseNonEmptyKeys(const UnicodeString& source,
                        uint32_t &index,
-                       UParseError *parseError,
+                       UParseError& parseError,
                        UErrorCode& errorCode,
                        Keys& keys) {
 
@@ -711,7 +714,7 @@ bool matchesMarkup(PatternToken* tok, UnicodeString& name) {
 }
 
 // UVector<PatternToken>
-void constructPatternTree(uint32_t index, UParseError *parseError, UErrorCode &errorCode, const UVector &tokens, Pattern* &p) {
+void constructPatternTree(uint32_t index, UParseError& parseError, UErrorCode &errorCode, const UVector &tokens, Pattern &p) {
     ALLOCATION_ERROR_IF_HELPER_FAILS(UStack markup(errorCode)); // PlaceholderPatternToken
 
     p = Pattern::createPattern(errorCode);
@@ -768,9 +771,11 @@ void constructPatternTree(uint32_t index, UParseError *parseError, UErrorCode &e
     }
 }
 
-void parsePatternParts(const UnicodeString &source, uint32_t &index, UParseError *parseError,
+void parsePatternParts(const UnicodeString &source, uint32_t &index, UParseError& parseError,
                        UErrorCode &errorCode, UVector& parts) {
-  // parts: UVector<PatternToken>
+    // parts: UVector<PatternToken>
+    // We use addElement and not adoptElement here because the elements will eventually be copied
+    // into another vector
   while(source[index] != '}') {  
     // Text or placeholder
     switch(source[index]) {
@@ -789,7 +794,7 @@ void parsePatternParts(const UnicodeString &source, uint32_t &index, UParseError
           RETURN_IF_HELPER_FAILS(parseOptions(source, index, parseError, errorCode, *options));
           RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
           RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
-          ALLOCATION_ERROR_IF_HELPER_FAILS(parts.adoptElement(new PlaceholderTokens::MarkupStart(markupName, options, markupStartIndex), errorCode));
+          ALLOCATION_ERROR_IF_HELPER_FAILS(parts.addElement(new PlaceholderTokens::MarkupStart(markupName, options, markupStartIndex), errorCode));
           break;
         }
         case '-': {
@@ -798,7 +803,7 @@ void parsePatternParts(const UnicodeString &source, uint32_t &index, UParseError
           RETURN_IF_HELPER_FAILS(parseName(source, index, parseError, errorCode, markupName));
           RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
           RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
-          ALLOCATION_ERROR_IF_HELPER_FAILS(parts.adoptElement(new PlaceholderTokens::MarkupEnd(markupName, markupStartIndex), errorCode));
+          ALLOCATION_ERROR_IF_HELPER_FAILS(parts.addElement(new PlaceholderTokens::MarkupEnd(markupName, markupStartIndex), errorCode));
           break;
         }          
       default: {
@@ -808,7 +813,7 @@ void parsePatternParts(const UnicodeString &source, uint32_t &index, UParseError
         RETURN_IF_HELPER_FAILS(parseExpression(source, index, parseError, errorCode, expr));
         RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
         RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
-        ALLOCATION_ERROR_IF_HELPER_FAILS(parts.adoptElement(new PlaceholderTokens::PlaceholderExpression(expr, exprStartIndex), errorCode));
+        ALLOCATION_ERROR_IF_HELPER_FAILS(parts.addElement(new PlaceholderTokens::PlaceholderExpression(expr, exprStartIndex), errorCode));
         break;
       } // default
       } // switch(source[index])
@@ -819,7 +824,7 @@ void parsePatternParts(const UnicodeString &source, uint32_t &index, UParseError
     UnicodeString text;
     uint32_t textStartIndex = index;
     RETURN_IF_HELPER_FAILS(parseText(source, index, parseError, errorCode, text));
-    ALLOCATION_ERROR_IF_HELPER_FAILS(parts.adoptElement(new TextPatternToken(text, textStartIndex), errorCode));
+    ALLOCATION_ERROR_IF_HELPER_FAILS(parts.addElement(new TextPatternToken(text, textStartIndex), errorCode));
     break;
   } // default
   } // switch(source[index])
@@ -828,9 +833,9 @@ void parsePatternParts(const UnicodeString &source, uint32_t &index, UParseError
 
 void parsePattern(const UnicodeString& source,
                   uint32_t &index,
-                  UParseError *parseError,
+                  UParseError& parseError,
                   UErrorCode& errorCode,
-                  Pattern*& p) {
+                  Pattern& p) {
   RETURN_IF_HELPER_FAILS(parseToken(LBRACE, source, index, parseError, errorCode));
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 
@@ -839,7 +844,8 @@ void parsePattern(const UnicodeString& source,
   // Then create the tree representing nested markups
 
   ALLOCATION_ERROR_IF_HELPER_FAILS(UVector patternParts(errorCode));
-  patternParts.setDeleter(uprv_deleteUObject);
+// elements will be owned by this->dataModel -- don't delete elements
+//  patternParts.setDeleter(uprv_deleteUObject);
   RETURN_IF_HELPER_FAILS(parsePatternParts(source, index, parseError, errorCode, patternParts));
   RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
 
@@ -849,7 +855,7 @@ void parsePattern(const UnicodeString& source,
 
 void parseSelectors(const UnicodeString& source,
                     uint32_t &index,
-                    UParseError *parseError,
+                    UParseError& parseError,
                     UErrorCode& errorCode,
                     Selectors* & s) {
   RETURN_IF_HELPER_FAILS(parseToken(ID_MATCH, source, index, parseError, errorCode));
@@ -899,15 +905,15 @@ void parseSelectors(const UnicodeString& source,
   
 MessageFormatData::Body* parseBody(const UnicodeString& source,
                        uint32_t &index,
-                       UParseError *parseError,
+                       UParseError& parseError,
                        UErrorCode& errorCode) {
   // pattern or selectors
   switch (source[index]) {
     case '{': {
       // Pattern
-      Pattern* p;
+      Pattern p;
       RETURN_NULL_IF_HELPER_FAILS(parsePattern(source, index, parseError, errorCode, p));
-      return new Message2Pattern(*p);
+      return new Message2Pattern(p);
     }
     default: {
       if (nextTokenIs(ID_MATCH, source, index)) {
@@ -931,10 +937,9 @@ MessageFormatData::Body* parseBody(const UnicodeString& source,
 
 MessageFormatDataModel*
 MessageFormat2::parse(const UnicodeString& source,
-                      UParseError *parseError,
+                      UParseError& parseError,
                       UErrorCode& errorCode) const
 {
-
   uint32_t index = 0;
   RETURN_NULL_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
   RETURN_NULL_IF_HELPER_FAILS(Declarations* declarations = parseDeclarations(source, index, parseError, errorCode));

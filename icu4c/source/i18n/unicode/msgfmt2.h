@@ -443,7 +443,8 @@ class U_I18N_API MessageFormat2 /* : public Format */ {
      *                  pattern cannot be parsed, set to failure code.
      * @stable ICU 2.0
      */
-    MessageFormat2(const UnicodeString& pattern,
+    MessageFormat2(const UnicodeString &pattern,
+                   UParseError &parseError,
                    UErrorCode &status);
 
     /**
@@ -466,7 +467,7 @@ class U_I18N_API MessageFormat2 /* : public Format */ {
     MessageFormat2() = delete; // default constructor not implemented
 
     MessageFormatDataModel* parse(const UnicodeString &) const;
-    MessageFormatDataModel* parse(const UnicodeString &, UParseError*, UErrorCode&) const;
+    MessageFormatDataModel* parse(const UnicodeString &, UParseError&, UErrorCode&) const;
 
     MessageFormatDataModel *dataModel;
 
