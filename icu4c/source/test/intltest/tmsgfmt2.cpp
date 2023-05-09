@@ -4,20 +4,13 @@
  * COPYRIGHT: 
  * Copyright (c) 1997-2016, International Business Machines Corporation and
  * others. All Rights Reserved.
- ********************************************************************
- * File TMSGFMT.CPP
- *
- * Modification History:
- *
- *   Date        Name        Description
- *   03/24/97    helena      Converted from Java.
- *   07/11/97    helena      Updated to work on AIX.
- *   08/04/97    jfitz       Updated to intltest
- *******************************************************************/
+ ********************************************************************/
 
 #include "unicode/utypes.h"
 
 #if !UCONFIG_NO_FORMATTING
+
+// TODO remove unused includes
 
 #include "tmsgfmt2.h"
 #include "cmemory.h"
@@ -49,9 +42,17 @@
 #include <stdio.h>
 #include "uhash.h"
 
+/*
+  TODO: clean up, check against coding conventions
+*/
+
 /**
    TODO: For now, this just tests that valid messages are validated by the parser
-   and that a certain set is not validated (with correct error diagnostics)
+   and that a certain set is not validated
+
+   TODO: tests should check that the error diagnostics (both the message and line and character
+   numbers) are correct. (Also, the parser should give good diagnostics, which it currently does
+   not.)
 **/
 UnicodeString validTestCases[] = {
   /* From Mf2IcuTest.java */
@@ -62,111 +63,200 @@ UnicodeString validTestCases[] = {
   "match {$userGender :select}\n\
      when female {{$userName} est all\u00E9e \u00E0 Paris.} \
      when  *     {{$userName} est all\u00E9 \u00E0 Paris.}",
+  "{{$when :datetime skeleton=MMMMd}}",
+// Edited this from testMessageFormatDateTimeSkeleton() -- nmtokens can't contain spaces
+  "{{$when :datetime skeleton=|(   yMMMMd   )|}}",
+  "{Expiration: {$when :datetime skeleton=yMMM}!}",
+  "{Hello {$user}, today is {$today :datetime datestyle=long}.}",
+// Edited this from testMessageFormatDateTimeSkeleton() -- nmtokens can't contain parentheses or single quotation marks
+  "{{$when :datetime pattern=|('::'yMMMMd)|}}",
+  /* From CustomFormatterMessageRefTest.java */
+  "match {$gcase :select} when genitive {Firefoxin} when * {Firefox}",
+  /* From CustomFormatterPersonTest.java */
+  "{Hello {$name :person formality=formal length=medium}}"
 };
 
-#define NUM_VALID_TEST_CASES 4
+#define NUM_VALID_TEST_CASES 11
+
+/**
+ * These tests come from the test suite created for the JavaScript implementation of MessageFormat v2.
+ *
+ */
+
+UnicodeString jsonTestCasesValid[] = {
+                "{hello}",
+                "{hello {|world|}}",
+                "{hello {||}}",
+                "{hello {$place}}",
+                "{{$one} and {$two}}",
+                "{{$one} et {$two}}",
+                "{hello {|4.2| :number}}",
+                "{hello {|4.2| :number}}",
+                "{hello {|foo| :number}}",
+                "{hello {:number}}",
+                "{hello {|4.2| :number minimumFractionDigits=2}}",
+                "{hello {|4.2| :number minimumFractionDigits=|2|}}",
+                "{hello {|4.2| :number minimumFractionDigits=$foo}}",
+                "let $foo = {|bar|} {bar {$foo}}",
+                "let $foo = {$bar} {bar {$foo}}",
+                "let $foo = {$bar :number} {bar {$foo}}",
+                "let $foo = {$bar :number minimumFractionDigits=2} {bar {$foo}}",
+                "let $foo = {$bar :number minimumFractionDigits=foo} {bar {$foo}}",
+                "let $foo = {$bar :number} {bar {$foo}}",
+                "let $foo = {$bar} let $bar = {$baz} {bar {$foo}}",
+                "match {$foo} when |1| {one} when * {other}",
+                "match {$foo :select} when |1| {one} when * {other}",
+                "match {$foo :plural} when 1 {one} when * {other}",
+                "match {$foo} when 1 {one} when * {other}",
+                "match {$foo :plural} when 1 {one} when * {other}",
+                "match {$foo} when one {one} when * {other}",
+                "match {$foo :plural} when one {one} when * {other}",
+                "match {$foo} when 1 {=1} when one {one} when * {other}",
+                "match {$foo :plural} when 1 {=1} when one {one} when * {other}",
+                "match {$foo} when one {one} when 1 {=1} when * {other}",
+                "match {$foo :plural} when one {one} when 1 {=1} when * {other}",
+                "match {$foo} {$bar} when one one {one one} when one * {one other} when * * {other}",
+                "match {$foo :plural} {$bar :plural} when one one {one one} when one * {one other} when * * {other}",
+                "let $foo = {$bar} match {$foo} when one {one} when * {other}",
+                "let $foo = {$bar} match {$foo :plural} when one {one} when * {other}",
+                "let $foo = {$bar} match {$foo} when one {one} when * {other}",
+                "let $foo = {$bar} match {$foo :plural} when one {one} when * {other}",
+                "let $bar = {$none} match {$foo} when one {one} when * {{$bar}}",
+                "let $bar = {$none} match {$foo :plural} when one {one} when * {{$bar}}",
+                "let $bar = {$none} match {$foo} when one {one} when * {{$bar}}",
+                "let $bar = {$none :plural} match {$foo} when one {one} when * {{$bar}}",
+                "{{+tag}}", // Modified next few patterns to reflect lack of special markup syntax
+                "match {+foo} when * {foo}",
+                "{{|content| +tag}}",
+                "{{|content| -tag}}",
+                "{{|content| +tag} {|content| -tag}}",
+                "{content -tag}",
+                "{{+tag foo=bar}}",
+                "{{+tag foo=|foo| bar=$bar}}",
+                "{{-tag foo=bar}}",
+                "{content {|foo| +markup}}",
+                "match {$foo} when * * {foo}" // Semantic error but syntactically correct 
+};
+
+#define NUM_VALID_JSON_TEST_CASES 50
+
+UnicodeString jsonTestCasesInvalid[] = {
+                "let    ",
+                "let $foo",
+                "let $foo =    ",
+                "{{:fszzz",
+                "match {$foo} when |xyz",
+                "{{:f aaa",
+                "{{@xyz",
+                "let $bar {|foo|} {{$bar}}",
+                "let bar = {|foo|} {{$bar}}",
+                "let $bar = |foo| {{$bar}}",
+                "no braces",
+                "no braces {$foo}",
+                "{missing end brace",
+                "{missing end {$brace",
+                "{extra} content",
+                "{empty { }}",
+                "{bad {:}}",
+                "{bad {placeholder}}",
+                "{no-equal {|42| :number minimumFractionDigits 2}}",
+                "{bad {:placeholder option=}}",
+                "{bad {:placeholder option value}}",
+                "{bad {:placeholder option}}",
+                "{bad {$placeholder option}}",
+                "{no {$placeholder end}",
+                "match {} when * {foo}",
+                "match {|foo|} when*{foo}",
+                "match when * {foo}",
+                "match {|x|} when * foo",
+                "match {|x|} when * {foo} extra",
+                "match |x| when * {foo}",
+                "match {$foo} {$bar} when * {foo}"
+};
+
+#define NUM_INVALID_JSON_TEST_CASES 30
+
+UnicodeString complexMessage = "\
+                let $hostName = {$host :person length=long}\n\
+                let $guestName = {$guest :person length=long}\n\
+                let $guestsOther = {$guestCount :number offset=1}\n\
+                \n\
+                match {$hostGender :gender} {$guestCount :plural}\n\
+                when female 0 {{$hostName} does not give a party.}\n\
+                when female 1 {{$hostName} invites {$guestName} to her party.}\n\
+                when female 2 {{$hostName} invites {$guestName} and one other person to her party.}\n\
+                when female * {{$hostName} invites {$guestName} and {$guestsOther} other people to her party.}\n\
+                \n\
+                when male 0 {{$hostName} does not give a party.}\n\
+                when male 1 {{$hostName} invites {$guestName} to his party.}\n\
+                when male 2 {{$hostName} invites {$guestName} and one other person to his party.}\n\
+                when male * {{$hostName} invites {$guestName} and {$guestsOther} other people to his party.}\n\
+                \n\
+                when * 0 {{$hostName} does not give a party.}\n\
+                when * 1 {{$hostName} invites {$guestName} to their party.}\n\
+                when * 2 {{$hostName} invites {$guestName} and one other person to their party.}\n\
+                when * * {{$hostName} invites {$guestName} and {$guestsOther} other people to their party.}\n";
 
 void
 TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
                                   const char* &name, char* /*par*/) {
     TESTCASE_AUTO_BEGIN;
-    TESTCASE_AUTO(testMatchGender);
-    TESTCASE_AUTO(testStaticFormat2);
+    TESTCASE_AUTO(testComplexMessage);
+    TESTCASE_AUTO(testInvalidJsonPatterns);
+    TESTCASE_AUTO(testValidJsonPatterns);
     TESTCASE_AUTO(testValidPatterns);
     TESTCASE_AUTO_END;
 }
 
-void TestMessageFormat2::testMatchGender() {
+void
+TestMessageFormat2::testPattern(const UnicodeString& s, uint32_t i, const char* testName) {
   UParseError parseError;
-  IcuTestErrorCode errorCode(*this, "testMatchGender");
+  IcuTestErrorCode errorCode(*this, testName);
 
-  uint32_t i = 3;
-  MessageFormat2(validTestCases[i], parseError, errorCode);
+  MessageFormat2(s, parseError, errorCode);
 
   if (U_FAILURE(errorCode)) {
-    dataerrln("TestMessageFormat2::testValidPatterns #%d - %s", i, u_errorName(errorCode));
-    dataerrln("TestMessageFormat2::testValidPatterns #%d - %d %d", i, parseError.line, parseError.offset);
-    logln(UnicodeString("TestMessageFormat2::testValidPatterns failed test #") + ((int32_t) i) + UnicodeString(" with error code ")+(int32_t)errorCode);
-    return;
+    dataerrln(s);
+    dataerrln("TestMessageFormat2::%s #%d - %s", testName, i, u_errorName(errorCode));
+    dataerrln("TestMessageFormat2::%s #%d - %d %d", testName, i, parseError.line, parseError.offset);
+    logln(UnicodeString("TestMessageFormat2::" + UnicodeString(testName) + " failed test #") + ((int32_t) i) + UnicodeString(" with error code ")+(int32_t)errorCode);
+  }
+}
+
+void TestMessageFormat2::testPatterns(UnicodeString* patterns, uint32_t numPatterns, const char* testName) {
+  for (uint32_t i = 0; i < numPatterns; i++) {
+    testPattern(patterns[i], i, testName);
   }
 }
 
 void TestMessageFormat2::testValidPatterns() {
-  UParseError parseError;
-  for (uint32_t i = 0; i < NUM_VALID_TEST_CASES; i++) {
-    IcuTestErrorCode errorCode(*this, "testValidPatterns");
-
-    MessageFormat2(validTestCases[i], parseError, errorCode);
-
-    if (U_FAILURE(errorCode)) {
-        dataerrln("TestMessageFormat2::testValidPatterns #%d - %s", i, u_errorName(errorCode));
-        dataerrln("TestMessageFormat2::testValidPatterns #%d - %d %d", i, parseError.line, parseError.offset);
-        logln(UnicodeString("TestMessageFormat2::testValidPatterns failed test #") + ((int32_t) i) + UnicodeString(" with error code ")+(int32_t)errorCode);
-        return;
-    }
-  }
+  testPatterns(validTestCases, NUM_VALID_TEST_CASES, "testValidPatterns");
 }
 
-void TestMessageFormat2::testStaticFormat2()
-{
-    IcuTestErrorCode errorCode(*this, "testStaticFormat2");
-    UHashtable *arguments = uhash_open(uhash_hashChars, uhash_compareChars, NULL, errorCode);
-    uhash_setKeyDeleter(arguments, NULL);
-    uhash_puti(arguments, (void*) "planet", (int32_t) 7, errorCode);
-    uhash_put(arguments, (void*) "what", (void*) "a disturbance in the Force", errorCode);
-    UDate date = 8.71068e+011;
-    uhash_put(arguments, (void*) "when", &date, errorCode);
+void TestMessageFormat2::testValidJsonPatterns() {
+  testPatterns(jsonTestCasesValid, NUM_VALID_JSON_TEST_CASES, "testValidJsonPatterns");
+}
 
-//    UnicodeString result;
+void TestMessageFormat2::testInvalidJsonPatterns() {
+  UParseError parseError;
+  IcuTestErrorCode errorCode(*this, "testInvalidJsonPatterns");
 
-    /*
-      See msgfmt.h -- add a new MessageFormat2 class with a format() method that takes a hash table of arguments
-     */
-
-    /*
-        UnicodeString pattern =
-            "At {$when :datetime timestyle=default} on {$when :datetime datestyle=default}, there was "
-            "{$what} on planet {$planet :number kind=integer}.}";
-    */
-
-    UnicodeString pattern = "{{$when :datetime timestyle=default}}";
-
-    UParseError parseError;
-    MessageFormat2 result = MessageFormat2(pattern, parseError, errorCode);
-
-/*        
-    result = MessageFormat::format(
-                                   "At {$when :datetime timestyle=default} on {$when :datetime datestyle=default}, there was {$what} on planet {$planet :number kind=integer}.}",
-                                   arguments,
-                                   result,
-                                   errorCode);
-*/
-    if (U_FAILURE(errorCode)) {
-        dataerrln("TestMessageFormat2::testStaticFormat #1 - %s", u_errorName(errorCode));
-        dataerrln("TestMessageFormat2::testStaticFormat #1 - %d %d", parseError.line, parseError.offset);
-        logln(UnicodeString("TestMessageFormat2::testStaticFormat failed test #1 with error code ")+(int32_t)errorCode);
-        return;
-    }
-
-    pattern = "{{$when &datetime timestyle=default}}";
-    result = MessageFormat2(pattern, parseError, errorCode);
+  for (uint32_t i = 0; i < NUM_INVALID_JSON_TEST_CASES; i++) {
+    MessageFormat2(jsonTestCasesInvalid[i], parseError, errorCode);
     if (!U_FAILURE(errorCode)) {
-        dataerrln("TestMessageFormat2::testStaticFormat #2 - expected test to fail, but it passed");
-        logln(UnicodeString("TestMessageFormat2::testStaticFormat failed test #2 with error code ")+(int32_t)errorCode);
+// TODO: check line numbers/offsets in parseError
+        dataerrln("TestMessageFormat2::testInvalidJsonPatterns #%d - expected test to fail, but it passed", i);
+        logln(UnicodeString("TestMessageFormat2::testInvalidJsonPatterns failed test #") + ((int32_t) i) + UnicodeString(" with error code ")+(int32_t)errorCode);
         return;
     } else {
       errorCode.reset();
     }
+  }
+}
 
-    const UnicodeString expected(
-        u"At 12:20:00\u202FPM on Aug 8, 1997, there was a disturbance in the Force on planet 7.");
-    /*
-        if (result != expected) {
-            errln(UnicodeString("TestMessageFormat2::testStaticFormat2 failed on test") +
-                UnicodeString("\n     Result: ") + result +
-                UnicodeString("\n   Expected: ") + expected );
-        }
-    */    
+
+void TestMessageFormat2::testComplexMessage() {
+  testPattern(complexMessage, 0, "testComplexMessage");
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

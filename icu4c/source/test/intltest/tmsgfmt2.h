@@ -8,6 +8,7 @@
 #ifndef _TESTMESSAGEFORMAT2
 #define _TESTMESSAGEFORMAT2
 
+#include "unicode/rep.h"
 #include "unicode/utypes.h"
 
 #if !UCONFIG_NO_FORMATTING
@@ -28,8 +29,14 @@ public:
      * test MessageFormat with various given patterns
      **/
     void testStaticFormat2(void);
+    void testComplexMessage(void);
     void testValidPatterns(void);
-    void testMatchGender(void);
+    void testValidJsonPatterns(void);
+    void testInvalidJsonPatterns(void);
+
+private:
+    void testPattern(const UnicodeString&, uint32_t, const char*);
+    void testPatterns(UnicodeString*, uint32_t, const char*);
 };
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
