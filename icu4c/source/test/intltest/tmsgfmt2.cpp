@@ -44,6 +44,9 @@
 
 /*
   TODO: clean up, check against coding conventions
+
+  TODO: Add tests for syntax changes from 2023-04-10 onward, here:
+  https://github.com/unicode-org/message-format-wg/commits/main/spec/message.abnf
 */
 
 /**
