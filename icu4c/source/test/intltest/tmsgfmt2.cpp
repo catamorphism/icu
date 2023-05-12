@@ -143,6 +143,8 @@ UnicodeString jsonTestCasesValid[] = {
 
 #define NUM_VALID_JSON_TEST_CASES 50
 
+// TODO: rename this and add comment saying "these came from [whatever .java file],
+// to avoid confusion
 UnicodeString jsonTestCasesInvalid[] = {
                 "let    ",
                 "let $foo",
@@ -175,6 +177,42 @@ UnicodeString jsonTestCasesInvalid[] = {
                 "match {|x|} when * {foo} extra",
                 "match |x| when * {foo}",
                 "match {$foo} {$bar} when * {foo}"
+};
+
+// This has to be kept in sync! Yuck!
+// TODO
+int32_t errorOffsets[] = {
+  -1, // this means "use the length of the string"
+  -1,
+  -1,
+  -1,
+  -1,
+  -1,
+  -1, // @xyz is a valid annotation (`reserved`) so the error should be at the end of input
+  9, // missing = in `let` decl
+  4, // `let` lhs doesn't start with a '$'
+  11, // start of `let` rhs is not an expression
+  0, // not an expression
+  0, // not an expression,
+  -1,
+  -1,
+  8, // trailing non-whitespace
+  9, // empty expression
+  7, // ':' that isn't a prefix
+  6, // expected a literal or variable here
+  46, // missing '=' after option name
+  26, // missing rhs of option
+  26, // missing '=' after option name
+  25, // missing rhs of option
+  19, // context requires an annotation, this isn't one
+  18, // context requires an annotation, "end" isn't one
+  7, // empty expression
+  18, // put a whitespace before a key
+  6, // need at least one expression to match on
+  -1, // case arm has no rhs
+  25, // context requires either a "when" keyword or whitespace
+  6, // need an expression to match on (`|x|` isn't an expression)
+  28, // need a literal, variable or annotation inside the {} for an expression
 };
 
 #define NUM_INVALID_JSON_TEST_CASES 30
@@ -245,14 +283,24 @@ void TestMessageFormat2::testInvalidJsonPatterns() {
   IcuTestErrorCode errorCode(*this, "testInvalidJsonPatterns");
 
   for (uint32_t i = 0; i < NUM_INVALID_JSON_TEST_CASES; i++) {
+    // For these test cases, the expected line number in the error is always 0.
+    // Find the expected character number
+    uint32_t expectedErrorOffset = (errorOffsets[i] == -1 ? jsonTestCasesInvalid[i].length() : errorOffsets[i]);
+
     MessageFormat2(jsonTestCasesInvalid[i], parseError, errorCode);
     if (!U_FAILURE(errorCode)) {
-// TODO: check line numbers/offsets in parseError
         dataerrln("TestMessageFormat2::testInvalidJsonPatterns #%d - expected test to fail, but it passed", i);
         logln(UnicodeString("TestMessageFormat2::testInvalidJsonPatterns failed test #") + ((int32_t) i) + UnicodeString(" with error code ")+(int32_t)errorCode);
         return;
     } else {
-      errorCode.reset();
+      // Check the line and character numbers
+      if (parseError.line != 0 || parseError.offset != ((int32_t) expectedErrorOffset)) {
+        dataerrln("TestMessageFormat2::testInvalidJsonPatterns #%d - wrong line or character offset in parse error; expected (line %d, offset %d), got (line %d, offset %d)",
+                  i, 0, expectedErrorOffset, parseError.line, parseError.offset);
+        logln(UnicodeString("TestMessageFormat2::testInvalidJsonPatterns failed test #") + ((int32_t) i) + UnicodeString(" with error code ")+(int32_t)errorCode+" by returning the wrong line number or offset in the parse error");        
+      } else {
+        errorCode.reset();
+      }
     }
   }
 }

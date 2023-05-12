@@ -42,6 +42,9 @@
   if (U_FAILURE(errorCode)) \
     return;
 
+// TODO: for now we're only using U_MESSAGE_PARSE_ERROR.
+// There are some other formatting error codes defined in common/unicode/utypes.h,
+// but they don't really fit MessageFormat2.
 #define ERROR(parseError, errorCode, index) \
   setParseError(parseError, index); \
   errorCode = U_MESSAGE_PARSE_ERROR;
@@ -321,7 +324,7 @@ static void parseName(const UnicodeString& source,
   U_ASSERT(inBounds(source, index));
 
   if (!isNameStart(source[index])) {
-    errorCode = U_MESSAGE_PARSE_ERROR;
+    ERROR(parseError, errorCode, index);
     return;
   }
 
@@ -341,11 +344,12 @@ static void parseVariableName(const UnicodeString& source,
                        UErrorCode& errorCode,
                        UnicodeString& result) {
   U_ASSERT(inBounds(source, index));
-  if (source[index++] != '$') {
-    errorCode = U_MESSAGE_PARSE_ERROR;
+  if (source[index] != '$') {
+    ERROR(parseError, errorCode, index);
     return;
   }
 
+  index++; // Consume the '$'
   CHECK_BOUNDS(source, index, parseError, errorCode);
   parseName(source, index, parseError, errorCode, result);
 }
@@ -353,18 +357,48 @@ static void parseVariableName(const UnicodeString& source,
 /*
   Pre: index < source.length()
 */
-static bool annotationFollows(const UnicodeString &source, uint32_t index) {
+static bool isReservedStart(const UnicodeString &source, uint32_t index) {
+    U_ASSERT(inBounds(source, index));
+    switch (source[index]) {
+    case '!':
+    case '@':
+    case '#':
+    case '%':
+    case '^':
+    case '&':
+    case '*':
+    case '<':
+    case '>':
+    case '?':
+    case '~':
+      return true;
+    default:
+      return false;
+    }
+}
+
+/*
+  Pre: index < source.length()
+*/
+static bool functionFollows(const UnicodeString &source, uint32_t index) {
   U_ASSERT(inBounds(source, index));
   switch (source[index]) {
   case ':':
   case '+':
   case '-': {
-      return true;
+    return true;
   }
   default: {
-      return false;
+    return false;
   }
   }
+}
+
+/*
+  Pre: index < source.length()
+*/
+static bool annotationFollows(const UnicodeString &source, uint32_t index) {
+  return (functionFollows(source, index) || isReservedStart(source, index));
 }
 
 /*
@@ -380,11 +414,12 @@ static void parseFunction(const UnicodeString& source,
                        UErrorCode& errorCode,
                        UnicodeString& result) {
   U_ASSERT(inBounds(source, index));
-  if (!annotationFollows(source, index++)) {
+  if (!functionFollows(source, index)) {
     ERROR(parseError, errorCode, index);
     return;
   }
 
+  index++; // Consume the function start token
   CHECK_BOUNDS(source, index, parseError, errorCode);
   RETURN_IF_HELPER_FAILS(parseName(source, index, parseError, errorCode, result));
 }
@@ -571,29 +606,6 @@ static void parseReservedEscape(const UnicodeString &source, uint32_t index, UPa
   }
 }
 
-/*
-  Pre: index < source.length()
-*/
-static bool isReservedStart(const UnicodeString &source, uint32_t index) {
-    U_ASSERT(inBounds(source, index));
-    switch (source[index]) {
-    case '!':
-    case '@':
-    case '#':
-    case '%':
-    case '^':
-    case '&':
-    case '*':
-    case '<':
-    case '>':
-    case '?':
-    case '~':
-      return true;
-    default:
-      return false;
-    }
-}
-
 static bool isReservedChar(char16_t c) {
     return (inRange(c, 0x0000, 0x0008)     // Omit HTAB and LF
             || inRange(c, 0x000B, 0x000C)  // Omit CR
@@ -653,7 +665,7 @@ static void parseReserved(const UnicodeString &source, uint32_t index,
 static void parseAnnotation(const UnicodeString &source, uint32_t &index, UParseError &parseError,
                      UErrorCode &errorCode) {
     U_ASSERT(inBounds(source, index));
-    if (annotationFollows(source, index)) {
+    if (functionFollows(source, index)) {
         // Function call
         UnicodeString functionName;
         RETURN_IF_HELPER_FAILS(parseFunction(source, index, parseError, errorCode, functionName));
@@ -732,6 +744,8 @@ static void parseExpression(const UnicodeString &source, uint32_t &index, UParse
   U_ASSERT(inBounds(source, index));
   // Parse opening brace
   RETURN_IF_HELPER_FAILS(parseToken(LBRACE, source, index, parseError, errorCode));
+  // Optional whitespace after opening brace
+  RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
   // Restore precondition
   CHECK_BOUNDS(source, index, parseError, errorCode);
   // literal '|', variable '$' or annotation ':'/'+'/'-'
@@ -748,7 +762,6 @@ static void parseExpression(const UnicodeString &source, uint32_t &index, UParse
   }
   default: {
     if (annotationFollows(source, index)) {
-      // Function name
       RETURN_IF_HELPER_FAILS(parseAnnotation(source, index, parseError, errorCode));
       break;
     }
@@ -757,6 +770,10 @@ static void parseExpression(const UnicodeString &source, uint32_t &index, UParse
     return;
   }
   }
+  // Optional whitespace before closing brace
+  RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
+  // Restore precondition
+  CHECK_BOUNDS(source, index, parseError, errorCode);
   // Parse closing brace
   RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
   // Guarantee postcondition
@@ -1135,7 +1152,7 @@ void MessageFormat2::parse(const UnicodeString& source,
 
   // Ensure that the entire input has been consumed
   if (((int32_t) index) != source.length()) {
-    errorCode = U_MESSAGE_PARSE_ERROR;
+    ERROR(parseError, errorCode, index);
   }
 }
 
