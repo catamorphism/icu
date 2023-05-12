@@ -10,52 +10,26 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-// TODO remove unused includes
-
+#include "unicode/msgfmt2.h"
 #include "tmsgfmt2.h"
-#include "cmemory.h"
-#include "loctest.h"
 
-#include "unicode/errorcode.h"
-#include "unicode/normalizer2.h"
-#include "unicode/sortkey.h"
-#include "unicode/std_string.h"
-#include "unicode/stringpiece.h"
-#include "unicode/tblcoll.h"
-#include "unicode/uiter.h"
-#include "unicode/uniset.h"
-#include "unicode/unistr.h"
-#include "unicode/usetiter.h"
-#include "unicode/ustring.h"
+/*
+Tests reflect the syntax specified in
 
-#include "unicode/format.h"
-#include "unicode/decimfmt.h"
-#include "unicode/localpointer.h"
-#include "unicode/locid.h"
-#include "unicode/msgfmt.h"
-#include "unicode/numfmt.h"
-#include "unicode/choicfmt.h"
-#include "unicode/messagepattern.h"
-#include "unicode/selfmt.h"
-#include "unicode/gregocal.h"
-#include "unicode/strenum.h"
-#include <stdio.h>
-#include "uhash.h"
+  https://github.com/unicode-org/message-format-wg/commits/main/spec/message.abnf
+
+as of the following commit from 2023-05-09:
+  https://github.com/unicode-org/message-format-wg/commit/194f6efcec5bf396df36a19bd6fa78d1fa2e0867
+*/
 
 /*
   TODO: clean up, check against coding conventions
-
-  TODO: Add tests for syntax changes from 2023-04-10 onward, here:
-  https://github.com/unicode-org/message-format-wg/commits/main/spec/message.abnf
 */
 
 /**
    TODO: For now, this just tests that valid messages are validated by the parser
-   and that a certain set is not validated
-
-   TODO: tests should check that the error diagnostics (both the message and line and character
-   numbers) are correct. (Also, the parser should give good diagnostics, which it currently does
-   not.)
+   and invalid messages are rejected with an error reflecting the correct line/offset of
+   the erroneous character
 **/
 UnicodeString validTestCases[] = {
   /* From Mf2IcuTest.java */
@@ -76,13 +50,15 @@ UnicodeString validTestCases[] = {
   /* From CustomFormatterMessageRefTest.java */
   "match {$gcase :select} when genitive {Firefoxin} when * {Firefox}",
   /* From CustomFormatterPersonTest.java */
-  "{Hello {$name :person formality=formal length=medium}}"
+  "{Hello {$name :person formality=formal length=medium}}",
+  0
 };
 
-#define NUM_VALID_TEST_CASES 11
-
 /**
- * These tests come from the test suite created for the JavaScript implementation of MessageFormat v2.
+ * These tests are mostly from the test suite created for the JavaScript implementation of MessageFormat v2:
+  <p>Original JSON file
+  <a href="https://github.com/messageformat/messageformat/blob/master/packages/mf2-messageformat/src/__fixtures/test-messages.json">here</a>.</p>
+  Some have been modified or added to reflect syntax changes that post-date this file.
  *
  */
 
@@ -93,7 +69,6 @@ UnicodeString jsonTestCasesValid[] = {
                 "{hello {$place}}",
                 "{{$one} and {$two}}",
                 "{{$one} et {$two}}",
-                "{hello {|4.2| :number}}",
                 "{hello {|4.2| :number}}",
                 "{hello {|foo| :number}}",
                 "{hello {:number}}",
@@ -129,6 +104,8 @@ UnicodeString jsonTestCasesValid[] = {
                 "let $bar = {$none} match {$foo} when one {one} when * {{$bar}}",
                 "let $bar = {$none :plural} match {$foo} when one {one} when * {{$bar}}",
                 "{{+tag}}", // Modified next few patterns to reflect lack of special markup syntax
+                "{{-tag}}",
+                // Modified next few patterns to reflect lack of special markup syntax
                 "match {+foo} when * {foo}",
                 "{{|content| +tag}}",
                 "{{|content| -tag}}",
@@ -138,86 +115,29 @@ UnicodeString jsonTestCasesValid[] = {
                 "{{+tag foo=|foo| bar=$bar}}",
                 "{{-tag foo=bar}}",
                 "{content {|foo| +markup}}",
-                "match {$foo} when * * {foo}" // Semantic error but syntactically correct 
+                "match {$foo} when * * {foo}", // Semantic error but syntactically correct
+                "{}",
+// tests for reserved syntax
+                "{hello {|4.2| @number}}",
+                "{hello {|4.2| @n|um|ber}}",
+                "{hello {|4.2| &num|be|r}}",
+                "{hello {|4.2| ?num|be||r|s}}",
+                "{hello {|foo| !number}}",
+                "{hello {|foo| *number}}",
+                "{hello {#number}}",
+                "match {$foo !select} when |1| {one} when * {other}",
+                "match {$foo ^select} when |1| {one} when * {other}",
+                "{{<tag}}",
+                "let $bar = {$none ~plural} match {$foo} when * {{$bar}}",
+// tests for ':' in nmtokens
+                "match {$foo} when o:ne {one} when * {other}",
+                "match {$foo} when one: {one} when * {other}",
+                "let $foo = {$bar :fun option=a:b} {bar {$foo}}",
+                "let $foo = {$bar :fun option=a:b:c} {bar {$foo}}",
+                "let $foo = {$bar} match {$foo} when :one {one} when * {other}",
+                "let $foo = {$bar :fun option=:a} {bar {$foo}}",
+                0
 };
-
-#define NUM_VALID_JSON_TEST_CASES 50
-
-// TODO use null-terminated array and removed the #defined lengths
-
-// TODO: rename this and add comment saying "these came from [whatever .java file],
-// to avoid confusion
-UnicodeString jsonTestCasesInvalid[] = {
-                "let    ",
-                "let $foo",
-                "let $foo =    ",
-                "{{:fszzz",
-                "match {$foo} when |xyz",
-                "{{:f aaa",
-                "{{@xyz",
-                "let $bar {|foo|} {{$bar}}",
-                "let bar = {|foo|} {{$bar}}",
-                "let $bar = |foo| {{$bar}}",
-                "no braces",
-                "no braces {$foo}",
-                "{missing end brace",
-                "{missing end {$brace",
-                "{extra} content",
-                "{empty { }}",
-                "{bad {:}}",
-                "{bad {placeholder}}",
-                "{no-equal {|42| :number minimumFractionDigits 2}}",
-                "{bad {:placeholder option=}}",
-                "{bad {:placeholder option value}}",
-                "{bad {:placeholder option}}",
-                "{bad {$placeholder option}}",
-                "{no {$placeholder end}",
-                "match {} when * {foo}",
-                "match {|foo|} when*{foo}",
-                "match when * {foo}",
-                "match {|x|} when * foo",
-                "match {|x|} when * {foo} extra",
-                "match |x| when * {foo}",
-                "{}"
-};
-
-// This has to be kept in sync! Yuck!
-// TODO
-int32_t errorOffsets[] = {
-  -1, // this means "use the length of the string"
-  -1,
-  -1,
-  -1,
-  -1,
-  -1,
-  -1, // @xyz is a valid annotation (`reserved`) so the error should be at the end of input
-  9, // missing = in `let` decl
-  4, // `let` lhs doesn't start with a '$'
-  11, // start of `let` rhs is not an expression
-  0, // not an expression
-  0, // not an expression,
-  -1,
-  -1,
-  8, // trailing non-whitespace
-  9, // empty expression
-  7, // ':' that isn't a prefix
-  6, // expected a literal or variable here
-  46, // missing '=' after option name
-  26, // missing rhs of option
-  26, // missing '=' after option name
-  25, // missing rhs of option
-  19, // context requires an annotation, this isn't one
-  18, // context requires an annotation, "end" isn't one
-  7, // empty expression
-  18, // put a whitespace before a key
-  6, // need at least one expression to match on
-  -1, // case arm has no rhs
-  25, // context requires either a "when" keyword or whitespace
-  6, // need an expression to match on (`|x|` isn't an expression)
-  1, // parsed as pattern -> text; text is empty
-};
-
-#define NUM_INVALID_JSON_TEST_CASES 30
 
 UnicodeString complexMessage = "\
                 let $hostName = {$host :person length=long}\n\
@@ -244,7 +164,7 @@ void
 TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
                                   const char* &name, char* /*par*/) {
     TESTCASE_AUTO_BEGIN;
-    TESTCASE_AUTO(testInvalidJsonPatterns);
+    TESTCASE_AUTO(testInvalidPatterns);
     TESTCASE_AUTO(testValidJsonPatterns);
     TESTCASE_AUTO(testValidPatterns);
     TESTCASE_AUTO(testComplexMessage);
@@ -266,47 +186,107 @@ TestMessageFormat2::testPattern(const UnicodeString& s, uint32_t i, const char* 
   }
 }
 
-void TestMessageFormat2::testPatterns(UnicodeString* patterns, uint32_t numPatterns, const char* testName) {
-  for (uint32_t i = 0; i < numPatterns; i++) {
+template<size_t N>
+void TestMessageFormat2::testPatterns(const UnicodeString (&patterns)[N], const char* testName) {
+  for (uint32_t i = 0; i < N - 1; i++) {
     testPattern(patterns[i], i, testName);
   }
 }
 
 void TestMessageFormat2::testValidPatterns() {
-  testPatterns(validTestCases, NUM_VALID_TEST_CASES, "testValidPatterns");
+  testPatterns(validTestCases, "testValidPatterns");
 }
 
 void TestMessageFormat2::testValidJsonPatterns() {
-  testPatterns(jsonTestCasesValid, NUM_VALID_JSON_TEST_CASES, "testValidJsonPatterns");
+  testPatterns(jsonTestCasesValid, "testValidJsonPatterns");
 }
 
-void TestMessageFormat2::testInvalidJsonPatterns() {
+void TestMessageFormat2::testInvalidPattern(uint32_t testNum, const UnicodeString& s) {
+  // By default, the expected offset is the length of the message
+  testInvalidPattern(testNum, s, s.length());
+}
+
+void TestMessageFormat2::testInvalidPattern(uint32_t testNum, const UnicodeString& s, uint32_t expectedErrorOffset) {
   UParseError parseError;
-  IcuTestErrorCode errorCode(*this, "testInvalidJsonPatterns");
+  IcuTestErrorCode errorCode(*this, "testInvalidPattern");
 
-  for (uint32_t i = 0; i < NUM_INVALID_JSON_TEST_CASES; i++) {
+  MessageFormat2(s, parseError, errorCode);
+  if (!U_FAILURE(errorCode)) {
+    dataerrln("TestMessageFormat2::testInvalidPattern #%d - expected test to fail, but it passed", testNum);
+    logln(UnicodeString("TestMessageFormat2::testInvalidPattern failed test ") + s + UnicodeString(" with error code ")+(int32_t)errorCode);
+    return;
+  } else {
+    // Check the line and character numbers
     // For these test cases, the expected line number in the error is always 0.
-    // Find the expected character number
-    uint32_t expectedErrorOffset = (errorOffsets[i] == -1 ? jsonTestCasesInvalid[i].length() : errorOffsets[i]);
-
-    MessageFormat2(jsonTestCasesInvalid[i], parseError, errorCode);
-    if (!U_FAILURE(errorCode)) {
-        dataerrln("TestMessageFormat2::testInvalidJsonPatterns #%d - expected test to fail, but it passed", i);
-        logln(UnicodeString("TestMessageFormat2::testInvalidJsonPatterns failed test #") + ((int32_t) i) + UnicodeString(" with error code ")+(int32_t)errorCode);
-        return;
-    } else {
-      // Check the line and character numbers
-      if (parseError.line != 0 || parseError.offset != ((int32_t) expectedErrorOffset)) {
-        dataerrln("TestMessageFormat2::testInvalidJsonPatterns #%d - wrong line or character offset in parse error; expected (line %d, offset %d), got (line %d, offset %d)",
-                  i, 0, expectedErrorOffset, parseError.line, parseError.offset);
-        logln(UnicodeString("TestMessageFormat2::testInvalidJsonPatterns failed test #") + ((int32_t) i) + UnicodeString(" with error code ")+(int32_t)errorCode+" by returning the wrong line number or offset in the parse error");        
-      } else {
+    if (parseError.line != 0 || parseError.offset != ((int32_t) expectedErrorOffset)) {
+      dataerrln("TestMessageFormat2::testInvalidPattern #%d - wrong line or character offset in parse error; expected (line %d, offset %d), got (line %d, offset %d)",
+                testNum, 0, expectedErrorOffset, parseError.line, parseError.offset);
+      logln(UnicodeString("TestMessageFormat2::testInvalidPattern failed #") + ((int32_t) testNum) + UnicodeString(" with error code ")+(int32_t)errorCode+" by returning the wrong line number or offset in the parse error");
+            } else {
         errorCode.reset();
       }
-    }
   }
 }
 
+void TestMessageFormat2::testInvalidPatterns() {
+  uint32_t i = 0;
+
+  // Unexpected end of input
+  testInvalidPattern(++i, "let    ");
+  testInvalidPattern(++i, "let $foo");
+  testInvalidPattern(++i, "let $foo =    ");
+  testInvalidPattern(++i, "{{:fszzz");
+  testInvalidPattern(++i, "match {$foo} when |xyz");
+  testInvalidPattern(++i, "{{:f aaa");
+  testInvalidPattern(++i, "{missing end brace");
+  testInvalidPattern(++i, "{missing end {$brace");
+  // @xyz is a valid annotation (`reserved`) so the error should be at the end of input
+  testInvalidPattern(++i, "{{@xyz");
+
+  // Missing '=' in `let` declaration
+  testInvalidPattern(++i, "let $bar {|foo|} {{$bar}}", 9);
+
+  // LHS of declaration doesn't start with a '$'
+  testInvalidPattern(++i, "let bar = {|foo|} {{$bar}}", 4);
+
+  // `let` RHS isn't an expression
+  testInvalidPattern(++i, "let $bar = |foo| {{$bar}}", 11);
+
+  // Non-expression
+  testInvalidPattern(++i, "no braces", 0);
+  testInvalidPattern(++i, "no braces {$foo}", 0);
+
+  // Trailing characters that are not whitespace
+  testInvalidPattern(++i, "{extra} content", 8);
+  testInvalidPattern(++i, "match {|x|} when * {foo} extra", 25);
+
+  // Empty expression
+  testInvalidPattern(++i, "{empty { }}", 9);
+  testInvalidPattern(++i, "match {} when * {foo}", 7);
+  // ':' not preceding a function name
+  testInvalidPattern(++i, "{bad {:}}", 7);
+  // 'placeholder' is not a literal, variable or annotation
+  testInvalidPattern(++i, "{bad {placeholder}}", 6);
+  // Missing '=' after option name
+  testInvalidPattern(++i, "{no-equal {|42| :number minimumFractionDigits 2}}", 46);
+  testInvalidPattern(++i, "{bad {:placeholder option value}}", 26);
+  // Missing RHS of option
+  testInvalidPattern(++i, "{bad {:placeholder option=}}", 26);
+  testInvalidPattern(++i, "{bad {:placeholder option}}", 25);
+  // Annotation is not a function or reserved text
+  testInvalidPattern(++i, "{bad {$placeholder option}}", 19);
+  testInvalidPattern(++i, "{no {$placeholder end}", 18);
+
+  // Missing whitespace before key in variant
+  testInvalidPattern(++i, "match {|foo|} when*{foo}", 18);
+  // Missing expression in selectors
+  testInvalidPattern(++i, "match when * {foo}", 6);
+  // Non-expression in selectors
+  testInvalidPattern(++i, "match |x| when * {foo}", 6);
+
+  // Missing RHS in variant
+  testInvalidPattern(++i, "match {|x|} when * foo");
+}
 
 void TestMessageFormat2::testComplexMessage() {
   testPattern(complexMessage, 0, "testComplexMessage");

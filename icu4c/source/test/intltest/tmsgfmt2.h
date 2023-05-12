@@ -15,8 +15,13 @@
 
 #include "unicode/unistr.h"
 #include "unicode/fmtable.h"
-#include "unicode/msgfmt2.h"
+#include "unicode/parseerr.h"
 #include "intltest.h"
+
+/*
+
+#include "unicode/msgfmt2.h"
+*/
 
 /**
  * TestMessageFormat tests MessageFormat
@@ -32,11 +37,14 @@ public:
     void testComplexMessage(void);
     void testValidPatterns(void);
     void testValidJsonPatterns(void);
-    void testInvalidJsonPatterns(void);
+    void testInvalidPatterns(void);
 
 private:
     void testPattern(const UnicodeString&, uint32_t, const char*);
-    void testPatterns(UnicodeString*, uint32_t, const char*);
+    template<size_t N>
+    void testPatterns(const UnicodeString(&) [N], const char*);
+    void testInvalidPattern(uint32_t, const UnicodeString&);
+    void testInvalidPattern(uint32_t, const UnicodeString&, uint32_t);
 };
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
