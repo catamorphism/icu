@@ -101,6 +101,8 @@ MessageFormat2::MessageFormat2(const UnicodeString &pattern,
 /**
 TODO: For now, all this does is validate the pattern
 **/
+  CHECK_ERROR(success);
+
   parse(pattern, parseError, success);
 }
 
@@ -110,7 +112,6 @@ MessageFormat2::~MessageFormat2() {}
 // Parses the source pattern
 
 static void setParseError(UParseError& parseError, uint32_t index) {
-    // See MessagePattern::setParseError(UParseError *parseError, int32_t index) {
     parseError.offset = index;
     parseError.line = 0;
     // TODO: fill this in with actual pre and post-context
@@ -225,7 +226,7 @@ static bool nextTokenIs(const UChar (&token) [N], const UnicodeString& source, u
 
 /*
   pre: index < source.length()
-  post: none
+  post: index < source.length() || U_FAILURE_errorCode);
 */
 static void parseToken(UChar c, const UnicodeString &source, uint32_t &index, UParseError &parseError,
                 UErrorCode &errorCode) {
@@ -234,13 +235,18 @@ static void parseToken(UChar c, const UnicodeString &source, uint32_t &index, UP
   U_ASSERT(inBounds(source, index));
   if (source[index] == c) {
     index++;
+    // Guarantee postcondition
+    CHECK_BOUNDS(source, index, parseError, errorCode);
     return;
   }
+  // Next character didn't match -- error out
   ERROR(parseError, errorCode, index);
 }
 
 /*
-  No pre, no post
+  pre: index < source.length()
+  post: index < source.length() || U_FAILURE_errorCode);
+
 */
 template<size_t N>
 static void parseToken(const UChar (&token) [N],
@@ -250,19 +256,24 @@ static void parseToken(const UChar (&token) [N],
                 UErrorCode& errorCode) {
   CHECK_ERROR(errorCode);
 
+  U_ASSERT(inBounds(source, index));
   size_t tokenPos = 0;
   while (tokenPos < N - 1) {
-    if (!inBounds(source, index) || source[index] != token[tokenPos]) {
+    if (source[index] != token[tokenPos]) {
       ERROR(parseError, errorCode, index);
       return;
     }
     index++;
+    // Guarantee postcondition
+    CHECK_BOUNDS(source, index, parseError, errorCode);
+
     tokenPos++;
   }
 }
 
 /*
-  No pre, no post
+  pre: index < source.length()
+  post: index < source.length() || U_FAILURE_errorCode);
 */
 template<size_t N>
 static void parseTokenWithWhitespace(const UChar (&token) [N],
@@ -270,22 +281,34 @@ static void parseTokenWithWhitespace(const UChar (&token) [N],
                               uint32_t &index,
                               UParseError& parseError,
                               UErrorCode& errorCode) {
+  // No need for error check or bounds check before parseWhitespace
   parseWhitespace(source, index, parseError, errorCode);
+  // Establish precondition
+  CHECK_BOUNDS(source, index, parseError, errorCode);
   parseToken(token, source, index, parseError, errorCode);
   parseWhitespace(source, index, parseError, errorCode);
+  // Guarantee postcondition
+  CHECK_BOUNDS(source, index, parseError, errorCode);
 }
 
 /*
-  No pre, no post
+  pre: index < source.length()
+  post: index < source.length() || U_FAILURE(errorCode)
 */
+
 static void parseTokenWithWhitespace(UChar c,
                               const UnicodeString& source,
                               uint32_t &index,
                               UParseError& parseError,
                               UErrorCode& errorCode) {
+  // No need for error check or bounds check before parseWhitespace
   parseWhitespace(source, index, parseError, errorCode);
+  // Establish precondition
+  CHECK_BOUNDS(source, index, parseError, errorCode);
   parseToken(c, source, index, parseError, errorCode);
   parseWhitespace(source, index, parseError, errorCode);
+  // Guarantee postcondition
+  CHECK_BOUNDS(source, index, parseError, errorCode);
 }
 
 static bool isAlpha(UChar c) {
@@ -327,12 +350,10 @@ static bool isNameChar(UChar c) {
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with an nmtoken.
     So it's an error if parsing the nmtoken
     consumes all the input.
-
-TODO: everywhere it says "Post: index < source.length()", it should say: "Post: if U_SUCCESS(errorCode), then index < source.length()
 */
 static void parseNmtoken(const UnicodeString& source,
                   uint32_t &index,
@@ -354,7 +375,7 @@ static void parseNmtoken(const UnicodeString& source,
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with an name.
     So it's an error if parsing the name
     consumes all the input.
@@ -377,7 +398,7 @@ static void parseName(const UnicodeString& source,
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with a variable name.
     So it's an error if parsing the variable name
     consumes all the input.
@@ -448,7 +469,7 @@ static bool annotationFollows(const UnicodeString &source, uint32_t index) {
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with a function name.
     So it's an error if parsing the function name
     consumes all the input.
@@ -472,7 +493,7 @@ static void parseFunction(const UnicodeString& source,
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     Literals are delimited with '|'s.
     So it's an error if parsing a literal
     consumes all the input.
@@ -512,7 +533,7 @@ static bool isLiteralChar(UChar c) {
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     Literals are delimited with '|'s.
     So it's an error if parsing the contents of a literal
     consumes all the input.
@@ -537,7 +558,7 @@ static void parseLiteralString(const UnicodeString &source, uint32_t &index, UPa
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with a literal.
     So it's an error if parsing a literal
     consumes all the input.
@@ -561,7 +582,7 @@ static void parseLiteral(const UnicodeString &source, uint32_t &index, UParseErr
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with an option.
     So it's an error if parsing an option.
     consumes all the input.
@@ -577,9 +598,7 @@ static void parseOption(const UnicodeString &source, uint32_t &index, UParseErro
 
   // Parse '='
   parseTokenWithWhitespace(EQUALS, source, index, parseError, errorCode);
-  // Restore precondition
-  CHECK_BOUNDS(source, index, parseError, errorCode);
-
+ 
   // Parse RHS
   // literal | nmtoken | variable
   switch(source[index]) {
@@ -601,7 +620,7 @@ static void parseOption(const UnicodeString &source, uint32_t &index, UParseErro
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with an option.
     So it's an error if parsing an option.
     consumes all the input.
@@ -625,7 +644,7 @@ static void parseOptions(const UnicodeString &source, uint32_t &index, UParseErr
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with an annotation.
     So it's an error if parsing a `reserved` annotation
     consumes all the input.
@@ -637,9 +656,8 @@ static void parseReservedEscape(const UnicodeString &source, uint32_t index, UPa
   U_ASSERT(inBounds(source, index));
   // Begins with two backslashes
   parseToken(BACKSLASH, source, index, parseError, errorCode);
-  CHECK_BOUNDS(source, index, parseError, errorCode);
   parseToken(BACKSLASH, source, index, parseError, errorCode);
-  CHECK_BOUNDS(source, index, parseError, errorCode);
+
   // Expect a '{', '|' or '}'
   switch (source[index]) {
   case LEFT_CURLY_BRACE:
@@ -671,7 +689,7 @@ static bool isReservedChar(UChar c) {
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with an annotation.
     So it's an error if parsing a `reserved` annotation
     consumes all the input.
@@ -709,7 +727,7 @@ static void parseReserved(const UnicodeString &source, uint32_t &index,
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with an annotation.
     So it's an error if parsing an annotation
     consumes all the input.
@@ -744,7 +762,7 @@ static void parseAnnotation(const UnicodeString &source, uint32_t &index, UParse
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with an annotation or a literal.
     So it's an error if parsing a possibly-annotated literal
     consumes all the input.
@@ -769,7 +787,7 @@ static void parseLiteralWithAnnotation(const UnicodeString& source,
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with an annotation or a variable.
     So it's an error if parsing a possibly-annotated variable
     consumes all the input.
@@ -792,7 +810,7 @@ static void parseVariableWithAnnotation(const UnicodeString &source, uint32_t &i
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with an expression.
     So it's an error if parsing an expression
     consumes all the input.
@@ -836,13 +854,13 @@ static void parseExpression(const UnicodeString &source, uint32_t &index, UParse
   CHECK_BOUNDS(source, index, parseError, errorCode);
   // Parse closing brace
   parseToken(RIGHT_CURLY_BRACE, source, index, parseError, errorCode);
-  // Guarantee postcondition
-  CHECK_BOUNDS(source, index, parseError, errorCode);
 }
 
 /*
-  Pre: none (declarations may be empty)
-  Post: none (declarations may be empty)
+  Pre: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
+
+(Declarations may be empty, but they are always followed by a body)
 */
 static void
 parseDeclarations(const UnicodeString& source,
@@ -850,19 +868,18 @@ parseDeclarations(const UnicodeString& source,
                   UParseError& parseError,
                   UErrorCode& errorCode) {
   CHECK_ERROR(errorCode);
-  U_ASSERT(inBounds(source, index));
+
+  // End-of-input here would be an error; even empty
+  // declarations must be followed by a body
+  CHECK_BOUNDS(source, index, parseError, errorCode);
 
   while (nextTokenIs(ID_LET, source, index)) {
     parseToken(ID_LET, source, index, parseError, errorCode);
-    // Restore precondition
-    CHECK_BOUNDS(source, index, parseError, errorCode);
     parseRequiredWhitespace(source, index, parseError, errorCode);
     // Restore precondition
     CHECK_BOUNDS(source, index, parseError, errorCode);
     parseVariableName(source, index, parseError, errorCode);
     parseTokenWithWhitespace(EQUALS, source, index, parseError, errorCode);
-    // Restore precondition
-    CHECK_BOUNDS(source, index, parseError, errorCode);
     parseExpression(source, index, parseError, errorCode);
     parseWhitespace(source, index, parseError, errorCode);
     // Restore precondition
@@ -881,7 +898,7 @@ static bool isTextChar(UChar c) {
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with a text string.
     So it's an error if parsing a text string
     consumes all the input.
@@ -911,7 +928,7 @@ static void parseTextEscape(const UnicodeString &source, uint32_t &index,
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with a text string.
     So it's an error if parsing a text string
     consumes all the input.
@@ -945,7 +962,7 @@ static void parseText(const UnicodeString &source, uint32_t &index,
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with a key.
     So it's an error if parsing a key.
     consumes all the input.
@@ -979,7 +996,7 @@ static void parseKey(const UnicodeString& source,
 
 /*
   Pre: index < source.length()
-  Post: index < source.length()
+  Post: index < source.length() || U_FAILURE(errorCode)
     A message can't end with a key.
     So it's an error if parsing a key.
     consumes all the input.
@@ -996,6 +1013,9 @@ static void parseNonEmptyKeys(const UnicodeString& source,
   // Restore precondition
   CHECK_BOUNDS(source, index, parseError, errorCode);
   parseKey(source, index, parseError, errorCode);
+
+  // Need an error check here so we don't read off the end of the input
+  CHECK_ERROR(errorCode);
 
   // Before all other keys, it's ambiguous whether whitespace is the required whitespace
   // before `key` or the optional whitespace before `pattern`. So instead, we exit from
@@ -1095,8 +1115,6 @@ static void parseSelectors(const UnicodeString& source,
     empty = false;
     // Consume the "when"
     parseToken(ID_WHEN, source, index, parseError, errorCode);
-    // Restore precondition
-    CHECK_BOUNDS(source, index, parseError, errorCode);
 
     // At least one key is required
     parseNonEmptyKeys(source, index, parseError, errorCode);
@@ -1204,16 +1222,19 @@ void MessageFormat2::parse(const UnicodeString& source,
 
   uint32_t index = 0;
   parseError.line = 0;
-  // parseWhitespace() and parseDeclarations() both succeed on an
-  // empty string, so don't check bounds yet
+  // parseWhitespace() succeeds on an empty string, so don't check bounds yet
   parseWhitespace(source, index, parseError, errorCode);
-  parseDeclarations(source, index, parseError, errorCode);
-  // Do check bounds here, because body must be non-empty
+  // parseDeclarations() requires there to be input left, so check to see if
+  // parseWhitespace() consumed it all
   CHECK_BOUNDS(source, index, parseError, errorCode);
+  parseDeclarations(source, index, parseError, errorCode);
   parseBody(source, index, parseError, errorCode);
   parseWhitespace(source, index, parseError, errorCode);
 
-  // Ensure that the entire input has been consumed
+  // Check for errors, so as to avoid overwriting a previous error offset
+  CHECK_ERROR(errorCode);
+
+  // There are no errors; finally, check that the entire input was consumed
   if (((int32_t) index) != source.length()) {
     ERROR(parseError, errorCode, index);
   }
