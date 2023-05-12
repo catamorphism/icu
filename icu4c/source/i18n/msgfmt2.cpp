@@ -59,6 +59,7 @@
 
 // TODO: indent to 4 spaces
 
+// TODO: eliminate this and instead make each helper check the error code at the beginning
 #define RETURN_IF_HELPER_FAILS(call) \
   call; \
   if (U_FAILURE(errorCode)) \
@@ -93,8 +94,6 @@ static const UChar ID_MATCH[] = {
   0x6D, 0x61, 0x74, 0x63, 0x68, 0 /* "match" */
 };
 
-#define LENGTH(s) sizeof(s)/U_SIZEOF_UCHAR
-
 // -------------------------------------
 // Creates a MessageFormat instance based on the pattern.
 
@@ -115,9 +114,9 @@ MessageFormat2::~MessageFormat2() {}
 
 static void setParseError(UParseError& parseError, uint32_t index) {
     // See MessagePattern::setParseError(UParseError *parseError, int32_t index) {
-    // TODO: fill this in with more useful information
     parseError.offset = index;
     parseError.line = 0;
+    // TODO: fill this in with actual pre and post-context
     parseError.preContext[0] = 0;
     parseError.postContext[0] = 0;
 }
@@ -319,6 +318,7 @@ static bool isNameChar(UChar c) {
           || isDigit(c)
           || c == HYPHEN
           || c == PERIOD
+          || c == COLON
           || c == 0x00B7
           || inRange(c, 0x0300, 0x036F)
           || inRange(c, 0x203F, 0x2040));
@@ -649,7 +649,7 @@ static bool isReservedChar(UChar c) {
     So it's an error if parsing a `reserved` annotation
     consumes all the input.
 */
-static void parseReserved(const UnicodeString &source, uint32_t index,
+static void parseReserved(const UnicodeString &source, uint32_t &index,
                    UParseError &parseError, UErrorCode &errorCode) {
     U_ASSERT(inBounds(source, index));
     if (!isReservedStart(source, index)) {
@@ -661,12 +661,8 @@ static void parseReserved(const UnicodeString &source, uint32_t index,
     // Restore precondition
     CHECK_BOUNDS(source, index, parseError, errorCode);
 
-    // An annotation is always followed by whitespace
     // Use while(true) to make it easier to use error checking macros
     while(true) {
-      if (isWhitespace(source[index])) {
-        break;
-      }
       if (isReservedChar(source[index])) {
         // consume the char
         index++;
@@ -674,8 +670,10 @@ static void parseReserved(const UnicodeString &source, uint32_t index,
         CHECK_BOUNDS(source, index, parseError, errorCode);
       } else if (source[index] == BACKSLASH) {
         RETURN_IF_HELPER_FAILS(parseReservedEscape(source, index, parseError, errorCode));
+      } else if (source[index] == PIPE) {
+        RETURN_IF_HELPER_FAILS(parseLiteral(source, index, parseError, errorCode));
       } else {
-        RETURN_IF_HELPER_FAILS(parseLiteralString(source, index, parseError, errorCode));
+        break;
       }
     }
 }
