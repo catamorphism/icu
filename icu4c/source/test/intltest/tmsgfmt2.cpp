@@ -22,10 +22,6 @@ as of the following commit from 2023-05-09:
   https://github.com/unicode-org/message-format-wg/commit/194f6efcec5bf396df36a19bd6fa78d1fa2e0867
 */
 
-/*
-  TODO: clean up, check against coding conventions
-*/
-
 /**
    TODO: For now, this just tests that valid messages are validated by the parser
    and invalid messages are rejected with an error reflecting the correct line/offset of
@@ -222,9 +218,9 @@ void TestMessageFormat2::testInvalidPattern(uint32_t testNum, const UnicodeStrin
       dataerrln("TestMessageFormat2::testInvalidPattern #%d - wrong line or character offset in parse error; expected (line %d, offset %d), got (line %d, offset %d)",
                 testNum, 0, expectedErrorOffset, parseError.line, parseError.offset);
       logln(UnicodeString("TestMessageFormat2::testInvalidPattern failed #") + ((int32_t) testNum) + UnicodeString(" with error code ")+(int32_t)errorCode+" by returning the wrong line number or offset in the parse error");
-            } else {
-        errorCode.reset();
-      }
+    } else {
+      errorCode.reset();
+    }
   }
 }
 
