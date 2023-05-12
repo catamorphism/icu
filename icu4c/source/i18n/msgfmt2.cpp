@@ -25,15 +25,15 @@
 
 // TODO: Check this against coding guidelines
 
-#define SINGLE_QUOTE      ((char16_t)0x0027)
-#define COMMA             ((char16_t)0x002C)
-#define LEFT_CURLY_BRACE  ((char16_t)0x007B)
-#define RIGHT_CURLY_BRACE ((char16_t)0x007D)
-#define SPACE             ((char16_t)0x0020)
-#define HTAB              ((char16_t)0x0009)
-#define CR                ((char16_t)0x000D)
-#define LF                ((char16_t)0x000A)
-#define BACKSLASH         ((char16_t)0x005C)
+#define SINGLE_QUOTE      ((UChar)0x0027)
+#define COMMA             ((UChar)0x002C)
+#define LEFT_CURLY_BRACE  ((UChar)0x007B)
+#define RIGHT_CURLY_BRACE ((UChar)0x007D)
+#define SPACE             ((UChar)0x0020)
+#define HTAB              ((UChar)0x0009)
+#define CR                ((UChar)0x000D)
+#define LF                ((UChar)0x000A)
+#define BACKSLASH         ((UChar)0x005C)
 
 // TODO: indent to 4 spaces
 
@@ -101,7 +101,7 @@ static void setParseError(UParseError& parseError, uint32_t index) {
     parseError.postContext[0] = 0;
 }
 
-static bool isWhitespace(char16_t c) {
+static bool isWhitespace(UChar c) {
   switch(c) {
     case SPACE:
     case HTAB:
@@ -113,7 +113,7 @@ static bool isWhitespace(char16_t c) {
   }
 }
 
-static bool inRange(char16_t c, char16_t first, char16_t last) {
+static bool inRange(UChar c, UChar first, UChar last) {
   U_ASSERT(first < last);
   return(c >= first && c <= last);
 }
@@ -208,7 +208,7 @@ static bool nextTokenIs(const UnicodeString& token, const UnicodeString& source,
   pre: index < source.length()
   post: none
 */
-static void parseToken(char16_t c, const UnicodeString &source, uint32_t &index, UParseError &parseError,
+static void parseToken(UChar c, const UnicodeString &source, uint32_t &index, UParseError &parseError,
                 UErrorCode &errorCode) {
     U_ASSERT(inBounds(source, index));
     if (source[index] == c) {
@@ -248,16 +248,16 @@ static void parseTokenWithWhitespace(const UnicodeString& token,
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 }
 
-static bool isAlpha(char16_t c) {
+static bool isAlpha(UChar c) {
   return (inRange(c, 0x0041, 0x005A)
           || inRange(c, 0x0061, 0x007A));
 }
 
-static bool isDigit(char16_t c) {
+static bool isDigit(UChar c) {
   return (inRange(c, 0x0030, 0x0039));
 }
 
-static bool isNameStart(char16_t c) {
+static bool isNameStart(UChar c) {
   return (isAlpha(c)
           || c == '_'
           || inRange(c, 0x00C0, 0x00D6)
@@ -271,10 +271,10 @@ static bool isNameStart(char16_t c) {
           || inRange(c, 0x3001, 0xD7FF)
           || inRange(c, 0xF900, 0xFDCF)
           || inRange(c, 0xFDF0, 0xFFFD));
-          // inRange(c, 0x10000, 0xEFFFF)); // Not sure about this -- spec says %x10000-EFFFF, but 0xEFFFF is more than the max char16_t
+          // inRange(c, 0x10000, 0xEFFFF)); // Not sure about this -- spec says %x10000-EFFFF, but 0xEFFFF is more than the max UChar
 }
 
-static bool isNameChar(char16_t c) {
+static bool isNameChar(UChar c) {
   return (isNameStart(c)
           || isDigit(c)
           || c == '-'
@@ -459,7 +459,7 @@ static void parseLiteralEscape(const UnicodeString& source,
   CHECK_BOUNDS(source, index, parseError, errorCode);
 }
 
-static bool isLiteralChar(char16_t c) {
+static bool isLiteralChar(UChar c) {
     return (inRange(c, 0x0000, 0x005B)    // Omit backslash
             || inRange(c, 0x005D, 0x007B) // Omit pipe
             || inRange(c, 0x007D, 0xD7FF) // Omit surrogates
@@ -606,7 +606,7 @@ static void parseReservedEscape(const UnicodeString &source, uint32_t index, UPa
   }
 }
 
-static bool isReservedChar(char16_t c) {
+static bool isReservedChar(UChar c) {
     return (inRange(c, 0x0000, 0x0008)     // Omit HTAB and LF
             || inRange(c, 0x000B, 0x000C)  // Omit CR
             || inRange(c, 0x000E, 0x0019)  // Omit SP
@@ -810,7 +810,7 @@ parseDeclarations(const UnicodeString& source,
   }
 }
 
-static bool isTextChar(char16_t c) {
+static bool isTextChar(UChar c) {
     return (inRange(c, 0x0000, 0x005B)    // Omit backslash
             || inRange(c, 0x005D, 0x007A) // Omit {
             || c == 0x007C                // }
