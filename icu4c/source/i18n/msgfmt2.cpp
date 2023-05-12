@@ -11,6 +11,7 @@
  ********************************************************************/
 
 #include "unicode/rep.h"
+#include "unicode/umachine.h"
 #include "unicode/utypes.h"
 
 #if !UCONFIG_NO_FORMATTING
@@ -23,10 +24,7 @@
 // class MessageFormat2
 // *****************************************************************************
 
-// TODO: Check this against coding guidelines
-
-#define SINGLE_QUOTE      ((UChar)0x0027)
-#define COMMA             ((UChar)0x002C)
+// Syntactically significant characters
 #define LEFT_CURLY_BRACE  ((UChar)0x007B)
 #define RIGHT_CURLY_BRACE ((UChar)0x007D)
 #define SPACE             ((UChar)0x0020)
@@ -34,6 +32,30 @@
 #define CR                ((UChar)0x000D)
 #define LF                ((UChar)0x000A)
 #define BACKSLASH         ((UChar)0x005C)
+#define PIPE              ((UChar)0x007C)
+#define EQUALS            ((UChar)0x003D)
+#define DOLLAR            ((UChar)0x0024)
+#define COLON             ((UChar)0x003A)
+#define PLUS              ((UChar)0x002B)
+#define HYPHEN            ((UChar)0x002D)
+#define PERIOD            ((UChar)0x002E)
+#define UNDERSCORE        ((UChar)0x005F)
+
+// Both used (in a `key` context) and reserved (in an annotation context)
+#define ASTERISK          ((UChar)0x002A)
+
+// Reserved sigils
+#define BANG              ((UChar)0x0021)
+#define AT                ((UChar)0x0040)
+#define POUND             ((UChar)0x0023)
+#define PERCENT           ((UChar)0x0025)
+#define CARET             ((UChar)0x005E)
+#define AMPERSAND         ((UChar)0x0026)
+#define LESS_THAN         ((UChar)0x003C)
+#define GREATER_THAN      ((UChar)0x003E)
+#define QUESTION          ((UChar)0x003F)
+#define TILDE             ((UChar)0x007E)
+
 
 // TODO: indent to 4 spaces
 
@@ -59,20 +81,19 @@ U_NAMESPACE_BEGIN
 
 UOBJECT_DEFINE_RTTI_IMPLEMENTATION(MessageFormat2)
 
-// TODO: Check this against coding guidelines
+static const UChar ID_LET[] = {
+  0x6C, 0x65, 0x74, 0 /* "let" */
+};
 
-#define ESCAPED_BACKSLASH UNICODE_STRING_SIMPLE("\\\\")
-#define ESCAPED_PIPE UNICODE_STRING_SIMPLE("\\|")
-#define ESCAPED_LBRACE UNICODE_STRING_SIMPLE("\\{")
-#define ESCAPED_RBRACE UNICODE_STRING_SIMPLE("\\}")
-#define PIPE UNICODE_STRING_SIMPLE("|")
-#define EQUALS UNICODE_STRING_SIMPLE("=")
-#define LBRACE UNICODE_STRING_SIMPLE("{")
-#define RBRACE UNICODE_STRING_SIMPLE("}")
-#define RPAREN UNICODE_STRING_SIMPLE(")")
-#define ID_LET UNICODE_STRING_SIMPLE("let")
-#define ID_WHEN UNICODE_STRING_SIMPLE("when")
-#define ID_MATCH UNICODE_STRING_SIMPLE("match")        
+static const UChar ID_WHEN[] = {
+  0x77, 0x68, 0x65, 0x6E, 0 /* "when" */
+};
+
+static const UChar ID_MATCH[] = {
+  0x6D, 0x61, 0x74, 0x63, 0x68, 0 /* "match" */
+};
+
+#define LENGTH(s) sizeof(s)/U_SIZEOF_UCHAR
 
 // -------------------------------------
 // Creates a MessageFormat instance based on the pattern.
@@ -190,11 +211,12 @@ static void parseWhitespace(const UnicodeString& source,
 /*
   No pre, no post (returns false when out of bounds)
 */
-static bool nextTokenIs(const UnicodeString& token, const UnicodeString& source, uint32_t index) {
-  uint32_t tokenPos = 0;
+template<size_t N>
+static bool nextTokenIs(const UChar (&token) [N], const UnicodeString& source, uint32_t index) {
+  size_t tokenPos = 0;
   uint32_t strPos = index;
 
-  while (((int32_t) tokenPos) < token.length()) {
+  while (tokenPos < N - 1) {
     if (!inBounds(source, strPos) || source[strPos] != token[tokenPos]) {
       return false;
     }
@@ -218,14 +240,18 @@ static void parseToken(UChar c, const UnicodeString &source, uint32_t &index, UP
     ERROR(parseError, errorCode, index);
 }
 
-static void parseToken(const UnicodeString& token,
+/*
+  No pre, no post
+*/
+template<size_t N>
+static void parseToken(const UChar (&token) [N],
                 const UnicodeString& source,
                 uint32_t &index,
                 UParseError& parseError,
                 UErrorCode& errorCode) {
-  uint32_t tokenPos = 0;
+  size_t tokenPos = 0;
 
-  while (((int32_t) tokenPos) < token.length()) {
+  while (tokenPos < N - 1) {
     if (!inBounds(source, index) || source[index] != token[tokenPos]) {
       ERROR(parseError, errorCode, index);
       return;
@@ -238,13 +264,27 @@ static void parseToken(const UnicodeString& token,
 /*
   No pre, no post
 */
-static void parseTokenWithWhitespace(const UnicodeString& token,
+template<size_t N>
+static void parseTokenWithWhitespace(const UChar (&token) [N],
                               const UnicodeString& source,
                               uint32_t &index,
                               UParseError& parseError,
                               UErrorCode& errorCode) {
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
   RETURN_IF_HELPER_FAILS(parseToken(token, source, index, parseError, errorCode));
+  RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
+}
+
+/*
+  No pre, no post
+*/
+static void parseTokenWithWhitespace(UChar c,
+                              const UnicodeString& source,
+                              uint32_t &index,
+                              UParseError& parseError,
+                              UErrorCode& errorCode) {
+  RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
+  RETURN_IF_HELPER_FAILS(parseToken(c, source, index, parseError, errorCode));
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
 }
 
@@ -259,7 +299,7 @@ static bool isDigit(UChar c) {
 
 static bool isNameStart(UChar c) {
   return (isAlpha(c)
-          || c == '_'
+          || c == UNDERSCORE
           || inRange(c, 0x00C0, 0x00D6)
           || inRange(c, 0x00D8, 0x00F6)
           || inRange(c, 0x00F8, 0x02FF)
@@ -277,8 +317,8 @@ static bool isNameStart(UChar c) {
 static bool isNameChar(UChar c) {
   return (isNameStart(c)
           || isDigit(c)
-          || c == '-'
-          || c == '.'
+          || c == HYPHEN
+          || c == PERIOD
           || c == 0x00B7
           || inRange(c, 0x0300, 0x036F)
           || inRange(c, 0x203F, 0x2040));
@@ -294,9 +334,7 @@ static bool isNameChar(UChar c) {
 static void parseNmtoken(const UnicodeString& source,
                   uint32_t &index,
                   UParseError& parseError,
-                  UErrorCode& errorCode,
-                  UnicodeString& result) {
-
+                  UErrorCode& errorCode) {
   U_ASSERT(inBounds(source, index));
   if (!isNameChar(source[index])) {
     ERROR(parseError, errorCode, index);        
@@ -304,9 +342,9 @@ static void parseNmtoken(const UnicodeString& source,
   }
 
   while (isNameChar(source[index])) {
-    result += source[index++];
+    index++;
     CHECK_BOUNDS(source, index, parseError, errorCode);
-  }  
+  }
 }
 
 /*
@@ -319,8 +357,7 @@ static void parseNmtoken(const UnicodeString& source,
 static void parseName(const UnicodeString& source,
                uint32_t &index,
                UParseError& parseError,
-               UErrorCode& errorCode,
-               UnicodeString& result) {
+               UErrorCode& errorCode) {
   U_ASSERT(inBounds(source, index));
 
   if (!isNameStart(source[index])) {
@@ -328,7 +365,7 @@ static void parseName(const UnicodeString& source,
     return;
   }
 
-  RETURN_IF_HELPER_FAILS(parseNmtoken(source, index, parseError, errorCode, result));
+  RETURN_IF_HELPER_FAILS(parseNmtoken(source, index, parseError, errorCode));
 }
 
 /*
@@ -341,17 +378,16 @@ static void parseName(const UnicodeString& source,
 static void parseVariableName(const UnicodeString& source,
                        uint32_t &index,
                        UParseError& parseError,
-                       UErrorCode& errorCode,
-                       UnicodeString& result) {
+                       UErrorCode& errorCode) {
   U_ASSERT(inBounds(source, index));
-  if (source[index] != '$') {
+  if (source[index] != DOLLAR) {
     ERROR(parseError, errorCode, index);
     return;
   }
 
   index++; // Consume the '$'
   CHECK_BOUNDS(source, index, parseError, errorCode);
-  parseName(source, index, parseError, errorCode, result);
+  parseName(source, index, parseError, errorCode);
 }
 
 /*
@@ -360,17 +396,17 @@ static void parseVariableName(const UnicodeString& source,
 static bool isReservedStart(const UnicodeString &source, uint32_t index) {
     U_ASSERT(inBounds(source, index));
     switch (source[index]) {
-    case '!':
-    case '@':
-    case '#':
-    case '%':
-    case '^':
-    case '&':
-    case '*':
-    case '<':
-    case '>':
-    case '?':
-    case '~':
+    case BANG:
+    case AT:
+    case POUND:
+    case PERCENT:
+    case CARET:
+    case AMPERSAND:
+    case ASTERISK:
+    case LESS_THAN:
+    case GREATER_THAN:
+    case QUESTION:
+    case TILDE:
       return true;
     default:
       return false;
@@ -383,9 +419,9 @@ static bool isReservedStart(const UnicodeString &source, uint32_t index) {
 static bool functionFollows(const UnicodeString &source, uint32_t index) {
   U_ASSERT(inBounds(source, index));
   switch (source[index]) {
-  case ':':
-  case '+':
-  case '-': {
+  case COLON:
+  case PLUS:
+  case HYPHEN: {
     return true;
   }
   default: {
@@ -411,8 +447,7 @@ static bool annotationFollows(const UnicodeString &source, uint32_t index) {
 static void parseFunction(const UnicodeString& source,
                        uint32_t &index,
                        UParseError& parseError,
-                       UErrorCode& errorCode,
-                       UnicodeString& result) {
+                       UErrorCode& errorCode) {
   U_ASSERT(inBounds(source, index));
   if (!functionFollows(source, index)) {
     ERROR(parseError, errorCode, index);
@@ -421,7 +456,7 @@ static void parseFunction(const UnicodeString& source,
 
   index++; // Consume the function start token
   CHECK_BOUNDS(source, index, parseError, errorCode);
-  RETURN_IF_HELPER_FAILS(parseName(source, index, parseError, errorCode, result));
+  RETURN_IF_HELPER_FAILS(parseName(source, index, parseError, errorCode));
 }
 
 /*
@@ -434,19 +469,14 @@ static void parseFunction(const UnicodeString& source,
 static void parseLiteralEscape(const UnicodeString& source,
                         uint32_t &index,
                         UParseError& parseError,
-                        UErrorCode& errorCode,
-                        UnicodeString& s) {
+                        UErrorCode& errorCode) {
   U_ASSERT(inBounds(source, index));
   U_ASSERT(source[index] == BACKSLASH);
   index++; // Skip the initial backslash
   CHECK_BOUNDS(source, index, parseError, errorCode);
   switch(source[index++]) {
-  case BACKSLASH: {
-    s += ESCAPED_BACKSLASH;
-    break;
-  }
-  case '|': {
-    s += ESCAPED_PIPE;
+  case BACKSLASH:
+  case PIPE: {
     break;
   }
   default: {
@@ -475,17 +505,15 @@ static bool isLiteralChar(UChar c) {
     consumes all the input.
 */
 static void parseLiteralString(const UnicodeString &source, uint32_t &index, UParseError& parseError,
-                        UErrorCode &errorCode, UnicodeString &result) {
+                        UErrorCode &errorCode) {
   U_ASSERT(inBounds(source, index));
 
   // while(true) makes it easier to use error checking macros
   while (true) {
     if(source[index] == BACKSLASH) {
-      RETURN_IF_HELPER_FAILS(parseLiteralEscape(source, index, parseError, errorCode, result));
-    } else if (isLiteralChar(source[index])) {
-      result += source[index];
-    } else {
-      break;
+      RETURN_IF_HELPER_FAILS(parseLiteralEscape(source, index, parseError, errorCode));
+    } else if (!isLiteralChar(source[index])) {
+        break;
     }
     index++;
     CHECK_BOUNDS(source, index, parseError, errorCode);
@@ -500,12 +528,12 @@ static void parseLiteralString(const UnicodeString &source, uint32_t &index, UPa
     consumes all the input.
 */
 static void parseLiteral(const UnicodeString &source, uint32_t &index, UParseError& parseError,
-                  UErrorCode &errorCode, UnicodeString &result) {
+                  UErrorCode &errorCode) {
   U_ASSERT(inBounds(source, index));
   RETURN_IF_HELPER_FAILS(parseToken(PIPE, source, index, parseError, errorCode));
 
   CHECK_BOUNDS(source, index, parseError, errorCode);
-  RETURN_IF_HELPER_FAILS(parseLiteralString(source, index, parseError, errorCode, result));
+  RETURN_IF_HELPER_FAILS(parseLiteralString(source, index, parseError, errorCode));
 
   CHECK_BOUNDS(source, index, parseError, errorCode);
   RETURN_IF_HELPER_FAILS(parseToken(PIPE, source, index, parseError, errorCode));
@@ -522,9 +550,9 @@ static void parseLiteral(const UnicodeString &source, uint32_t &index, UParseErr
     consumes all the input.
 */
 static void parseOption(const UnicodeString &source, uint32_t &index, UParseError& parseError,
-                 UErrorCode &errorCode, UnicodeString& lhs, UnicodeString& rhs) {
+                 UErrorCode &errorCode) {
   U_ASSERT(inBounds(source, index));
-  RETURN_IF_HELPER_FAILS(parseName(source, index, parseError, errorCode, lhs));
+  RETURN_IF_HELPER_FAILS(parseName(source, index, parseError, errorCode));
 
   RETURN_IF_HELPER_FAILS(parseTokenWithWhitespace(EQUALS, source, index, parseError, errorCode));
   // Restore precondition
@@ -532,17 +560,17 @@ static void parseOption(const UnicodeString &source, uint32_t &index, UParseErro
 
   // literal | nmtoken | variable
   switch(source[index]) {
-    case '|': {
-      RETURN_IF_HELPER_FAILS(parseLiteral(source, index, parseError, errorCode, rhs));
+    case PIPE: {
+      RETURN_IF_HELPER_FAILS(parseLiteral(source, index, parseError, errorCode));
       return;
     }
-    case '$': {
-      RETURN_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode, rhs));
+    case DOLLAR: {
+      RETURN_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode));
       return;
     }
     default: {
       // must be nmtoken
-      RETURN_IF_HELPER_FAILS(parseNmtoken(source, index, parseError, errorCode, rhs));
+      RETURN_IF_HELPER_FAILS(parseNmtoken(source, index, parseError, errorCode));
       return;
     }
   }
@@ -563,9 +591,7 @@ static void parseOptions(const UnicodeString &source, uint32_t &index, UParseErr
     if (!isNameStart(source[index])) {
       break;
     }
-    UnicodeString lhs;
-    UnicodeString rhs;
-    RETURN_IF_HELPER_FAILS(parseOption(source, index, parseError, errorCode, lhs, rhs));
+    RETURN_IF_HELPER_FAILS(parseOption(source, index, parseError, errorCode));
     RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
     // Restore precondition
     CHECK_BOUNDS(source, index, parseError, errorCode);
@@ -589,9 +615,9 @@ static void parseReservedEscape(const UnicodeString &source, uint32_t index, UPa
   CHECK_BOUNDS(source, index, parseError, errorCode);
   // Expect a '{', '|' or '}'
   switch (source[index]) {
-  case '{':
-  case '}':
-  case '|': {
+  case LEFT_CURLY_BRACE:
+  case RIGHT_CURLY_BRACE:
+  case PIPE: {
         // Consume the character
       index++;
       // Guarantee postcondition
@@ -649,8 +675,7 @@ static void parseReserved(const UnicodeString &source, uint32_t index,
       } else if (source[index] == BACKSLASH) {
         RETURN_IF_HELPER_FAILS(parseReservedEscape(source, index, parseError, errorCode));
       } else {
-        UnicodeString result;
-        RETURN_IF_HELPER_FAILS(parseLiteralString(source, index, parseError, errorCode, result));
+        RETURN_IF_HELPER_FAILS(parseLiteralString(source, index, parseError, errorCode));
       }
     }
 }
@@ -667,8 +692,7 @@ static void parseAnnotation(const UnicodeString &source, uint32_t &index, UParse
     U_ASSERT(inBounds(source, index));
     if (functionFollows(source, index)) {
         // Function call
-        UnicodeString functionName;
-        RETURN_IF_HELPER_FAILS(parseFunction(source, index, parseError, errorCode, functionName));
+        RETURN_IF_HELPER_FAILS(parseFunction(source, index, parseError, errorCode));
 
         // Options, if present, must be preceded by whitespace
         if (isWhitespace(source[index])) {
@@ -698,8 +722,7 @@ static void parseLiteralWithAnnotation(const UnicodeString& source,
                                 UParseError& parseError,
                                 UErrorCode& errorCode) {
   U_ASSERT(inBounds(source, index));
-  UnicodeString s;
-  RETURN_IF_HELPER_FAILS(parseLiteral(source, index, parseError, errorCode, s));
+  RETURN_IF_HELPER_FAILS(parseLiteral(source, index, parseError, errorCode));
 
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
   // Restore precondition
@@ -720,8 +743,7 @@ static void parseLiteralWithAnnotation(const UnicodeString& source,
 static void parseVariableWithAnnotation(const UnicodeString &source, uint32_t &index, UParseError& parseError,
                                  UErrorCode &errorCode) {
   U_ASSERT(inBounds(source, index));
-  UnicodeString varName;
-  RETURN_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode, varName));
+  RETURN_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode));
 
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
   // Restore precondition
@@ -743,19 +765,19 @@ static void parseExpression(const UnicodeString &source, uint32_t &index, UParse
                      UErrorCode &errorCode) {
   U_ASSERT(inBounds(source, index));
   // Parse opening brace
-  RETURN_IF_HELPER_FAILS(parseToken(LBRACE, source, index, parseError, errorCode));
+  RETURN_IF_HELPER_FAILS(parseToken(LEFT_CURLY_BRACE, source, index, parseError, errorCode));
   // Optional whitespace after opening brace
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
   // Restore precondition
   CHECK_BOUNDS(source, index, parseError, errorCode);
-  // literal '|', variable '$' or annotation ':'/'+'/'-'
+  // literal '|', variable '$' or annotation
   switch(source[index]) {
-  case '|': {
+  case PIPE: {
     // Literal
     RETURN_IF_HELPER_FAILS(parseLiteralWithAnnotation(source, index, parseError, errorCode));
     break;
   }
-  case '$': {
+  case DOLLAR: {
     // Variable
     RETURN_IF_HELPER_FAILS(parseVariableWithAnnotation(source, index, parseError, errorCode));
     break;
@@ -775,7 +797,7 @@ static void parseExpression(const UnicodeString &source, uint32_t &index, UParse
   // Restore precondition
   CHECK_BOUNDS(source, index, parseError, errorCode);
   // Parse closing brace
-  RETURN_IF_HELPER_FAILS(parseToken(RBRACE, source, index, parseError, errorCode));
+  RETURN_IF_HELPER_FAILS(parseToken(RIGHT_CURLY_BRACE, source, index, parseError, errorCode));
   // Guarantee postcondition
   CHECK_BOUNDS(source, index, parseError, errorCode);
 }
@@ -798,8 +820,7 @@ parseDeclarations(const UnicodeString& source,
     RETURN_IF_HELPER_FAILS(parseRequiredWhitespace(source, index, parseError, errorCode));
     // Restore precondition
     CHECK_BOUNDS(source, index, parseError, errorCode);
-    UnicodeString variableName; 
-    RETURN_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode, variableName));
+    RETURN_IF_HELPER_FAILS(parseVariableName(source, index, parseError, errorCode));
     RETURN_IF_HELPER_FAILS(parseTokenWithWhitespace(EQUALS, source, index, parseError, errorCode));
     // Restore precondition
     CHECK_BOUNDS(source, index, parseError, errorCode);
@@ -828,23 +849,15 @@ static bool isTextChar(UChar c) {
 */
 static void parseTextEscape(const UnicodeString &source, uint32_t &index,
                      UParseError& parseError,
-                     UErrorCode& errorCode,
-                     UnicodeString& text) {
+                     UErrorCode& errorCode) {
   U_ASSERT(inBounds(source, index));
   U_ASSERT(source[index] == BACKSLASH);
   index++; // Skip the initial backslash
   CHECK_BOUNDS(source, index, parseError, errorCode);
   switch(source[index++]) {
-  case BACKSLASH: {
-    text += ESCAPED_BACKSLASH;
-    break;
-  }
-  case '{': {
-    text += ESCAPED_LBRACE;
-    break;
-  }
-  case '}': {
-    text += ESCAPED_RBRACE;
+  case BACKSLASH:
+  case LEFT_CURLY_BRACE:
+  case RIGHT_CURLY_BRACE: {
     break;
   }
   default: {
@@ -865,26 +878,27 @@ static void parseTextEscape(const UnicodeString &source, uint32_t &index,
 */
 static void parseText(const UnicodeString &source, uint32_t &index,
                UParseError& parseError,
-               UErrorCode& errorCode,
-               UnicodeString& text) {
+               UErrorCode& errorCode) {
   U_ASSERT(inBounds(source, index));
+  bool empty = true;
 
   // while(true) makes the error handling macros easier
   while(true) {
     if (source[index] == BACKSLASH) {
-      RETURN_IF_HELPER_FAILS(parseTextEscape(source, index, parseError, errorCode, text));
+      RETURN_IF_HELPER_FAILS(parseTextEscape(source, index, parseError, errorCode));
     } else if (isTextChar(source[index])) {
-      text += source[index++];
       // Restore precondition
+      index++;
       CHECK_BOUNDS(source, index, parseError, errorCode);
     } else {
       break;
     }
+    empty = false;
   }
 
-  if (text.length() == 0) {
+  if (empty) {
     // text must be non-empty
-    errorCode = U_MESSAGE_PARSE_ERROR;
+    ERROR(parseError, errorCode, index);
   }
 }
 
@@ -903,12 +917,11 @@ static void parseKey(const UnicodeString& source,
 
   // Literal | nmtoken | '*'
   switch (source[index]) {
-    case '|': {
-      UnicodeString literalStr;
-      RETURN_IF_HELPER_FAILS(parseLiteral(source, index, parseError, errorCode, literalStr));
+    case PIPE: {
+      RETURN_IF_HELPER_FAILS(parseLiteral(source, index, parseError, errorCode));
       break;
     }
-    case '*': {
+    case ASTERISK: {
       index++;
       // Guarantee postcondition
       CHECK_BOUNDS(source, index, parseError, errorCode);
@@ -916,8 +929,7 @@ static void parseKey(const UnicodeString& source,
     }
     default: {
       // nmtoken
-      UnicodeString nameStr;
-      RETURN_IF_HELPER_FAILS(parseNmtoken(source, index, parseError, errorCode, nameStr));
+      RETURN_IF_HELPER_FAILS(parseNmtoken(source, index, parseError, errorCode));
       break;
     }
   }
@@ -951,7 +963,7 @@ static void parseNonEmptyKeys(const UnicodeString& source,
     // Restore precondition
     CHECK_BOUNDS(source, index, parseError, errorCode);
 
-    if (source[index] == '{') {
+    if (source[index] == LEFT_CURLY_BRACE) {
       // then we're done parsing the keys and a pattern follows -- break
       return;
     }
@@ -969,8 +981,8 @@ static void parsePattern(const UnicodeString& source,
                   UErrorCode& errorCode) {
   U_ASSERT(inBounds(source, index));
 
-  RETURN_IF_HELPER_FAILS(parseToken(LBRACE, source, index, parseError, errorCode));
-  while (!nextTokenIs(RBRACE, source, index)) {
+  RETURN_IF_HELPER_FAILS(parseToken(LEFT_CURLY_BRACE, source, index, parseError, errorCode));
+  while (source[index] != RIGHT_CURLY_BRACE) {
     switch (source[index]) {
     case LEFT_CURLY_BRACE: {
       // Must be expression
@@ -979,8 +991,7 @@ static void parsePattern(const UnicodeString& source,
     }
     default: {
       // Must be text
-      UnicodeString text;
-      RETURN_IF_HELPER_FAILS(parseText(source, index, parseError, errorCode, text));
+      RETURN_IF_HELPER_FAILS(parseText(source, index, parseError, errorCode));
       break;
     }
     }
@@ -1005,14 +1016,11 @@ static void parseSelectors(const UnicodeString& source,
   // Restore precondition
   CHECK_BOUNDS(source, index, parseError, errorCode);
 
-  // At least one selector is required
-  if (source[index] != '{') {
-    ERROR(parseError, errorCode, index);
-    return;
-  }
 
+  bool selectorsEmpty = true;
   // Parse selectors
-  while(source[index] == '{') {
+  while(source[index] == LEFT_CURLY_BRACE) {
+    selectorsEmpty = false;
     RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
     // Restore precondition
     CHECK_BOUNDS(source, index, parseError, errorCode);
@@ -1023,18 +1031,21 @@ static void parseSelectors(const UnicodeString& source,
     CHECK_BOUNDS(source, index, parseError, errorCode);
   }
 
+  // At least one selector is required
+  if (selectorsEmpty) {
+    ERROR(parseError, errorCode, index);
+    return;
+  }
+
   // Parse variants
   RETURN_IF_HELPER_FAILS(parseWhitespace(source, index, parseError, errorCode));
   // Restore precondition
   CHECK_BOUNDS(source, index, parseError, errorCode);
 
-  // At least one variant is required
-  if (!nextTokenIs(ID_WHEN, source, index)) {
-    ERROR(parseError, errorCode, index);
-    return;
-  }
+  bool empty = true;
 
   while (nextTokenIs(ID_WHEN, source, index)) {
+    empty = false;
     // Consume the "when"
     parseToken(ID_WHEN, source, index, parseError, errorCode);
     // Restore precondition
@@ -1056,6 +1067,11 @@ static void parseSelectors(const UnicodeString& source,
     // Restore precondition
     CHECK_BOUNDS(source, index, parseError, errorCode);
   }
+
+  // At least one variant is required
+  if (empty) {
+    ERROR(parseError, errorCode, index);
+  }
 }
 
 /*
@@ -1071,7 +1087,7 @@ static void parseBody(const UnicodeString& source,
 
   // pattern or selectors
   switch (source[index]) {
-    case '{': {
+    case LEFT_CURLY_BRACE: {
       // Pattern
       RETURN_IF_HELPER_FAILS(parsePattern(source, index, parseError, errorCode));
       return;

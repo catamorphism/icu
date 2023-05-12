@@ -143,6 +143,8 @@ UnicodeString jsonTestCasesValid[] = {
 
 #define NUM_VALID_JSON_TEST_CASES 50
 
+// TODO use null-terminated array and removed the #defined lengths
+
 // TODO: rename this and add comment saying "these came from [whatever .java file],
 // to avoid confusion
 UnicodeString jsonTestCasesInvalid[] = {
@@ -176,7 +178,7 @@ UnicodeString jsonTestCasesInvalid[] = {
                 "match {|x|} when * foo",
                 "match {|x|} when * {foo} extra",
                 "match |x| when * {foo}",
-                "match {$foo} {$bar} when * {foo}"
+                "{}"
 };
 
 // This has to be kept in sync! Yuck!
@@ -212,7 +214,7 @@ int32_t errorOffsets[] = {
   -1, // case arm has no rhs
   25, // context requires either a "when" keyword or whitespace
   6, // need an expression to match on (`|x|` isn't an expression)
-  28, // need a literal, variable or annotation inside the {} for an expression
+  1, // parsed as pattern -> text; text is empty
 };
 
 #define NUM_INVALID_JSON_TEST_CASES 30
@@ -242,10 +244,10 @@ void
 TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
                                   const char* &name, char* /*par*/) {
     TESTCASE_AUTO_BEGIN;
-    TESTCASE_AUTO(testComplexMessage);
     TESTCASE_AUTO(testInvalidJsonPatterns);
     TESTCASE_AUTO(testValidJsonPatterns);
     TESTCASE_AUTO(testValidPatterns);
+    TESTCASE_AUTO(testComplexMessage);
     TESTCASE_AUTO_END;
 }
 
