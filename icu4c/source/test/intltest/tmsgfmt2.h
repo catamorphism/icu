@@ -1,10 +1,6 @@
 // © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-/********************************************************************
- * COPYRIGHT: 
- * Copyright (c) 1997-2016, International Business Machines Corporation and
- * others. All Rights Reserved.
- ********************************************************************/
+
 #ifndef _TESTMESSAGEFORMAT2
 #define _TESTMESSAGEFORMAT2
 
@@ -18,20 +14,15 @@
 #include "unicode/parseerr.h"
 #include "intltest.h"
 
-/*
-
-#include "unicode/msgfmt2.h"
-*/
-
 /**
- * TestMessageFormat tests MessageFormat
+ * TestMessageFormat2 tests MessageFormat2
  */
 class TestMessageFormat2: public IntlTest {
 public:
     void runIndexedTest( int32_t index, UBool exec, const char* &name, char* par = NULL ) override;
 
     /** 
-     * test MessageFormat with various given patterns
+     * test MessageFormat2 with various given patterns
      **/
     void testStaticFormat2(void);
     void testComplexMessage(void);

@@ -1,13 +1,5 @@
 // © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-/*
-* Copyright (C) 2007-2013, International Business Machines Corporation and
-* others. All Rights Reserved.
-********************************************************************************
-*
-* File MSGFMT2.H
-*
-*******************************************************************************/
 
 #ifndef U_HIDE_DEPRECATED_API
 
@@ -40,7 +32,6 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/syntax.md
 
 class U_I18N_API MessageFormat2 : public Format {
   public:
-
     /**
      * Constructs a new MessageFormat2 using the given pattern and the
      * default locale.
@@ -54,9 +45,7 @@ class U_I18N_API MessageFormat2 : public Format {
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    MessageFormat2(const UnicodeString &pattern,
-                   UParseError &parseError,
-                   UErrorCode &status);
+    MessageFormat2(const UnicodeString &pattern, UParseError &parseError, UErrorCode &status);
 
     /**
      * Destructor.
@@ -67,20 +56,17 @@ class U_I18N_API MessageFormat2 : public Format {
     virtual ~MessageFormat2();
 
     // Not yet implemented
-    virtual bool operator==(const Format& other) const override;
+    virtual bool operator==(const Format &other) const override;
     // Not yet implemented
-    virtual bool operator!=(const Format& other) const;
+    virtual bool operator!=(const Format &other) const;
 
     // Not yet implemented
-    virtual UnicodeString& format(const Formattable& obj,
-                                  UnicodeString& appendTo,
-                                  FieldPosition& pos,
-                                  UErrorCode& status) const override;
+    virtual UnicodeString &format(const Formattable &obj, UnicodeString &appendTo, FieldPosition &pos,
+                                  UErrorCode &status) const override;
 
     // Not yet implemented
-    virtual void parseObject(const UnicodeString& source,
-                             Formattable& result,
-                             ParsePosition& pos) const override;
+    virtual void parseObject(const UnicodeString &source, Formattable &result,
+                             ParsePosition &pos) const override;
 
     /**
      * Clones this Format object polymorphically.  The caller owns the
@@ -90,7 +76,7 @@ class U_I18N_API MessageFormat2 : public Format {
      * @deprecated This API is for technology preview only.
      */
 
-    virtual MessageFormat2* clone() const override;
+    virtual MessageFormat2 *clone() const override;
 
     /**
      * Constructs a new MessageFormat2 from an existing one.
@@ -98,9 +84,9 @@ class U_I18N_API MessageFormat2 : public Format {
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    MessageFormat2(const MessageFormat2&);
+    MessageFormat2(const MessageFormat2 &);
 
-   /**
+    /**
      * Returns a unique class ID POLYMORPHICALLY.  Pure virtual override.
      * This method is to implement a simple version of RTTI, since not all
      * C++ compilers support genuine RTTI.  Polymorphic operator==() and
@@ -130,12 +116,12 @@ class U_I18N_API MessageFormat2 : public Format {
     MessageFormat2() = delete; // default constructor not implemented
 
     // Do not define default assignment operator
-    const MessageFormat2& operator=(const MessageFormat2&) = delete;
+    const MessageFormat2 &operator=(const MessageFormat2 &) = delete;
 
     /*
       TODO: For now, this should really be called "validate()" rather than "parse()".
      */
-    void parse(const UnicodeString &, UParseError&, UErrorCode&) const;
+    void parse(const UnicodeString &, UParseError &, UErrorCode &) const;
 }; // class MessageFormat2
 
 U_NAMESPACE_END
@@ -147,4 +133,4 @@ U_NAMESPACE_END
 #endif // MSGFMT2_H
 
 #endif // U_HIDE_DEPRECATED_API
-//eof
+// eof
