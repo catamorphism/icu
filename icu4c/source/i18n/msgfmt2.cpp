@@ -9,36 +9,36 @@
 #include "uvector.h" // U_ASSERT
 
 // Syntactically significant characters
-#define LEFT_CURLY_BRACE ((UChar)0x007B)
-#define RIGHT_CURLY_BRACE ((UChar)0x007D)
-#define SPACE ((UChar)0x0020)
-#define HTAB ((UChar)0x0009)
-#define CR ((UChar)0x000D)
-#define LF ((UChar)0x000A)
-#define BACKSLASH ((UChar)0x005C)
-#define PIPE ((UChar)0x007C)
-#define EQUALS ((UChar)0x003D)
-#define DOLLAR ((UChar)0x0024)
-#define COLON ((UChar)0x003A)
-#define PLUS ((UChar)0x002B)
-#define HYPHEN ((UChar)0x002D)
-#define PERIOD ((UChar)0x002E)
-#define UNDERSCORE ((UChar)0x005F)
+#define LEFT_CURLY_BRACE ((UChar32)0x007B)
+#define RIGHT_CURLY_BRACE ((UChar32)0x007D)
+#define SPACE ((UChar32)0x0020)
+#define HTAB ((UChar32)0x0009)
+#define CR ((UChar32)0x000D)
+#define LF ((UChar32)0x000A)
+#define BACKSLASH ((UChar32)0x005C)
+#define PIPE ((UChar32)0x007C)
+#define EQUALS ((UChar32)0x003D)
+#define DOLLAR ((UChar32)0x0024)
+#define COLON ((UChar32)0x003A)
+#define PLUS ((UChar32)0x002B)
+#define HYPHEN ((UChar32)0x002D)
+#define PERIOD ((UChar32)0x002E)
+#define UNDERSCORE ((UChar32)0x005F)
 
 // Both used (in a `key` context) and reserved (in an annotation context)
-#define ASTERISK ((UChar)0x002A)
+#define ASTERISK ((UChar32)0x002A)
 
 // Reserved sigils
-#define BANG ((UChar)0x0021)
-#define AT ((UChar)0x0040)
-#define POUND ((UChar)0x0023)
-#define PERCENT ((UChar)0x0025)
-#define CARET ((UChar)0x005E)
-#define AMPERSAND ((UChar)0x0026)
-#define LESS_THAN ((UChar)0x003C)
-#define GREATER_THAN ((UChar)0x003E)
-#define QUESTION ((UChar)0x003F)
-#define TILDE ((UChar)0x007E)
+#define BANG ((UChar32)0x0021)
+#define AT ((UChar32)0x0040)
+#define POUND ((UChar32)0x0023)
+#define PERCENT ((UChar32)0x0025)
+#define CARET ((UChar32)0x005E)
+#define AMPERSAND ((UChar32)0x0026)
+#define LESS_THAN ((UChar32)0x003C)
+#define GREATER_THAN ((UChar32)0x003E)
+#define QUESTION ((UChar32)0x003F)
+#define TILDE ((UChar32)0x007E)
 
 
 // TODO: rename files
@@ -47,15 +47,15 @@ U_NAMESPACE_BEGIN
 
 // MessageFormat2 uses three keywords: `let`, `when`, and `match`.
 
-static const UChar ID_LET[] = {
+static const UChar32 ID_LET[] = {
     0x6C, 0x65, 0x74, 0 /* "let" */
 };
 
-static const UChar ID_WHEN[] = {
+static const UChar32 ID_WHEN[] = {
     0x77, 0x68, 0x65, 0x6E, 0 /* "when" */
 };
 
-static const UChar ID_MATCH[] = {
+static const UChar32 ID_MATCH[] = {
     0x6D, 0x61, 0x74, 0x63, 0x68, 0 /* "match" */
 };
 
@@ -128,13 +128,13 @@ static void setParseError(UParseError &parseError, uint32_t index) {
 // Predicates
 
 // Returns true if `c` is in the interval [`first`, `last`]
-static bool inRange(UChar c, UChar first, UChar last) {
+static bool inRange(UChar32 c, UChar32 first, UChar32 last) {
     U_ASSERT(first < last);
-    return (c >= first && c <= last);
+    return c >= first && c <= last;
 }
 
 // See `s` in the MessageFormat2 grammar
-static bool isWhitespace(UChar c) {
+static bool isWhitespace(UChar32 c) {
     switch (c) {
     case SPACE:
     case HTAB:
@@ -158,16 +158,15 @@ static bool isWhitespace(UChar c) {
   `isNameChar()`      : `name-char`
   `isLiteralChar()`   : `literal-char`
 */
-static bool isTextChar(UChar c) {
-    return (inRange(c, 0x0000, 0x005B)    // Omit backslash
-            || inRange(c, 0x005D, 0x007A) // Omit {
-            || c == 0x007C                // }
-            || inRange(c, 0x007E, 0xD7FF) // Omit surrogates
-            || c >= 0xE000);
-    //           || inRange(c, 0xE000, 0x10FFFF));
+static bool isTextChar(UChar32 c) {
+    return inRange(c, 0x0000, 0x005B)    // Omit backslash
+           || inRange(c, 0x005D, 0x007A) // Omit {
+           || c == 0x007C                // }
+           || inRange(c, 0x007E, 0xD7FF) // Omit surrogates
+           || inRange(c, 0xE000, 0x10FFFF);
 }
 
-static bool isReservedStart(UChar c) {
+static bool isReservedStart(UChar32 c) {
     switch (c) {
     case BANG:
     case AT:
@@ -186,45 +185,42 @@ static bool isReservedStart(UChar c) {
     }
 }
 
-static bool isReservedChar(UChar c) {
-    return (inRange(c, 0x0000, 0x0008)    // Omit HTAB and LF
-            || inRange(c, 0x000B, 0x000C) // Omit CR
-            || inRange(c, 0x000E, 0x0019) // Omit SP
-            || inRange(c, 0x0021, 0x005B) // Omit backslash
-            || inRange(c, 0x005D, 0x007A) // Omit { | }
-            || inRange(c, 0x007E, 0xD7FF) // Omit surrogates
-            || c >= 0xE000);
+static bool isReservedChar(UChar32 c) {
+    return inRange(c, 0x0000, 0x0008)    // Omit HTAB and LF
+           || inRange(c, 0x000B, 0x000C) // Omit CR
+           || inRange(c, 0x000E, 0x0019) // Omit SP
+           || inRange(c, 0x0021, 0x005B) // Omit backslash
+           || inRange(c, 0x005D, 0x007A) // Omit { | }
+           || inRange(c, 0x007E, 0xD7FF) // Omit surrogates
+           || inRange(c, 0xE000, 0x10FFFF);
 }
 
-static bool isAlpha(UChar c) { return (inRange(c, 0x0041, 0x005A) || inRange(c, 0x0061, 0x007A)); }
+static bool isAlpha(UChar32 c) { return inRange(c, 0x0041, 0x005A) || inRange(c, 0x0061, 0x007A); }
 
-static bool isDigit(UChar c) { return (inRange(c, 0x0030, 0x0039)); }
+static bool isDigit(UChar32 c) { return inRange(c, 0x0030, 0x0039); }
 
-static bool isNameStart(UChar c) {
-    return (isAlpha(c) || c == UNDERSCORE || inRange(c, 0x00C0, 0x00D6) || inRange(c, 0x00D8, 0x00F6) ||
-            inRange(c, 0x00F8, 0x02FF) || inRange(c, 0x0370, 0x037D) || inRange(c, 0x037F, 0x1FFF) ||
-            inRange(c, 0x200C, 0x200D) || inRange(c, 0x2070, 0x218F) || inRange(c, 0x2C00, 0x2FEF) ||
-            inRange(c, 0x3001, 0xD7FF) || inRange(c, 0xF900, 0xFDCF) || inRange(c, 0xFDF0, 0xFFFD));
-    // inRange(c, 0x10000, 0xEFFFF)); // Not sure about this -- spec says %x10000-EFFFF, but 0xEFFFF is
-    // more than the max UChar
-    // TODO
+static bool isNameStart(UChar32 c) {
+    return isAlpha(c) || c == UNDERSCORE || inRange(c, 0x00C0, 0x00D6) || inRange(c, 0x00D8, 0x00F6) ||
+           inRange(c, 0x00F8, 0x02FF) || inRange(c, 0x0370, 0x037D) || inRange(c, 0x037F, 0x1FFF) ||
+           inRange(c, 0x200C, 0x200D) || inRange(c, 0x2070, 0x218F) || inRange(c, 0x2C00, 0x2FEF) ||
+           inRange(c, 0x3001, 0xD7FF) || inRange(c, 0xF900, 0xFDCF) || inRange(c, 0xFDF0, 0xFFFD) ||
+           inRange(c, 0x10000, 0xEFFFF);
 }
 
-static bool isNameChar(UChar c) {
-    return (isNameStart(c) || isDigit(c) || c == HYPHEN || c == PERIOD || c == COLON || c == 0x00B7 ||
-            inRange(c, 0x0300, 0x036F) || inRange(c, 0x203F, 0x2040));
+static bool isNameChar(UChar32 c) {
+    return isNameStart(c) || isDigit(c) || c == HYPHEN || c == PERIOD || c == COLON || c == 0x00B7 ||
+           inRange(c, 0x0300, 0x036F) || inRange(c, 0x203F, 0x2040);
 }
 
-static bool isLiteralChar(UChar c) {
-    return (inRange(c, 0x0000, 0x005B)    // Omit backslash
-            || inRange(c, 0x005D, 0x007B) // Omit pipe
-            || inRange(c, 0x007D, 0xD7FF) // Omit surrogates
-            || c >= 0xE000);
-    //            || inRange(c, 0xE000, 0x10FFFF)); see comment in isNameStart()
+static bool isLiteralChar(UChar32 c) {
+    return inRange(c, 0x0000, 0x005B)    // Omit backslash
+           || inRange(c, 0x005D, 0x007B) // Omit pipe
+           || inRange(c, 0x007D, 0xD7FF) // Omit surrogates
+           || inRange(c, 0xE000, 0x10FFFF);
 }
 
 // Returns true iff `c` can begin a `function` nonterminal
-static bool isFunctionStart(UChar c) {
+static bool isFunctionStart(UChar32 c) {
     switch (c) {
     case COLON:
     case PLUS:
@@ -238,7 +234,7 @@ static bool isFunctionStart(UChar c) {
 }
 
 // Returns true iff `c` can begin an `annotation` nonterminal
-static bool isAnnotationStart(UChar c) {
+static bool isAnnotationStart(UChar32 c) {
     return isFunctionStart(c) || isReservedStart(c);
 }
 
@@ -328,7 +324,7 @@ static void parseOptionalWhitespace(const UnicodeString &source,
 }
 
 // Consumes a single character, signaling an error if `source[index]` != `c`
-static void parseToken(UChar c,
+static void parseToken(UChar32 c,
                        const UnicodeString &source,
                        uint32_t &index,
                        UParseError &parseError,
@@ -351,7 +347,7 @@ static void parseToken(UChar c,
    the string beginning at `source[index]`
 */
 template <size_t N>
-static void parseToken(const UChar (&token)[N],
+static void parseToken(const UChar32 (&token)[N],
                        const UnicodeString &source,
                        uint32_t &index,
                        UParseError &parseError,
@@ -381,7 +377,7 @@ static void parseToken(const UChar (&token)[N],
    then consumes optional whitespace again
 */
 template <size_t N>
-static void parseTokenWithWhitespace(const UChar (&token)[N],
+static void parseTokenWithWhitespace(const UChar32 (&token)[N],
                                      const UnicodeString &source,
                                      uint32_t &index,
                                      UParseError &parseError,
@@ -402,7 +398,7 @@ static void parseTokenWithWhitespace(const UChar (&token)[N],
    `source[index']`),
    then consumes optional whitespace again
 */
-static void parseTokenWithWhitespace(UChar c,
+static void parseTokenWithWhitespace(UChar32 c,
                                      const UnicodeString &source,
                                      uint32_t &index,
                                      UParseError &parseError,

@@ -118,9 +118,7 @@ class U_I18N_API MessageFormat2 : public Format {
     // Do not define default assignment operator
     const MessageFormat2 &operator=(const MessageFormat2 &) = delete;
 
-    /*
-      TODO: For now, this should really be called "validate()" rather than "parse()".
-     */
+    // The parser currently just validates the message
     void parse(const UnicodeString &, UParseError &, UErrorCode &) const;
 }; // class MessageFormat2
 
