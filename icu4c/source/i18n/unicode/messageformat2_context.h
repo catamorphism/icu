@@ -368,9 +368,6 @@ class MessageFormatter;
 
 class MessageContext : public UMemory {
 public:
-//    bool hasVar(const VariableName&) const;
-//    const Formattable& getVar(const VariableName& var) const;
-    
     static MessageContext* create(const MessageFormatter& mf, const MessageArguments& args, Errors& errors, UErrorCode& errorCode);
 
     bool isCustomFormatter(const FunctionName&) const;
