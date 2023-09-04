@@ -117,7 +117,7 @@ private:
 class PersonNameFormatterFactory : public FormatterFactory {
     
     public:
-    Formatter* createFormatter(const Locale&, UErrorCode&);
+    Formatter* createFormatter(const Locale&, UErrorCode&) override;
 };
 
 class Person : public UObject {
@@ -131,17 +131,17 @@ class Person : public UObject {
 
 class PersonNameFormatter : public Formatter {
     public:
-    void format(FormattingContext&, UErrorCode& errorCode) const;
+    void format(FormattingContext&, UErrorCode& errorCode) const override;
 };
 
 class GrammarCasesFormatterFactory : public FormatterFactory {
     public:
-    Formatter* createFormatter(const Locale&, UErrorCode&);
+    Formatter* createFormatter(const Locale&, UErrorCode&) override;
 };
 
 class GrammarCasesFormatter : public Formatter {
     public:
-    void format(FormattingContext&, UErrorCode& errorCode) const;
+    void format(FormattingContext&, UErrorCode& errorCode) const override;
     static FunctionRegistry* customRegistry(UErrorCode&);
     private:
     void getDativeAndGenitive(const UnicodeString&, UnicodeString& result) const;
@@ -149,12 +149,12 @@ class GrammarCasesFormatter : public Formatter {
 
 class ListFormatterFactory : public FormatterFactory {
     public:
-    Formatter* createFormatter(const Locale&, UErrorCode&);
+    Formatter* createFormatter(const Locale&, UErrorCode&) override;
 };
 
 class ListFormatter : public Formatter {
     public:
-    void format(FormattingContext&, UErrorCode& errorCode) const;
+    void format(FormattingContext&, UErrorCode& errorCode) const override;
     static FunctionRegistry* customRegistry(UErrorCode&);
     private:
     friend class ListFormatterFactory;
@@ -164,12 +164,12 @@ class ListFormatter : public Formatter {
 
 class ResourceManagerFactory : public FormatterFactory {
     public:
-    Formatter* createFormatter(const Locale&, UErrorCode&);
+    Formatter* createFormatter(const Locale&, UErrorCode&) override;
 };
 
 class ResourceManager : public Formatter {
     public:
-    void format(FormattingContext&, UErrorCode& errorCode) const;
+    void format(FormattingContext&, UErrorCode& errorCode) const override;
     static FunctionRegistry* customRegistry(UErrorCode&);
     static Hashtable* properties(UErrorCode&);
     static UnicodeString propertiesAsString(const Hashtable&);
@@ -183,7 +183,7 @@ class ResourceManager : public Formatter {
 
 class TemperatureFormatterFactory : public FormatterFactory {
     public:
-    Formatter* createFormatter(const Locale&, UErrorCode&);
+    Formatter* createFormatter(const Locale&, UErrorCode&) override;
     TemperatureFormatterFactory() : constructCount(0), formatCount(0), fFormatterCount(0), cFormatterCount(0) {}
 
     int32_t constructCount;
@@ -194,7 +194,7 @@ class TemperatureFormatterFactory : public FormatterFactory {
 
 class TemperatureFormatter : public Formatter {
     public:
-    void format(FormattingContext&, UErrorCode& errorCode) const;
+    void format(FormattingContext&, UErrorCode& errorCode) const override;
     static FunctionRegistry* customRegistry(UErrorCode&);
     ~TemperatureFormatter();
     private:
