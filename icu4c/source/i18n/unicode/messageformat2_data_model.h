@@ -507,7 +507,7 @@ public:
         friend class ImmutableVector<Key>;
         friend class VariantMap;
 
-        Key(const Key& other) : wildcard(other.wildcard), contents(other.contents) {};
+        Key(const Key& other) : wildcard(other.wildcard), contents(other.contents) {}
         void toString(UnicodeString& result) const;
     
         // Wildcard constructor

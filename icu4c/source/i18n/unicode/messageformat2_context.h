@@ -75,7 +75,7 @@ class EmptyEnvironment : public Environment {
 private:
     friend class Environment;
 
-    const Closure* lookup(const VariableName&) const;
+    const Closure* lookup(const VariableName&) const override;
     static EmptyEnvironment* create(UErrorCode&);
     virtual ~EmptyEnvironment();
     // Adopts its closure argument
@@ -87,7 +87,7 @@ private:
 class NonEmptyEnvironment : public Environment {
 private:
     friend class Environment;
-    const Closure* lookup(const VariableName&) const;
+    const Closure* lookup(const VariableName&) const override;
     // Adopts its closure argument
     static NonEmptyEnvironment* create(const VariableName&, Closure*, const Environment*, UErrorCode&);
     virtual ~NonEmptyEnvironment();

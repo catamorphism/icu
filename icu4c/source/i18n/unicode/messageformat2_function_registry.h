@@ -290,13 +290,13 @@ class StandardFunctions {
 
     class DateTimeFactory : public FormatterFactory {
     public:
-        Formatter* createFormatter(const Locale& locale, UErrorCode& status);
+        Formatter* createFormatter(const Locale& locale, UErrorCode& status) override;
         virtual ~DateTimeFactory();
     };
 
     class DateTime : public Formatter {
     public:
-        void format(FormattingContext& context, UErrorCode& status) const;
+        void format(FormattingContext& context, UErrorCode& status) const override;
         virtual ~DateTime();
 
     private:
@@ -308,13 +308,13 @@ class StandardFunctions {
 
     class NumberFactory : public FormatterFactory {
     public:
-        Formatter* createFormatter(const Locale& locale, UErrorCode& status);
+        Formatter* createFormatter(const Locale& locale, UErrorCode& status) override;
         virtual ~NumberFactory();
     };
         
     class Number : public Formatter {
     public:
-        void format(FormattingContext& context, UErrorCode& status) const;
+        void format(FormattingContext& context, UErrorCode& status) const override;
         virtual ~Number();
 
     private:
@@ -328,13 +328,13 @@ class StandardFunctions {
 
     class IdentityFactory : public FormatterFactory {
     public:
-        Formatter* createFormatter(const Locale& locale, UErrorCode& status);
+        Formatter* createFormatter(const Locale& locale, UErrorCode& status) override;
         virtual ~IdentityFactory();
     };
 
     class Identity : public Formatter {
     public:
-        void format(FormattingContext& context, UErrorCode& status) const;
+        void format(FormattingContext& context, UErrorCode& status) const override;
         virtual ~Identity();
         
     private:
@@ -346,7 +346,7 @@ class StandardFunctions {
 
     class PluralFactory : public SelectorFactory {
     public:
-        Selector* createSelector(const Locale& locale, UErrorCode& status) const;
+        Selector* createSelector(const Locale& locale, UErrorCode& status) const override;
         virtual ~PluralFactory();
 
     private:
@@ -358,7 +358,7 @@ class StandardFunctions {
 
     class Plural : public Selector {
     public:
-        void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const;
+        void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const override;
         virtual ~Plural();
 
     private:
@@ -373,13 +373,13 @@ class StandardFunctions {
 
     class TextFactory : public SelectorFactory {
     public:
-        Selector* createSelector(const Locale& locale, UErrorCode& status) const;
+        Selector* createSelector(const Locale& locale, UErrorCode& status) const override;
         virtual ~TextFactory();
     };
 
     class TextSelector : public Selector {
     public:
-        void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const;
+        void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const override;
         virtual ~TextSelector();
 
     private:

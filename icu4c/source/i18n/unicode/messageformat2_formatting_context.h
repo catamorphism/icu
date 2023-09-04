@@ -414,8 +414,8 @@ class ExpressionContext : public FormattingContext {
     void setInput(const Formattable&);
     void setInput(const UnicodeString&);
     void setObjectInput(UObject*);
-    void setOutput(const UnicodeString&);
-    void setOutput(number::FormattedNumber&&);
+    void setOutput(const UnicodeString&) override;
+    void setOutput(number::FormattedNumber&&) override;
 
     // If there is a function name, clear it and
     // call the function, setting the input and/or output appropriately
@@ -444,32 +444,32 @@ class ExpressionContext : public FormattingContext {
     bool isFallback() const;
 
     bool hasInput() const { return hasFormattableInput() || hasObjectInput(); }
-    UBool hasFormattableInput() const;
-    UBool hasObjectInput() const;
-    const Formattable& getFormattableInput() const;
-    const UObject& getObjectInput() const;
+    UBool hasFormattableInput() const override;
+    UBool hasObjectInput() const override;
+    const Formattable& getFormattableInput() const override;
+    const UObject& getObjectInput() const override;
 
-    UBool hasStringOutput() const;
-    UBool hasNumberOutput() const;
+    UBool hasStringOutput() const override;
+    UBool hasNumberOutput() const override;
     bool hasOutput() { return (hasStringOutput() || hasNumberOutput()); }
     // Just gets existing output, doesn't force evaluation
-    const UnicodeString& getStringOutput() const;
-    const number::FormattedNumber& getNumberOutput() const;
+    const UnicodeString& getStringOutput() const override;
+    const number::FormattedNumber& getNumberOutput() const override;
     // Forces evaluation
-    void formatToString(const Locale&, UErrorCode&);
+    void formatToString(const Locale&, UErrorCode&) override;
 
-    UBool getStringOption(const UnicodeString&, UnicodeString&) const;
-    UBool getDoubleOption(const UnicodeString&, double&) const;
-    UBool getInt64Option(const UnicodeString&, int64_t&) const;
-    UBool hasObjectOption(const UnicodeString&) const;
-    const UObject& getObjectOption(const UnicodeString&) const;
+    UBool getStringOption(const UnicodeString&, UnicodeString&) const override;
+    UBool getDoubleOption(const UnicodeString&, double&) const override;
+    UBool getInt64Option(const UnicodeString&, int64_t&) const override;
+    UBool hasObjectOption(const UnicodeString&) const override;
+    const UObject& getObjectOption(const UnicodeString&) const override;
     // Function options iterator
-    int32_t firstOption() const;
-    int32_t optionsCount() const;
-    const Formattable* nextOption(int32_t&, UnicodeString&) const;
+    int32_t firstOption() const override;
+    int32_t optionsCount() const override;
+    const Formattable* nextOption(int32_t&, UnicodeString&) const override;
 
-    void setSelectorError(const UnicodeString&, UErrorCode&);
-    void setFormattingError(const UnicodeString&, UErrorCode&);
+    void setSelectorError(const UnicodeString&, UErrorCode&) override;
+    void setFormattingError(const UnicodeString&, UErrorCode&) override;
 
     virtual ~ExpressionContext();
 };
