@@ -354,21 +354,6 @@ void MessageFormatter::resolvePreferences(const UVector& res, const VariantMap& 
     }
 }
 
-/*
-static int32_t indexOf(const UnicodeString* matches, const UnicodeString& k) {
-    for (int32_t i = 0; i < matchesLen; i++) {
-        if (matches[i] == k) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-static bool contains(const UnicodeString* matches, int32_t matches, const UnicodeString& k) {
-    return (indexOf(matches, k) != -1);
-}
-*/
-
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#filter-variants
 // `pref` is a vector of vectors of strings; `vars` is a vector of PrioritizedVariants
 void filterVariants(const VariantMap& variants, const UVector& pref, UErrorCode &status, UVector& vars) {
