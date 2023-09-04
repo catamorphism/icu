@@ -66,7 +66,7 @@ class Environment : public UMemory {
 public:
     virtual const Closure* lookup(const VariableName&) const = 0;
     static Environment* create(UErrorCode&);
-    static Environment* create(const VariableName&, Closure*, const Environment&, UErrorCode&);
+    static Environment* create(const VariableName&, Closure*, Environment*, UErrorCode&);
     virtual ~Environment();
 };
 
@@ -79,7 +79,7 @@ private:
     static EmptyEnvironment* create(UErrorCode&);
     virtual ~EmptyEnvironment();
     // Adopts its closure argument
-    static NonEmptyEnvironment* create(const VariableName&, Closure*, const Environment&, UErrorCode&);
+    static NonEmptyEnvironment* create(const VariableName&, Closure*, Environment*, UErrorCode&);
 
     EmptyEnvironment() {}
 };
@@ -89,18 +89,18 @@ private:
     friend class Environment;
     const Closure* lookup(const VariableName&) const;
     // Adopts its closure argument
-    static NonEmptyEnvironment* create(const VariableName&, Closure*, const Environment&, UErrorCode&);
+    static NonEmptyEnvironment* create(const VariableName&, Closure*, const Environment*, UErrorCode&);
     virtual ~NonEmptyEnvironment();
 private:
     friend class Environment;
 
-    NonEmptyEnvironment(const VariableName& v, Closure* c, const Environment& e) : var(v), rhs(c), parent(e) {}
+    NonEmptyEnvironment(const VariableName& v, Closure* c, Environment* e) : var(v), rhs(c), parent(e) {}
 
     // Maps VariableName onto Closure*
     // Chain of linked environments
     VariableName var;
     const LocalPointer<Closure> rhs; // should be valid
-    const Environment& parent;
+    const LocalPointer<Environment> parent;
 };
 
 // Errors
@@ -182,7 +182,7 @@ class Errors : public UMemory {
  * @deprecated This API is for technology preview only.
  */
 
-class U_I18N_API MessageArguments : public UMemory {
+class U_I18N_API MessageArguments : public UObject {
 public:
     /**
      * The mutable Builder class allows each message argument to be initialized
@@ -292,6 +292,13 @@ public:
          * @deprecated This API is for technology preview only.
          */
         MessageArguments* build(UErrorCode& status) const;
+        /**
+         * Destructor.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        virtual ~Builder();
     private:
         friend class MessageArguments;
         Builder(UErrorCode&);
@@ -301,6 +308,7 @@ public:
         // own the values
         // This is because a Formattable that wraps an object can't
         // be copied
+        // Here, the values are UObjects*
         LocalPointer<Hashtable> objectContents;
     }; // class MessageArguments::Builder
 
@@ -314,12 +322,20 @@ public:
      * @deprecated This API is for technology preview only.
      */
     static Builder* builder(UErrorCode& status);
-
+    /**
+     * Destructor.
+     *
+     * @internal ICU 74.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    virtual ~MessageArguments();
 private:
     friend class MessageContext;
 
-    bool has(const VariableName&) const;
-    const Formattable& get(const VariableName&) const;
+    bool hasFormattable(const VariableName&) const;
+    bool hasObject(const VariableName&) const;
+    const Formattable& getFormattable(const VariableName&) const;
+    const UObject* getObject(const VariableName&) const;
 
     MessageArguments& add(const UnicodeString&, Formattable*, UErrorCode&);
     MessageArguments(Hashtable* c, Hashtable* o) : contents(c), objectContents(o) {}
@@ -352,8 +368,8 @@ class MessageFormatter;
 
 class MessageContext : public UMemory {
 public:
-    bool hasVar(const VariableName&) const;
-    const Formattable& getVar(const VariableName& var) const;
+//    bool hasVar(const VariableName&) const;
+//    const Formattable& getVar(const VariableName& var) const;
     
     static MessageContext* create(const MessageFormatter& mf, const MessageArguments& args, Errors& errors, UErrorCode& errorCode);
 

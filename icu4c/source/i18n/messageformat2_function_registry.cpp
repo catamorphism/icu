@@ -20,7 +20,6 @@ Formatter::~Formatter() {}
 Selector::~Selector() {}
 FormatterFactory::~FormatterFactory() {}
 SelectorFactory::~SelectorFactory() {}
-StandardFunctions::PluralFactory::~PluralFactory() {}
 
 FunctionRegistry* FunctionRegistry::Builder::build(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
@@ -36,9 +35,7 @@ FunctionRegistry* FunctionRegistry::Builder::build(UErrorCode& errorCode) {
 /* static */ FunctionRegistry::Builder* FunctionRegistry::builder(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
     LocalPointer<FunctionRegistry::Builder> result(new FunctionRegistry::Builder(errorCode));
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
+    NULL_ON_ERROR(errorCode);
     return result.orphan();
 }
 
@@ -63,7 +60,6 @@ FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const Function
         errorCode = U_MEMORY_ALLOCATION_ERROR;
         return *this;
     }
-
     selectors->put(selectorName.toString(), selectorFactory, errorCode);
     return *this;
 }
@@ -74,10 +70,11 @@ FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const Functio
         errorCode = U_MEMORY_ALLOCATION_ERROR;
         return *this;
     }
-
     formatters->put(formatterName.toString(), formatterFactory, errorCode);
     return *this;
 }
+
+FunctionRegistry::Builder::~Builder() {}
 
 FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterName) const {
     // Caller must check for null
@@ -160,6 +157,8 @@ bool tryFormattableAsNumber(const Formattable& optionValue, int64_t& result) {
     }
     return false;
 }
+
+FunctionRegistry::~FunctionRegistry() {}
 
 // Specific formatter implementations
 
@@ -282,6 +281,9 @@ void StandardFunctions::Number::format(FormattingContext& context, UErrorCode& e
     context.setOutput(std::move(numberResult));
 }
 
+StandardFunctions::Number::~Number() {}
+StandardFunctions::NumberFactory::~NumberFactory() {}
+
 // --------- PluralFactory
 
 Selector* StandardFunctions::PluralFactory::createSelector(const Locale& locale, UErrorCode& errorCode) const {
@@ -290,7 +292,7 @@ Selector* StandardFunctions::PluralFactory::createSelector(const Locale& locale,
     // Look up plural rules by locale
     LocalPointer<PluralRules> rules(PluralRules::forLocale(locale, type, errorCode));
     NULL_ON_ERROR(errorCode);
-    Selector* result = new Plural(locale, type, rules.orphan());
+    Selector* result = new Plural(locale, rules.orphan());
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
@@ -336,7 +338,7 @@ static void tryWithFormattable(const Locale& locale, const Formattable& value, d
     noMatch = false;
 }
 
-void StandardFunctions::Plural::selectKey(FormattingContext& context, const UnicodeString* keys/*[]*/, int32_t numKeys,  UnicodeString* prefs/*[]*/, int32_t& numMatching, UErrorCode& errorCode) const {
+void StandardFunctions::Plural::selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys,  UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& errorCode) const {
     CHECK_ERROR(errorCode);
 
     // No argument => return "NaN"
@@ -380,7 +382,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context, const Unic
     for (int32_t i = 0; i < numKeys; i++) {
         // Try parsing the key as a double
         UErrorCode localErrorCode = U_ZERO_ERROR;
-        strToDouble(keys[i], locale, keyAsDouble, localErrorCode);
+        strToDouble(*keys[i], locale, keyAsDouble, localErrorCode);
         if (U_SUCCESS(localErrorCode)) {
             if (valToCheck == keyAsDouble) {
                 prefs[numMatching++] = keys[i];
@@ -402,7 +404,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context, const Unic
     CHECK_ERROR(errorCode);
 
     for (int32_t i = 0; i < numKeys; i ++) {
-        if (match == keys[i]) {
+        if (match == *keys[i]) {
             prefs[numMatching++] = keys[i];
             break;
         }
@@ -410,6 +412,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context, const Unic
 }
 
 StandardFunctions::Plural::~Plural() {}
+StandardFunctions::PluralFactory::~PluralFactory() {}
 
 // --------- DateTimeFactory
 
@@ -498,6 +501,9 @@ void StandardFunctions::DateTime::format(FormattingContext& context, UErrorCode&
     context.setOutput(result);
 }
 
+StandardFunctions::DateTimeFactory::~DateTimeFactory() {}
+StandardFunctions::DateTime::~DateTime() {}
+
 // --------- TextFactory
 
 Selector* StandardFunctions::TextFactory::createSelector(const Locale& locale, UErrorCode& errorCode) const {
@@ -509,7 +515,7 @@ Selector* StandardFunctions::TextFactory::createSelector(const Locale& locale, U
     return result;
 }
 
-void StandardFunctions::TextSelector::selectKey(FormattingContext& context, const UnicodeString* keys/*[]*/, int32_t numKeys, UnicodeString* prefs/*[]*/, int32_t& numMatching, UErrorCode& errorCode) const {
+void StandardFunctions::TextSelector::selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& errorCode) const {
     CHECK_ERROR(errorCode);
 
     // Just compares the key and value as strings
@@ -534,7 +540,7 @@ void StandardFunctions::TextSelector::selectKey(FormattingContext& context, cons
     const UnicodeString& formattedValue = context.getStringOutput();
 
     for (int32_t i = 0; i < numKeys; i++) {
-        if (keys[i] == formattedValue) {
+        if (*keys[i] == formattedValue) {
             numMatching++;
             prefs[0] = keys[i];
             break;
@@ -542,6 +548,7 @@ void StandardFunctions::TextSelector::selectKey(FormattingContext& context, cons
     }
 }
 
+StandardFunctions::TextFactory::~TextFactory() {}
 StandardFunctions::TextSelector::~TextSelector() {}
 
 // --------- IdentityFactory
@@ -569,6 +576,7 @@ void StandardFunctions::Identity::format(FormattingContext& context, UErrorCode&
     context.formatToString(locale, errorCode);
 }
 
+StandardFunctions::IdentityFactory::~IdentityFactory() {}
 StandardFunctions::Identity::~Identity() {}
 
 } // namespace message2

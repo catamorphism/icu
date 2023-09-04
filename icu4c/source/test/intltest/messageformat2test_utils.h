@@ -15,8 +15,7 @@ class TestCase : public UMemory {
     const UnicodeString testName;
     const UnicodeString pattern;
     const Locale locale;
-    // Not owned by this!
-    const MessageArguments* arguments;
+    LocalPointer<MessageArguments> arguments;
 
     private:
     const UErrorCode expectedError;
@@ -68,8 +67,9 @@ class TestCase : public UMemory {
         U_ASSERT(hasCustomRegistry());
         return functionRegistry;
     }
+    virtual ~TestCase();
  
-    class Builder : public UMemory {
+    class Builder : public UObject {
         friend class TestCase;
 
         public:
@@ -148,12 +148,12 @@ class TestCase : public UMemory {
         }
         Builder& clearLocale() {
             if (locale.isValid()) {
-                locale.orphan();
+                locale.adoptInstead(nullptr);
             }
             return *this;
         }
 
-        Builder& setLocale(Locale loc, UErrorCode& errorCode) {
+        Builder& setLocale(const Locale& loc, UErrorCode& errorCode) {
             THIS_ON_ERROR(errorCode);
             Locale* l = new Locale(loc);
             if (l == nullptr) {
@@ -188,6 +188,7 @@ class TestCase : public UMemory {
             NULL_ON_ERROR(errorCode);
             return result.orphan();
         }
+        virtual ~Builder();
 
         private:
         UnicodeString testName;

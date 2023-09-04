@@ -21,7 +21,7 @@ U_NAMESPACE_BEGIN namespace message2 {
 // Defined for convenience, in case we end up using a different
 // representation in the data model for variable references and/or
 // variable definitions
-static UBool compareVariableName(const UElement e1, const UElement e2) {
+static inline UBool compareVariableName(const UElement e1, const UElement e2) {
     return uhash_compareUnicodeString(e1, e2);
 }
 
@@ -107,6 +107,13 @@ public:
      * @deprecated This API is for technology preview only.
      */
     ImmutableVector(const ImmutableVector<T>& other);
+    /**
+     * Destructor.
+     *
+     * @internal ICU 74.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    virtual ~ImmutableVector();
 
     /**
      * The mutable `ImmutableVector::Builder` class allows the list to be constructed
@@ -142,6 +149,7 @@ public:
          */
         ImmutableVector<T>* build(UErrorCode &errorCode) const;
 
+        virtual ~Builder();
     private:
         friend class ImmutableVector;
         LocalPointer<UVector> contents;
@@ -294,6 +302,13 @@ public:
          * @deprecated This API is for technology preview only.
          */
         OrderedMap<V>* build(UErrorCode& errorCode) const;
+        /**
+         * Destructor.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        virtual ~Builder();
     private:
         friend class OrderedMap;
         
@@ -309,6 +324,13 @@ public:
         LocalPointer<UVector> keys;
     }; // class OrderedMap<V>::Builder
 
+    /**
+     * Destructor.
+     *
+     * @internal ICU 74.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    virtual ~OrderedMap();
     static Builder* builder(UErrorCode &errorCode);
 
 private:

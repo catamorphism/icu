@@ -52,6 +52,8 @@ SelectorKeys::SelectorKeys(const SelectorKeys& other) : keys(new KeyList(*(other
     U_ASSERT(!other.isBogus());
 }
 
+SelectorKeys::Builder::~Builder() {}
+
 //------------------ VariableName
 
 UnicodeString VariableName::declaration() const {
@@ -59,6 +61,8 @@ UnicodeString VariableName::declaration() const {
     result += variableName;
     return result;
 }
+
+VariableName::~VariableName() {}
 
 //------------------ Literal
 
@@ -91,6 +95,16 @@ Literal::~Literal() {}
 /* static */ Operand* Operand::create(const Literal& lit, UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
     Operand* result = new Operand(lit);
+    if (result == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
+
+// Null operand
+/* static */ Operand* Operand::create(UErrorCode& errorCode) {
+    NULL_ON_ERROR(errorCode);
+    Operand* result = new Operand();
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
@@ -224,6 +238,8 @@ VariantMap::VariantMap(OrderedMap<Pattern>* vs, ImmutableVector<SelectorKeys>* k
     U_ASSERT(vs->size() == ks->length());
 }
 
+VariantMap::Builder::~Builder() {}
+
 // ------------ Reserved
 
 int32_t Reserved::numParts() const {
@@ -273,6 +289,8 @@ Reserved::Builder& Reserved::Builder::add(const Literal& part, UErrorCode &error
 
     return *this;
 }
+
+Reserved::Builder::~Builder() {}
 
 //------------------------ Operator
 
@@ -332,6 +350,12 @@ Operator::Builder& Operator::Builder::addOption(const UnicodeString &key, Operan
 
     U_ASSERT(value != nullptr);
     asReserved.adoptInstead(nullptr);
+    // Adopt the value so it can be deleted in the error case
+    LocalPointer<Operand> adoptedValue(value);
+    if (!adoptedValue.isValid()) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+        return *this;
+    }
     if (!options.isValid()) {
         options.adoptInstead(OptionMap::builder(errorCode));
         THIS_ON_ERROR(errorCode);
@@ -340,7 +364,7 @@ Operator::Builder& Operator::Builder::addOption(const UnicodeString &key, Operan
     if (options->has(key)) {
         errorCode = U_DUPLICATE_OPTION_NAME_ERROR;
     } else {
-        options->add(key, value, errorCode);
+        options->add(key, adoptedValue.orphan(), errorCode);
     }
     return *this;
 }
@@ -433,6 +457,8 @@ Operator::Operator(const FunctionName& f, OptionMap *l) : isReservedSequence(fal
     U_ASSERT(l != nullptr);
  }
 
+Operator::Builder::~Builder() {}
+
 // ------------ Expression
 
 
@@ -485,23 +511,15 @@ Expression* Expression::Builder::build(UErrorCode& errorCode) const {
         return nullptr;
     }
     LocalPointer<Expression> result;
-    Operand* exprRand;
-    if (rand.isValid()) {
-        exprRand = rand.getAlias();
+    if (rand.isValid() && rator.isValid()) {
+        result.adoptInstead(new Expression(*rator, *rand));
+    } else if (rand.isValid() && !rator.isValid()) {
+        result.adoptInstead(new Expression(*rand));
     } else {
-        U_ASSERT(rator.isValid());
-        exprRand = new Operand();
-    }
-    if (exprRand == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
+        // rator is valid, rand is not valid
+        result.adoptInstead(new Expression(*rator));
     }
 
-    if (rator.isValid()) {
-        result.adoptInstead(new Expression(*rator, *exprRand));
-    } else {
-        result.adoptInstead(new Expression(*exprRand));
-    }
     if (!result.isValid() || result->isBogus()) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
@@ -545,6 +563,8 @@ bool Expression::isBogus() const {
     U_ASSERT(!rator.isValid() || !rator->isBogus());
     return false;
 }
+
+Expression::Builder::~Builder() {}
 
 // ----------- PatternPart
 
@@ -618,6 +638,8 @@ Pattern::Builder& Pattern::Builder::add(PatternPart* part, UErrorCode &errorCode
     return *this;
 }
 
+Pattern::Builder::~Builder() {}
+
 // ---------------- Binding
 
 /* static */ Binding* Binding::create(const VariableName& var, Expression* e, UErrorCode& errorCode) {
@@ -638,6 +660,8 @@ const Expression& Binding::getValue() const {
 Binding::Binding(const Binding& other) : var(other.var), value(new Expression(*other.value)) {
     U_ASSERT(!other.isBogus());
 }
+
+Binding::~Binding() {}
 
 // --------------- MessageFormatDataModel
 
@@ -796,7 +820,38 @@ MessageFormatDataModel* MessageFormatDataModel::Builder::build(UErrorCode &error
 }
 
 MessageFormatDataModel::~MessageFormatDataModel() {}
-
+template<>
+ImmutableVector<Binding>::Builder::~Builder() {}
+template<>
+ImmutableVector<Binding>::~ImmutableVector() {}
+template<>
+ImmutableVector<Expression>::Builder::~Builder() {}
+template<>
+ImmutableVector<Expression>::~ImmutableVector() {}
+template<>
+ImmutableVector<Key>::Builder::~Builder() {}
+template<>
+ImmutableVector<Key>::~ImmutableVector() {}
+template<>
+ImmutableVector<Literal>::Builder::~Builder() {}
+template<>
+ImmutableVector<Literal>::~ImmutableVector() {}
+template<>
+ImmutableVector<PatternPart>::Builder::~Builder() {}
+template<>
+ImmutableVector<PatternPart>::~ImmutableVector() {}
+template<>
+ImmutableVector<SelectorKeys>::Builder::~Builder() {}
+template<>
+ImmutableVector<SelectorKeys>::~ImmutableVector() {}
+template<>
+OrderedMap<Pattern>::Builder::~Builder() {}
+template<>
+OrderedMap<Pattern>::~OrderedMap() {}
+template<>
+OrderedMap<Operand>::Builder::~Builder() {}
+template<>
+OrderedMap<Operand>::~OrderedMap() {}
 } // namespace message2
 
 U_NAMESPACE_END
