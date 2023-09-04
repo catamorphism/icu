@@ -21,19 +21,28 @@ U_NAMESPACE_BEGIN namespace message2 {
 
 using Arguments = MessageArguments;
 
-bool Arguments::has(const VariableName& arg) const {
+bool Arguments::hasFormattable(const VariableName& arg) const {
     U_ASSERT(contents.isValid() && objectContents.isValid());
-    return contents->containsKey(arg.identifier()) || objectContents->containsKey(arg.identifier());
+    return contents->containsKey(arg.identifier());
 }
 
-const Formattable& Arguments::get(const VariableName& arg) const {
-    U_ASSERT(has(arg));
+bool Arguments::hasObject(const VariableName& arg) const {
+    U_ASSERT(contents.isValid() && objectContents.isValid());
+    return objectContents->containsKey(arg.identifier());
+}
+
+const Formattable& Arguments::getFormattable(const VariableName& arg) const {
+    U_ASSERT(hasFormattable(arg));
     const Formattable* result = static_cast<const Formattable*>(contents->get(arg.identifier()));
-    if (result == nullptr) {
-        result = static_cast<const Formattable*>(objectContents->get(arg.identifier()));
-    }
     U_ASSERT(result != nullptr);
     return *result;
+}
+
+const UObject* Arguments::getObject(const VariableName& arg) const {
+    U_ASSERT(hasObject(arg));
+    const UObject* result = static_cast<const UObject*>(objectContents->get(arg.identifier()));
+    U_ASSERT(result != nullptr);
+    return result;
 }
 
 Arguments::Builder::Builder(UErrorCode& errorCode) {
@@ -99,11 +108,9 @@ Arguments::Builder& Arguments::Builder::add(const UnicodeString& name, const Uni
 Arguments::Builder& Arguments::Builder::addObject(const UnicodeString& name, const UObject* obj, UErrorCode& errorCode) {
     THIS_ON_ERROR(errorCode);
 
-    // The const_cast is valid because the object will only be accessed via
-    // getObjectInput(), which returns a const reference
-    Formattable* valPtr(ExpressionContext::createFormattable(const_cast<UObject*>(obj), errorCode));
-    THIS_ON_ERROR(errorCode);
-    objectContents->put(name, valPtr, errorCode);
+    // This const is safe because the values in the objectContents hash table
+    // will only be accessed through a (const UObject*) pointer
+    objectContents->put(name, const_cast<UObject*>(obj), errorCode);
     return *this;
 }
 
@@ -134,7 +141,7 @@ MessageArguments* MessageArguments::Builder::build(UErrorCode& errorCode) const 
     LocalPointer<Hashtable> objectContentsCopied(new Hashtable(compareVariableName, nullptr, errorCode));
     NULL_ON_ERROR(errorCode);
     // The `contents` hashtable owns the values, but does not own the keys
-    contents->setValueDeleter(uprv_deleteUObject);
+    contentsCopied->setValueDeleter(uprv_deleteUObject);
     // The `objectContents` hashtable does not own the values
 
     int32_t pos = UHASH_FIRST;
@@ -171,50 +178,28 @@ MessageArguments* MessageArguments::Builder::build(UErrorCode& errorCode) const 
     return result;
 }
 
+MessageArguments::~MessageArguments() {}
+MessageArguments::Builder::~Builder() {}
 
 // Message arguments
 // -----------------
 
 bool MessageContext::hasGlobalAsObject(const VariableName& v) const {
-    if (!hasVar(v)) {
-        return false;
-    }
-    switch (getVar(v).getType()) {
-        case Formattable::Type::kObject: {
-            return true;
-        }
-        default: {
-            return false;
-        }
-    }
+    return arguments.hasObject(v);
 }
 
 bool MessageContext::hasGlobalAsFormattable(const VariableName& v) const {
-    if (!hasVar(v)) {
-        return false;
-    }
-    switch (getVar(v).getType()) {
-        case Formattable::Type::kObject: {
-            return false;
-        }
-        default: {
-            return true;
-        }
-    }
+    return arguments.hasFormattable(v);
 }
 
 const UObject* MessageContext::getGlobalAsObject(const VariableName& v) const {
     U_ASSERT(hasGlobalAsObject(v));
-    const Formattable& argValue = getVar(v);
-    U_ASSERT(argValue.getType() == Formattable::Type::kObject);
-    return argValue.getObject();
+    return arguments.getObject(v);
 }
 
 const Formattable& MessageContext::getGlobalAsFormattable(const VariableName& v) const {
     U_ASSERT(hasGlobalAsFormattable(v));
-    const Formattable& argValue = getVar(v);
-    U_ASSERT(argValue.getType() != Formattable::Type::kObject);
-    return argValue;
+    return arguments.getFormattable(v);
 }
 
 // ------------------------------------------------------
@@ -358,15 +343,6 @@ const Formatter* MessageContext::maybeCachedFormatter(const FunctionName& f, UEr
 
 // -------------------------------------------------------
 // MessageContext accessors and constructors
-
-bool MessageContext::hasVar(const VariableName& v) const {
-    return arguments.has(v);
-} 
-
-const Formattable& MessageContext::getVar(const VariableName& f) const {
-    U_ASSERT(hasVar(f));
-    return arguments.get(f);
-} 
 
 MessageContext::MessageContext(const MessageFormatter& mf, const MessageArguments& args, Errors& e) : parent(mf), arguments(args), errors(e) {}
 
@@ -602,7 +578,7 @@ MessageContext::~MessageContext() {}
 
 // ---------------- Environments and closures
 
-Environment* Environment::create(const VariableName& var, Closure* c, const Environment& parent, UErrorCode& errorCode) {
+Environment* Environment::create(const VariableName& var, Closure* c, Environment* parent, UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
     Environment* result = new NonEmptyEnvironment(var, c, parent);
     if (result == nullptr) {
@@ -642,7 +618,7 @@ const Closure* NonEmptyEnvironment::lookup(const VariableName& v) const {
         U_ASSERT(rhs.isValid());
         return rhs.getAlias();
     }
-    return parent.lookup(v);
+    return parent->lookup(v);
 }
 
 Environment::~Environment() {}

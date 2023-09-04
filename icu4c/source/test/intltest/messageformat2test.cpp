@@ -183,18 +183,16 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(testAPICustomFunctions);
     TESTCASE_AUTO(testCustomFunctions);
     TESTCASE_AUTO(testBuiltInFunctions);
-
     TESTCASE_AUTO(testDataModelErrors);
     TESTCASE_AUTO(testResolutionErrors);
     TESTCASE_AUTO(testAPI);
     TESTCASE_AUTO(testAPISimple);
     TESTCASE_AUTO(testVariousPatterns);
-
     TESTCASE_AUTO(testInvalidPatterns);
     TESTCASE_AUTO_END;
 }
 
-// Example for design doc
+// Example for design doc -- version without null and error checks
 void TestMessageFormat2::testAPISimple() {
     IcuTestErrorCode errorCode1(*this, "testAPI");
     UErrorCode errorCode = (UErrorCode) errorCode1;
@@ -218,34 +216,30 @@ void TestMessageFormat2::testAPISimple() {
     assertEquals("testAPI", result, "Hello, John!");
     result.remove();
 
-    // Recreate the builder
-    builder = MessageFormatter::builder(errorCode);
-
+    delete mf;
     mf = builder->setPattern("{Today is {$today :datetime skeleton=yMMMdEEE}.}")
         .setLocale(locale)
         .build(parseError, errorCode);
 
-    argsBuilder = MessageArguments::builder(errorCode);
     Calendar* cal(Calendar::createInstance(errorCode));
     // Sunday, October 28, 2136 8:39:12 AM PST
     cal->set(2136, Calendar::OCTOBER, 28, 8, 39, 12);
     UDate date = cal->getTime(errorCode);
 
     argsBuilder->addDate("today", date, errorCode);
+    delete args;
     args = argsBuilder->build(errorCode);
     mf->formatToString(*args, errorCode, result);
     assertEquals("testAPI", "Today is Sun, Oct 28, 2136.", result);
     result.remove();
 
-    // Recreate the builder
-    builder = MessageFormatter::builder(errorCode);
-    argsBuilder = MessageArguments::builder(errorCode);
-
     argsBuilder->addInt64("photoCount", 12, errorCode);
     argsBuilder->add("userGender", "feminine", errorCode);
     argsBuilder->add("userName", "Maria", errorCode);
+    delete args;
     args = argsBuilder->build(errorCode);
 
+    delete mf;
     mf = builder->setPattern("match {$photoCount :plural} {$userGender :select}\n\
                      when 1 masculine {{$userName} added a new photo to his album.}\n \
                      when 1 feminine {{$userName} added a new photo to her album.}\n \
@@ -257,6 +251,12 @@ void TestMessageFormat2::testAPISimple() {
         .build(parseError, errorCode);
     mf->formatToString(*args, errorCode, result);
     assertEquals("testAPI", "Maria added 12 photos to her album.", result);
+
+    delete builder;
+    delete argsBuilder;
+    delete cal;
+    delete mf;
+    delete args;
 }
 
 // Design doc example, with more details
@@ -363,26 +363,36 @@ void TestMessageFormat2::testAPICustomFunctions() {
 
     errorCode = U_ZERO_ERROR;
     result.remove();
-    mfBuilder = MessageFormatter::builder(errorCode);
     mfBuilder->setFunctionRegistry(functionRegistry)
               .setLocale(locale);
 
+    delete mf;
     mf = mfBuilder->setPattern("{Hello {$name :person formality=informal}}")
                     .build(parseError, errorCode);
     mf->formatToString(*arguments, errorCode, result);
     assertEquals("testAPICustomFunctions", "Hello John", result);
     result.remove();
 
+    delete mf;
     mf = mfBuilder->setPattern("{Hello {$name :person formality=formal}}")
                     .build(parseError, errorCode);
     mf->formatToString(*arguments, errorCode, result);
     assertEquals("testAPICustomFunctions", "Hello Mr. Doe", result);
     result.remove();
 
+    delete mf;
     mf = mfBuilder->setPattern("{Hello {$name :person formality=formal length=long}}")
                     .build(parseError, errorCode);
     mf->formatToString(*arguments, errorCode, result);
     assertEquals("testAPICustomFunctions", "Hello Mr. John Doe", result);
+
+    delete arguments;
+    delete builder;
+    delete functionRegistry;
+    delete person;
+    delete mf;
+    delete mfBuilder;
+    delete argsBuilder;
 }
 
 void TestMessageFormat2::testValidPatterns(const TestResult* patterns, int32_t len, IcuTestErrorCode& errorCode) {
@@ -510,8 +520,10 @@ void TestMessageFormat2::testSemanticallyInvalidPattern(uint32_t testNum, const 
     LocalPointer<TestCase::Builder> testBuilder(TestCase::builder(errorCode));
     testBuilder->setName("testName").setPattern(s);
     testBuilder->setExpectedError(expectedErrorCode);
+    LocalPointer<TestCase> result(testBuilder->build(errorCode));
+    CHECK_ERROR(errorCode);
 
-    TestUtils::runTestCase(*this, *testBuilder->build(errorCode), errorCode);
+    TestUtils::runTestCase(*this, *result, errorCode);
 }
 
 /*

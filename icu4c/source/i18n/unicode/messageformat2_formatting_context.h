@@ -45,7 +45,7 @@ extern DateFormat* defaultDateTimeInstance(const Locale&, UErrorCode&);
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-class U_I18N_API FormattingContext : public UMemory {
+class U_I18N_API FormattingContext : public UObject {
     public:
 
     /**
@@ -424,7 +424,7 @@ class ExpressionContext : public FormattingContext {
     // If there is a function name, clear it and
     // call the function, setting the input and/or output appropriately
     // Precondition: hasSelector()
-    void evalPendingSelectorCall(const UnicodeString[], int32_t, UnicodeString[], int32_t&, UErrorCode&);
+    void evalPendingSelectorCall(const UVector&, UVector&, UErrorCode&);
 
     static Formattable* createFormattable(const UnicodeString&, UErrorCode&);
     static Formattable* createFormattable(double, UErrorCode&);

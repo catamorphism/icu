@@ -60,6 +60,7 @@ ImmutableVector<T>::ImmutableVector(const ImmutableVector<T>& other) {
         contents.adoptInstead(nullptr);
         return;
     }
+    contents->setDeleter(uprv_deleteUObject);
     contents->assign(*other.contents, &copyElements<T>, errorCode);
     if (U_FAILURE(errorCode)) {
         contents.adoptInstead(nullptr);
@@ -121,6 +122,8 @@ template<typename T>
     U_ASSERT(builder.contents != nullptr);
 
     LocalPointer<UVector> adoptedContents(new UVector(builder.contents->size(), errorCode));
+    NULL_ON_ERROR(errorCode);
+    adoptedContents->setDeleter(uprv_deleteUObject);
     adoptedContents->assign(*builder.contents, &copyElements<T>, errorCode);
     NULL_ON_ERROR(errorCode);
     result = new ImmutableVector<T>(adoptedContents.orphan());
@@ -243,6 +246,7 @@ template<typename V>
     UErrorCode errorCode = U_ZERO_ERROR;
     LocalPointer<UVector> adoptedKeys(new UVector(other.size(), errorCode));
     NULL_ON_ERROR(errorCode);
+    adoptedKeys->setDeleter(uprv_deleteUObject);
     adoptedKeys->assign(other, &copyStrings, errorCode);
     NULL_ON_ERROR(errorCode);
     return adoptedKeys.orphan();

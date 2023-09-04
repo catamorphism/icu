@@ -463,8 +463,7 @@ TemperatureFormatter::TemperatureFormatter(const Locale& l, TemperatureFormatter
         errorCode = U_MEMORY_ALLOCATION_ERROR;
         return;
     }
-    // The environment owns the values
-    //   cachedFormatters->setValueDeleter(uprv_deleteUObject);
+    cachedFormatters->setValueDeleter(uprv_free);
     counter.constructCount++;
 }
  
@@ -1080,5 +1079,8 @@ void TestMessageFormat2::featureTests() {
     testVariableOptionsInSelector(*testBuilder, errorCode);
     testVariableOptionsInSelectorWithLocalVar(*testBuilder, errorCode);
 }
+
+TestCase::~TestCase() {}
+TestCase::Builder::~Builder() {}
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

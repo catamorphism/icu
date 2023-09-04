@@ -31,7 +31,12 @@ class Selector;
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-class U_COMMON_API FormatterFactory : public UMemory {
+class U_COMMON_API FormatterFactory : public UObject {
+    // TODO: the coding guidelines say that interface classes
+    // shouldn't inherit from UObject, but if I change it so these
+    // classes don't, and the individual formatter factory classes
+    // inherit from public FormatterFactory, public UObject, then
+    // memory leaks ensue
 public:
     /**
      * Constructs a new formatter object. This method is not const;
@@ -54,7 +59,7 @@ public:
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-class U_COMMON_API SelectorFactory : public UMemory {
+class U_COMMON_API SelectorFactory : public UObject {
 public:
     /**
      * Constructs a new selector object.
@@ -78,7 +83,7 @@ public:
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-class U_I18N_API FunctionRegistry : public UMemory {
+class U_I18N_API FunctionRegistry : public UObject {
 public:
     /**
      * Looks up a formatter factory by the name of the formatter. The result is non-const,
@@ -112,7 +117,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class Builder {
+    class U_I18N_API Builder : public UObject {
     private:
         friend class FunctionRegistry;
 
@@ -157,6 +162,13 @@ public:
          * @deprecated This API is for technology preview only.
          */
         FunctionRegistry* build(UErrorCode& status);
+        /**
+         * Destructor.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+         virtual ~Builder();
     }; // class FunctionRegistry::Builder
    /**
      * Returns a new `FunctionRegistry::Builder` object.
@@ -168,6 +180,13 @@ public:
      * @deprecated This API is for technology preview only.
      */
     static Builder* builder(UErrorCode& status);
+    /**
+     * Destructor.
+     *
+     * @internal ICU 74.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    virtual ~FunctionRegistry();
 
 private:
     friend class Builder;
@@ -207,7 +226,7 @@ private:
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-class U_COMMON_API Formatter : public UMemory {
+class U_COMMON_API Formatter : public UObject {
 public:
     /**
      * Formats the input passed in `context` by setting an output using one of the
@@ -234,7 +253,7 @@ public:
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-class U_COMMON_API Selector : public UMemory {
+class U_COMMON_API Selector : public UObject {
 public:
     /**
      * Compares the input passed in `context` to an array of keys, and returns an array of matching
@@ -242,10 +261,10 @@ public:
      *
      * @param context Formatting context; captures the unnamed function argument and named options.
      *        See the `FormattingContext` documentation for more details.
-     * @param keys An array of strings that are compared to the input (`context.getFormattableInput()`)
+     * @param keys An array of pointers to strings that are compared to the input (`context.getFormattableInput()`)
      *        in an implementation-specific way.
      * @param numKeys The length of the `keys` array.
-     * @param prefs A mutable reference to an array of strings. `selectKey()` should set the contents
+     * @param prefs A mutable reference to an array of pointers to strings. `selectKey()` should set the contents
      *        of `prefs` to a subset of `keys`, with the best match placed at the lowest index.
      * @param numMatching A mutable reference that should be set to the length of the `prefs` array.
      * @param status    Input/output error code. Should not be set directly by the
@@ -256,7 +275,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    virtual void selectKey(FormattingContext& context, const UnicodeString* keys/*[]*/, int32_t numKeys, UnicodeString* prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const = 0;
+    virtual void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const = 0;
     virtual ~Selector();
 }; // class Selector
 
@@ -272,11 +291,13 @@ class StandardFunctions {
     class DateTimeFactory : public FormatterFactory {
     public:
         Formatter* createFormatter(const Locale& locale, UErrorCode& status);
+        virtual ~DateTimeFactory();
     };
 
     class DateTime : public Formatter {
     public:
         void format(FormattingContext& context, UErrorCode& status) const;
+        virtual ~DateTime();
 
     private:
         const Locale& locale;
@@ -288,11 +309,13 @@ class StandardFunctions {
     class NumberFactory : public FormatterFactory {
     public:
         Formatter* createFormatter(const Locale& locale, UErrorCode& status);
+        virtual ~NumberFactory();
     };
         
     class Number : public Formatter {
     public:
         void format(FormattingContext& context, UErrorCode& status) const;
+        virtual ~Number();
 
     private:
         friend class NumberFactory;
@@ -306,24 +329,25 @@ class StandardFunctions {
     class IdentityFactory : public FormatterFactory {
     public:
         Formatter* createFormatter(const Locale& locale, UErrorCode& status);
+        virtual ~IdentityFactory();
     };
 
     class Identity : public Formatter {
     public:
         void format(FormattingContext& context, UErrorCode& status) const;
+        virtual ~Identity();
         
     private:
         friend class IdentityFactory;
 
         const Locale& locale;
         Identity(const Locale& loc) : locale(loc) {}
-        ~Identity();
     };
 
     class PluralFactory : public SelectorFactory {
     public:
-        virtual ~PluralFactory();
         Selector* createSelector(const Locale& locale, UErrorCode& status) const;
+        virtual ~PluralFactory();
 
     private:
         friend class MessageFormatter;
@@ -334,29 +358,30 @@ class StandardFunctions {
 
     class Plural : public Selector {
     public:
-        void selectKey(FormattingContext& context, const UnicodeString* keys/*[]*/, int32_t numKeys, UnicodeString* prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const;
+        void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const;
+        virtual ~Plural();
 
     private:
         friend class PluralFactory;
 
         // Adopts `r`
-        Plural(const Locale& loc, UPluralType t, PluralRules* r) : locale(loc), type(t), rules(r) {}
-        ~Plural();
+        Plural(const Locale& loc, PluralRules* r) : locale(loc), rules(r) {}
 
         const Locale& locale;
-        const UPluralType type;
         LocalPointer<PluralRules> rules;
     };
 
     class TextFactory : public SelectorFactory {
     public:
         Selector* createSelector(const Locale& locale, UErrorCode& status) const;
+        virtual ~TextFactory();
     };
 
     class TextSelector : public Selector {
     public:
-        void selectKey(FormattingContext& context, const UnicodeString* keys/*[]*/, int32_t numKeys, UnicodeString* prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const;
-        
+        void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const;
+        virtual ~TextSelector();
+
     private:
         friend class TextFactory;
 
@@ -364,7 +389,6 @@ class StandardFunctions {
         const Locale& locale;
 
         TextSelector(const Locale& l) : locale(l) {}
-        ~TextSelector();
     };
 };
 

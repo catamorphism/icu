@@ -41,7 +41,7 @@ U_NAMESPACE_BEGIN namespace message2 {
 
 // Note: This class does not currently inherit from the existing
 // `Format` class.
-class U_I18N_API MessageFormatter : public UMemory {
+class U_I18N_API MessageFormatter : public UObject {
 public:
     /**
      * Destructor.
@@ -384,9 +384,9 @@ public:
      void resolveVariables(const Environment& env, const MessageFormatDataModel::Expression&, ExpressionContext&, UErrorCode &) const;
 
      // Selection methods
-     void resolveSelectors(MessageContext&, const Environment& env, const MessageFormatDataModel::ExpressionList&, UErrorCode&, ExpressionContext**) const;
-     void matchSelectorKeys(UnicodeString*/*[]*/, int32_t, ExpressionContext&, UErrorCode&, UnicodeString*, int32_t&) const;
-     void resolvePreferences(ExpressionContext**, int32_t, const MessageFormatDataModel::VariantMap&, UErrorCode&, UnicodeString**, int32_t*) const;
+     void resolveSelectors(MessageContext&, const Environment& env, const MessageFormatDataModel::ExpressionList&, UErrorCode&, UVector&) const;
+     void matchSelectorKeys(const UVector&, ExpressionContext&, UErrorCode&, UVector&) const;
+     void resolvePreferences(const UVector&, const MessageFormatDataModel::VariantMap&, UErrorCode&, UVector&) const;
 
      // Formatting methods
      void formatLiteral(const MessageFormatDataModel::Literal&, ExpressionContext&) const;
@@ -458,7 +458,7 @@ public:
 // in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
 // Ideally this would have been a private class nested in MessageFormatter,
 // but sorting comparators need to reference it
-class PrioritizedVariant : public UMemory {
+class PrioritizedVariant : public UObject {
 public:
     int32_t priority;
     const MessageFormatDataModel::SelectorKeys& keys;
@@ -466,6 +466,7 @@ public:
     PrioritizedVariant(uint32_t p,
                        const MessageFormatDataModel::SelectorKeys& k,
                        const MessageFormatDataModel::Pattern& pattern) : priority(p), keys(k), pat(pattern) {}
+    virtual ~PrioritizedVariant();
 }; // class PrioritizedVariant
 
 } // namespace message2

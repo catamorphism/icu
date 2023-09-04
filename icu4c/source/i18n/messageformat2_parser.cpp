@@ -962,13 +962,13 @@ Operator* PARSER::parseAnnotation(UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
 
     U_ASSERT(inBounds(source, index));
-    Operator::Builder* ratorBuilder(Operator::builder(errorCode));
+    LocalPointer<Operator::Builder> ratorBuilder(Operator::builder(errorCode));
     NULL_ON_ERROR(errorCode);
     if (isFunctionStart(source[index])) {
         // Consume the function name
         LocalPointer<FunctionName> func(parseFunction(errorCode));
         NULL_ON_ERROR(errorCode);
-        ratorBuilder->setFunctionName(*func.orphan(), errorCode);
+        ratorBuilder->setFunctionName(*func, errorCode);
         // Consume the options (which may be empty)
         parseOptions(errorCode, *ratorBuilder);
     } else {

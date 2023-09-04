@@ -356,20 +356,12 @@ const FunctionName& ExpressionContext::getFunctionName() {
         return nullptr;
     }
 
-    LocalPointer<Formattable> val;
     for (int32_t i = 0; i < count; i++) {
-        // TODO
-        // Without this explicit cast, `val` is treated as if it's
-        // an object when it's assigned into `arr[i]`. I don't know why.
-        val.adoptInstead(new Formattable((const UnicodeString&) in[i]));
-        if (!val.isValid()) {
-            errorCode = U_MEMORY_ALLOCATION_ERROR;
-            return nullptr;
-        }
-        arr[i] = *val;
+        Formattable val((const UnicodeString&) in[i]);
+        arr[i] = val;
     }
 
-    Formattable* result(new Formattable(arr.orphan(), count));
+    Formattable* result(new Formattable(arr.getAlias(), count));
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
@@ -621,7 +613,8 @@ bool ExpressionContext::hasSelector() const {
 }
 
 // Calls the pending selector
-void ExpressionContext::evalPendingSelectorCall(const UnicodeString keys[], int32_t numKeys, UnicodeString keysOut[], int32_t& numberMatching, UErrorCode& status) {
+// keys and keysOut are vectors of strings
+void ExpressionContext::evalPendingSelectorCall(const UVector& keys, UVector& keysOut, UErrorCode& status) {
     CHECK_ERROR(status);
 
     U_ASSERT(pendingFunctionName.isValid());
@@ -629,7 +622,21 @@ void ExpressionContext::evalPendingSelectorCall(const UnicodeString keys[], int3
     LocalPointer<Selector> selectorImpl(getSelector(status));
     CHECK_ERROR(status);
     UErrorCode savedStatus = status;
-    selectorImpl->selectKey(*this, keys, numKeys, keysOut, numberMatching, status);
+
+    // Convert the vectors to arrays for the call
+    int32_t numKeys = keys.size();
+    LocalArray<UnicodeString*> keysArray(new UnicodeString*[numKeys]);
+    LocalArray<UnicodeString*> keysOutArray(new UnicodeString*[numKeys]);
+    if (!keysArray.isValid() || !keysOutArray.isValid()) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+        return;
+    }
+    for (int32_t i = 0; i < keys.size(); i++) {
+        keysArray[i] = static_cast<UnicodeString*>(keys[i]);
+    }
+
+    int32_t numberMatching = 0;
+    selectorImpl->selectKey(*this, keysArray.getAlias(), numKeys, keysOutArray.getAlias(), numberMatching, status);
     // Update errors
     if (savedStatus != status) {
         if (U_FAILURE(status)) {
@@ -642,13 +649,27 @@ void ExpressionContext::evalPendingSelectorCall(const UnicodeString keys[], int3
         }
     }
     returnFromFunction();
+
+    // Copy the keys back into the vector
+    LocalPointer<UnicodeString> tempKey;
+    for (int32_t i = 0; i < numberMatching; i++) {
+        // Because both `keys` and `keysOut` own their elements,
+        // the string has to be copied here
+        tempKey.adoptInstead(new UnicodeString(*keysOutArray[i]));
+        if (!tempKey.isValid()) {
+            status = U_MEMORY_ALLOCATION_ERROR;
+            return;
+        }
+        keysOut.adoptElement(tempKey.orphan(), status);
+    }
+    keysOut.setSize(numberMatching, status);
 }
 
 // Calls the pending formatter
 void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    FunctionName* savedFunctionName = pendingFunctionName.isValid() ? pendingFunctionName.orphan() : nullptr;
+    LocalPointer<FunctionName> savedFunctionName(pendingFunctionName.isValid() ? pendingFunctionName.orphan() : nullptr);
     setFunctionName(functionName, status);
     CHECK_ERROR(status);
     if (hasFormatter()) {
@@ -674,7 +695,7 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
             clearOutput();
         }
         returnFromFunction();
-        if (savedFunctionName != nullptr) {
+        if (savedFunctionName.isValid()) {
             setFunctionName(*savedFunctionName, status);
         }
         return;

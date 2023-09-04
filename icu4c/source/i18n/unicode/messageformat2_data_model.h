@@ -143,6 +143,13 @@ public:
          * @deprecated This API is for technology preview only.
          */
          UnicodeString declaration() const;
+         /**
+          * Destructor.
+          *
+          * @internal ICU 74.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         virtual ~VariableName();
     private:
         const UnicodeString variableName;
     }; // class VariableName
@@ -157,7 +164,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API FunctionName {
+    class U_I18N_API FunctionName : public UMemory {
     public:
         /**
          * Type representing the function's kind, which is either ':' (the default)
@@ -537,7 +544,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        class U_I18N_API Builder {
+        class U_I18N_API Builder : public UMemory {
         private:
             friend class SelectorKeys;
             Builder(UErrorCode&);
@@ -568,6 +575,13 @@ public:
               * @deprecated This API is for technology preview only.
               */
              SelectorKeys* build(UErrorCode& status) const;
+             /**
+              * Destructor.
+              *
+              * @internal ICU 74.0 technology preview
+              * @deprecated This API is for technology preview only.
+              */
+             virtual ~Builder();
         }; // class SelectorKeys::Builder
         /**
          * Returns a new `SelectorKeys::Builder` object.
@@ -674,6 +688,13 @@ public:
              * @deprecated This API is for technology preview only.
              */
             VariantMap* build(UErrorCode& status) const;
+             /**
+              * Destructor.
+              *
+              * @internal ICU 74.0 technology preview
+              * @deprecated This API is for technology preview only.
+              */
+             virtual ~Builder();
         private:
             friend class VariantMap;
           
@@ -753,7 +774,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        class U_I18N_API Builder {
+        class U_I18N_API Builder : public UMemory {
         private:
             friend class Reserved;
           
@@ -786,6 +807,13 @@ public:
              * @deprecated This API is for technology preview only.
              */
             Reserved* build(UErrorCode& status) const;
+             /**
+              * Destructor.
+              *
+              * @internal ICU 74.0 technology preview
+              * @deprecated This API is for technology preview only.
+              */
+             virtual ~Builder();
         }; // class Reserved::Builder
         /**
          * Returns a new `Reserved::Builder` object.
@@ -880,7 +908,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        class U_I18N_API Builder {
+        class U_I18N_API Builder : public UMemory {
         private:
             friend class Operator;
             Builder() {}
@@ -942,6 +970,13 @@ public:
              * @deprecated This API is for technology preview only.
              */
             Operator* build(UErrorCode& status) const;
+             /**
+              * Destructor.
+              *
+              * @internal ICU 74.0 technology preview
+              * @deprecated This API is for technology preview only.
+              */
+             virtual ~Builder();
         }; // class Operator::Builder
         /**
          * Returns a new `Operator::Builder` object.
@@ -1054,7 +1089,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        class U_I18N_API Builder {
+        class U_I18N_API Builder : public UMemory {
         private:
             friend class Expression;
             Builder() {}
@@ -1097,6 +1132,13 @@ public:
               * @deprecated This API is for technology preview only.
               */
              Expression* build(UErrorCode& status) const;
+             /**
+              * Destructor.
+              *
+              * @internal ICU 74.0 technology preview
+              * @deprecated This API is for technology preview only.
+              */
+             virtual ~Builder();
         }; // class Expression::Builder
         /**
          * Returns a new `Expression::Builder` object.
@@ -1272,7 +1314,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        class U_I18N_API Builder {
+        class U_I18N_API Builder : public UMemory {
         private:
             friend class Pattern;
           
@@ -1307,6 +1349,13 @@ public:
              * @deprecated This API is for technology preview only.
              */
             Pattern* build(UErrorCode &status) const;
+             /**
+              * Destructor.
+              *
+              * @internal ICU 74.0 technology preview
+              * @deprecated This API is for technology preview only.
+              */
+             virtual ~Builder();
         }; // class Pattern::Builder
 
         /**
@@ -1378,6 +1427,13 @@ public:
           * @deprecated This API is for technology preview only.
           */
         const VariableName& getVariable() const { return var; }
+        /**
+          * Destructor.
+          *
+          * @internal ICU 74.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        virtual ~Binding();
     private:
         friend class ImmutableVector<Binding>;
 
@@ -1453,7 +1509,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Builder {
+    class U_I18N_API Builder : public UMemory {
     private:
         friend class MessageFormatDataModel;
 

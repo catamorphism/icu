@@ -489,7 +489,7 @@ void message2::ListFormatter::format(FormattingContext& context, UErrorCode& err
             for (int32_t i = 0; i < n_items; i++) {
                 parts[i] = objs[i].getString();
             }
-            lf->format(parts.orphan(), n_items, result, errorCode);
+            lf->format(parts.getAlias(), n_items, result, errorCode);
             break;
         }
         default: {
@@ -551,6 +551,7 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
 
     LocalPointer<Hashtable> result(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
     NULL_ON_ERROR(errorCode);
+    result->setValueDeleter(uprv_deleteUObject);
 
     LocalPointer<UnicodeString> value(new UnicodeString("match {$gcase :select} when genitive {Firefoxin} when * {Firefox}"));
     if (!value.isValid()) {
@@ -726,7 +727,7 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
                                 .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
 
-    testBuilder->setArgument("res", (UObject*) properties.orphan(), errorCode);
+    testBuilder->setArgument("res", (UObject*) properties.getAlias(), errorCode);
 
     testBuilder->setPattern("{Please start {$browser :msgRef gcase=genitive resbundle=$res}}");
     test.adoptInstead(testBuilder->setArgument("browser", "firefox", errorCode)
