@@ -263,9 +263,11 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
             // Append nomatch as the last element of the list res.
             // Emit a Selection Error.
             // (Note: in this case, rv, being a fallback, serves as `nomatch`)
+            #ifdef _DEBUG
             const Errors& err = rv->messageContext().getErrors();
             U_ASSERT(err.hasUnknownFunctionError() || err.hasSelectorError());
             U_ASSERT(rv->isFallback());
+            #endif
         }
         // 2ii(a). Append rv as the last element of the list res.
         // (Also fulfills 2iii)

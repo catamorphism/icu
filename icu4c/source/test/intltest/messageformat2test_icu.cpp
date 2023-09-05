@@ -170,11 +170,11 @@ void TestMessageFormat2::testMf1Behavior(TestCase::Builder& testBuilder, IcuTest
 
     UnicodeString result;
     mf1->format(badArgumentsNames, argumentsValues, 2, result, errorCode);
-    assert(U_SUCCESS(errorCode));
+    assertEquals("testMf1Behavior", (UBool) true, U_SUCCESS(errorCode));
     assertEquals("old icu test", "Hello {user}, today is {today}.", result);
     result.remove();
     mf1->format(goodArgumentsNames, argumentsValues, 2, result, errorCode);
-    assert(U_SUCCESS(errorCode));
+    assertEquals("testMf1Behavior", (UBool) true, U_SUCCESS(errorCode));
     assertEquals("old icu test", expectedGood, result);
 
     LocalPointer<TestCase> test(testBuilder.setPattern("{Hello {$user}, today is {$today :datetime datestyle=long}.}")

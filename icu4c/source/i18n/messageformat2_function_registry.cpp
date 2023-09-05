@@ -87,11 +87,19 @@ const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selecto
 }
 
 void FunctionRegistry::checkFormatter(const char* s) const {
+#ifdef _DEBUG
     U_ASSERT(hasFormatter(FunctionName(UnicodeString(s))));
+#else
+   (void) s;
+#endif
 }
 
 void FunctionRegistry::checkSelector(const char* s) const {
+#ifdef _DEBUG
     U_ASSERT(hasSelector(FunctionName(UnicodeString(s))));
+#else
+    (void) s;
+#endif
 }
 
 // Debugging
