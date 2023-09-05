@@ -612,7 +612,7 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
     LocalPointer<MessageArguments> arguments;
     CHECK_ERROR(errorCode);
     for (int64_t count = 0; count < maxCount; count++) {
-        snprintf(expected, sizeof(expected), "Testing %ld°C.", count);
+        snprintf(expected, sizeof(expected), "Testing %d°C.", (int32_t) count);
 
         argumentsBuilder->addInt64(countKey, count, errorCode);
         argumentsBuilder->add(unitKey, "C", errorCode);
@@ -623,7 +623,7 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
         assertEquals("temperature formatter", expected, result);
         result.remove();
 
-        snprintf(expected, sizeof(expected), "Testing %ld°F.", count);
+        snprintf(expected, sizeof(expected), "Testing %d°F.", (int32_t) count);
         argumentsBuilder->addInt64(countKey, count, errorCode);
         argumentsBuilder->add(unitKey, "F", errorCode);
         arguments.adoptInstead(argumentsBuilder->build(errorCode));
