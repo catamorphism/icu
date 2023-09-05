@@ -512,7 +512,7 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     };
     LocalPointer<TestCase::Builder> testBuilder(TestCase::builder(errorCode));
 
-    LocalPointer<FunctionRegistry> reg(ListFormatter::customRegistry(errorCode));
+    LocalPointer<FunctionRegistry> reg(message2::ListFormatter::customRegistry(errorCode));
     CHECK_ERROR(errorCode);
 
     testBuilder->setFunctionRegistry(reg.orphan());
