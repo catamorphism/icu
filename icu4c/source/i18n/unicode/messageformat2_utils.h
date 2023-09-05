@@ -25,6 +25,7 @@ static inline UBool compareVariableName(const UElement e1, const UElement e2) {
     return uhash_compareUnicodeString(e1, e2);
 }
 
+// TODO: Removed the U_I18N_API macro from ImmutableVector and OrderedMap because it breaks the build on Windows
 
 /**
  * The `ImmutableVector` class represents a polymorphic immutable list,
@@ -36,7 +37,7 @@ static inline UBool compareVariableName(const UElement e1, const UElement e2) {
  * @deprecated This API is for technology preview only.
  */
 template<typename T>
-class U_I18N_API ImmutableVector : public UMemory {
+class ImmutableVector : public UMemory {
 
 private:
     // If a copy constructor fails, the list is left in an inconsistent state,
@@ -122,7 +123,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Builder : public UMemory {
+    class Builder : public UMemory {
     public:
         /**
          * Adds to the list. Adopts `element`.
@@ -200,11 +201,7 @@ private:
  * @deprecated This API is for technology preview only.
  */
 template<typename V>
-class U_I18N_API OrderedMap : public UMemory {
-class MessageFormatDataModel {
-    class Operator;
-    class VariantMap;
-};
+class OrderedMap : public UMemory {
 
 private:
     // See comments under `ImmutableVector::isBogus()`
@@ -263,7 +260,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Builder : public UMemory {
+    class Builder : public UMemory {
     public:
         /**
          * Adds to the map. Adopts `value`.
