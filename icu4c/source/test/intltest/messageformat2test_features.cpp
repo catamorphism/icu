@@ -490,7 +490,10 @@ void TemperatureFormatter::format(FormattingContext& context, UErrorCode& errorC
 
     UnicodeString unit;
     bool unitExists = context.getStringOption(UnicodeString("unit"), unit);
-    U_ASSERT(unitExists);
+    if (!unitExists) {
+        context.setFormattingError("temp", errorCode);
+        return;
+    }
     UnicodeString skeleton;
     bool skeletonExists = context.getStringOption(UnicodeString("skeleton"), skeleton);
 
