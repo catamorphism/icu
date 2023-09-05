@@ -254,7 +254,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    OrderedMap<V>(const OrderedMap<V>& other);
+    OrderedMap(const OrderedMap& other);
 
     /**
      * The mutable `OrderedMap::Builder` class allows the map to be constructed
@@ -341,7 +341,7 @@ private:
     // Postcondition: U_FAILURE(errorCode) || !((return value).isBogus())
     static OrderedMap<V>* create(Hashtable* c, UVector* k, UErrorCode& errorCode);
     static Hashtable* copyHashtable(const Hashtable& other);
-    OrderedMap<V>(Hashtable* c, UVector* k);
+    OrderedMap(Hashtable* c, UVector* k);
     // Hashtable representing the underlying map
     const LocalPointer<Hashtable> contents;
     // List of keys
