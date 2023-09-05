@@ -586,7 +586,7 @@ typedef enum UErrorCode {
      * One more than the highest normal formatting API error code.
      * @deprecated ICU 58 The numeric value may change over time, see ICU ticket #12420.
      */
-    U_FMT_PARSE_ERROR_LIMIT = 0x10125,
+    U_FMT_PARSE_ERROR_LIMIT = 0x1011D,
 #endif  // U_HIDE_DEPRECATED_API
 
     /*
