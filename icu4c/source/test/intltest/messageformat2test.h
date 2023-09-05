@@ -21,8 +21,6 @@
  * TestMessageFormat2 tests MessageFormat2
  */
 
-U_NAMESPACE_BEGIN namespace message2 {
-
 struct TestResult {
     const UnicodeString pattern;
     const UnicodeString output;
@@ -57,6 +55,7 @@ public:
     void testAPISimple(void);
 
 private:
+
     void testSemanticallyInvalidPattern(uint32_t, const UnicodeString&, UErrorCode);
     void testRuntimeErrorPattern(uint32_t, const UnicodeString&, UErrorCode);
     void testRuntimeWarningPattern(uint32_t, const UnicodeString&, const UnicodeString&, UErrorCode);
@@ -80,38 +79,39 @@ private:
     void testMessageRefFormatter(IcuTestErrorCode&);
 
     // Feature tests
-    void testEmptyMessage(TestCase::Builder&, IcuTestErrorCode&);
-    void testPlainText(TestCase::Builder&, IcuTestErrorCode&);
-    void testPlaceholders(TestCase::Builder&, IcuTestErrorCode&);
-    void testArgumentMissing(TestCase::Builder&, IcuTestErrorCode&);
-    void testDefaultLocale(TestCase::Builder&, IcuTestErrorCode&);
-    void testSpecialPluralWithDecimals(TestCase::Builder&, IcuTestErrorCode&);
-    void testDefaultFunctionAndOptions(TestCase::Builder&, IcuTestErrorCode&);
-    void testSimpleSelection(TestCase::Builder&, IcuTestErrorCode&);
-    void testComplexSelection(TestCase::Builder&, IcuTestErrorCode&);
-    void testSimpleLocalVariable(TestCase::Builder&, IcuTestErrorCode&);
-    void testLocalVariableWithSelect(TestCase::Builder&, IcuTestErrorCode&);
-    void testDateFormat(TestCase::Builder&, IcuTestErrorCode&);
-    void testPlural(TestCase::Builder&, IcuTestErrorCode&);
+    void testEmptyMessage(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testPlainText(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testPlaceholders(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testArgumentMissing(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testDefaultLocale(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testSpecialPluralWithDecimals(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testDefaultFunctionAndOptions(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testSimpleSelection(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testComplexSelection(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testSimpleLocalVariable(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testLocalVariableWithSelect(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testDateFormat(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testPlural(message2::TestCase::Builder&, IcuTestErrorCode&);
 
-    void testPluralOrdinal(TestCase::Builder&, IcuTestErrorCode&);
+    void testPluralOrdinal(message2::TestCase::Builder&, IcuTestErrorCode&);
     void testFormatterIsCreatedOnce(IcuTestErrorCode&);
-    void testPluralWithOffset(TestCase::Builder&, IcuTestErrorCode&);
-    void testPluralWithOffsetAndLocalVar(TestCase::Builder&, IcuTestErrorCode&);
-    void testDeclareBeforeUse(TestCase::Builder&, IcuTestErrorCode&);
-    void testVariableOptionsInSelector(TestCase::Builder&, IcuTestErrorCode&);
-    void testVariableOptionsInSelectorWithLocalVar(TestCase::Builder&, IcuTestErrorCode&);
+    void testPluralWithOffset(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testPluralWithOffsetAndLocalVar(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testDeclareBeforeUse(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testVariableOptionsInSelector(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testVariableOptionsInSelectorWithLocalVar(message2::TestCase::Builder&, IcuTestErrorCode&);
 
     // MessageFormat 1 tests
-    void testSample(TestCase::Builder&, IcuTestErrorCode&);
-    void testStaticFormat(TestCase::Builder&, IcuTestErrorCode&);
-    void testSimpleFormat(TestCase::Builder&, IcuTestErrorCode&);
-    void testSelectFormatToPattern(TestCase::Builder&, IcuTestErrorCode&);
-    void testMessageFormatDateTimeSkeleton(TestCase::Builder&, IcuTestErrorCode&);
-    void testMf1Behavior(TestCase::Builder&, IcuTestErrorCode&);
+    void testSample(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testStaticFormat(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testSimpleFormat(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testSelectFormatToPattern(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testMessageFormatDateTimeSkeleton(message2::TestCase::Builder&, IcuTestErrorCode&);
+    void testMf1Behavior(message2::TestCase::Builder&, IcuTestErrorCode&);
 
 }; // class TestMessageFormat2
 
+U_NAMESPACE_BEGIN namespace message2 {
 
 // Custom function classes
 class PersonNameFormatterFactory : public FormatterFactory {
@@ -204,14 +204,6 @@ class TemperatureFormatter : public Formatter {
     LocalPointer<Hashtable> cachedFormatters;
 
     TemperatureFormatter(const Locale&, TemperatureFormatterFactory&, UErrorCode&);
-};
-
-// Custom function test utilities
-class SplitString {
-    public:
-    static const uint32_t FIRST = 0;
-    static const uint32_t LAST = -1;
-    static bool nextPart(const UnicodeString&, UnicodeString&, uint32_t&);
 };
 
 } // namespace message2
