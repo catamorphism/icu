@@ -405,6 +405,7 @@ class StandardFunctions {
 #pragma warning(disable: 4661)
 #endif
 template class U_I18N_API LocalPointer<message2::FunctionRegistry>;
+template class U_I18N_API LocalPointerBase<message2::FunctionRegistry>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
