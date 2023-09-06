@@ -628,7 +628,6 @@
     <ClInclude Include="iso8601cal.h" />
     <ClInclude Include="japancal.h" />
     <ClInclude Include="measunit_impl.h" />
-    <ClInclude Include="messageformat2_utils_impl.h" />
     <ClInclude Include="msgfmt_impl.h" />
     <ClInclude Include="nfrlist.h" />
     <ClInclude Include="nfrs.h" />
