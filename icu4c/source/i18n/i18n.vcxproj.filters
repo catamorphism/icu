@@ -896,9 +896,6 @@
     <ClInclude Include="measunit_impl.h">
       <Filter>formatting</Filter>
     </ClInclude>
-    <ClInclude Include="messageformat2_utils_impl.h">
-      <Filter>formatting</Filter>
-    </ClInclude>
     <ClInclude Include="msgfmt_impl.h">
       <Filter>formatting</Filter>
     </ClInclude>
