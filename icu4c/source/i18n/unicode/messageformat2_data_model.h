@@ -10,6 +10,7 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+#include "unicode/messageformat2_data_model_forward_decls.h"
 #include "unicode/messageformat2_macros.h"
 #include "unicode/messageformat2_utils.h"
 #include "unicode/unistr.h"
@@ -17,77 +18,31 @@
 
 U_NAMESPACE_BEGIN namespace message2 {
 
-// -----------------------------------------------------------------------
-// Public MessageFormatDataModel class
+class MessageFormatDataModel::Impl : public UMemory {
+private:
+    friend class MessageFormatDataModel;
 
-/**
- * <p>MessageFormat2 is a Technical Preview API implementing MessageFormat 2.0.
- * Since it is not final, documentation has not yet been added everywhere.
- *
- * The `MessageFormatDataModel` class describes a parsed representation of the text of a message.
- * This representation is public as higher-level APIs for messages will need to know its public
- * interface: for example, to re-instantiate a parsed message with different values for imported
-variables.
- *
- * The MessageFormatDataModel API implements <a target="github"
-href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md">the
- * specification of the abstract syntax (data model representation)</a> for MessageFormat.
- *
- * @internal ICU 74.0 technology preview
- * @deprecated This API is for technology preview only.
- */
-class U_I18N_API MessageFormatDataModel : public UMemory {
-/*
-  Classes that represent nodes in the data model are nested inside the
-  `MessageFormatDataModel` class.
+     // The expressions that are being matched on.
+     // Null iff this is a `pattern` message.
+     const LocalPointer<MessageFormatDataModel::ExpressionList> selectors;
 
-  Classes such as `Expression`, `Pattern` and `VariantMap` are immutable and
-  are constructed using the builder pattern.
+     // The list of `when` clauses (case arms).
+     // Null iff this is a `pattern` message.
+     const LocalPointer<MessageFormatDataModel::VariantMap> variants;
 
-  Most classes representing nodes have copy constructors. This is because builders
-  contain immutable data that must be copied when calling `build()`, since the builder
-  could go out of scope before the immutable result of the builder does. Copying is
-  also necessary to prevent unexpected mutation if intermediate builders are saved
-  and mutated again after calling `build()`.
+     // The pattern forming the body of the message.
+     // If this is non-null, then `variants` and `selectors` must be null.
+     const LocalPointer<MessageFormatDataModel::Pattern> pattern;
 
-  The copy constructors perform a deep copy, for example by copying the entire
-  list of options for an `Operator` (and copying the entire underlying vector.)
-  Some internal fields should be `const`, but are declared as non-`const` to make
-  the copy constructor simpler to implement. (These are noted throughout.) In
-  other words, those fields are `const` except during the execution of a copy
-  constructor.
+     // Bindings for local variables
+     const LocalPointer<MessageFormatDataModel::Bindings> bindings;
 
-  On the other hand, intermediate `Builder` methods that return a `Builder&`
-  mutate the state of the builder, so in code like:
+     // Normalized version of the input string (optional whitespace omitted)
+     // Used for testing purposes
+     const LocalPointer<UnicodeString> normalizedInput;
 
-  Expression::Builder& exprBuilder = Expression::builder()-> setOperand(foo);
-  Expression::Builder& exprBuilder2 = exprBuilder.setOperator(bar);
-
-  the call to `setOperator()` would mutate `exprBuilder`, since `exprBuilder`
-  and `exprBuilder2` are references to the same object.
-
-  An alternate choice would be to make `build()` destructive, so that copying would
-  be unnecessary. Or, both copying and moving variants of `build()` could be
-  provided. Copying variants of the intermediate `Builder` methods could be
-  provided as well, if this proved useful.
-*/
-
-public:
-    // Forward declarations
-    class Binding;
-    class Expression;
-    class Key;
-    class Operand;
-    class Operator;
-    class Pattern;
-    class PatternPart;
-    class Reserved;
-    class VariantMap;
-
-    using Bindings = ImmutableVector<Binding>;
-    using ExpressionList = ImmutableVector<Expression>;
-    using KeyList = ImmutableVector<Key>;
-    using OptionMap = OrderedMap<Operand>;
+     Impl(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode);
+};
 
     /**
      * The `VariableName` class represents the name of a variable in a message.
@@ -95,7 +50,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API VariableName {
+    class U_I18N_API MessageFormatDataModel::VariableName {
     public:
         /**
          * Equality comparison.
@@ -164,7 +119,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API FunctionName : public UMemory {
+    class U_I18N_API MessageFormatDataModel::FunctionName : public UMemory {
     public:
         /**
          * Type representing the function's kind, which is either ':' (the default)
@@ -246,7 +201,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Literal {
+    class U_I18N_API MessageFormatDataModel::Literal {
     public:
         /**
          * Returns the quoted representation of this literal (enclosed in '|' characters)
@@ -336,7 +291,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Operand : public UObject {
+    class U_I18N_API MessageFormatDataModel::Operand : public UObject {
     public:
         /**
          * Creates a new `variable` operand.
@@ -460,7 +415,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Key : public UObject {
+    class U_I18N_API MessageFormatDataModel::Key : public UObject {
     public:
         /**
         * Determines if this is a wildcard key
@@ -526,7 +481,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API SelectorKeys : public UObject {
+    class U_I18N_API MessageFormatDataModel::SelectorKeys : public UObject {
     public:
         /**
          * Returns the underlying list of keys.
@@ -618,7 +573,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API VariantMap : public UMemory {
+    class U_I18N_API MessageFormatDataModel::VariantMap : public UMemory {
     public:
         /**
          * The initial iterator position to be used with `next()`.
@@ -744,7 +699,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class Reserved : public UMemory {
+    class MessageFormatDataModel::Reserved : public UMemory {
     public:
         /**
          * A `Reserved` is a sequence of literals.
@@ -859,7 +814,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Operator : public UMemory {
+    class U_I18N_API MessageFormatDataModel::Operator : public UMemory {
     public:
         /**
          * Determines if this operator is a reserved annotation.
@@ -1024,7 +979,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Expression : public UObject {
+    class U_I18N_API MessageFormatDataModel::Expression : public UObject {
     public:
         /**
          * Checks if this expression is an annotation
@@ -1196,7 +1151,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API PatternPart : public UObject {
+    class U_I18N_API MessageFormatDataModel::PatternPart : public UObject {
     public:
         /**
          * Creates a new text part.
@@ -1283,7 +1238,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Pattern : public UObject {
+    class U_I18N_API MessageFormatDataModel::Pattern : public UObject {
     public:
         /**
          * Returns the size.
@@ -1395,7 +1350,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Binding {
+    class U_I18N_API MessageFormatDataModel::Binding {
     public:
         /**
          * Creates a new binding.  Adopts `e`, which must be non-null.
@@ -1449,58 +1404,6 @@ public:
         Binding(const Binding& other);
     }; // class Binding
 
-    // Public MessageFormatDataModel methods
-
-    /**
-     * Accesses the local variable declarations for this data model.
-     *
-     * @return A reference to a list of bindings for local variables.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    const Bindings& getLocalVariables() const { return *bindings; }
-    /**
-     * Determines what type of message this is.
-     *
-     * @return true if and only if this data model represents a `selectors` message
-     *         (if it represents a `match` construct with selectors and variants).
-     *
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    UBool hasSelectors() const;
-    /**
-     * Accesses the selectors.
-     * Precondition: hasSelectors()
-     *
-     * @return A reference to the selector list.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    const ExpressionList& getSelectors() const;
-    /**
-     * Accesses the variants.
-     * Precondition: hasSelectors()
-     *
-     * @return A reference to the variant map.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    const VariantMap& getVariants() const;
-    /**
-     * Accesses the pattern (in a message without selectors).
-     * Precondition: !hasSelectors()
-     *
-     * @return A reference to the pattern.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    const Pattern& getPattern() const;
 
     /**
      * The mutable `MessageFormatDataModel::Builder` class allows the data model to be
@@ -1509,9 +1412,10 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Builder : public UMemory {
+    class U_I18N_API MessageFormatDataModel::Builder : public UMemory {
     private:
         friend class MessageFormatDataModel;
+        friend class MessageFormatDataModelImpl;
 
         Builder(UErrorCode& errorCode);
         void buildSelectorsMessage(UErrorCode& errorCode);
@@ -1592,62 +1496,8 @@ public:
          */
         MessageFormatDataModel* build(UErrorCode& status) const;
     }; // class MessageFormatDataModel::Builder
-    /**
-     * Returns a new `MessageFormatDataModels::Builder` object.
-     *
-     * @param status  Input/output error code.
-     * @return        The new Builder object, which is non-null if U_SUCCESS(status).
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    static Builder* builder(UErrorCode& status);
-
-    /**
-     * Destructor.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual ~MessageFormatDataModel();
-
-private:
-
-     // The expressions that are being matched on.
-     // Null iff this is a `pattern` message.
-     const LocalPointer<ExpressionList> selectors;
-
-     // The list of `when` clauses (case arms).
-     // Null iff this is a `pattern` message.
-     const LocalPointer<VariantMap> variants;
-
-     // The pattern forming the body of the message.
-     // If this is non-null, then `variants` and `selectors` must be null.
-     const LocalPointer<Pattern> pattern;
-
-     // Bindings for local variables
-     const LocalPointer<Bindings> bindings;
-
-     // Normalized version of the input string (optional whitespace omitted)
-     // Used for testing purposes
-     const LocalPointer<UnicodeString> normalizedInput;
-
-    // Do not define default assignment operator
-    const MessageFormatDataModel &operator=(const MessageFormatDataModel &) = delete;
-
-    MessageFormatDataModel(const Builder& builder, UErrorCode &status);
-}; // class MessageFormatDataModel
 
 } // namespace message2
-
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
-// for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-template class U_I18N_API LocalPointer<ImmutableVector<Key>::Builder>;
-#endif
 
 U_NAMESPACE_END
 
