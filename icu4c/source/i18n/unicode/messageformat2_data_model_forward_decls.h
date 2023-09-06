@@ -199,6 +199,11 @@ private:
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::Binding>::Builder>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::Expression>::Builder>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::Key>::Builder>;
@@ -220,6 +225,9 @@ template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Pattern
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Reserved>;
 template class U_I18N_API LocalPointer<Hashtable>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 #endif
 
 U_NAMESPACE_END
