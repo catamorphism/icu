@@ -18,6 +18,19 @@ U_NAMESPACE_BEGIN
 // The idea is to declare just enough code to allow for the Windows #ifs at
 // the end of this file, and declare all the inner classes out-of-line
 
+namespace message2 {
+    class MessageFormatDataModelImpl;
+}
+
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModelImpl>;
+#endif
+
 // -----------------------------------------------------------------------
 // Public MessageFormatDataModel class
 
@@ -77,7 +90,6 @@ namespace message2 {
         class Binding;
         class Expression;
         class FunctionName;
-        class Impl;
         class Key;
         class Literal;
         class Operand;
@@ -172,7 +184,7 @@ private:
     // TODO: The actual members are split into a separate class
     // so that they can be declared after all the inner MessageFormatDataModel
     // classes are defined
-    LocalPointer<Impl> impl;
+    LocalPointer<MessageFormatDataModelImpl> impl;
 
     // Do not define default assignment operator
     const MessageFormatDataModel &operator=(const MessageFormatDataModel &) = delete;
