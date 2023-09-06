@@ -199,7 +199,26 @@ private:
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::Binding>::Builder>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::Expression>::Builder>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::Key>::Builder>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::Literal>::Builder>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::PatternPart>::Builder>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::SelectorKeys>::Builder>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::SelectorKeys>>;
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::KeyList>;
+template class U_I18N_API LocalPointer<message2::OrderedMap<MessageFormatDataModel::Operand>::Builder>;
+template class U_I18N_API LocalPointer<message2::OrderedMap<MessageFormatDataModel::Pattern>::Builder>;
+template class U_I18N_API LocalPointer<message2::OrderedMap<MessageFormatDataModel::Pattern>>;
+template class U_I18N_API LocalPointer<message2::VariantMap::Builder>;
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::FunctionName>;
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Expression>;
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Operand>;
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Operator>;
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Pattern>;
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Reserved>;
+template class U_I18N_API LocalPointer<Hashtable>;
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel>;
 #endif
 
 U_NAMESPACE_END
