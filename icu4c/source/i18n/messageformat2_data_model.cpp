@@ -784,7 +784,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::setPattern(Pat
 }
 
 MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode)
-    : impl(new Impl(builder, errorCode)) {
+    : impl(new MessageFormatDataModelImpl(builder, errorCode)) {
     if (builder.pattern.isValid()) {
         U_ASSERT(!hasSelectors());
     } else {
@@ -792,7 +792,7 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
     }
 }
 
-MessageFormatDataModel::Impl::Impl(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode)
+MessageFormatDataModelImpl::MessageFormatDataModelImpl(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode)
     :  selectors(builder.pattern.isValid() ? nullptr : builder.selectors->build(errorCode)),
       variants(builder.pattern.isValid() ? nullptr : builder.variants->build(errorCode)),
       pattern(builder.pattern.isValid() ? new Pattern(*(builder.pattern)) : nullptr),
