@@ -863,6 +863,7 @@ template<>
 OrderedMap<Operand>::Builder::~Builder() {}
 template<>
 OrderedMap<Operand>::~OrderedMap() {}
+
 } // namespace message2
 
 U_NAMESPACE_END
