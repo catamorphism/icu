@@ -1403,8 +1403,18 @@ private:
         // (it has to copy the builder's locals)
         Binding(const Binding& other);
     }; // class Binding
+} // namespace message2
 
 
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See messageformat2_data_model_forward_decls.h for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::VariantMap::Builder>;
+#endif
+
+namespace message2 {
     /**
      * The mutable `MessageFormatDataModel::Builder` class allows the data model to be
      * constructed incrementally.
