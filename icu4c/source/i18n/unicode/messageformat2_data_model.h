@@ -18,7 +18,7 @@
 
 U_NAMESPACE_BEGIN namespace message2 {
 
-class MessageFormatDataModel::Impl : public UMemory {
+class MessageFormatDataModelImpl : public UMemory {
 private:
     friend class MessageFormatDataModel;
 
@@ -41,7 +41,7 @@ private:
      // Used for testing purposes
      const LocalPointer<UnicodeString> normalizedInput;
 
-     Impl(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode);
+     MessageFormatDataModelImpl(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode);
 };
 
     /**
@@ -1324,7 +1324,7 @@ private:
          */
         static Builder* builder(UErrorCode& status);
     private:
-        friend class MessageFormatDataModel;
+        friend class MessageFormatDataModelImpl;
         friend class OrderedMap<Pattern>;
 
         // Possibly-empty list of parts
