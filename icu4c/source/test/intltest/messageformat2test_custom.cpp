@@ -7,7 +7,6 @@
 #include "plurrule_impl.h"
 
 #include "unicode/listformatter.h"
-#include "unicode/messageformat2.h"
 #include "intltest.h"
 #include "messageformat2test.h"
 

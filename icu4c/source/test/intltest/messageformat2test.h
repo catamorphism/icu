@@ -10,8 +10,6 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "messageformat2test_utils.h"
-#include "unicode/messageformat2_function_registry.h"
-#include "unicode/messageformat2.h"
 #include "unicode/unistr.h"
 #include "unicode/fmtable.h"
 #include "unicode/parseerr.h"

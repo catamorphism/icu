@@ -4,7 +4,6 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2.h"
 #include "messageformat2test.h"
 
 using namespace icu::message2;
