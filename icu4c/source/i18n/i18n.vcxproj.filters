@@ -213,6 +213,33 @@
     <ClCompile Include="measure.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
+    <ClCompile Include="messageformat2.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_builder.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_checker.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_context.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_data_model.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_formatting_context.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_function_registry.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_parser.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_serializer.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
     <ClCompile Include="msgfmt.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
@@ -867,6 +894,9 @@
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="measunit_impl.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="messageformat2_utils_impl.h">
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="msgfmt_impl.h">
