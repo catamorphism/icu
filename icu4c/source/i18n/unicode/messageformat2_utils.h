@@ -16,7 +16,28 @@
 #include "hash.h"
 #include "uvector.h"
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See messageformat2_data_model_forward_decls.h for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointer<Hashtable>;
+template class U_I18N_API LocalPointer<UVector>;
+template class U_I18N_API LocalPointerBase<Hashtable>;
+template class U_I18N_API LocalPointerBase<UVector>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+
+namespace message2 {
 
 // Defined for convenience, in case we end up using a different
 // representation in the data model for variable references and/or
@@ -24,8 +45,6 @@ U_NAMESPACE_BEGIN namespace message2 {
 static inline UBool compareVariableName(const UElement e1, const UElement e2) {
     return uhash_compareUnicodeString(e1, e2);
 }
-
-// TODO: Removed the U_I18N_API macro from ImmutableVector and OrderedMap because it breaks the build on Windows
 
 /**
  * The `ImmutableVector` class represents a polymorphic immutable list,
@@ -37,7 +56,7 @@ static inline UBool compareVariableName(const UElement e1, const UElement e2) {
  * @deprecated This API is for technology preview only.
  */
 template<typename T>
-class ImmutableVector : public UMemory {
+class U_I18N_API ImmutableVector : public UMemory {
 
 private:
     // If a copy constructor fails, the list is left in an inconsistent state,
@@ -123,7 +142,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class Builder : public UMemory {
+    class U_I18N_API Builder : public UMemory {
     public:
         /**
          * Adds to the list. Adopts `element`.
@@ -201,7 +220,7 @@ private:
  * @deprecated This API is for technology preview only.
  */
 template<typename V>
-class OrderedMap : public UMemory {
+class U_I18N_API OrderedMap : public UMemory {
 
 private:
     // See comments under `ImmutableVector::isBogus()`
@@ -260,7 +279,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class Builder : public UMemory {
+    class U_I18N_API Builder : public UMemory {
     public:
         /**
          * Adds to the map. Adopts `value`.
