@@ -244,7 +244,6 @@ template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel::Ope
 template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel::Operator>;
 template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel::Pattern>;
 template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel::Reserved>;
-template class U_I18N_API LocalPointerBase<Hashtable>;
 template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
