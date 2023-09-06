@@ -207,10 +207,10 @@ template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::Messa
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::SelectorKeys>::Builder>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::MessageFormatDataModel::SelectorKeys>>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::KeyList>;
-template class U_I18N_API LocalPointer<message2::OrderedMap<MessageFormatDataModel::Operand>::Builder>;
-template class U_I18N_API LocalPointer<message2::OrderedMap<MessageFormatDataModel::Pattern>::Builder>;
-template class U_I18N_API LocalPointer<message2::OrderedMap<MessageFormatDataModel::Pattern>>;
-template class U_I18N_API LocalPointer<message2::VariantMap::Builder>;
+template class U_I18N_API LocalPointer<message2::OrderedMap<message2::MessageFormatDataModel::Operand>::Builder>;
+template class U_I18N_API LocalPointer<message2::OrderedMap<message2::MessageFormatDataModel::Pattern>::Builder>;
+template class U_I18N_API LocalPointer<message2::OrderedMap<message2::MessageFormatDataModel::Pattern>>;
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::VariantMap::Builder>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::FunctionName>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Expression>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Operand>;
