@@ -1,8 +1,6 @@
 #ifndef _TESTMESSAGEFORMAT2_UTILS
 #define _TESTMESSAGEFORMAT2_UTILS
 
-#include "unicode/messageformat2_function_registry.h"
-#include "unicode/messageformat2_macros.h"
 #include "unicode/messageformat2.h"
 #include "intltest.h"
 

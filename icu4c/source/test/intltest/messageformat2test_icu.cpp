@@ -5,7 +5,6 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/gregocal.h"
-#include "unicode/messageformat2.h"
 #include "unicode/msgfmt.h"
 #include "messageformat2test.h"
 
