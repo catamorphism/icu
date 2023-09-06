@@ -10,6 +10,8 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+#include "unicode/messageformat2_macros.h"
+
 template<typename T>
 int32_t ImmutableVector<T>::length() const {
     U_ASSERT(!isBogus());
