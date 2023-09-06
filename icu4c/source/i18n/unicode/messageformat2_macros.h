@@ -13,7 +13,6 @@
 #include "plurrule_impl.h"
 
 #include "unicode/format.h"
-#include "unicode/messageformat2_data_model.h"
 #include "unicode/unistr.h"
 #include "unicode/utypes.h"
 
