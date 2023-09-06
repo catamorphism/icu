@@ -5,13 +5,14 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2.h"
 #include "unicode/messageformat2_data_model.h"
+#include "unicode/messageformat2.h"
 #include "uvector.h" // U_ASSERT
 
 U_NAMESPACE_BEGIN namespace message2 {
 
 using Binding          = MessageFormatDataModel::Binding;
+using Bindings         = MessageFormatDataModel::Bindings;
 using Expression       = MessageFormatDataModel::Expression;
 using ExpressionList   = MessageFormatDataModel::ExpressionList;
 using Key              = MessageFormatDataModel::Key;
@@ -665,34 +666,37 @@ Binding::~Binding() {}
 
 // --------------- MessageFormatDataModel
 
+const Bindings& MessageFormatDataModel::getLocalVariables() const {
+    return *(impl->bindings);
+}
 
 // The `hasSelectors()` method is provided so that `getSelectors()`,
 // `getVariants()` and `getPattern()` can rely on preconditions
 // rather than taking error codes as arguments.
 UBool MessageFormatDataModel::hasSelectors() const {
-    if (pattern.isValid()) {
-        U_ASSERT(!selectors.isValid());
-         U_ASSERT(!variants.isValid());
-         return false;
+    if (impl->pattern.isValid()) {
+        U_ASSERT(!impl->selectors.isValid());
+        U_ASSERT(!impl->variants.isValid());
+        return false;
     }
-    U_ASSERT(selectors.isValid());
-    U_ASSERT(variants.isValid());
+    U_ASSERT(impl->selectors.isValid());
+    U_ASSERT(impl->variants.isValid());
     return true;
 }
 
 const ExpressionList& MessageFormatDataModel::getSelectors() const {
     U_ASSERT(hasSelectors());
-    return *selectors;
+    return *(impl->selectors);
 }
 
 const VariantMap& MessageFormatDataModel::getVariants() const {
     U_ASSERT(hasSelectors());
-    return *variants;
+    return *(impl->variants);
 }
 
 const Pattern& MessageFormatDataModel::getPattern() const {
     U_ASSERT(!hasSelectors());
-    return *pattern;
+    return *(impl->pattern);
 }
 
 MessageFormatDataModel::Builder::Builder(UErrorCode& errorCode) {
@@ -780,7 +784,16 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::setPattern(Pat
 }
 
 MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode)
-    : selectors(builder.pattern.isValid() ? nullptr : builder.selectors->build(errorCode)),
+    : impl(new Impl(builder, errorCode)) {
+    if (builder.pattern.isValid()) {
+        U_ASSERT(!hasSelectors());
+    } else {
+        U_ASSERT(hasSelectors());
+    }
+}
+
+MessageFormatDataModel::Impl::Impl(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode)
+    :  selectors(builder.pattern.isValid() ? nullptr : builder.selectors->build(errorCode)),
       variants(builder.pattern.isValid() ? nullptr : builder.variants->build(errorCode)),
       pattern(builder.pattern.isValid() ? new Pattern(*(builder.pattern)) : nullptr),
       bindings(builder.locals->build(errorCode))
@@ -791,12 +804,10 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
         // If `pattern` has been set, then assume this is a Pattern message
         U_ASSERT(!builder.selectors.isValid());
         U_ASSERT(!builder.variants.isValid());
-        U_ASSERT(!hasSelectors());
     } else {
         // Otherwise, this is a Selectors message
         U_ASSERT(builder.selectors.isValid());
         U_ASSERT(builder.variants.isValid());
-        U_ASSERT(hasSelectors());
     }
 }
 
