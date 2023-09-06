@@ -418,6 +418,8 @@ private:
 #endif
 template class U_I18N_API LocalPointer<message2::CachedFormatters>;
 template class U_I18N_API LocalPointer<message2::Errors>;
+template class U_I18N_API LocalPointerBase<message2::CachedFormatters>;
+template class U_I18N_API LocalPointerBase<message2::Errors>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
