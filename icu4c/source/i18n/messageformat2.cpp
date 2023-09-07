@@ -143,7 +143,7 @@ void MessageFormatter::resolveOptions(const Environment& env, const OptionMap& o
                     break;
                 }
                 case Formattable::Type::kInt64: {
-                    context.setNumericOption(k, f.getInt64(), status);
+                    context.setNumericOption(k, (double) f.getInt64(), status);
                     break;
                 }
                 case Formattable::Type::kString: {
