@@ -383,6 +383,12 @@ class ExpressionContext : public FormattingContext {
 
     // Named options passed to functions
     LocalPointer<Hashtable> functionOptions;
+    // Named options passed to functions that have type UObject
+    // This must be a separate hash table because objects wrapped in
+    // a Formattable will be deleted by the destructor of the Formattable,
+    // and object values passed as arguments are not owned
+    LocalPointer<Hashtable> functionObjectOptions;
+
 
     // Creates a new context with the given `MessageContext` as its parent
     static ExpressionContext* create(MessageContext&, UErrorCode&);
