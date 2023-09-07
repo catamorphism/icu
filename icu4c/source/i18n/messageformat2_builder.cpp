@@ -164,6 +164,7 @@ bool MessageFormatter::dataModelOK() const {
 MessageFormatter::~MessageFormatter() {}
 
 } // namespace message2
+
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

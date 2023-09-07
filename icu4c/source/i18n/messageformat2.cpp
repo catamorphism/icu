@@ -790,6 +790,7 @@ void MessageFormatter::checkDeclarations(MessageContext& context, Environment*& 
     }
 }
 } // namespace message2
+
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
