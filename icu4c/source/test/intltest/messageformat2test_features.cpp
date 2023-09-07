@@ -369,7 +369,7 @@ void TestMessageFormat2::testDateFormat(TestCase::Builder& testBuilder, IcuTestE
 
     // Implied function based on type of the object to format
     test.adoptInstead(testBuilder.setPattern("{Your card expires on {$exp}!}")
-                      .setExpected("Your card expires on 10/27/22, 12:00\u202FAM!")
+                      .setExpected(CharsToUnicodeString("Your card expires on 10/27/22, 12:00\\u202FAM!"))
                       .setDateArgument("exp", expiration, errorCode)
                       .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);

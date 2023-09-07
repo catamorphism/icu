@@ -48,7 +48,7 @@ there was {$what} on planet {$planet :number kind=integer}.}")
                                 .setArgument("planet", (int64_t) 7, errorCode)
                                 .setArgument("when", (UDate) 871068000000, errorCode)
                                 .setArgument("what", "a disturbance in the Force", errorCode)
-                                .setExpected("At 12:20:00\u202FPM on Aug 8, 1997, there was a disturbance in the Force on planet 7.")
+                                .setExpected(CharsToUnicodeString("At 12:20:00\\u202FPM on Aug 8, 1997, there was a disturbance in the Force on planet 7."))
                                 .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
 }
@@ -78,27 +78,27 @@ void TestMessageFormat2::testSimpleFormat(TestCase::Builder& testBuilder, IcuTes
 void TestMessageFormat2::testSelectFormatToPattern(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    UnicodeString pattern = "match {$userGender :select}\n\
-                 when female {{$userName} est all\u00E9e \u00E0 Paris.}\n\
-                 when  *     {{$userName} est all\u00E9 \u00E0 Paris.}";
+    UnicodeString pattern = CharsToUnicodeString("match {$userGender :select}\n\
+                 when female {{$userName} est all\\u00E9e \\u00E0 Paris.}\n\
+                 when  *     {{$userName} est all\\u00E9 \\u00E0 Paris.}");
 
     testBuilder.setPattern(pattern);
 
     LocalPointer<TestCase> test(testBuilder.setArgument("userName", "Charlotte", errorCode)
                                 .setArgument("userGender", "female", errorCode)
-                                .setExpected("Charlotte est allée à Paris.")
+                                .setExpected(CharsToUnicodeString("Charlotte est all\\u00e9e \\u00e0 Paris."))
                                 .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
 
     test.adoptInstead(testBuilder.setArgument("userName", "Guillaume", errorCode)
                                 .setArgument("userGender", "male", errorCode)
-                                .setExpected("Guillaume est allé à Paris.")
+                                .setExpected(CharsToUnicodeString("Guillaume est all\\u00e9 \\u00e0 Paris."))
                                 .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
 
     test.adoptInstead(testBuilder.setArgument("userName", "Dominique", errorCode)
                                 .setArgument("userGender", "unknown", errorCode)
-                                .setExpected("Dominique est allé à Paris.")
+                                .setExpected(CharsToUnicodeString("Dominique est all\\u00e9 \\u00e0 Paris."))
                                 .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
 }
@@ -120,7 +120,7 @@ void TestMessageFormat2::testMessageFormatDateTimeSkeleton(TestCase::Builder& te
     TestUtils::runTestCase(*this, *test, errorCode);
 
     test.adoptInstead(testBuilder.setPattern("{{$when :datetime skeleton=yMMMMdjm}}")
-                                .setExpected("November 23, 2021 at 4:42\u202FPM")
+                                 .setExpected(CharsToUnicodeString("November 23, 2021 at 4:42\\u202FPM"))
                                 .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
 
