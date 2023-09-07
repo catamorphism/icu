@@ -195,6 +195,13 @@ public:
          * @deprecated This API is for technology preview only.
          */
         MessageFormatter* build(UParseError& parseError, UErrorCode& status) const;
+	/**
+	 * Destructor.
+	 *
+	 * @internal ICU 74.0 technology preview
+	 * @deprecated This API is for technology preview only.
+	 */
+	virtual ~Builder();
     }; // class MessageFormatter::Builder
 
    /**
