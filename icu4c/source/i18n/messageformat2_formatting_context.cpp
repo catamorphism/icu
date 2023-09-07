@@ -43,9 +43,11 @@ ExpressionContext::ExpressionContext(MessageContext& c, UErrorCode& errorCode) :
 void ExpressionContext::initFunctionOptions(UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
     functionOptions.adoptInstead(new Hashtable(compareVariableName, nullptr, errorCode));
+    functionObjectOptions.adoptInstead(new Hashtable(compareVariableName, nullptr, errorCode));
     CHECK_ERROR(errorCode);
     // `functionOptions` owns its values
     functionOptions->setValueDeleter(uprv_deleteUObject);
+    // `functionObjectOptions` does not own its values
 }
 
 // State
@@ -335,18 +337,6 @@ const FunctionName& ExpressionContext::getFunctionName() {
     return result;
 }
 
-/* static */ Formattable* ExpressionContext::createFormattable(const UObject* v, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    // This object will only be accessed through getObjectOption(), which returns
-    // a const reference
-    Formattable* result = new Formattable(const_cast<UObject*>(v));
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
 /* static */ Formattable* ExpressionContext::createFormattable(const UnicodeString* in, int32_t count, UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
@@ -392,6 +382,7 @@ const FunctionName& ExpressionContext::getFunctionName() {
 }
 
 // Function options iterator
+// TODO: this only iterates over non-object options
 int32_t ExpressionContext::firstOption() const { return UHASH_FIRST; }
 
 const Formattable* ExpressionContext::nextOption(int32_t& pos, UnicodeString& key) const {
@@ -447,9 +438,10 @@ void ExpressionContext::setNumericOption(const UnicodeString& key, double value,
 void ExpressionContext::setObjectOption(const UnicodeString& key, const UObject* value, UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    LocalPointer<Formattable> valuePtr(createFormattable(value, errorCode));
-    CHECK_ERROR(errorCode);
-    addFunctionOption(key, valuePtr.orphan(), errorCode);
+    U_ASSERT(functionObjectOptions.isValid());
+    // The const_cast is safe because no methods that allow
+    // writing to `value` are exposed
+    functionObjectOptions->put(key, const_cast<UObject*>(value), errorCode);
 }
 
 Formattable* ExpressionContext::getOption(const UnicodeString& key, Formattable::Type type) const {
@@ -480,16 +472,15 @@ UBool ExpressionContext::getStringOption(const UnicodeString& key, UnicodeString
 }
 
 const UObject& ExpressionContext::getObjectOption(const UnicodeString& key) const {
-    Formattable* result = getOption(key, Formattable::Type::kObject);
+    U_ASSERT(functionObjectOptions.isValid());
+    UObject* result = static_cast<UObject*>(functionObjectOptions->get(key));
     U_ASSERT(result != nullptr);
-    const UObject* value = result->getObject();
-    U_ASSERT(value != nullptr);
-    return *value;
+    return *result;
 }
 
 UBool ExpressionContext::hasObjectOption(const UnicodeString& key) const {
-    Formattable* result = getOption(key, Formattable::Type::kObject);
-    return (result != nullptr);
+    U_ASSERT(functionObjectOptions.isValid());
+    return (functionObjectOptions->get(key) != nullptr);
 }
 
 bool ExpressionContext::tryStringAsNumberOption(const UnicodeString& key, double& value) const {
