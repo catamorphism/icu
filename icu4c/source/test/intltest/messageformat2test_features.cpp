@@ -457,8 +457,8 @@ void TestMessageFormat2::testPluralOrdinal(TestCase::Builder& testBuilder, IcuTe
 TemperatureFormatter::TemperatureFormatter(const Locale& l, TemperatureFormatterFactory& c, UErrorCode& errorCode) : locale(l), counter(c) {
     CHECK_ERROR(errorCode);
 
-    cachedFormatters.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
-    if (!cachedFormatters.isValid()) {
+    cachedFormatters = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
+    if (cachedFormatters == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
         return;
     }
@@ -547,7 +547,7 @@ void TemperatureFormatter::format(FormattingContext& context, UErrorCode& errorC
     context.setOutput(std::move(result));
 }
 
-TemperatureFormatter::~TemperatureFormatter() {}
+TemperatureFormatter::~TemperatureFormatter() { delete cachedFormatters; }
 
 void putFormattableArg(Hashtable& arguments, const UnicodeString& k, const UnicodeString& arg, UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);

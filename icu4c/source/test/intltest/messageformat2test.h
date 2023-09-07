@@ -199,7 +199,7 @@ class TemperatureFormatter : public Formatter {
     friend class TemperatureFormatterFactory;
     const Locale& locale;
     TemperatureFormatterFactory& counter;
-    LocalPointer<Hashtable> cachedFormatters;
+    Hashtable* cachedFormatters;
 
     TemperatureFormatter(const Locale&, TemperatureFormatterFactory&, UErrorCode&);
 };
