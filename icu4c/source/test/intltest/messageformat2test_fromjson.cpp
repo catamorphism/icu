@@ -424,7 +424,7 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
 
     test.adoptInstead(testBuilder->setPattern("{empty { }}")
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .setExpected("empty \uFFFD")
+                      .setExpected(CharsToUnicodeString("empty \\uFFFD"))
                       .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
 
@@ -440,7 +440,7 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
                       .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
 
-    test.adoptInstead(testBuilder->setPattern("{bad {\\u0000placeholder}}")
+    test.adoptInstead(testBuilder->setPattern(CharsToUnicodeString("{bad {\\u0000placeholder}}"))
                       .clearExpected()
                       .setExpectedError(U_SYNTAX_ERROR)
                       .build(errorCode));
