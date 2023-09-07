@@ -182,7 +182,7 @@ number::LocalizedNumberFormatter* formatterForOptions(Locale locale, const Forma
     } else {
         int64_t minFractionDigits = 0;
         context.getInt64Option(UnicodeString("minimumFractionDigits"), minFractionDigits);
-        nf = number::NumberFormatter::with().precision(number::Precision::minFraction(minFractionDigits));
+        nf = number::NumberFormatter::with().precision(number::Precision::minFraction((int32_t) minFractionDigits));
     }
     NULL_ON_ERROR(status);
     LocalPointer<number::LocalizedNumberFormatter> result(new number::LocalizedNumberFormatter(nf.locale(locale)));
