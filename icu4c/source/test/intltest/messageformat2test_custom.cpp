@@ -548,29 +548,31 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
 /* static */ Hashtable* message2::ResourceManager::properties(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
-    LocalPointer<Hashtable> result(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
-    NULL_ON_ERROR(errorCode);
-    result->setValueDeleter(uprv_deleteUObject);
+    LocalPointer<UnicodeString> firefox(new UnicodeString("match {$gcase :select} when genitive {Firefoxin} when * {Firefox}"));
+    if (!firefox.isValid()) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+        return nullptr;
+    }
+    LocalPointer<UnicodeString> chrome(new UnicodeString("match {$gcase :select} when genitive {Chromen} when * {Chrome}"));
+    if (!chrome.isValid()) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+        return nullptr;
+    }
+    LocalPointer<UnicodeString> safari(new UnicodeString("match {$gcase :select} when genitive {Safarin} when * {Safari}"));
+    if (!safari.isValid()) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+        return nullptr;
+    }
 
-    LocalPointer<UnicodeString> value(new UnicodeString("match {$gcase :select} when genitive {Firefoxin} when * {Firefox}"));
-    if (!value.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    Hashtable* result = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
+    if (result == nullptr) {
         return nullptr;
     }
-    result->put("firefox", value.orphan(), errorCode);
-    value.adoptInstead(new UnicodeString("match {$gcase :select} when genitive {Chromen} when * {Chrome}"));
-    if (!value.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-    result->put("chrome", value.orphan(), errorCode);
-    value.adoptInstead(new UnicodeString("match {$gcase :select} when genitive {Safarin} when * {Safari}"));
-    if (!value.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-    result->put("safari", value.orphan(), errorCode);
-    return result.orphan();
+    result->setValueDeleter(uprv_deleteUObject);
+    result->put("safari", safari.orphan(), errorCode);
+    result->put("firefox", firefox.orphan(), errorCode);
+    result->put("chrome", chrome.orphan(), errorCode);
+    return result;
 }
 
 Formatter* ResourceManagerFactory::createFormatter(const Locale& locale, UErrorCode& errorCode) {
@@ -697,7 +699,13 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
 void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    LocalPointer<Hashtable> properties(ResourceManager::properties(errorCode));
+    Hashtable* properties = ResourceManager::properties(errorCode);
+    CHECK_ERROR(errorCode);
+    if (properties == nullptr) {
+        ((UErrorCode&) errorCode) = U_MEMORY_ALLOCATION_ERROR;
+        return;
+    }
+
     LocalPointer<TestCase::Builder> testBuilder(TestCase::builder(errorCode));
     CHECK_ERROR(errorCode);
     testBuilder->setLocale(Locale("ro"), errorCode);
@@ -726,7 +734,7 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
                                 .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
 
-    testBuilder->setArgument("res", (UObject*) properties.getAlias(), errorCode);
+    testBuilder->setArgument("res", (UObject*) properties, errorCode);
 
     testBuilder->setPattern("{Please start {$browser :msgRef gcase=genitive resbundle=$res}}");
     test.adoptInstead(testBuilder->setArgument("browser", "firefox", errorCode)
@@ -751,10 +759,12 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
                                 .setExpected("Please start Chrome")
                                 .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
-   test.adoptInstead(testBuilder->setArgument("browser", "safari", errorCode)
+    test.adoptInstead(testBuilder->setArgument("browser", "safari", errorCode)
                                 .setExpected("Please start Safari")
                                 .build(errorCode));
     TestUtils::runTestCase(*this, *test, errorCode);
+
+    delete properties;
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
