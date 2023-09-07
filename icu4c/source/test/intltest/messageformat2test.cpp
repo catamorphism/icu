@@ -395,6 +395,8 @@ void TestMessageFormat2::testAPICustomFunctions() {
 }
 
 void TestMessageFormat2::testValidPatterns(const TestResult* patterns, int32_t len, IcuTestErrorCode& errorCode) {
+    CHECK_ERROR(errorCode);
+
     LocalPointer<TestCase::Builder> testBuilder(TestCase::builder(errorCode));
     testBuilder->setName("testOtherJsonPatterns");
 
@@ -410,6 +412,8 @@ void TestMessageFormat2::testValidPatterns(const TestResult* patterns, int32_t l
 }
 
 void TestMessageFormat2::testResolutionErrors(IcuTestErrorCode& errorCode) {
+    CHECK_ERROR(errorCode);
+
     LocalPointer<TestCase::Builder> testBuilder(TestCase::builder(errorCode));
     testBuilder->setName("testResolutionErrorPattern");
 
@@ -425,6 +429,8 @@ void TestMessageFormat2::testResolutionErrors(IcuTestErrorCode& errorCode) {
 }
 
 void TestMessageFormat2::testNoSyntaxErrors(const UnicodeString* patterns, int32_t len, IcuTestErrorCode& errorCode) {
+    CHECK_ERROR(errorCode);
+
     LocalPointer<TestCase::Builder> testBuilder(TestCase::builder(errorCode));
     testBuilder->setName("testReservedErrorPattern");
 
