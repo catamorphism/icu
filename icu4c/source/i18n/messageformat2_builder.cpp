@@ -162,6 +162,7 @@ bool MessageFormatter::dataModelOK() const {
 }
 
 MessageFormatter::~MessageFormatter() {}
+MessageFormatter::Builder::~Builder() {}
 
 } // namespace message2
 U_NAMESPACE_END
