@@ -165,6 +165,7 @@ MessageFormatter::~MessageFormatter() {}
 MessageFormatter::Builder::~Builder() {}
 
 } // namespace message2
+
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

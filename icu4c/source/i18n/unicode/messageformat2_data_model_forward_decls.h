@@ -223,7 +223,6 @@ template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Operand
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Operator>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Pattern>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Reserved>;
-template class U_I18N_API LocalPointer<Hashtable>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel>;
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::MessageFormatDataModel::Binding>::Builder>;
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::MessageFormatDataModel::Expression>::Builder>;

@@ -31,7 +31,7 @@ class Selector;
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-class U_COMMON_API FormatterFactory : public UObject {
+class U_I18N_API FormatterFactory : public UObject {
     // TODO: the coding guidelines say that interface classes
     // shouldn't inherit from UObject, but if I change it so these
     // classes don't, and the individual formatter factory classes
@@ -59,7 +59,7 @@ public:
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-class U_COMMON_API SelectorFactory : public UObject {
+class U_I18N_API SelectorFactory : public UObject {
 public:
     /**
      * Constructs a new selector object.
@@ -226,7 +226,7 @@ private:
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-class U_COMMON_API Formatter : public UObject {
+class U_I18N_API Formatter : public UObject {
 public:
     /**
      * Formats the input passed in `context` by setting an output using one of the
@@ -253,7 +253,7 @@ public:
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-class U_COMMON_API Selector : public UObject {
+class U_I18N_API Selector : public UObject {
 public:
     /**
      * Compares the input passed in `context` to an array of keys, and returns an array of matching

@@ -186,9 +186,8 @@ private:
              switch (functionSigil) {
              case Sigil::OPEN: { return PLUS; }
              case Sigil::CLOSE: { return HYPHEN; }
-             case Sigil::DEFAULT: { return COLON; }
+             default: { return COLON; }
              }
-             U_ASSERT(false);
          }
     }; // class FunctionName
 
