@@ -23,42 +23,42 @@ Tests reflect the syntax specified in
 
   https://github.com/unicode-org/message-format-wg/commits/main/spec/message.abnf
 
-as of the following commit from 2023-05-09:
-  https://github.com/unicode-org/message-format-wg/commit/194f6efcec5bf396df36a19bd6fa78d1fa2e0867
+as of the following commit from 2023-10-31:
+  https://github.com/unicode-org/message-format-wg/commit/bc1f3038cfc1acced19da105978a79df03fa044e
 
 */
 
 static const int32_t numValidTestCases = 25;
 TestResult validTestCases[] = {
-    {"{hello {|4.2| :number}}", "hello 4.2"},
-    {"{hello {|4.2| :number minimumFractionDigits=2}}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits = 2}}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits= 2}}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits =2}}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits=2  }}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits=2 bar=3}}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits=2 bar=3  }}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits=|2|}}", "hello 4.20"},
-    {"{content -tag}", "content -tag"},
-    {"{}", ""},
+    {"hello {|4.2| :number}", "hello 4.2"},
+    {"hello {|4.2| :number minimumFractionDigits=2}", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits = 2}", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits= 2}", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits =2}", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits=2  }", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits=2 bar=3}", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits=2 bar=3  }", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits=|2|}", "hello 4.20"},
+    {"content -tag", "content -tag"},
+    {"", ""},
     // tests for escape sequences in literals
-    {"{{|hel\\\\lo|}}", "hel\\lo"},
-    {"{{|hel\\|lo|}}", "hel|lo"},
-    {"{{|hel\\|\\\\lo|}}", "hel|\\lo"},
+    {"{|hel\\\\lo|}", "hel\\lo"},
+    {"{|hel\\|lo|}", "hel|lo"},
+    {"{|hel\\|\\\\lo|}", "hel|\\lo"},
     // tests for text escape sequences
-    {"{hel\\{lo}", "hel{lo"},
-    {"{hel\\}lo}", "hel}lo"},
-    {"{hel\\\\lo}", "hel\\lo"},
-    {"{hel\\{\\\\lo}", "hel{\\lo"},
-    {"{hel\\{\\}lo}", "hel{}lo"},
+    {"hel\\{lo", "hel{lo"},
+    {"hel\\}lo", "hel}lo"},
+    {"hel\\\\lo", "hel\\lo"},
+    {"hel\\{\\\\lo", "hel{\\lo"},
+    {"hel\\{\\}lo", "hel{}lo"},
     // tests for ':' in unquoted literals
-    {"match {|foo| :select} when o:ne {one} when * {other}", "other"},
-    {"match {|foo| :select} when one: {one} when * {other}", "other"},
-    {"let $foo = {|42| :number option=a:b} {bar {$foo}}", "bar 42"},
-    {"let $foo = {|42| :number option=a:b:c} {bar {$foo}}", "bar 42"},
+    {"{{match {|foo| :select} when o:ne {{one}} when * {{other}}}}", "other"},
+    {"{{match {|foo| :select} when one: {{one}} when * {{other}}}}", "other"},
+    {"{{ local $foo = {|42| :number option=a:b} {{bar {$foo}}} }}", "bar 42"},
+    {"{{ local $foo = {|42| :number option=a:b:c} {{bar {$foo}}} }}", "bar 42"},
     // tests for newlines in literals and text
-    {"{hello {|wo\nrld|}}", "hello wo\nrld"},
-    {"{hello wo\nrld}", "hello wo\nrld"}
+    {"hello {|wo\nrld|}", "hello wo\nrld"},
+    {"hello wo\nrld", "hello wo\nrld"}
 };
 
 
@@ -177,6 +177,7 @@ void
 TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
                                   const char* &name, char* /*par*/) {
     TESTCASE_AUTO_BEGIN;
+    TESTCASE_AUTO(testVariousPatterns);
     TESTCASE_AUTO(featureTests);
     TESTCASE_AUTO(messageFormat1Tests);
     TESTCASE_AUTO(testAPICustomFunctions);
@@ -186,7 +187,6 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(testResolutionErrors);
     TESTCASE_AUTO(testAPI);
     TESTCASE_AUTO(testAPISimple);
-    TESTCASE_AUTO(testVariousPatterns);
     TESTCASE_AUTO(testInvalidPatterns);
     TESTCASE_AUTO_END;
 }
@@ -398,7 +398,7 @@ void TestMessageFormat2::testValidPatterns(const TestResult* patterns, int32_t l
     CHECK_ERROR(errorCode);
 
     LocalPointer<TestCase::Builder> testBuilder(TestCase::builder(errorCode));
-    testBuilder->setName("testOtherJsonPatterns");
+    testBuilder->setName("testValidPatterns");
 
     LocalPointer<TestCase> test;
 

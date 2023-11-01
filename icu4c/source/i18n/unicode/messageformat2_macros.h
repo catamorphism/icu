@@ -54,10 +54,10 @@ using namespace pluralimpl;
 // Fallback
 #define REPLACEMENT ((UChar32) 0xFFFD)
 
-// MessageFormat2 uses three keywords: `let`, `when`, and `match`.
+// MessageFormat2 uses three keywords: `local`, `when`, and `match`.
 
-static constexpr UChar32 ID_LET[] = {
-    0x6C, 0x65, 0x74, 0 /* "let" */
+static constexpr UChar32 ID_LOCAL[] = {
+    0x6C, 0x6F, 0x63, 0x61, 0x6C, 0 /* "local" */
 };
 
 static constexpr UChar32 ID_WHEN[] = {

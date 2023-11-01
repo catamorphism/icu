@@ -228,7 +228,7 @@ void SERIALIZER::serializeDeclarations() {
     for (int32_t i = 0; i < locals.length(); i++) {
         const Binding& b = *locals.get(i);
         // No whitespace needed here -- see `message` in the grammar
-        emit(ID_LET);
+        emit(ID_LOCAL);
         whitespace();
         emit(b.getVariable());
         // No whitespace needed here -- see `declaration` in the grammar

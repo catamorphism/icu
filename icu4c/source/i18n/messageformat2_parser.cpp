@@ -376,6 +376,36 @@ void PARSER::parseToken(UChar32 c, UErrorCode &errorCode) {
     ERROR(parseError, errorCode, index);
 }
 
+// Consumes the opening '{{' for a complex-message or quoted-pattern
+void PARSER::parseDoubleLeftBrace(UErrorCode &errorCode) {
+    parseToken(LEFT_CURLY_BRACE, errorCode);
+    CHECK_ERROR(errorCode);
+    parseToken(LEFT_CURLY_BRACE, errorCode);
+}
+
+// Consumes the closing '{{' for a complex-message or quoted-pattern
+void PARSER::parseDoubleRightBrace(UErrorCode &errorCode) {
+    parseToken(RIGHT_CURLY_BRACE, errorCode);
+    CHECK_ERROR(errorCode);
+    // This may be the end of the input, so don't check bounds
+    if (source[index] == RIGHT_CURLY_BRACE) {
+        index++;
+        normalizedInput += RIGHT_CURLY_BRACE;
+        return;
+    }
+    // Next character didn't match -- error out
+    ERROR(parseError, errorCode, index);
+}
+
+static bool isDoubleLeftBrace(const UnicodeString& source, uint32_t index) {
+    if (!inBounds(source, index + 1)) {
+        return false;
+    }
+    return source[index] == LEFT_CURLY_BRACE
+        && source[index + 1] == LEFT_CURLY_BRACE;
+}
+
+
 /*
    Consumes a fixed-length token, signaling an error if the token isn't a prefix of
    the string beginning at `source[index]`
@@ -1097,6 +1127,7 @@ static Expression* exprFallback(UErrorCode &errorCode) {
 // Sets `parseError` to true if there was an error parsing this expression
 // Uses a flag rather than just returning a fallback expression because which
 // fallback to use depends on context
+// No postcondition (an expression can end the input)
 Expression* PARSER::parseExpression(bool& err, UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
     err = false;
@@ -1153,8 +1184,13 @@ Expression* PARSER::parseExpression(bool& err, UErrorCode &errorCode) {
     // allows it, see comments in parseLiteralWithAnnotation() and parseOptions()
 
     // Parse closing brace
-    parseToken(RIGHT_CURLY_BRACE, errorCode);
-
+    // Input can end with an expression, so we don't use parseToken
+    if (source[index] == RIGHT_CURLY_BRACE) {
+        normalizedInput += source[index];
+        index++;
+    } else {
+        ERROR(parseError, errorCode, index);
+    }
     return exprBuilder->build(errorCode);
 }
 
@@ -1171,8 +1207,8 @@ void PARSER::parseDeclarations(UErrorCode &errorCode) {
     // declarations must be followed by a body
     CHECK_BOUNDS(source, index, parseError, errorCode);
 
-    while (source[index] == ID_LET[0]) {
-        parseToken(ID_LET, errorCode);
+    while (source[index] == ID_LOCAL[0]) {
+        parseToken(ID_LOCAL, errorCode);
         parseRequiredWhitespace(errorCode);
         // Restore precondition
         CHECK_BOUNDS(source, index, parseError, errorCode);
@@ -1214,6 +1250,8 @@ void PARSER::parseTextEscape(UErrorCode &errorCode, UnicodeString &str) {
 /*
   Consume a non-empty sequence of text characters and escaped text characters,
   matching the `text` nonterminal in the grammar
+
+  No postcondition (a text part can end the message)
 */
 void PARSER::parseText(UErrorCode &errorCode, UnicodeString &str) {
     CHECK_ERROR(errorCode);
@@ -1232,9 +1270,11 @@ void PARSER::parseText(UErrorCode &errorCode, UnicodeString &str) {
         } else {
             break;
         }
-        // Restore precondition
-        CHECK_BOUNDS(source, index, parseError, errorCode);
         empty = false;
+        // A text can end the message, so exit if we're out of input
+        if (!inBounds(source, index)) {
+            break;
+        }
     }
 
     if (empty) {
@@ -1397,17 +1437,25 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
 */
 Pattern* PARSER::parsePattern(UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
+
+    // Handle empty pattern specially
+    if (source.length() == 0) {
+        U_ASSERT(index == 0);
+        LocalPointer<Pattern::Builder> result(Pattern::builder(errorCode));
+        // Fail immediately if the pattern builder can't be constructed
+        NULL_ON_ERROR(errorCode);
+        return result->build(errorCode);
+    }
+
     U_ASSERT(inBounds(source, index));
     
     LocalPointer<Pattern::Builder> result(Pattern::builder(errorCode));
     // Fail immediately if the pattern builder can't be constructed
     NULL_ON_ERROR(errorCode);
 
-    parseToken(LEFT_CURLY_BRACE, errorCode);
-
     LocalPointer<Expression> expression;
     LocalPointer<PatternPart> part;
-    while (source[index] != RIGHT_CURLY_BRACE) {
+    while (source[index] == LEFT_CURLY_BRACE || isTextChar(source[index])) {
         switch (source[index]) {
         case LEFT_CURLY_BRACE: {
             // Must be expression
@@ -1436,13 +1484,19 @@ Pattern* PARSER::parsePattern(UErrorCode &errorCode) {
             return result->build(errorCode);
         }
     }
-    // Consume the closing brace
-    index++;
-    normalizedInput += RIGHT_CURLY_BRACE;
 
     return result->build(errorCode);
 }
 
+// Parse a `quoted-pattern` (matching the nonterminal in the grammar)
+Pattern* PARSER::parseQuotedPattern(UErrorCode &errorCode) {
+    NULL_ON_ERROR(errorCode);
+    parseDoubleLeftBrace(errorCode);
+    LocalPointer<Pattern> result(parsePattern(errorCode));
+    parseDoubleRightBrace(errorCode);
+    NULL_ON_ERROR(errorCode);
+    return result.orphan();
+}
 
 /*
   Consume a `selectors` (matching the nonterminal in the grammar),
@@ -1480,6 +1534,10 @@ void PARSER::parseSelectors(UErrorCode &errorCode) {
             // to the spec, but there's no way to pass that through
             expression.adoptInstead(exprFallback(errorCode));
         }
+        // Need a bounds check because parseExpression() doesn't guarantee
+        // in-bounds
+        CHECK_BOUNDS(source, index, parseError, errorCode);
+
         empty = false;
 
         if (U_FAILURE(errorCode)) {
@@ -1519,10 +1577,10 @@ void PARSER::parseSelectors(UErrorCode &errorCode) {
         // parseNonEmptyKeys() consumes any trailing whitespace,
         // so the pattern can be consumed next.
 
-        // Restore precondition before calling parsePattern()
+        // Restore precondition before calling parseQuotedPattern()
         // (which must return a non-null value)
         CHECK_BOUNDS(source, index, parseError, errorCode);
-        LocalPointer<Pattern> rhs(parsePattern(errorCode));
+        LocalPointer<Pattern> rhs(parseQuotedPattern(errorCode));
         if (U_FAILURE(errorCode)) {
             break;
         }
@@ -1549,6 +1607,7 @@ void PARSER::parseSelectors(UErrorCode &errorCode) {
 */
 
 void PARSER::errorPattern(UErrorCode &errorCode) {
+#if false
     CHECK_ERROR(errorCode);
     errors.addSyntaxError(errorCode);
     // Set to empty pattern
@@ -1573,8 +1632,10 @@ void PARSER::errorPattern(UErrorCode &errorCode) {
         result->add(part.orphan(), errorCode);
     }
     dataModel.setPattern(result->build(errorCode));
+#endif
 }
 
+/*
 void PARSER::parseBody(UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
     // Out-of-input is a syntax warning
@@ -1604,29 +1665,51 @@ void PARSER::parseBody(UErrorCode &errorCode) {
     }
     }
 }
+*/
 
-// -------------------------------------
-// Parses the source pattern.
-
-void PARSER::parse(UParseError &parseErrorResult,
-                                     UErrorCode &errorCode) {
-    // Return immediately in the case of a previous error
+void PARSER::parseComplexMessage(UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
 
-    // parseOptionalWhitespace() succeeds on an empty string, so don't check bounds yet
+    parseDoubleLeftBrace(errorCode);
     parseOptionalWhitespace(errorCode);
-    // parseDeclarations() requires there to be input left, so check to see if
-    // parseOptionalWhitespace() consumed it all
 
-    // Skip the check if errorCode is already set, so as to avoid overwriting a
-    // previous error offset
     if (U_SUCCESS(errorCode) && !inBounds(source, index)) {
         ERROR(parseError, errorCode, index);
     }
 
     parseDeclarations(errorCode);
-    parseBody(errorCode);
+    if (U_SUCCESS(errorCode) && !inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+    }
+
+    if (isDoubleLeftBrace(source, index)) {
+        LocalPointer<Pattern> pattern(parseQuotedPattern(errorCode));
+        CHECK_ERROR(errorCode);
+        dataModel.setPattern(pattern.orphan());
+    } else {
+        parseSelectors(errorCode);
+    }
+
     parseOptionalWhitespace(errorCode);
+
+    parseDoubleRightBrace(errorCode);
+}
+
+// -------------------------------------
+// Parses the source pattern.
+
+void PARSER::parse(UParseError &parseErrorResult,
+                   UErrorCode &errorCode) {
+    // Return immediately in the case of a previous error
+    CHECK_ERROR(errorCode);
+
+    if (isDoubleLeftBrace(source, index)) {
+        parseComplexMessage(errorCode);
+    } else {
+        LocalPointer<Pattern> pattern(parsePattern(errorCode));
+        CHECK_ERROR(errorCode);
+        dataModel.setPattern(pattern.orphan());
+    }
 
     // There are no errors; finally, check that the entire input was consumed
     // Skip the check if errorCode is already set, so as to avoid overwriting a

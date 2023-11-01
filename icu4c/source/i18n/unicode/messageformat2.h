@@ -297,6 +297,8 @@ public:
           void parseToken(const UChar32 (&)[N], UErrorCode &);
           template <int32_t N>
           void parseTokenWithWhitespace(const UChar32 (&)[N], UErrorCode &);
+          void parseDoubleLeftBrace(UErrorCode&);
+          void parseDoubleRightBrace(UErrorCode&);
           void parseName(UErrorCode&, UnicodeString&);
           void parseVariableName(UErrorCode&, UnicodeString&);
           FunctionName* parseFunction(UErrorCode&);
@@ -316,7 +318,9 @@ public:
           MessageFormatDataModel::Key* parseKey(UErrorCode&);
           MessageFormatDataModel::SelectorKeys* parseNonEmptyKeys(UErrorCode&);
           void errorPattern(UErrorCode&);
+          void parseComplexMessage(UErrorCode&);
           MessageFormatDataModel::Pattern* parsePattern(UErrorCode&);
+          MessageFormatDataModel::Pattern* parseQuotedPattern(UErrorCode&);
 
           // The input string
           const UnicodeString &source;
