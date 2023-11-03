@@ -80,16 +80,19 @@ public:
     /**
      * Serializes the data model as a string in MessageFormat 2.0 syntax.
      *
-     * @param result    Mutable reference to a string that the output will be appended to.
+     * @return result    A string representation of the data model.
+     *                   The string is a valid MessageFormat 2.0 message.
      *
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    void getPattern(UnicodeString& result) const {
+    UnicodeString getPattern() const {
         // Converts the current data model back to a string
         U_ASSERT(dataModelOK());
+        UnicodeString result;
         Serializer serializer(getDataModel(), result);
         serializer.serialize();
+        return result;
     }
 
     /**
