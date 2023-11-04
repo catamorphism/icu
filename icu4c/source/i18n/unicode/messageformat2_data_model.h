@@ -10,39 +10,13 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2_data_model_forward_decls.h"
 #include "unicode/messageformat2_macros.h"
 #include "unicode/messageformat2_utils.h"
 #include "unicode/unistr.h"
 #include "unicode/utypes.h"
+#include "messageformat2_data_model_forward_decls.h"
 
 U_NAMESPACE_BEGIN namespace message2 {
-
-class MessageFormatDataModelImpl : public UMemory {
-private:
-    friend class MessageFormatDataModel;
-
-     // The expressions that are being matched on.
-     // Null iff this is a `pattern` message.
-     const LocalPointer<MessageFormatDataModel::ExpressionList> selectors;
-
-     // The list of `when` clauses (case arms).
-     // Null iff this is a `pattern` message.
-     const LocalPointer<MessageFormatDataModel::VariantMap> variants;
-
-     // The pattern forming the body of the message.
-     // If this is non-null, then `variants` and `selectors` must be null.
-     const LocalPointer<MessageFormatDataModel::Pattern> pattern;
-
-     // Bindings for local variables
-     const LocalPointer<MessageFormatDataModel::Bindings> bindings;
-
-     // Normalized version of the input string (optional whitespace omitted)
-     // Used for testing purposes
-     const LocalPointer<UnicodeString> normalizedInput;
-
-     MessageFormatDataModelImpl(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode);
-};
 
     /**
      * The `VariableName` class represents the name of a variable in a message.
@@ -302,7 +276,7 @@ private:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Operand* create(const VariableName& var, UErrorCode& errorCode);
+        static Operand* create(const VariableName& var, UErrorCode& status);
         /**
          * Creates a new `literal` operand.
          *
@@ -313,7 +287,7 @@ private:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Operand* create(const Literal& lit, UErrorCode& errorCode);
+        static Operand* create(const Literal& lit, UErrorCode& status);
         /**
          * Creates a new `null` operand, which should only appear when
          * representing the following production in the grammar:
@@ -325,7 +299,7 @@ private:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Operand* create(UErrorCode& errorCode);
+        static Operand* create(UErrorCode& status);
         /**
          * Determines if this operand represents a variable.
          *
@@ -444,7 +418,7 @@ private:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Key* create(UErrorCode& errorCode);
+        static Key* create(UErrorCode& status);
         /**
          * Creates a new literal key.
          *
@@ -455,7 +429,7 @@ private:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Key* create(const Literal& lit, UErrorCode& errorCode);
+        static Key* create(const Literal& lit, UErrorCode& status);
 
     private:
         friend class ImmutableVector<Key>;
@@ -667,7 +641,7 @@ private:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Builder* builder(UErrorCode& errorCode);
+        static Builder* builder(UErrorCode& status);
     private:
     /*
       Internally, the map uses the `SelectorKeys` as its key, and the `pattern` as the value.
@@ -1173,7 +1147,7 @@ private:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static PatternPart* create(Expression* e, UErrorCode& errorCode);
+        static PatternPart* create(Expression* e, UErrorCode& status);
         /**
          * Checks if the part is a text part.
          *
@@ -1405,6 +1379,7 @@ private:
 } // namespace message2
 
 
+/// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
 // data member of various MessageFormatDataModel classes.
 // (When building DLLs for Windows this is required.)
@@ -1421,6 +1396,7 @@ template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel::Var
 #pragma warning(pop)
 #endif
 #endif
+/// @endcond
 
 namespace message2 {
     /**

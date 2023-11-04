@@ -16,14 +16,15 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/format.h"
-#include "unicode/messageformat2_checker.h"
-#include "unicode/messageformat2_context.h"
 #include "unicode/messageformat2_data_model.h"
 #include "unicode/messageformat2_formatting_context.h"
 #include "unicode/messageformat2_function_registry.h"
 #include "unicode/messageformat2_macros.h"
 #include "unicode/unistr.h"
 #include "unicode/utypes.h"
+#include "messageformat2_checker.h"
+#include "messageformat2_context.h"
+#include "messageformat2_expression_context.h"
 
 U_NAMESPACE_BEGIN namespace message2 {
 
@@ -219,6 +220,14 @@ public:
     static Builder* builder(UErrorCode& status);
 
     // TODO: Shouldn't be public; only used for testing
+   /**
+     * Returns a string consisting of the input with optional spaces removed.
+     *
+     * @return        A normalized string representation of the input
+     *
+     * @internal ICU 74.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
     const UnicodeString& getNormalizedPattern() const { return normalizedInput; }
 
   private:
@@ -463,21 +472,6 @@ public:
      // the MessageContext keeps track of errors
      LocalPointer<Errors> errors;
 }; // class MessageFormatter
-
-// For how this class is used, see the references to (integer, variant) tuples
-// in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
-// Ideally this would have been a private class nested in MessageFormatter,
-// but sorting comparators need to reference it
-class PrioritizedVariant : public UObject {
-public:
-    int32_t priority;
-    const MessageFormatDataModel::SelectorKeys& keys;
-    const MessageFormatDataModel::Pattern& pat;
-    PrioritizedVariant(uint32_t p,
-                       const MessageFormatDataModel::SelectorKeys& k,
-                       const MessageFormatDataModel::Pattern& pattern) : priority(p), keys(k), pat(pattern) {}
-    virtual ~PrioritizedVariant();
-}; // class PrioritizedVariant
 
 } // namespace message2
 U_NAMESPACE_END

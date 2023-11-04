@@ -10,6 +10,7 @@
 #include "unicode/messageformat2_formatting_context.h"
 #include "unicode/numberformatter.h"
 #include "unicode/smpdtfmt.h"
+#include "messageformat2_function_registry_internal.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)

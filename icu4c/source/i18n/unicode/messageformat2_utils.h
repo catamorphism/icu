@@ -18,6 +18,7 @@
 
 U_NAMESPACE_BEGIN
 
+/// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
 // data member of various MessageFormatDataModel classes.
 // (When building DLLs for Windows this is required.)
@@ -33,6 +34,7 @@ template class U_I18N_API LocalPointer<UVector>;
 template class U_I18N_API LocalPointerBase<Hashtable>;
 template class U_I18N_API LocalPointerBase<UVector>;
 #endif
+/// @endcond
 
 namespace message2 {
 
@@ -164,7 +166,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        ImmutableVector<T>* build(UErrorCode &errorCode) const;
+        ImmutableVector<T>* build(UErrorCode &status) const;
 
         virtual ~Builder();
     private:
@@ -182,7 +184,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    static Builder* builder(UErrorCode &errorCode);
+    static Builder* builder(UErrorCode &status);
 
 private:
     friend class Builder; // NOTE: Builder should only call buildList(); not the constructors
@@ -314,7 +316,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        OrderedMap<V>* build(UErrorCode& errorCode) const;
+        OrderedMap<V>* build(UErrorCode& status) const;
         /**
          * Destructor.
          *
@@ -344,7 +346,16 @@ public:
      * @deprecated This API is for technology preview only.
      */
     virtual ~OrderedMap();
-    static Builder* builder(UErrorCode &errorCode);
+    /**
+     * Returns a new `OrderedMap::Builder` object.
+     *
+     * @param status  Input/output error code.
+     * @return The new Builder object, which is non-null if U_SUCCESS(status).
+     *
+     * @internal ICU 74.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    static Builder* builder(UErrorCode &status);
 
 private:
 
@@ -361,7 +372,9 @@ private:
     const LocalPointer<UVector> keys;
 }; // class OrderedMap<V>
 
+/// @cond DOXYGEN_IGNORE
 #include "messageformat2_utils_impl.h"
+/// @endcond
 
 } // namespace message2
 

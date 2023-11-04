@@ -24,6 +24,13 @@ class Formatter;
 class FormatterFactory;
 class SelectorFactory;
 
+extern void formatDateWithDefaults(const Locale& locale, UDate date, UnicodeString&, UErrorCode& errorCode);
+extern number::FormattedNumber formatNumberWithDefaults(const Locale& locale, double toFormat, UErrorCode& errorCode);
+extern number::FormattedNumber formatNumberWithDefaults(const Locale& locale, int32_t toFormat, UErrorCode& errorCode);
+extern number::FormattedNumber formatNumberWithDefaults(const Locale& locale, int64_t toFormat, UErrorCode& errorCode);
+extern number::FormattedNumber formatNumberWithDefaults(const Locale& locale, StringPiece toFormat, UErrorCode& errorCode);
+extern DateFormat* defaultDateTimeInstance(const Locale&, UErrorCode&);
+
 using FunctionName = MessageFormatDataModel::FunctionName;
 using VariableName = MessageFormatDataModel::VariableName;
 
@@ -403,6 +410,21 @@ private:
     // Errors accumulated during parsing/formatting
     Errors& errors;
 }; // class MessageContext
+
+// For how this class is used, see the references to (integer, variant) tuples
+// in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
+// Ideally this would have been a private class nested in MessageFormatter,
+// but sorting comparators need to reference it
+class PrioritizedVariant : public UObject {
+public:
+    int32_t priority;
+    const MessageFormatDataModel::SelectorKeys& keys;
+    const MessageFormatDataModel::Pattern& pat;
+    PrioritizedVariant(uint32_t p,
+                       const MessageFormatDataModel::SelectorKeys& k,
+                       const MessageFormatDataModel::Pattern& pattern) : priority(p), keys(k), pat(pattern) {}
+    virtual ~PrioritizedVariant();
+}; // class PrioritizedVariant
 
 } // namespace message2
 
