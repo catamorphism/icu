@@ -7,8 +7,8 @@
 
 #include "unicode/messageformat2_formatting_context.h"
 #include "unicode/messageformat2_function_registry.h"
-#include "unicode/messageformat2_data_model.h"
 #include "unicode/messageformat2.h"
+#include "messageformat2_data_model_impl.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
