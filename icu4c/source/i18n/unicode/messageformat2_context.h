@@ -106,7 +106,7 @@ private:
 // Errors
 // ----------
 
-class Error : public UMemory {
+class Error : public UObject {
     public:
     enum Type {
         DuplicateOptionName,

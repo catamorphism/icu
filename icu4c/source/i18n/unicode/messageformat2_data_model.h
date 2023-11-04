@@ -50,7 +50,7 @@ private:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API MessageFormatDataModel::VariableName {
+    class U_I18N_API MessageFormatDataModel::VariableName : public UObject {
     public:
         /**
          * Equality comparison.
@@ -200,7 +200,7 @@ private:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API MessageFormatDataModel::Literal {
+    class U_I18N_API MessageFormatDataModel::Literal : public UObject {
     public:
         /**
          * Returns the quoted representation of this literal (enclosed in '|' characters)
@@ -1349,7 +1349,7 @@ private:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API MessageFormatDataModel::Binding {
+    class U_I18N_API MessageFormatDataModel::Binding : public UObject {
     public:
         /**
          * Creates a new binding.  Adopts `e`, which must be non-null.
