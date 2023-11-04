@@ -7,6 +7,7 @@
 
 #include "unicode/messageformat2.h"
 #include "unicode/messageformat2_data_model.h"
+#include "messageformat2_function_registry_internal.h"
 #include "uvector.h" // U_ASSERT
 
 U_NAMESPACE_BEGIN
