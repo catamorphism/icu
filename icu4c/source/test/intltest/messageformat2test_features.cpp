@@ -29,6 +29,8 @@ as of the following commit from 2023-05-09:
 
 */
 
+using FunctionName = MessageFormatDataModel::FunctionName;
+
 void TestMessageFormat2::testEmptyMessage(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 

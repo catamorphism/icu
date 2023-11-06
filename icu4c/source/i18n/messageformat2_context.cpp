@@ -6,9 +6,10 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/messageformat2_function_registry.h"
-#include "unicode/messageformat2_macros.h"
 #include "unicode/messageformat2.h"
 #include "messageformat2_context.h"
+#include "messageformat2_expression_context.h"
+#include "messageformat2_macros.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
@@ -53,8 +54,8 @@ const UObject* Arguments::getObject(const VariableName& arg) const {
 Arguments::Builder::Builder(UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    contents.adoptInstead(new Hashtable(compareVariableName, nullptr, errorCode));
-    objectContents.adoptInstead(new Hashtable(compareVariableName, nullptr, errorCode));
+    contents.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
+    objectContents.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
     CHECK_ERROR(errorCode);
     // The `contents` hashtable owns the values, but does not own the keys
     contents->setValueDeleter(uprv_deleteUObject);
@@ -142,8 +143,8 @@ MessageArguments* MessageArguments::Builder::build(UErrorCode& errorCode) const 
     NULL_ON_ERROR(errorCode);
     U_ASSERT(contents.isValid() && objectContents.isValid());
 
-    LocalPointer<Hashtable> contentsCopied(new Hashtable(compareVariableName, nullptr, errorCode));
-    LocalPointer<Hashtable> objectContentsCopied(new Hashtable(compareVariableName, nullptr, errorCode));
+    LocalPointer<Hashtable> contentsCopied(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
+    LocalPointer<Hashtable> objectContentsCopied(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
     NULL_ON_ERROR(errorCode);
     // The `contents` hashtable owns the values, but does not own the keys
     contentsCopied->setValueDeleter(uprv_deleteUObject);
@@ -182,6 +183,8 @@ MessageArguments* MessageArguments::Builder::build(UErrorCode& errorCode) const 
     }
     return result;
 }
+
+MessageArguments::MessageArguments(Hashtable* c, Hashtable* o) : contents(c), objectContents(o) {}
 
 MessageArguments::~MessageArguments() {}
 MessageArguments::Builder::~Builder() {}
@@ -223,7 +226,7 @@ void CachedFormatters::setFormatter(const FunctionName& f, Formatter* val, UErro
 
 CachedFormatters::CachedFormatters(UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
-    cache.adoptInstead(new Hashtable(compareVariableName, nullptr, errorCode));
+    cache.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
     CHECK_ERROR(errorCode);
     // The cache owns the values
     cache->setValueDeleter(uprv_deleteUObject);

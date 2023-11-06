@@ -6,8 +6,11 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/messageformat2.h"
+#include "messageformat2_context.h"
 #include "messageformat2_data_model_impl.h"
 #include "messageformat2_function_registry_internal.h"
+#include "messageformat2_macros.h"
+#include "messageformat2_parser.h"
 #include "uvector.h" // U_ASSERT
 
 U_NAMESPACE_BEGIN

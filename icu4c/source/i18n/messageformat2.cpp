@@ -6,7 +6,13 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/messageformat2.h"
+#include "messageformat2_checker.h"
+#include "messageformat2_context.h"
 #include "messageformat2_data_model_impl.h"
+#include "messageformat2_expression_context.h"
+#include "messageformat2_macros.h"
+#include "messageformat2_serializer.h"
+#include "hash.h"
 #include "uvector.h" // U_ASSERT
 
 U_NAMESPACE_BEGIN
@@ -662,6 +668,21 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
 }
 
 PrioritizedVariant::~PrioritizedVariant() {}
+
+UnicodeString MessageFormatter::getPattern() const {
+    // Converts the current data model back to a string
+    U_ASSERT(dataModelOK());
+    UnicodeString result;
+    Serializer serializer(getDataModel(), result);
+    serializer.serialize();
+    return result;
+}
+
+// Precondition: custom function registry exists
+const FunctionRegistry& MessageFormatter::getCustomFunctionRegistry() const {
+    U_ASSERT(hasCustomFunctionRegistry());
+    return *customFunctionRegistry;
+}
 
 void MessageFormatter::formatToString(const MessageArguments& arguments, UErrorCode &status, UnicodeString& result) const {
     CHECK_ERROR(status);

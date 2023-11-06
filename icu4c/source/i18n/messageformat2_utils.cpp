@@ -1,16 +1,24 @@
 // © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 
-#ifndef U_HIDE_DEPRECATED_API
-
-#ifndef MESSAGEFORMAT_UTILS_IMPL_H
-#define MESSAGEFORMAT_UTILS_IMPL_H
-
-#if U_SHOW_CPLUSPLUS_API
+#include "unicode/utypes.h"
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2_macros.h"
+#include "unicode/messageformat2_data_model.h"
+#include "unicode/messageformat2_utils.h"
+#include "messageformat2_macros.h"
+
+U_NAMESPACE_BEGIN namespace message2 {
+
+using Binding          = MessageFormatDataModel::Binding;
+using Expression       = MessageFormatDataModel::Expression;
+using Key              = MessageFormatDataModel::Key;
+using Literal          = MessageFormatDataModel::Literal;
+using Operand          = MessageFormatDataModel::Operand;
+using Pattern          = MessageFormatDataModel::Pattern;
+using PatternPart      = MessageFormatDataModel::PatternPart;
+using SelectorKeys     = MessageFormatDataModel::SelectorKeys;
 
 template<typename T>
 int32_t ImmutableVector<T>::length() const {
@@ -26,30 +34,6 @@ const T* ImmutableVector<T>::get(int32_t i) const {
     U_ASSERT(!isBogus());
     U_ASSERT(i < length());
     return static_cast<const T *>(contents->elementAt(i));
-}
-
-// Returns true iff this contains `element`
-template<typename T>
-UBool ImmutableVector<T>::contains(const T& element) const {
-    U_ASSERT(!isBogus());
-
-    int32_t index;
-    return find(element, index);
-}
-
-// Returns true iff this contains `element` and returns
-// its first index in `index`. Returns false otherwise
-template<typename T>
-UBool ImmutableVector<T>::find(const T& element, int32_t& index) const {
-    U_ASSERT(!isBogus());
-
-    for (int32_t i = 0; i < length(); i++) {
-        if (*(get(i)) == element) {
-            index = i;
-            return true;
-            }
-    }
-    return false;
 }
 
 // Copy constructor
@@ -137,6 +121,10 @@ template<typename T>
     return result;
 } 
 
+// Adopts `contents`
+template<typename T>
+ImmutableVector<T>::ImmutableVector(UVector* things) : contents(things) { U_ASSERT(things != nullptr); }
+
 // Iterates over keys in the order in which they were added.
 // Returns true iff `pos` indicates that there are elements
  // remaining
@@ -210,6 +198,13 @@ OrderedMap<V>* OrderedMap<V>::Builder::build(UErrorCode& errorCode) const {
                               errorCode));
     NULL_ON_ERROR(errorCode);
     return result.orphan();
+}
+
+// Defined for convenience, in case we end up using a different
+// representation in the data model for variable references and/or
+// variable definitions
+static inline UBool compareVariableName(const UElement e1, const UElement e2) {
+    return uhash_compareUnicodeString(e1, e2);
 }
 
 // Only called by builder()
@@ -297,12 +292,24 @@ OrderedMap<V>::OrderedMap(Hashtable* c, UVector* k) : contents(c), keys(k) {
         U_ASSERT(c->count() == k->size());
 }
 
+// Declare all instantiations of OrderedMap and ImmutableVector that
+// appear in the data model API
+// See https://stackoverflow.com/a/495056/1407170
+// (and see number_fluent.cpp for another example)
+template class ImmutableVector<Binding>;
+template class ImmutableVector<Expression>;
+template class ImmutableVector<Key>;
+template class ImmutableVector<Literal>;
+template class ImmutableVector<PatternPart>;
+template class ImmutableVector<SelectorKeys>;
+template class OrderedMap<Operand>;
+template class OrderedMap<Pattern>;
+
+} // namespace message2
+
+U_NAMESPACE_END
+
 #endif /* #if !UCONFIG_NO_FORMATTING */
 
-#endif /* U_SHOW_CPLUSPLUS_API */
-
-#endif // MESSAGEFORMAT_UTILS_IMPL_H
-
-#endif // U_HIDE_DEPRECATED_API
 // eof
 

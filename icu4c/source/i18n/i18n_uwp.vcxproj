@@ -415,6 +415,7 @@
     <ClCompile Include="messageformat2_function_registry.cpp" />
     <ClCompile Include="messageformat2_parser.cpp" />
     <ClCompile Include="messageformat2_serializer.cpp" />
+    <ClCompile Include="messageformat2_utils.cpp" />
     <ClCompile Include="msgfmt.cpp" />
     <ClCompile Include="nfrs.cpp" />
     <ClCompile Include="nfrule.cpp" />

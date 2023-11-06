@@ -10,7 +10,10 @@
 #include "unicode/messageformat2_formatting_context.h"
 #include "unicode/numberformatter.h"
 #include "unicode/smpdtfmt.h"
+#include "messageformat2_context.h"
 #include "messageformat2_function_registry_internal.h"
+#include "messageformat2_macros.h"
+#include "hash.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
@@ -48,8 +51,8 @@ FunctionRegistry* FunctionRegistry::Builder::build(UErrorCode& errorCode) {
 FunctionRegistry::Builder::Builder(UErrorCode& errorCode)  {
     CHECK_ERROR(errorCode);
 
-    formatters.adoptInstead(new Hashtable(compareVariableName, nullptr, errorCode));
-    selectors.adoptInstead(new Hashtable(compareVariableName, nullptr, errorCode));
+    formatters.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
+    selectors.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
     if (U_FAILURE(errorCode)) {
         formatters.adoptInstead(nullptr);
         selectors.adoptInstead(nullptr);
@@ -90,6 +93,22 @@ FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterNa
 const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selectorName) const {
     // Caller must check for null
     return ((SelectorFactory*) selectors->get(selectorName.toString()));
+}
+
+bool FunctionRegistry::hasFormatter(const FunctionName& f) const {
+    if (!formatters->containsKey(f.toString())) {
+        return false;
+    }
+    U_ASSERT(getFormatter(f) != nullptr);
+    return true;
+}
+
+bool FunctionRegistry::hasSelector(const FunctionName& s) const {
+    if (!selectors->containsKey(s.toString())) {
+        return false;
+    }
+    U_ASSERT(getSelector(s) != nullptr);
+    return true;
 }
 
 void FunctionRegistry::checkFormatter(const char* s) const {
@@ -171,6 +190,9 @@ bool tryFormattableAsNumber(const Formattable& optionValue, int64_t& result) {
     }
     return false;
 }
+
+// Adopts `f` and `s`
+FunctionRegistry::FunctionRegistry(Hashtable* f, Hashtable* s) : formatters(f), selectors(s) {}
 
 FunctionRegistry::~FunctionRegistry() {}
 

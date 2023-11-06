@@ -7,8 +7,10 @@
 #include "plurrule_impl.h"
 
 #include "unicode/listformatter.h"
-#include "intltest.h"
 #include "messageformat2test.h"
+#include "hash.h"
+#include "intltest.h"
+
 
 using namespace message2;
 using namespace pluralimpl;
@@ -21,6 +23,8 @@ Tests reflect the syntax specified in
 as of the following commit from 2023-05-09:
   https://github.com/unicode-org/message-format-wg/commit/194f6efcec5bf396df36a19bd6fa78d1fa2e0867
 */
+
+using FunctionName = MessageFormatDataModel::FunctionName;
 
 static FunctionRegistry* personFunctionRegistry(UErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {

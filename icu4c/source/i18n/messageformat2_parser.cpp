@@ -5,8 +5,12 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2.h"
+// #include "unicode/messageformat2.h"
+#include "messageformat2_context.h"
 #include "messageformat2_data_model_impl.h"
+#include "messageformat2_macros.h"
+#include "messageformat2_parser.h"
+#include "plurrule_impl.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
@@ -15,6 +19,8 @@
 #endif
 
 U_NAMESPACE_BEGIN namespace message2 {
+
+using namespace pluralimpl;
 
 using Binding         = MessageFormatDataModel::Binding;
 using Bindings        = MessageFormatDataModel::Bindings;
@@ -31,8 +37,6 @@ using PatternPart     = MessageFormatDataModel::PatternPart;
 using Reserved        = MessageFormatDataModel::Reserved;
 using SelectorKeys    = MessageFormatDataModel::SelectorKeys;
 using VariantMap      = MessageFormatDataModel::VariantMap;
-
-#define PARSER MessageFormatter::Parser
 
 /*
     The `ERROR()` macro sets `errorCode` to `U_SYNTAX_WARNING
@@ -59,7 +63,7 @@ static bool inBounds(const UnicodeString &source, uint32_t index) {
 
 // Increments the line number and updates the "characters seen before
 // current line" count in `parseError`, iff `source[index]` is a newline
-void PARSER::maybeAdvanceLine() {
+void Parser::maybeAdvanceLine() {
     if (source[index] == LF) {
         parseError.line++;
         // add 1 to index to get the number of characters seen so far
@@ -105,14 +109,14 @@ static void copyContext(const UChar in[U_PARSE_CONTEXT_LEN], UChar out[U_PARSE_C
     }
 }
 
-/* static */ void PARSER::translateParseError(const MessageParseError &messageParseError, UParseError &parseError) {
+/* static */ void Parser::translateParseError(const MessageParseError &messageParseError, UParseError &parseError) {
     parseError.line = messageParseError.line;
     parseError.offset = messageParseError.offset;
     copyContext(messageParseError.preContext, parseError.preContext);
     copyContext(messageParseError.postContext, parseError.postContext);
 }
 
-/* static */ void PARSER::setParseError(MessageParseError &parseError, uint32_t index) {
+/* static */ void Parser::setParseError(MessageParseError &parseError, uint32_t index) {
     // Translate absolute to relative offset
     parseError.offset = index                               // Start with total number of characters seen
                       - parseError.lengthBeforeCurrentLine; // Subtract all characters before the current line
@@ -142,6 +146,7 @@ static bool inRange(UChar32 c, UChar32 first, UChar32 last) {
   `isNameChar()`      : `name-char`
   `isUnquotedStart()` : `unquoted-start`
   `isQuotedChar()`    : `quoted-char`
+  `isWhitespace()`    : `s`
 */
 static bool isTextChar(UChar32 c) {
     return inRange(c, 0x0000, 0x005B)    // Omit backslash
@@ -245,6 +250,19 @@ static bool reservedChunkFollows(UChar32 c) {
     }
 }
 
+// See `s` in the MessageFormat 2 grammar
+inline bool isWhitespace(UChar32 c) {
+    switch (c) {
+    case SPACE:
+    case HTAB:
+    case CR:
+    case LF:
+        return true;
+    default:
+        return false;
+    }
+}
+
 // -------------------------------------
 // Parsing functions
 
@@ -305,7 +323,7 @@ Unless otherwise noted in a comment, all helper functions that take
   No pre, no post.
   A message may end with whitespace, so `index` may equal `source.length()` on exit.
 */
-void PARSER::parseWhitespaceMaybeRequired(bool required, UErrorCode &errorCode) {
+void Parser::parseWhitespaceMaybeRequired(bool required, UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
 
     bool sawWhitespace = false;
@@ -348,7 +366,7 @@ void PARSER::parseWhitespaceMaybeRequired(bool required, UErrorCode &errorCode) 
 /*
   No pre, no post, for the same reason as `parseWhitespaceMaybeRequired()`.
 */
-void PARSER::parseRequiredWhitespace(UErrorCode &errorCode) {
+void Parser::parseRequiredWhitespace(UErrorCode &errorCode) {
     parseWhitespaceMaybeRequired(true, errorCode);
     normalizedInput += SPACE;
 }
@@ -356,12 +374,12 @@ void PARSER::parseRequiredWhitespace(UErrorCode &errorCode) {
 /*
   No pre, no post, for the same reason as `parseWhitespaceMaybeRequired()`.
 */
-void PARSER::parseOptionalWhitespace(UErrorCode &errorCode) {
+void Parser::parseOptionalWhitespace(UErrorCode &errorCode) {
     parseWhitespaceMaybeRequired(false, errorCode);
 }
 
 // Consumes a single character, signaling an error if `source[index]` != `c`
-void PARSER::parseToken(UChar32 c, UErrorCode &errorCode) {
+void Parser::parseToken(UChar32 c, UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
     CHECK_BOUNDS(source, index, parseError, errorCode);
 
@@ -381,7 +399,7 @@ void PARSER::parseToken(UChar32 c, UErrorCode &errorCode) {
    the string beginning at `source[index]`
 */
 template <int32_t N>
-void PARSER::parseToken(const UChar32 (&token)[N], UErrorCode &errorCode) {
+void Parser::parseToken(const UChar32 (&token)[N], UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
 
     U_ASSERT(inBounds(source, index));
@@ -408,7 +426,7 @@ void PARSER::parseToken(const UChar32 (&token)[N], UErrorCode &errorCode) {
    then consumes optional whitespace again
 */
 template <int32_t N>
-void PARSER::parseTokenWithWhitespace(const UChar32 (&token)[N],
+void Parser::parseTokenWithWhitespace(const UChar32 (&token)[N],
                                       UErrorCode &errorCode) {
     // No need for error check or bounds check before parseOptionalWhitespace
     parseOptionalWhitespace(errorCode);
@@ -426,7 +444,7 @@ void PARSER::parseTokenWithWhitespace(const UChar32 (&token)[N],
    `source[index']`),
    then consumes optional whitespace again
 */
-void PARSER::parseTokenWithWhitespace(UChar32 c,
+void Parser::parseTokenWithWhitespace(UChar32 c,
                                      UErrorCode &errorCode) {
     // No need for error check or bounds check before parseOptionalWhitespace
     parseOptionalWhitespace(errorCode);
@@ -447,7 +465,7 @@ void PARSER::parseTokenWithWhitespace(UChar32 c,
 
   (Matches the `name` nonterminal in the grammar.)
 */
-void PARSER::parseName(UErrorCode &errorCode,
+void Parser::parseName(UErrorCode &errorCode,
                        UnicodeString &name) {
     CHECK_ERROR(errorCode);
 
@@ -471,7 +489,7 @@ void PARSER::parseName(UErrorCode &errorCode,
 
   (Matches the `variable` nonterminal in the grammar.)
 */
-void PARSER::parseVariableName(UErrorCode &errorCode,
+void Parser::parseVariableName(UErrorCode &errorCode,
                                UnicodeString& var) {
     CHECK_ERROR(errorCode);
 
@@ -505,7 +523,7 @@ static FunctionName::Sigil functionSigil(UChar32 c) {
 
   Initializes `func` to this name.
 */
-FunctionName* PARSER::parseFunction(UErrorCode &errorCode) {
+FunctionName* Parser::parseFunction(UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
 
     U_ASSERT(inBounds(source, index));
@@ -538,7 +556,7 @@ FunctionName* PARSER::parseFunction(UErrorCode &errorCode) {
 
   Appends result to `str`
 */
-void PARSER::parseEscapeSequence(EscapeKind kind,
+void Parser::parseEscapeSequence(EscapeKind kind,
                                  UErrorCode &errorCode,
                                  UnicodeString &str) {
     CHECK_ERROR(errorCode);
@@ -606,7 +624,7 @@ void PARSER::parseEscapeSequence(EscapeKind kind,
   Consume an escaped pipe or backslash, matching the `literal-escape`
   nonterminal in the grammar
 */
-void PARSER::parseLiteralEscape(UErrorCode &errorCode,
+void Parser::parseLiteralEscape(UErrorCode &errorCode,
                                 UnicodeString &str) {
     parseEscapeSequence(LITERAL, errorCode, str);
 }
@@ -615,7 +633,7 @@ void PARSER::parseLiteralEscape(UErrorCode &errorCode,
   Consume a literal, matching the `literal` nonterminal in the grammar.
   May be quoted or unquoted -- returns true iff quoted
 */
-void PARSER::parseLiteral(UErrorCode &errorCode, bool& quoted, UnicodeString& contents) {
+void Parser::parseLiteral(UErrorCode &errorCode, bool& quoted, UnicodeString& contents) {
     CHECK_ERROR(errorCode);
     CHECK_BOUNDS(source, index, parseError, errorCode);
 
@@ -664,7 +682,7 @@ void PARSER::parseLiteral(UErrorCode &errorCode, bool& quoted, UnicodeString& co
 
   Adds the option to `optionList`
 */
-void PARSER::parseOption(UErrorCode &errorCode,
+void Parser::parseOption(UErrorCode &errorCode,
                          Operator::Builder &builder) {
     CHECK_ERROR(errorCode);
 
@@ -704,7 +722,7 @@ void PARSER::parseOption(UErrorCode &errorCode,
   Consume optional whitespace followed by a sequence of options
   (possibly empty), separated by whitespace
 */
-void PARSER::parseOptions(UErrorCode &errorCode, Operator::Builder& builder) {
+void Parser::parseOptions(UErrorCode &errorCode, Operator::Builder& builder) {
     CHECK_ERROR(errorCode);
 
     // Early exit if out of bounds -- no more work is possible
@@ -781,7 +799,7 @@ is involved and there's no state to save.
     }
 }
 
-void PARSER::parseReservedEscape(UErrorCode &errorCode,
+void Parser::parseReservedEscape(UErrorCode &errorCode,
                                  UnicodeString &str) {
     parseEscapeSequence(RESERVED, errorCode, str);
 }
@@ -792,7 +810,7 @@ void PARSER::parseReservedEscape(UErrorCode &errorCode,
 
   Appends it to `str`
 */
-void PARSER::parseReservedChunk(UErrorCode &errorCode,
+void Parser::parseReservedChunk(UErrorCode &errorCode,
                                 Reserved::Builder& result) {
     CHECK_ERROR(errorCode);
 
@@ -855,7 +873,7 @@ void PARSER::parseReservedChunk(UErrorCode &errorCode,
   Matches the `reserved` nonterminal in the grammar
 
 */
-Reserved* PARSER::parseReserved(UErrorCode &errorCode) {
+Reserved* Parser::parseReserved(UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
 
     U_ASSERT(inBounds(source, index));
@@ -963,7 +981,7 @@ Reserved* PARSER::parseReserved(UErrorCode &errorCode) {
 
   Returns an `Operator` representing this (a reserved is a parse error)
 */
-Operator* PARSER::parseAnnotation(UErrorCode &errorCode) {
+Operator* Parser::parseAnnotation(UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
 
     U_ASSERT(inBounds(source, index));
@@ -991,7 +1009,7 @@ Operator* PARSER::parseAnnotation(UErrorCode &errorCode) {
   followed by either required whitespace followed by an annotation,
   or optional whitespace.
 */
-void PARSER::parseLiteralOrVariableWithAnnotation(bool isVariable,
+void Parser::parseLiteralOrVariableWithAnnotation(bool isVariable,
                                                   UErrorCode &errorCode,
                                                   Expression::Builder& builder) {
     CHECK_ERROR(errorCode);
@@ -1097,7 +1115,7 @@ static Expression* exprFallback(UErrorCode &errorCode) {
 // Sets `parseError` to true if there was an error parsing this expression
 // Uses a flag rather than just returning a fallback expression because which
 // fallback to use depends on context
-Expression* PARSER::parseExpression(bool& err, UErrorCode &errorCode) {
+Expression* Parser::parseExpression(bool& err, UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
     err = false;
 
@@ -1164,7 +1182,7 @@ Expression* PARSER::parseExpression(bool& err, UErrorCode &errorCode) {
 
   Builds up an environment representing those declarations
 */
-void PARSER::parseDeclarations(UErrorCode &errorCode) {
+void Parser::parseDeclarations(UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
 
     // End-of-input here would be an error; even empty
@@ -1207,7 +1225,7 @@ void PARSER::parseDeclarations(UErrorCode &errorCode) {
   Consume an escaped curly brace, or backslash, matching the `text-escape`
   nonterminal in the grammar
 */
-void PARSER::parseTextEscape(UErrorCode &errorCode, UnicodeString &str) {
+void Parser::parseTextEscape(UErrorCode &errorCode, UnicodeString &str) {
     parseEscapeSequence(TEXT, errorCode, str);
 }
 
@@ -1215,7 +1233,7 @@ void PARSER::parseTextEscape(UErrorCode &errorCode, UnicodeString &str) {
   Consume a non-empty sequence of text characters and escaped text characters,
   matching the `text` nonterminal in the grammar
 */
-void PARSER::parseText(UErrorCode &errorCode, UnicodeString &str) {
+void Parser::parseText(UErrorCode &errorCode, UnicodeString &str) {
     CHECK_ERROR(errorCode);
     CHECK_BOUNDS(source, index, parseError, errorCode);
     
@@ -1247,7 +1265,7 @@ void PARSER::parseText(UErrorCode &errorCode, UnicodeString &str) {
   Consume an `nmtoken`, `literal`, or the string "*", matching
   the `key` nonterminal in the grammar
 */
-Key* PARSER::parseKey(UErrorCode &errorCode) {
+Key* Parser::parseKey(UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
     U_ASSERT(inBounds(source, index));
 
@@ -1305,7 +1323,7 @@ MessageFormatDataModel::SelectorKeys* MessageFormatDataModel::SelectorKeys::Buil
 
   Takes ownership of `keys`
 */
-MessageFormatDataModel::SelectorKeys* PARSER::parseNonEmptyKeys(UErrorCode &errorCode) {
+MessageFormatDataModel::SelectorKeys* Parser::parseNonEmptyKeys(UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
     U_ASSERT(inBounds(source, index));
 
@@ -1395,7 +1413,7 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
   No postcondition (on return, `index` might equal `source.length()` with U_SUCCESS(errorCode)),
   because a message can end with a pattern
 */
-Pattern* PARSER::parsePattern(UErrorCode &errorCode) {
+Pattern* Parser::parsePattern(UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
     U_ASSERT(inBounds(source, index));
     
@@ -1451,7 +1469,7 @@ Pattern* PARSER::parsePattern(UErrorCode &errorCode) {
   No postcondition (on return, `index` might equal `source.length()` with U_SUCCESS(errorCode)),
   because a message can end with a variant
 */
-void PARSER::parseSelectors(UErrorCode &errorCode) {
+void Parser::parseSelectors(UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
     U_ASSERT(inBounds(source, index));
 
@@ -1548,7 +1566,7 @@ void PARSER::parseSelectors(UErrorCode &errorCode) {
   because a message can end with a body (trailing whitespace is optional)
 */
 
-void PARSER::errorPattern(UErrorCode &errorCode) {
+void Parser::errorPattern(UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
     errors.addSyntaxError(errorCode);
     // Set to empty pattern
@@ -1575,7 +1593,7 @@ void PARSER::errorPattern(UErrorCode &errorCode) {
     dataModel.setPattern(result->build(errorCode));
 }
 
-void PARSER::parseBody(UErrorCode &errorCode) {
+void Parser::parseBody(UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
     // Out-of-input is a syntax warning
     if (!inBounds(source, index)) {
@@ -1608,7 +1626,7 @@ void PARSER::parseBody(UErrorCode &errorCode) {
 // -------------------------------------
 // Parses the source pattern.
 
-void PARSER::parse(UParseError &parseErrorResult,
+void Parser::parse(UParseError &parseErrorResult,
                                      UErrorCode &errorCode) {
     // Return immediately in the case of a previous error
     CHECK_ERROR(errorCode);
@@ -1642,7 +1660,7 @@ void PARSER::parse(UParseError &parseErrorResult,
     translateParseError(parseError, parseErrorResult);
 }
 
-PARSER::~Parser() {}
+Parser::~Parser() {}
 
 
 } // namespace message2

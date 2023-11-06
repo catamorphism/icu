@@ -6,14 +6,15 @@
 #ifndef MESSAGEFORMAT_DATA_MODEL_H
 #define MESSAGEFORMAT_DATA_MODEL_H
 
+#include "unicode/utypes.h"
+
 #if U_SHOW_CPLUSPLUS_API
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2_macros.h"
+#include "unicode/fmtable.h"
 #include "unicode/messageformat2_utils.h"
 #include "unicode/unistr.h"
-#include "unicode/utypes.h"
 #include "messageformat2_data_model_forward_decls.h"
 
 U_NAMESPACE_BEGIN namespace message2 {
@@ -156,13 +157,7 @@ U_NAMESPACE_BEGIN namespace message2 {
          const UnicodeString functionName;
          const Sigil functionSigil;
 
-         UChar sigilChar() const {
-             switch (functionSigil) {
-             case Sigil::OPEN: { return PLUS; }
-             case Sigil::CLOSE: { return HYPHEN; }
-             default: { return COLON; }
-             }
-         }
+         UChar sigilChar() const;
     }; // class FunctionName
 
     /**
@@ -760,18 +755,16 @@ U_NAMESPACE_BEGIN namespace message2 {
         bool isBogus() const { return !parts.isValid(); }
       
         // Reserved needs a copy constructor in order to make Expression deeply copyable
-        Reserved(const Reserved& other) : parts(new ImmutableVector<Literal>(*other.parts)) {
-            U_ASSERT(!other.isBogus());
-        }
+        Reserved(const Reserved& other);
 
         // Possibly-empty list of parts
         // `literal` reserved as a quoted literal; `reserved-char` / `reserved-escape`
         // strings represented as unquoted literals
         const LocalPointer<ImmutableVector<Literal>> parts;
       
-        // Can only be called by Builder
+        // Should only be called by Builder
         // Takes ownership of `ps`
-        Reserved(ImmutableVector<Literal> *ps) : /* fallback(DefaultString()), */ parts(ps) { U_ASSERT(ps != nullptr); }
+        Reserved(ImmutableVector<Literal> *ps);
     };
 
     /**
@@ -1187,12 +1180,8 @@ U_NAMESPACE_BEGIN namespace message2 {
         // Expression
         PatternPart(Expression* e) : isRawText(false), expression(e) {}
 
-        // If !isRawText and the copy of the other expression fails,
-        // then isBogus() will be true for this PatternPart
         // PatternPart needs a copy constructor in order to make Pattern deeply copyable
-        PatternPart(const PatternPart& other) : isRawText(other.isText()), text(other.text), expression(isRawText ? nullptr : new Expression(other.contents()))  {
-            U_ASSERT(!other.isBogus());
-        }
+        PatternPart(const PatternPart& other);
 
         const bool isRawText;
         // Not used if !isRawText
@@ -1304,15 +1293,14 @@ U_NAMESPACE_BEGIN namespace message2 {
         const LocalPointer<ImmutableVector<PatternPart>> parts;
       
         bool isBogus() const { return !parts.isValid(); }
-        // Can only be called by Builder
-        // Takes ownership of `ps`
-        Pattern(ImmutableVector<PatternPart> *ps) : parts(ps) { U_ASSERT(ps != nullptr); }
 
-        // If the copy of the other list fails,
-        // then isBogus() will be true for this Pattern
+        // Should only be called by Builder
+        // Takes ownership of `ps`
+        Pattern(ImmutableVector<PatternPart> *ps);
+
         // Pattern needs a copy constructor in order to make MessageFormatDataModel::build() be a copying rather than
         // moving build
-        Pattern(const Pattern& other) : parts(new ImmutableVector<PatternPart>(*(other.parts))) { U_ASSERT(!other.isBogus()); }
+        Pattern(const Pattern& other);
     }; // class Pattern
 
     /**
@@ -1490,6 +1478,57 @@ namespace message2 {
          */
         MessageFormatDataModel* build(UErrorCode& status) const;
     }; // class MessageFormatDataModel::Builder
+
+
+// These explicit instantiations have to come before the
+// destructor definitions
+template<>
+ImmutableVector<MessageFormatDataModel::Binding>::Builder::~Builder();
+template<>
+ImmutableVector<MessageFormatDataModel::Binding>::~ImmutableVector();
+template<>
+ImmutableVector<MessageFormatDataModel::Expression>::Builder::~Builder();
+template<>
+ImmutableVector<MessageFormatDataModel::Expression>::~ImmutableVector();
+template<>
+ImmutableVector<MessageFormatDataModel::Key>::Builder::~Builder();
+template<>
+ImmutableVector<MessageFormatDataModel::Key>::~ImmutableVector();
+template<>
+ImmutableVector<MessageFormatDataModel::Literal>::Builder::~Builder();
+template<>
+ImmutableVector<MessageFormatDataModel::Literal>::~ImmutableVector();
+template<>
+ImmutableVector<MessageFormatDataModel::PatternPart>::Builder::~Builder();
+template<>
+ImmutableVector<MessageFormatDataModel::PatternPart>::~ImmutableVector();
+template<>
+ImmutableVector<MessageFormatDataModel::SelectorKeys>::Builder::~Builder();
+template<>
+ImmutableVector<MessageFormatDataModel::SelectorKeys>::~ImmutableVector();
+template<>
+OrderedMap<MessageFormatDataModel::Pattern>::Builder::~Builder();
+template<>
+OrderedMap<MessageFormatDataModel::Pattern>::~OrderedMap();
+template<>
+OrderedMap<MessageFormatDataModel::Operand>::Builder::~Builder();
+template<>
+OrderedMap<MessageFormatDataModel::Operand>::~OrderedMap();
+
+// Explicit instantiations in source/i18n/messageformat2_utils.cpp
+// See numberformatter.h for another example
+
+// (MSVC treats imports/exports of explicit instantiations differently.)
+#ifndef _MSC_VER
+extern template class ImmutableVector<MessageFormatDataModel::Binding>;
+extern template class ImmutableVector<MessageFormatDataModel::Expression>;
+extern template class ImmutableVector<MessageFormatDataModel::Key>;
+extern template class ImmutableVector<MessageFormatDataModel::Literal>;
+extern template class ImmutableVector<MessageFormatDataModel::PatternPart>;
+extern template class ImmutableVector<MessageFormatDataModel::SelectorKeys>;
+extern template class OrderedMap<MessageFormatDataModel::Operand>;
+extern template class OrderedMap<MessageFormatDataModel::Pattern>;
+#endif
 
 } // namespace message2
 

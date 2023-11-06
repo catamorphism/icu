@@ -24,6 +24,7 @@ namespace message2 {
     class MessageFormatDataModelImpl;
 }
 
+/// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
 // data member of various MessageFormatDataModel classes.
 // (When building DLLs for Windows this is required.)
@@ -32,6 +33,7 @@ namespace message2 {
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModelImpl>;
 #endif
+/// @endcond
 
 // -----------------------------------------------------------------------
 // Public MessageFormatDataModel class
@@ -102,10 +104,35 @@ namespace message2 {
         class SelectorKeys;
         class VariableName;
         class VariantMap;
-        
+
+        /**
+         * An immutable list of variable bindings
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         using Bindings = ImmutableVector<Binding>;
+        /**
+         * An immutable list of expressions
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         using ExpressionList = ImmutableVector<Expression>;
+        /**
+         * An immutable list of keys
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+
         using KeyList = ImmutableVector<Key>;
+        /**
+         * An immutable map from strings to function options
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         using OptionMap = OrderedMap<Operand>;
 
     // Public MessageFormatDataModel methods
@@ -161,10 +188,17 @@ namespace message2 {
      */
     const Pattern& getPattern() const;
 
+    /**
+     * The mutable `MessageFormatDataModel::Builder` class allows the data model to be
+     * constructed incrementally.
+     *
+     * @internal ICU 74.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
     class U_I18N_API Builder;
 
     /**
-     * Returns a new `MessageFormatDataModels::Builder` object.
+     * Returns a new `MessageFormatDataModel::Builder` object.
      *
      * @param status  Input/output error code.
      * @return        The new Builder object, which is non-null if U_SUCCESS(status).
@@ -195,6 +229,7 @@ private:
     }; // class MessageFormatDataModel
 } // namespace message2
 
+/// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
 // data member of various MessageFormatDataModel classes.
 // (When building DLLs for Windows this is required.)
@@ -250,6 +285,7 @@ template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel>;
 #pragma warning(pop)
 #endif
 #endif
+/// @endcond
 
 U_NAMESPACE_END
 

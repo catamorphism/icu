@@ -6,15 +6,15 @@
 #ifndef MESSAGEFORMAT2_MACROS_H
 #define MESSAGEFORMAT2_MACROS_H
 
+#include "unicode/utypes.h"
+
 #if U_SHOW_CPLUSPLUS_API
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "plurrule_impl.h"
-
 #include "unicode/format.h"
 #include "unicode/unistr.h"
-#include "unicode/utypes.h"
+#include "plurrule_impl.h"
 
 U_NAMESPACE_BEGIN namespace message2 {
 
@@ -67,19 +67,6 @@ static constexpr UChar32 ID_WHEN[] = {
 static constexpr UChar32 ID_MATCH[] = {
     0x6D, 0x61, 0x74, 0x63, 0x68, 0 /* "match" */
 };
-
-// See `s` in the MessageFormat 2 grammar
-inline bool isWhitespace(UChar32 c) {
-    switch (c) {
-    case SPACE:
-    case HTAB:
-    case CR:
-    case LF:
-        return true;
-    default:
-        return false;
-    }
-}
  
 // Returns immediately if `errorCode` indicates failure
 #define CHECK_ERROR(errorCode)                                                                          \
