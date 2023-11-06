@@ -10,17 +10,6 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-/*
-#include "unicode/datefmt.h"
-#include "unicode/format.h"
-#include "unicode/messageformat2_data_model.h"
-#include "unicode/messageformat2_formatting_context.h"
-#include "unicode/messageformat2_macros.h"
-#include "unicode/numberformatter.h"
-#include "unicode/unistr.h"
-#include "unicode/upluralrules.h"
-#include "unicode/utypes.h"
-*/
 #include "unicode/messageformat2_function_registry.h"
 
 U_NAMESPACE_BEGIN namespace message2 {

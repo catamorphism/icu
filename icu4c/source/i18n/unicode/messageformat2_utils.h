@@ -6,15 +6,16 @@
 #ifndef MESSAGEFORMAT_UTILS_H
 #define MESSAGEFORMAT_UTILS_H
 
+#include "unicode/utypes.h"
+
 #if U_SHOW_CPLUSPLUS_API
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2_macros.h"
+#include "unicode/localpointer.h"
 #include "unicode/unistr.h"
-#include "unicode/utypes.h"
-#include "hash.h"
-#include "uvector.h"
+
+union UElement;
 
 U_NAMESPACE_BEGIN
 
@@ -36,20 +37,25 @@ template class U_I18N_API LocalPointerBase<UVector>;
 #endif
 /// @endcond
 
-namespace message2 {
+class Hashtable;
+class UVector;
 
-// Defined for convenience, in case we end up using a different
-// representation in the data model for variable references and/or
-// variable definitions
-static inline UBool compareVariableName(const UElement e1, const UElement e2) {
-    return uhash_compareUnicodeString(e1, e2);
-}
+namespace message2 {
 
 /**
  * The `ImmutableVector` class represents a polymorphic immutable list,
  * constructed using the builder pattern. It's used to represent
  * various nodes in the MessageFormat data model that may have a
  * variable number of components.
+ * The template can't be instantiated with an arbitrary type;
+ * explicit instantiations of it are exported only for the following
+ * types:
+ *  * Binding
+ *  * Expression
+ *  * Key
+ *  * Literal
+ *  * PatternPart
+ *  * SelectorKeys
  *
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
@@ -91,30 +97,6 @@ public:
      * @deprecated This API is for technology preview only.
      */
     const T* get(int32_t i) const;
-
-    /**
-     * Checks for the existence of an element.
-     *
-     * @param element The item to search for.
-     * @return        True if and only if `element` occurs in this list.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    UBool contains(const T& element) const;
-
-    /**
-     * Finds the index of an element.
-     *
-     * @param element The item to search for.
-     * @param index   A mutable reference that is set to the first index
-     *                where `element` occurs in this list, if it occurs.
-     * @return        True if and only if `element` occurs in this list.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    UBool find(const T& element, int32_t& index) const;
 
     /**
      * Copy constructor. Performs a deep copy (`T` must have
@@ -200,7 +182,7 @@ private:
     static ImmutableVector<T>* buildList(const Builder &builder, UErrorCode &errorCode);
 
     // Adopts `contents`
-    ImmutableVector(UVector* things) : contents(things) { U_ASSERT(things != nullptr); }
+    ImmutableVector(UVector* things);
 
     // Used as const, but since UVector doesn't have a copy constructor,
     // writing the copy constructor for ImmutableVector requires `contents` to be non-const
@@ -214,6 +196,9 @@ private:
  * various nodes in the MessageFormat data model that may have a
  * variable number of named components. The map records the order in which
  * keys were added and iterates over its elements in that order.
+ * The template can't be instantiated with an arbitrary type;
+ * explicit instantiations of it are exported only for the types
+ * `Operand` and `Pattern`.
  *
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
@@ -326,7 +311,7 @@ public:
         virtual ~Builder();
     private:
         friend class OrderedMap;
-        
+
         // Only called by builder()
         Builder(UErrorCode& errorCode);
 
@@ -371,10 +356,6 @@ private:
     // List of keys
     const LocalPointer<UVector> keys;
 }; // class OrderedMap<V>
-
-/// @cond DOXYGEN_IGNORE
-#include "messageformat2_utils_impl.h"
-/// @endcond
 
 } // namespace message2
 

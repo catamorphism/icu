@@ -240,6 +240,9 @@
     <ClCompile Include="messageformat2_serializer.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
+    <ClCompile Include="messageformat2_utils.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
     <ClCompile Include="msgfmt.cpp">
       <Filter>formatting</Filter>
     </ClCompile>

@@ -8,7 +8,10 @@
 #include "unicode/messageformat2_formatting_context.h"
 #include "unicode/messageformat2_function_registry.h"
 #include "unicode/messageformat2.h"
+#include "messageformat2_context.h"
 #include "messageformat2_data_model_impl.h"
+#include "messageformat2_expression_context.h"
+#include "messageformat2_macros.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
@@ -47,8 +50,8 @@ ExpressionContext::ExpressionContext(MessageContext& c, UErrorCode& errorCode) :
 
 void ExpressionContext::initFunctionOptions(UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
-    functionOptions.adoptInstead(new Hashtable(compareVariableName, nullptr, errorCode));
-    functionObjectOptions.adoptInstead(new Hashtable(compareVariableName, nullptr, errorCode));
+    functionOptions.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
+    functionObjectOptions.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
     CHECK_ERROR(errorCode);
     // `functionOptions` owns its values
     functionOptions->setValueDeleter(uprv_deleteUObject);

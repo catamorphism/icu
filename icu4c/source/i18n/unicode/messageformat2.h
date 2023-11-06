@@ -6,6 +6,8 @@
 #ifndef MESSAGEFORMAT2_H
 #define MESSAGEFORMAT2_H
 
+#include "unicode/utypes.h"
+
 #if U_SHOW_CPLUSPLUS_API
 
 /**
@@ -19,14 +21,190 @@
 #include "unicode/messageformat2_data_model.h"
 #include "unicode/messageformat2_formatting_context.h"
 #include "unicode/messageformat2_function_registry.h"
-#include "unicode/messageformat2_macros.h"
 #include "unicode/unistr.h"
-#include "unicode/utypes.h"
-#include "messageformat2_checker.h"
-#include "messageformat2_context.h"
-#include "messageformat2_expression_context.h"
 
 U_NAMESPACE_BEGIN namespace message2 {
+
+class CachedFormatters;
+class Environment;
+class Errors;
+class ExpressionContext;
+class MessageContext;
+
+// Arguments
+// ----------
+
+/**
+ * <p>MessageFormatter is a Technical Preview API implementing MessageFormat 2.0.
+ * Since it is not final, documentation has not yet been added everywhere.
+ *
+ * The following class represents the named arguments to a message.
+ *
+ * @internal ICU 74.0 technology preview
+ * @deprecated This API is for technology preview only.
+ */
+class U_I18N_API MessageArguments : public UObject {
+public:
+    /**
+     * The mutable Builder class allows each message argument to be initialized
+     * separately; calling its `build()` method yields an immutable MessageArguments.
+     *
+     * @internal ICU 74.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    class U_I18N_API Builder {
+    public:
+        /**
+         * Adds an argument of type `UnicodeString`.
+         *
+         * @param key The name of the argument.
+         * @param value The value of the argument.
+         * @param status    Input/output error code.
+         * @return          A reference to the builder.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder& add(const UnicodeString& key, const UnicodeString& value, UErrorCode& status);
+        /**
+         * Adds an argument of type `double`.
+         *
+         * @param key The name of the argument.
+         * @param value The value of the argument.
+         * @param status    Input/output error code.
+         * @return          A reference to the builder.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder& addDouble(const UnicodeString& key, double value, UErrorCode& status);
+        /**
+         * Adds an argument of type `int64_t`.
+         *
+         * @param key The name of the argument.
+         * @param value The value of the argument.
+         * @param status    Input/output error code.
+         * @return          A reference to the builder.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder& addInt64(const UnicodeString& key, int64_t value, UErrorCode& status);
+        /**
+         * Adds an argument of type `UDate`.
+         *
+         * @param key The name of the argument.
+         * @param value The value of the argument.
+         * @param status    Input/output error code.
+         * @return          A reference to the builder.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder& addDate(const UnicodeString& key, UDate value, UErrorCode& status);
+        /**
+         * Adds an argument of type `StringPiece`, representing a
+         * decimal number.
+         *
+         * @param key The name of the argument.
+         * @param value The value of the argument.
+         * @param status    Input/output error code.
+         * @return          A reference to the builder.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder& addDecimal(const UnicodeString& key, StringPiece value, UErrorCode& status);
+        /**
+         * Adds an argument of type UnicodeString[]. Adopts `value`.
+         *
+         * @param key The name of the argument.
+         * @param value The value of the argument, interpreted as an array of strings.
+         * @param length The length of the array.
+         * @param status  Input/output error code.
+         * @return        A reference to the builder.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder& add(const UnicodeString& key, const UnicodeString* value, int32_t length, UErrorCode& status);
+        /**
+         * Adds an argument of type UObject*, which must be non-null. Does not
+         * adopt this argument.
+         *
+         * @param key The name of the argument.
+         * @param value The value of the argument.
+         * @param status  Input/output error code.
+         * @return        A reference to the builder.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder& addObject(const UnicodeString& key, const UObject* value, UErrorCode& status);
+        /**
+         * Creates an immutable `MessageArguments` object with the argument names
+         * and values that were added by previous calls. The builder can still be used
+         * after this call.
+         *
+         * @param status  Input/output error code.
+         * @return        The new MessageArguments object, which is non-null if U_SUCCESS(status).
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        MessageArguments* build(UErrorCode& status) const;
+        /**
+         * Destructor.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        virtual ~Builder();
+    private:
+        friend class MessageArguments;
+        Builder(UErrorCode&);
+        Builder& add(const UnicodeString&, Formattable*, UErrorCode&);
+        LocalPointer<Hashtable> contents;
+        // Keep a separate hash table for objects, which does not
+        // own the values
+        // This is because a Formattable that wraps an object can't
+        // be copied
+        // Here, the values are UObjects*
+        LocalPointer<Hashtable> objectContents;
+    }; // class MessageArguments::Builder
+
+    /**
+     * Returns a new `MessageArguments::Builder` object.
+     *
+     * @param status  Input/output error code.
+     * @return        The new builder, which is non-null if U_SUCCESS(status).
+     *
+     * @internal ICU 74.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    static Builder* builder(UErrorCode& status);
+    /**
+     * Destructor.
+     *
+     * @internal ICU 74.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    virtual ~MessageArguments();
+private:
+    friend class MessageContext;
+
+    bool hasFormattable(const MessageFormatDataModel::VariableName&) const;
+    bool hasObject(const MessageFormatDataModel::VariableName&) const;
+    const Formattable& getFormattable(const MessageFormatDataModel::VariableName&) const;
+    const UObject* getObject(const MessageFormatDataModel::VariableName&) const;
+
+    MessageArguments& add(const UnicodeString&, Formattable*, UErrorCode&);
+    MessageArguments(Hashtable* c, Hashtable* o);
+    LocalPointer<Hashtable> contents;
+    // Keep a separate hash table for objects, which does not
+    // own the values
+    LocalPointer<Hashtable> objectContents;
+}; // class MessageArguments
 
 /**
  * <p>MessageFormatter is a Technical Preview API implementing MessageFormat 2.0.
@@ -39,10 +217,9 @@ U_NAMESPACE_BEGIN namespace message2 {
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-
+class U_I18N_API MessageFormatter : public UObject {
 // Note: This class does not currently inherit from the existing
 // `Format` class.
-class U_I18N_API MessageFormatter : public UObject {
 public:
     /**
      * Destructor.
@@ -87,14 +264,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    UnicodeString getPattern() const {
-        // Converts the current data model back to a string
-        U_ASSERT(dataModelOK());
-        UnicodeString result;
-        Serializer serializer(getDataModel(), result);
-        serializer.serialize();
-        return result;
-    }
+    UnicodeString getPattern() const;
 
     /**
      * Accesses the data model referred to by this
@@ -241,164 +411,6 @@ public:
       // Do not define default assignment operator
       const MessageFormatter &operator=(const MessageFormatter &) = delete;
 
-      // Parser class (private)
-      class Parser : public UMemory {
-      public:
-          virtual ~Parser();
-          static Parser* create(const UnicodeString &input, MessageFormatDataModel::Builder& dataModelBuilder, UnicodeString& normalizedInput, Errors& errors, UErrorCode& errorCode) {
-              if (U_FAILURE(errorCode)) {
-                  return nullptr;
-              }
-              Parser* p = new Parser(input, dataModelBuilder, errors, normalizedInput);
-              if (p == nullptr) {
-                  errorCode = U_MEMORY_ALLOCATION_ERROR;
-              }
-              return p;
-          }
-          // The parser validates the message and builds the data model
-          // from it.
-          void parse(UParseError &, UErrorCode &);
-      private:
-          friend class MessageFormatDataModel::Builder;
-
-          /*
-            Use an internal "parse error" structure to make it easier to translate
-            absolute offsets to line offsets.
-            This is translated back to a `UParseError` at the end of parsing.
-          */
-          typedef struct MessageParseError {
-              // The line on which the error occurred
-              uint32_t line;
-              // The offset, relative to the erroneous line, on which the error occurred
-              uint32_t offset;
-              // The total number of characters seen before advancing to the current line. It has a value of 0 if line == 0.
-              // It includes newline characters, because the index does too.
-              uint32_t lengthBeforeCurrentLine;
-
-              // This parser doesn't yet use the last two fields.
-              UChar   preContext[U_PARSE_CONTEXT_LEN];
-              UChar   postContext[U_PARSE_CONTEXT_LEN];
-          } MessageParseError;
-
-          Parser(const UnicodeString &input, MessageFormatDataModel::Builder& dataModelBuilder, Errors& e, UnicodeString& normalizedInputRef)
-              : source(input), index(0), errors(e), normalizedInput(normalizedInputRef), dataModel(dataModelBuilder) {
-              parseError.line = 0;
-              parseError.offset = 0;
-              parseError.lengthBeforeCurrentLine = 0;
-              parseError.preContext[0] = '\0';
-              parseError.postContext[0] = '\0';
-          }
-
-          // Used so `parseEscapeSequence()` can handle all types of escape sequences
-          // (literal, text, and reserved)
-          typedef enum { LITERAL, TEXT, RESERVED } EscapeKind;
-
-          static void translateParseError(const MessageParseError&, UParseError&);
-          static void setParseError(MessageParseError&, uint32_t);
-          void maybeAdvanceLine();
-          void parseBody(UErrorCode &);
-          void parseDeclarations(UErrorCode &);
-          void parseSelectors(UErrorCode &);
-
-          void parseWhitespaceMaybeRequired(bool, UErrorCode &);
-          void parseRequiredWhitespace(UErrorCode &);
-          void parseOptionalWhitespace(UErrorCode &);
-          void parseToken(UChar32, UErrorCode &);
-          void parseTokenWithWhitespace(UChar32, UErrorCode &);
-          template <int32_t N>
-          void parseToken(const UChar32 (&)[N], UErrorCode &);
-          template <int32_t N>
-          void parseTokenWithWhitespace(const UChar32 (&)[N], UErrorCode &);
-          void parseName(UErrorCode&, UnicodeString&);
-          void parseVariableName(UErrorCode&, UnicodeString&);
-          FunctionName* parseFunction(UErrorCode&);
-          void parseEscapeSequence(EscapeKind, UErrorCode &, UnicodeString&);
-          void parseLiteralEscape(UErrorCode &, UnicodeString&);
-          void parseLiteral(UErrorCode &, bool&, UnicodeString&);
-          void parseOption(UErrorCode&, MessageFormatDataModel::Operator::Builder&);
-          void parseOptions(UErrorCode &, MessageFormatDataModel::Operator::Builder&);
-          void parseReservedEscape(UErrorCode&, UnicodeString&);
-          void parseReservedChunk(UErrorCode &, MessageFormatDataModel::Reserved::Builder&);
-          MessageFormatDataModel::Reserved* parseReserved(UErrorCode &);
-          MessageFormatDataModel::Operator* parseAnnotation(UErrorCode &);
-          void parseLiteralOrVariableWithAnnotation(bool, UErrorCode &, MessageFormatDataModel::Expression::Builder&);
-          MessageFormatDataModel::Expression* parseExpression(bool&, UErrorCode &);
-          void parseTextEscape(UErrorCode&, UnicodeString&);
-          void parseText(UErrorCode&, UnicodeString&);
-          MessageFormatDataModel::Key* parseKey(UErrorCode&);
-          MessageFormatDataModel::SelectorKeys* parseNonEmptyKeys(UErrorCode&);
-          void errorPattern(UErrorCode&);
-          MessageFormatDataModel::Pattern* parsePattern(UErrorCode&);
-
-          // The input string
-          const UnicodeString &source;
-          // The current position within the input string
-          uint32_t index;
-          // Represents the current line (and when an error is indicated),
-          // character offset within the line of the parse error
-          MessageParseError parseError;
-
-          // The structure to use for recording errors
-          Errors& errors;
-
-          // Normalized version of the input string (optional whitespace removed)
-          UnicodeString& normalizedInput;
-
-          // The parent builder
-          MessageFormatDataModel::Builder &dataModel;
-    }; // class Parser
-
-    // Serializer class (private)
-    // Converts a data model back to a string
-    class Serializer : public UMemory {
-    public:
-        Serializer(const MessageFormatDataModel& m, UnicodeString& s) : dataModel(m), result(s) {}
-        void serialize();
-
-        const MessageFormatDataModel& dataModel;
-        UnicodeString& result;
-
-    private:
-        void whitespace();
-        void emit(UChar32);
-        template <int32_t N>
-        void emit(const UChar32 (&)[N]);
-        void emit(const UnicodeString&);
-        void emit(const FunctionName&);
-        void emit(const VariableName&);
-        void emit(const MessageFormatDataModel::Literal&);
-        void emit(const MessageFormatDataModel::Key&);
-        void emit(const MessageFormatDataModel::SelectorKeys&);
-        void emit(const MessageFormatDataModel::Operand&);
-        void emit(const MessageFormatDataModel::Expression&);
-        void emit(const MessageFormatDataModel::PatternPart&);
-        void emit(const MessageFormatDataModel::Pattern&);
-        void emit(const MessageFormatDataModel::VariantMap&);
-        void emit(const MessageFormatDataModel::OptionMap&);
-        void serializeDeclarations();
-        void serializeSelectors();
-        void serializeVariants();
-    }; // class Serializer
-
-    // Checks a data model for semantic errors
-    // (Errors are defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md       )
-    class Checker {
-    public:
-        void check(UErrorCode& error);
-        Checker(const MessageFormatDataModel& m, Errors& e) : dataModel(m), errors(e) {}
-    private:
-        void requireAnnotated(const TypeEnvironment&, const MessageFormatDataModel::Expression&, UErrorCode&);
-        void checkDeclarations(TypeEnvironment&, UErrorCode&);
-        void checkSelectors(const TypeEnvironment&, UErrorCode&);
-        void checkVariants(UErrorCode&);
-        void check(const MessageFormatDataModel::OptionMap&, UErrorCode&);
-        void check(const MessageFormatDataModel::Operand&, UErrorCode&);
-        void check(const MessageFormatDataModel::Expression&, UErrorCode&);
-        void check(const MessageFormatDataModel::Pattern&, UErrorCode&);
-        const MessageFormatDataModel& dataModel;
-        Errors& errors;
-    };
-
      void resolveVariables(const Environment& env, const MessageFormatDataModel::Operand&, ExpressionContext&, UErrorCode &) const;
      void resolveVariables(const Environment& env, const MessageFormatDataModel::Expression&, ExpressionContext&, UErrorCode &) const;
 
@@ -416,21 +428,18 @@ public:
      void formatExpression(const Environment&, const MessageFormatDataModel::Expression&, ExpressionContext&, UErrorCode&) const;
      void resolveOptions(const Environment& env, const MessageFormatDataModel::OptionMap&, ExpressionContext&, UErrorCode&) const;
      void formatOperand(const Environment&, const MessageFormatDataModel::Operand&, ExpressionContext&, UErrorCode&) const;
-     void evalArgument(const VariableName&, ExpressionContext&) const;
+     void evalArgument(const MessageFormatDataModel::VariableName&, ExpressionContext&) const;
      void formatSelectors(MessageContext& context, const Environment& env, const MessageFormatDataModel::ExpressionList& selectors, const MessageFormatDataModel::VariantMap& variants, UErrorCode &status, UnicodeString& result) const;
 
      // Function registry methods
-     const Formatter* maybeCachedFormatter(MessageContext&, const FunctionName&, UErrorCode& errorCode) const;
+     const Formatter* maybeCachedFormatter(MessageContext&, const MessageFormatDataModel::FunctionName&, UErrorCode& errorCode) const;
 
      bool hasCustomFunctionRegistry() const {
          return (customFunctionRegistry != nullptr);
      }
 
      // Precondition: custom function registry exists
-     const FunctionRegistry& getCustomFunctionRegistry() const {
-         U_ASSERT(hasCustomFunctionRegistry());
-         return *customFunctionRegistry;
-     }
+     const FunctionRegistry& getCustomFunctionRegistry() const;
 
      // Checking for resolution errors
      void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;

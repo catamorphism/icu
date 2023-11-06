@@ -7,7 +7,9 @@
 
 #include "unicode/messageformat2.h"
 #include "messageformat2_checker.h"
+#include "messageformat2_context.h"
 #include "messageformat2_data_model_impl.h"
+#include "messageformat2_macros.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
@@ -30,8 +32,6 @@ Missing Selector Annotation
 */
 
 // ------------------------------------------------
-
-using Type = TypeEnvironment::Type;
 
 using Binding     = MessageFormatDataModel::Binding;
 using Expression  = MessageFormatDataModel::Expression;
@@ -57,7 +57,7 @@ TypeEnvironment::TypeEnvironment(UErrorCode& errorCode) {
     annotated->setDeleter(uprv_deleteUObject);
 }
 
-Type TypeEnvironment::get(const VariableName& var) const {
+TypeEnvironment::Type TypeEnvironment::get(const VariableName& var) const {
     for (int32_t i = 0; ((int32_t) i) < annotated->size(); i++) {
         VariableName* lhs = (VariableName*) (*annotated)[i];
         U_ASSERT(lhs != nullptr);
@@ -68,7 +68,7 @@ Type TypeEnvironment::get(const VariableName& var) const {
     return Unannotated;
 }
 
-void TypeEnvironment::extend(const VariableName& var, Type t, UErrorCode& errorCode) {
+void TypeEnvironment::extend(const VariableName& var, TypeEnvironment::Type t, UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
     if (t == Unannotated) {
@@ -99,7 +99,7 @@ static bool areDefaultKeys(const KeyList& keys) {
     return true;
 }
 
-void MessageFormatter::Checker::checkVariants(UErrorCode& error) {
+void Checker::checkVariants(UErrorCode& error) {
     CHECK_ERROR(error);
     U_ASSERT(dataModel.hasSelectors());
 
@@ -131,7 +131,7 @@ void MessageFormatter::Checker::checkVariants(UErrorCode& error) {
     }
 }
 
-void MessageFormatter::Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selectorExpr, UErrorCode& error) {
+void Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selectorExpr, UErrorCode& error) {
     CHECK_ERROR(error);
 
     if (selectorExpr.isFunctionCall()) {
@@ -140,7 +140,7 @@ void MessageFormatter::Checker::requireAnnotated(const TypeEnvironment& t, const
     if (!selectorExpr.isReserved()) {
         const Operand& rand = selectorExpr.getOperand();
         if (rand.isVariable()) {
-            if (t.get(rand.asVariable()) == Type::Annotated) {
+            if (t.get(rand.asVariable()) == TypeEnvironment::Type::Annotated) {
                 return; // No error
             }
         }
@@ -149,7 +149,7 @@ void MessageFormatter::Checker::requireAnnotated(const TypeEnvironment& t, const
     errors.addError(Error::Type::MissingSelectorAnnotation, error);
 }
 
-void MessageFormatter::Checker::checkSelectors(const TypeEnvironment& t, UErrorCode& error) {
+void Checker::checkSelectors(const TypeEnvironment& t, UErrorCode& error) {
     CHECK_ERROR(error);
     U_ASSERT(dataModel.hasSelectors());
 
@@ -163,23 +163,23 @@ void MessageFormatter::Checker::checkSelectors(const TypeEnvironment& t, UErrorC
     }
 }
 
-Type typeOf(TypeEnvironment& t, const Expression& expr) {
+TypeEnvironment::Type typeOf(TypeEnvironment& t, const Expression& expr) {
     if (expr.isFunctionCall()) {
-        return Type::Annotated;
+        return TypeEnvironment::Type::Annotated;
     }
     if (expr.isReserved()) {
-        return Type::Unannotated;
+        return TypeEnvironment::Type::Unannotated;
     }
     const Operand& rand = expr.getOperand();
     U_ASSERT(!rand.isNull());
     if (rand.isLiteral()) {
-        return Type::Unannotated;
+        return TypeEnvironment::Type::Unannotated;
     }
     U_ASSERT(rand.isVariable());
     return t.get(rand.asVariable());
 }
 
-void MessageFormatter::Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& error) {
+void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& error) {
     CHECK_ERROR(error);
 
     // For each declaration, extend the type environment with its type
@@ -195,7 +195,7 @@ void MessageFormatter::Checker::checkDeclarations(TypeEnvironment& t, UErrorCode
     }
 }
 
-void MessageFormatter::Checker::check(UErrorCode& error) {
+void Checker::check(UErrorCode& error) {
     CHECK_ERROR(error);
 
     TypeEnvironment typeEnv(error);
@@ -214,4 +214,3 @@ void MessageFormatter::Checker::check(UErrorCode& error) {
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
-

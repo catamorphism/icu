@@ -8,6 +8,8 @@
 #include "unicode/messageformat2_data_model.h"
 #include "unicode/messageformat2.h"
 #include "messageformat2_data_model_impl.h"
+#include "messageformat2_macros.h"
+#include "hash.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
@@ -21,6 +23,7 @@ using Binding          = MessageFormatDataModel::Binding;
 using Bindings         = MessageFormatDataModel::Bindings;
 using Expression       = MessageFormatDataModel::Expression;
 using ExpressionList   = MessageFormatDataModel::ExpressionList;
+using FunctionName     = MessageFormatDataModel::FunctionName;
 using Key              = MessageFormatDataModel::Key;
 using KeyList          = MessageFormatDataModel::KeyList;
 using Literal          = MessageFormatDataModel::Literal;
@@ -31,6 +34,7 @@ using Pattern          = MessageFormatDataModel::Pattern;
 using PatternPart      = MessageFormatDataModel::PatternPart;
 using Reserved         = MessageFormatDataModel::Reserved;
 using SelectorKeys     = MessageFormatDataModel::SelectorKeys;
+using VariableName     = MessageFormatDataModel::VariableName;
 using VariantMap       = MessageFormatDataModel::VariantMap;
 
 // Implementation
@@ -249,6 +253,15 @@ VariantMap::Builder::~Builder() {}
 
 // ------------ Reserved
 
+// Copy constructor
+Reserved::Reserved(const Reserved& other) : parts(new ImmutableVector<Literal>(*other.parts)) {
+    U_ASSERT(!other.isBogus());
+}
+
+// Should only be called by Builder
+// Takes ownership of `ps`
+Reserved::Reserved(ImmutableVector<Literal> *ps) :  parts(ps) { U_ASSERT(ps != nullptr); }
+
 int32_t Reserved::numParts() const {
     U_ASSERT(!isBogus());
     return parts->length();
@@ -304,6 +317,14 @@ Reserved::Builder::~Builder() {}
 const FunctionName& Operator::getFunctionName() const {
     U_ASSERT(!isBogus() && !isReserved());
     return functionName;
+}
+
+UChar FunctionName::sigilChar() const {
+    switch (functionSigil) {
+    case Sigil::OPEN: { return PLUS; }
+    case Sigil::CLOSE: { return HYPHEN; }
+    default: { return COLON; }
+    }
 }
 
 UnicodeString FunctionName::toString() const {
@@ -575,6 +596,13 @@ Expression::Builder::~Builder() {}
 
 // ----------- PatternPart
 
+// PatternPart needs a copy constructor in order to make Pattern deeply copyable
+// If !isRawText and the copy of the other expression fails,
+// then isBogus() will be true for this PatternPart
+PatternPart::PatternPart(const PatternPart& other) : isRawText(other.isText()), text(other.text), expression(isRawText ? nullptr : new Expression(other.contents()))  {
+    U_ASSERT(!other.isBogus());
+}
+
 /* static */ PatternPart* PatternPart::create(const UnicodeString& t, UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
@@ -609,6 +637,17 @@ const UnicodeString& PatternPart::asText() const {
 }
 
 // ---------------- Pattern
+
+// Should only be called by Builder
+// Takes ownership of `ps`
+Pattern::Pattern(ImmutableVector<PatternPart> *ps) : parts(ps) { U_ASSERT(ps != nullptr); }
+
+// Copy constructor
+// If the copy of the other list fails,
+// then isBogus() will be true for this Pattern
+Pattern::Pattern(const Pattern& other) : parts(new ImmutableVector<PatternPart>(*(other.parts))) {
+    U_ASSERT(!other.isBogus());
+}
 
 const PatternPart* Pattern::getPart(int32_t i) const {
     U_ASSERT(!isBogus() && i < numParts());

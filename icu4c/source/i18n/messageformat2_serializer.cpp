@@ -7,6 +7,8 @@
 
 #include "unicode/messageformat2.h"
 #include "messageformat2_data_model_impl.h"
+#include "messageformat2_macros.h"
+#include "messageformat2_serializer.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
@@ -35,39 +37,37 @@ using PatternPart = MessageFormatDataModel::PatternPart;
 using Reserved    = MessageFormatDataModel::Reserved;
 using VariantMap    = MessageFormatDataModel::VariantMap;
 
-#define SERIALIZER MessageFormatter::Serializer
-
 // Private helper methods
 
-void SERIALIZER::whitespace() {
+void Serializer::whitespace() {
     result += SPACE;
 }
 
-void SERIALIZER::emit(UChar32 c) {
+void Serializer::emit(UChar32 c) {
     result += c;
 }
 
-void SERIALIZER::emit(const UnicodeString& s) {
+void Serializer::emit(const UnicodeString& s) {
     result += s;
 }
 
 template <int32_t N>
-void SERIALIZER::emit(const UChar32 (&token)[N]) {
+void Serializer::emit(const UChar32 (&token)[N]) {
     // Don't emit the terminator
     for (int32_t i = 0; i < N - 1; i++) {
         emit(token[i]);
     }
 }
 
-void SERIALIZER::emit(const FunctionName& f) {
+void Serializer::emit(const FunctionName& f) {
     emit(f.toString());
 }
 
-void SERIALIZER::emit(const VariableName& v) {
+void Serializer::emit(const VariableName& v) {
     emit(v.declaration());
 }
 
-void SERIALIZER::emit(const Literal& l) {
+void Serializer::emit(const Literal& l) {
     if (l.quoted()) {
       emit(PIPE);
       const UnicodeString& contents = l.stringContents();
@@ -91,7 +91,7 @@ void SERIALIZER::emit(const Literal& l) {
     }
 }
 
-void SERIALIZER::emit(const Key& k) {
+void Serializer::emit(const Key& k) {
     if (k.isWildcard()) {
         emit(ASTERISK);
         return;
@@ -99,7 +99,7 @@ void SERIALIZER::emit(const Key& k) {
     emit(k.asLiteral());
 }
 
-void SERIALIZER::emit(const SelectorKeys& k) {
+void Serializer::emit(const SelectorKeys& k) {
   const KeyList& ks = k.getKeys();
   int32_t len = ks.length();
   // It would be an error for `keys` to be empty;
@@ -114,7 +114,7 @@ void SERIALIZER::emit(const SelectorKeys& k) {
   }
 }
 
-void SERIALIZER::emit(const Operand& rand) {
+void Serializer::emit(const Operand& rand) {
     U_ASSERT(!rand.isNull());
 
     if (rand.isVariable()) {
@@ -125,7 +125,7 @@ void SERIALIZER::emit(const Operand& rand) {
     }
 }
 
-void SERIALIZER::emit(const OptionMap& options) {
+void Serializer::emit(const OptionMap& options) {
     int32_t pos = OptionMap::FIRST;
     UnicodeString k;
     const Operand* v;
@@ -137,7 +137,7 @@ void SERIALIZER::emit(const OptionMap& options) {
     }
 }
 
-void SERIALIZER::emit(const Expression& expr) {
+void Serializer::emit(const Expression& expr) {
     emit(LEFT_CURLY_BRACE);
 
     if (!expr.isReserved() && !expr.isFunctionCall()) {
@@ -188,7 +188,7 @@ void SERIALIZER::emit(const Expression& expr) {
     emit(RIGHT_CURLY_BRACE);
 }
 
-void SERIALIZER::emit(const PatternPart& part) {
+void Serializer::emit(const PatternPart& part) {
     if (part.isText()) {
         // Raw text
         const UnicodeString& text = part.asText();
@@ -212,7 +212,7 @@ void SERIALIZER::emit(const PatternPart& part) {
     emit(part.contents());
 }
 
-void SERIALIZER::emit(const Pattern& pat) {
+void Serializer::emit(const Pattern& pat) {
     int32_t len = pat.numParts();
     emit(LEFT_CURLY_BRACE);
     for (int32_t i = 0; i < len; i++) {
@@ -222,7 +222,7 @@ void SERIALIZER::emit(const Pattern& pat) {
     emit(RIGHT_CURLY_BRACE);
 }
                     
-void SERIALIZER::serializeDeclarations() {
+void Serializer::serializeDeclarations() {
     const Bindings& locals = dataModel.getLocalVariables();
     
     for (int32_t i = 0; i < locals.length(); i++) {
@@ -238,7 +238,7 @@ void SERIALIZER::serializeDeclarations() {
    }
 }
 
-void SERIALIZER::serializeSelectors() {
+void Serializer::serializeSelectors() {
     U_ASSERT(dataModel.hasSelectors());
     const ExpressionList& selectors = dataModel.getSelectors();
     int32_t len = selectors.length();
@@ -251,7 +251,7 @@ void SERIALIZER::serializeSelectors() {
     }
 }
 
-void SERIALIZER::serializeVariants() {
+void Serializer::serializeVariants() {
     U_ASSERT(dataModel.hasSelectors());
     const VariantMap& variants = dataModel.getVariants();
     int32_t pos = VariantMap::FIRST;
@@ -270,7 +270,7 @@ void SERIALIZER::serializeVariants() {
 
 
 // Main (public) serializer method
-void SERIALIZER::serialize() {
+void Serializer::serialize() {
     serializeDeclarations();
     // Pattern message
     if (!dataModel.hasSelectors()) {

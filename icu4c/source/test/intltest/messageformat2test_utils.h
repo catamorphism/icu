@@ -7,6 +7,7 @@
 #include "unicode/locid.h"
 #include "unicode/messageformat2.h"
 #include "intltest.h"
+#include "messageformat2_macros.h"
 
 #if !UCONFIG_NO_FORMATTING
 

@@ -6,6 +6,8 @@
 #ifndef MESSAGEFORMAT2_FORMATTING_CONTEXT_H
 #define MESSAGEFORMAT2_FORMATTING_CONTEXT_H
 
+#include "unicode/utypes.h"
+
 #if U_SHOW_CPLUSPLUS_API
 
 /**
@@ -17,10 +19,8 @@
 
 #include "unicode/formattedvalue.h"
 #include "unicode/messageformat2_data_model.h"
-#include "unicode/messageformat2_macros.h"
 #include "unicode/numberformatter.h"
 #include "unicode/smpdtfmt.h"
-#include "messageformat2_context.h"
 
 U_NAMESPACE_BEGIN namespace message2 {
 

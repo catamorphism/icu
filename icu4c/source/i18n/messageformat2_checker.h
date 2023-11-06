@@ -41,6 +41,27 @@ class TypeEnvironment : public UMemory {
     LocalPointer<UVector> annotated;
 }; // class TypeEnvironment
 
+// Checks a data model for semantic errors
+// (Errors are defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md       )
+class Checker {
+public:
+    void check(UErrorCode& error);
+    Checker(const MessageFormatDataModel& m, Errors& e) : dataModel(m), errors(e) {}
+private:
+    using VariableName = MessageFormatDataModel::VariableName;
+
+    void requireAnnotated(const TypeEnvironment&, const MessageFormatDataModel::Expression&, UErrorCode&);
+    void checkDeclarations(TypeEnvironment&, UErrorCode&);
+    void checkSelectors(const TypeEnvironment&, UErrorCode&);
+    void checkVariants(UErrorCode&);
+    void check(const MessageFormatDataModel::OptionMap&, UErrorCode&);
+    void check(const MessageFormatDataModel::Operand&, UErrorCode&);
+    void check(const MessageFormatDataModel::Expression&, UErrorCode&);
+    void check(const MessageFormatDataModel::Pattern&, UErrorCode&);
+    const MessageFormatDataModel& dataModel;
+    Errors& errors;
+}; // class Checker
+
 } // namespace message2
 U_NAMESPACE_END
 

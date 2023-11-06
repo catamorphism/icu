@@ -6,6 +6,8 @@
 #ifndef MESSAGEFORMAT2_FUNCTION_REGISTRY_H
 #define MESSAGEFORMAT2_FUNCTION_REGISTRY_H
 
+#include "unicode/utypes.h"
+
 #if U_SHOW_CPLUSPLUS_API
 
 #if !UCONFIG_NO_FORMATTING
@@ -14,13 +16,15 @@
 #include "unicode/format.h"
 #include "unicode/messageformat2_data_model.h"
 #include "unicode/messageformat2_formatting_context.h"
-#include "unicode/messageformat2_macros.h"
 #include "unicode/numberformatter.h"
 #include "unicode/unistr.h"
 #include "unicode/upluralrules.h"
-#include "unicode/utypes.h"
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+class Hashtable;
+
+namespace message2 {
 
 class Formatter;
 class Selector;
@@ -96,7 +100,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    FormatterFactory* getFormatter(const FunctionName& formatterName) const;
+    FormatterFactory* getFormatter(const MessageFormatDataModel::FunctionName& formatterName) const;
     /**
      * Looks up a selector factory by the name of the selector.
      *
@@ -107,7 +111,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    const SelectorFactory* getSelector(const FunctionName& selectorName) const;
+    const SelectorFactory* getSelector(const MessageFormatDataModel::FunctionName& selectorName) const;
 
     /**
      * The mutable Builder class allows each formatter and selector factory
@@ -137,7 +141,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& status);
+        Builder& setFormatter(const MessageFormatDataModel::FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& status);
         /**
          * Registers a selector factory to a given selector name. Adopts `selectorFactory`.
          *
@@ -150,7 +154,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& status);
+        Builder& setSelector(const MessageFormatDataModel::FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& status);
         /**
          * Creates an immutable `FunctionRegistry` object with the selectors and formatters
          * that were previously registered. The builder cannot be used after this call.
@@ -194,7 +198,7 @@ private:
     friend class MessageFormatter;
 
     // Adopts `f` and `s`
-    FunctionRegistry(Hashtable* f, Hashtable* s) : formatters(f), selectors(s) {}
+    FunctionRegistry(Hashtable* f, Hashtable* s);
 
     // Debugging; should only be called on a function registry with
     // all the standard functions registered
@@ -202,20 +206,8 @@ private:
     void checkSelector(const char*) const;
     void checkStandard() const;
 
-    bool hasFormatter(const FunctionName& f) const {
-        if (!formatters->containsKey(f.toString())) {
-            return false;
-        }
-        U_ASSERT(getFormatter(f) != nullptr);
-        return true;
-    }
-    bool hasSelector(const FunctionName& s) const {
-        if (!selectors->containsKey(s.toString())) {
-            return false;
-        }
-        U_ASSERT(getSelector(s) != nullptr);
-        return true;
-    }
+    bool hasFormatter(const MessageFormatDataModel::FunctionName& f) const;
+    bool hasSelector(const MessageFormatDataModel::FunctionName& s) const;
     const LocalPointer<Hashtable> formatters;
     const LocalPointer<Hashtable> selectors;
  }; // class FunctionRegistry
