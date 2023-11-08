@@ -19,24 +19,6 @@ union UElement;
 
 U_NAMESPACE_BEGIN
 
-/// @cond DOXYGEN_IGNORE
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See messageformat2_data_model_forward_decls.h for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointer<Hashtable>;
-template class U_I18N_API LocalPointer<UVector>;
-template class U_I18N_API LocalPointerBase<Hashtable>;
-template class U_I18N_API LocalPointerBase<UVector>;
-#endif
-/// @endcond
-
 class Hashtable;
 class UVector;
 
