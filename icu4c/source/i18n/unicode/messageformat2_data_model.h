@@ -13,9 +13,9 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/fmtable.h"
+#include "unicode/messageformat2_data_model_forward_decls.h"
 #include "unicode/messageformat2_utils.h"
 #include "unicode/unistr.h"
-#include "messageformat2_data_model_forward_decls.h"
 
 U_NAMESPACE_BEGIN namespace message2 {
 
