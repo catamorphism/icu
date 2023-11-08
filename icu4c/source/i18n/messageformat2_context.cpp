@@ -317,7 +317,7 @@ bool MessageContext::isCustomSelector(const FunctionName& fn) const {
 
 const Formatter* MessageContext::maybeCachedFormatter(const FunctionName& f, UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
-    U_ASSERT(parent.cachedFormatters.isValid());
+    U_ASSERT(parent.cachedFormatters != nullptr);
 
     const Formatter* result = parent.cachedFormatters->getFormatter(f);
     if (result == nullptr) {

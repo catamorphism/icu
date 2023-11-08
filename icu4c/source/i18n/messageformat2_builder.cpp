@@ -85,11 +85,6 @@ MessageFormatter* MessageFormatter::Builder::build(UParseError& parseError, UErr
     return new MessageFormatter(*this, parseError, errorCode);
 }
 
-void MessageFormatter::initErrors(UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-    errors.adoptInstead(Errors::create(errorCode));
-}
-
 MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError,
                                    UErrorCode &success) : locale(builder.locale), customFunctionRegistry(builder.customFunctionRegistry) {
     CHECK_ERROR(success);
@@ -109,7 +104,7 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     CHECK_ERROR(success);
     standardFunctionRegistry->checkStandard();
 
-    initErrors(success);
+    errors = Errors::create(success);
     CHECK_ERROR(success);
 
     // Validate pattern and build data model
@@ -135,7 +130,8 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     CHECK_ERROR(success);
 
     // Initialize formatter cache
-    cachedFormatters.adoptInstead(new CachedFormatters(success));
+    cachedFormatters = new CachedFormatters(success);
+    CHECK_ERROR(success);
 
     // Parse the pattern
     LocalPointer<Parser> parser(Parser::create(builder.pattern, *tree, normalizedInput, *errors, success));
@@ -165,7 +161,14 @@ bool MessageFormatter::dataModelOK() const {
     return !dataModel.isValid() && borrowedDataModel != nullptr;
 }
 
-MessageFormatter::~MessageFormatter() {}
+MessageFormatter::~MessageFormatter() {
+    if (cachedFormatters != nullptr) {
+        delete cachedFormatters;
+    }
+    if (errors != nullptr) {
+        delete errors;
+    }
+}
 MessageFormatter::Builder::~Builder() {}
 
 } // namespace message2
