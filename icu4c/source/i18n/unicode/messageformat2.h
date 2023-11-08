@@ -475,11 +475,22 @@ public:
      UnicodeString normalizedInput;
 
      // Formatter cache
-     LocalPointer<CachedFormatters> cachedFormatters;
+     // Note: it would be preferable to use a LocalPointer, but on Windows platforms,
+     // a fully-specified template instantiation for LocalPointer<CachedFormatters>
+     // would need to be exported. Then, the entire definition of the internal
+     // CachedFormatters class would need to be included in a public header
+     // file in order for the compiler to generate this template instantiation.
+     // (Just forward-declaring CachedFormatters wouldn't work.)
+     // To work around this, we just avoid using a LocalPointer<T>
+     // as a member of a public class where T is an internal class.
+     // (See the comment on the CurrencyPluralInfoWrapper class in
+     // number_decimfmtprops.h for a description of a similar problem.)
+     CachedFormatters* cachedFormatters;
 
      // Errors -- only used while parsing and checking for data model errors; then
      // the MessageContext keeps track of errors
-     LocalPointer<Errors> errors;
+     // Note: Not a LocalPointer for the same reason as cachedFormatters above
+     Errors* errors;
 }; // class MessageFormatter
 
 } // namespace message2

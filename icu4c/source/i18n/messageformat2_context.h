@@ -140,7 +140,7 @@ class Error : public UObject {
     UnicodeString contents;
 }; // class Error
 
-class Errors : public UMemory {
+class Errors : public UObject {
     private:
     LocalPointer<UVector> syntaxAndDataModelErrors;
     LocalPointer<UVector> resolutionAndFormattingErrors;
@@ -183,7 +183,7 @@ class Errors : public UMemory {
 // --------------
 
 // Map from expression pointers to Formatters
-class CachedFormatters : public UMemory {
+class CachedFormatters : public UObject {
 private:
     friend class MessageFormatter;
     
