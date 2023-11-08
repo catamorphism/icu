@@ -1318,13 +1318,9 @@ namespace message2 {
          */
         static Builder* builder(UErrorCode& status);
 
-        // TODO should be private
-        // Pattern needs a copy constructor in order to make MessageFormatDataModel::build() be a copying rather than
-        // moving build
-        Pattern(const Pattern& other);
 
     private:
-        friend class MessageFormatDataModel;
+        friend class icu::message2::MessageFormatDataModel;
         friend class OrderedMap<Pattern>;
 
         // Possibly-empty list of parts
@@ -1335,6 +1331,10 @@ namespace message2 {
         // Should only be called by Builder
         // Takes ownership of `ps`
         Pattern(ImmutableVector<PatternPart> *ps);
+
+        // Pattern needs a copy constructor in order to make MessageFormatDataModel::build() be a copying rather than
+        // moving build
+        Pattern(const Pattern& other);
     }; // class Pattern
   } // namespace data_model
 } // namespace message
