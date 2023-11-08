@@ -9,7 +9,6 @@
 #include "unicode/messageformat2_function_registry.h"
 #include "unicode/messageformat2.h"
 #include "messageformat2_context.h"
-#include "messageformat2_data_model_impl.h"
 #include "messageformat2_expression_context.h"
 #include "messageformat2_macros.h"
 #include "uvector.h" // U_ASSERT
@@ -20,6 +19,8 @@
 #endif
 
 U_NAMESPACE_BEGIN namespace message2 {
+
+using namespace data_model;
 
 // Context that's specific to formatting a single expression
 
@@ -104,7 +105,7 @@ void ExpressionContext::setFallbackTo(const VariableName& v) {
     fallbackToString(v.declaration(), fallback);
 }
 
-void ExpressionContext::setFallbackTo(const MessageFormatDataModel::Literal& l) {
+void ExpressionContext::setFallbackTo(const Literal& l) {
     fallback.remove();
     fallbackToString(l.quotedString(), fallback);
 }

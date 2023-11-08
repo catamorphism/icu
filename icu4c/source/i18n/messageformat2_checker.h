@@ -18,7 +18,7 @@
 
 U_NAMESPACE_BEGIN  namespace message2 {
 
-using VariableName = MessageFormatDataModel::VariableName;
+using namespace data_model;
 
 // Used for checking missing selector annotation errors
 class TypeEnvironment : public UMemory {
@@ -48,16 +48,15 @@ public:
     void check(UErrorCode& error);
     Checker(const MessageFormatDataModel& m, Errors& e) : dataModel(m), errors(e) {}
 private:
-    using VariableName = MessageFormatDataModel::VariableName;
 
-    void requireAnnotated(const TypeEnvironment&, const MessageFormatDataModel::Expression&, UErrorCode&);
+    void requireAnnotated(const TypeEnvironment&, const Expression&, UErrorCode&);
     void checkDeclarations(TypeEnvironment&, UErrorCode&);
     void checkSelectors(const TypeEnvironment&, UErrorCode&);
     void checkVariants(UErrorCode&);
-    void check(const MessageFormatDataModel::OptionMap&, UErrorCode&);
-    void check(const MessageFormatDataModel::Operand&, UErrorCode&);
-    void check(const MessageFormatDataModel::Expression&, UErrorCode&);
-    void check(const MessageFormatDataModel::Pattern&, UErrorCode&);
+    void check(const OptionMap&, UErrorCode&);
+    void check(const Operand&, UErrorCode&);
+    void check(const Expression&, UErrorCode&);
+    void check(const Pattern&, UErrorCode&);
     const MessageFormatDataModel& dataModel;
     Errors& errors;
 }; // class Checker

@@ -193,10 +193,10 @@ public:
 private:
     friend class MessageContext;
 
-    bool hasFormattable(const MessageFormatDataModel::VariableName&) const;
-    bool hasObject(const MessageFormatDataModel::VariableName&) const;
-    const Formattable& getFormattable(const MessageFormatDataModel::VariableName&) const;
-    const UObject* getObject(const MessageFormatDataModel::VariableName&) const;
+    bool hasFormattable(const data_model::VariableName&) const;
+    bool hasObject(const data_model::VariableName&) const;
+    const Formattable& getFormattable(const data_model::VariableName&) const;
+    const UObject* getObject(const data_model::VariableName&) const;
 
     MessageArguments& add(const UnicodeString&, Formattable*, UErrorCode&);
     MessageArguments(Hashtable* c, Hashtable* o);
@@ -411,28 +411,28 @@ public:
       // Do not define default assignment operator
       const MessageFormatter &operator=(const MessageFormatter &) = delete;
 
-     void resolveVariables(const Environment& env, const MessageFormatDataModel::Operand&, ExpressionContext&, UErrorCode &) const;
-     void resolveVariables(const Environment& env, const MessageFormatDataModel::Expression&, ExpressionContext&, UErrorCode &) const;
+     void resolveVariables(const Environment& env, const data_model::Operand&, ExpressionContext&, UErrorCode &) const;
+     void resolveVariables(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode &) const;
 
      // Selection methods
-     void resolveSelectors(MessageContext&, const Environment& env, const MessageFormatDataModel::ExpressionList&, UErrorCode&, UVector&) const;
+     void resolveSelectors(MessageContext&, const Environment& env, const data_model::ExpressionList&, UErrorCode&, UVector&) const;
      void matchSelectorKeys(const UVector&, ExpressionContext&, UErrorCode&, UVector&) const;
-     void resolvePreferences(const UVector&, const MessageFormatDataModel::VariantMap&, UErrorCode&, UVector&) const;
+     void resolvePreferences(const UVector&, const data_model::VariantMap&, UErrorCode&, UVector&) const;
 
      // Formatting methods
-     void formatLiteral(const MessageFormatDataModel::Literal&, ExpressionContext&) const;
-     void formatPattern(MessageContext&, const Environment&, const MessageFormatDataModel::Pattern&, UErrorCode&, UnicodeString&) const;
+     void formatLiteral(const data_model::Literal&, ExpressionContext&) const;
+     void formatPattern(MessageContext&, const Environment&, const data_model::Pattern&, UErrorCode&, UnicodeString&) const;
      // Formats an expression that appears as a selector
-     void formatSelectorExpression(const Environment& env, const MessageFormatDataModel::Expression&, ExpressionContext&, UErrorCode&) const;
+     void formatSelectorExpression(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
      // Formats an expression that appears in a pattern or as the definition of a local variable
-     void formatExpression(const Environment&, const MessageFormatDataModel::Expression&, ExpressionContext&, UErrorCode&) const;
-     void resolveOptions(const Environment& env, const MessageFormatDataModel::OptionMap&, ExpressionContext&, UErrorCode&) const;
-     void formatOperand(const Environment&, const MessageFormatDataModel::Operand&, ExpressionContext&, UErrorCode&) const;
-     void evalArgument(const MessageFormatDataModel::VariableName&, ExpressionContext&) const;
-     void formatSelectors(MessageContext& context, const Environment& env, const MessageFormatDataModel::ExpressionList& selectors, const MessageFormatDataModel::VariantMap& variants, UErrorCode &status, UnicodeString& result) const;
+     void formatExpression(const Environment&, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
+     void resolveOptions(const Environment& env, const data_model::OptionMap&, ExpressionContext&, UErrorCode&) const;
+     void formatOperand(const Environment&, const data_model::Operand&, ExpressionContext&, UErrorCode&) const;
+     void evalArgument(const data_model::VariableName&, ExpressionContext&) const;
+     void formatSelectors(MessageContext& context, const Environment& env, const data_model::ExpressionList& selectors, const data_model::VariantMap& variants, UErrorCode &status, UnicodeString& result) const;
 
      // Function registry methods
-     const Formatter* maybeCachedFormatter(MessageContext&, const MessageFormatDataModel::FunctionName&, UErrorCode& errorCode) const;
+     const Formatter* maybeCachedFormatter(MessageContext&, const data_model::FunctionName&, UErrorCode& errorCode) const;
 
      bool hasCustomFunctionRegistry() const {
          return (customFunctionRegistry != nullptr);
@@ -443,9 +443,9 @@ public:
 
      // Checking for resolution errors
      void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;
-     void check(MessageContext&, const Environment&, const MessageFormatDataModel::Expression&, UErrorCode&) const;
-     void check(MessageContext&, const Environment&, const MessageFormatDataModel::Operand&, UErrorCode&) const;
-     void check(MessageContext&, const Environment&, const MessageFormatDataModel::OptionMap&, UErrorCode&) const;
+     void check(MessageContext&, const Environment&, const data_model::Expression&, UErrorCode&) const;
+     void check(MessageContext&, const Environment&, const data_model::Operand&, UErrorCode&) const;
+     void check(MessageContext&, const Environment&, const data_model::OptionMap&, UErrorCode&) const;
 
      void initErrors(UErrorCode&);
      void clearErrors() const;

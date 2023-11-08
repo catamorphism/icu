@@ -21,6 +21,8 @@ U_NAMESPACE_BEGIN namespace message2 {
 
 class FunctionRegistry;
 
+using namespace data_model;
+
 // The ExpressionContext contains everything needed to format a specific operand
 // or expression.
 class ExpressionContext : public FormattingContext {
@@ -127,7 +129,7 @@ class ExpressionContext : public FormattingContext {
     // Sets fallback string
     void setFallbackTo(const FunctionName&);
     void setFallbackTo(const VariableName&);
-    void setFallbackTo(const MessageFormatDataModel::Literal&);
+    void setFallbackTo(const Literal&);
     // Sets the fallback string as input and exits the error state
     void promoteFallbackToInput();
 

@@ -24,7 +24,7 @@ as of the following commit from 2023-05-09:
   https://github.com/unicode-org/message-format-wg/commit/194f6efcec5bf396df36a19bd6fa78d1fa2e0867
 */
 
-using FunctionName = MessageFormatDataModel::FunctionName;
+using namespace data_model;
 
 static FunctionRegistry* personFunctionRegistry(UErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {

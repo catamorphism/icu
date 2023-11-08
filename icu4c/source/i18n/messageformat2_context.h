@@ -34,8 +34,7 @@ extern number::FormattedNumber formatNumberWithDefaults(const Locale& locale, in
 extern number::FormattedNumber formatNumberWithDefaults(const Locale& locale, StringPiece toFormat, UErrorCode& errorCode);
 extern DateFormat* defaultDateTimeInstance(const Locale&, UErrorCode&);
 
-using FunctionName = MessageFormatDataModel::FunctionName;
-using VariableName = MessageFormatDataModel::VariableName;
+using namespace data_model;
 
 // Intermediate classes used internally in the formatter
 
@@ -49,7 +48,7 @@ class Environment;
 // to its free variables
 class Closure : public UMemory {
 public:
-    using Expression = MessageFormatDataModel::Expression;
+    using Expression = Expression;
 
     static Closure* create(const Expression&, const Environment&, UErrorCode&);
     const Expression& getExpr() const {
@@ -245,11 +244,11 @@ private:
 class PrioritizedVariant : public UObject {
 public:
     int32_t priority;
-    const MessageFormatDataModel::SelectorKeys& keys;
-    const MessageFormatDataModel::Pattern& pat;
+    const SelectorKeys& keys;
+    const Pattern& pat;
     PrioritizedVariant(uint32_t p,
-                       const MessageFormatDataModel::SelectorKeys& k,
-                       const MessageFormatDataModel::Pattern& pattern) : priority(p), keys(k), pat(pattern) {}
+                       const SelectorKeys& k,
+                       const Pattern& pattern) : priority(p), keys(k), pat(pattern) {}
     virtual ~PrioritizedVariant();
 }; // class PrioritizedVariant
 

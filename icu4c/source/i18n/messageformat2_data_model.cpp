@@ -7,7 +7,6 @@
 
 #include "unicode/messageformat2_data_model.h"
 #include "unicode/messageformat2.h"
-#include "messageformat2_data_model_impl.h"
 #include "messageformat2_macros.h"
 #include "hash.h"
 #include "uvector.h" // U_ASSERT
@@ -18,24 +17,6 @@
 #endif
 
 U_NAMESPACE_BEGIN namespace message2 {
-
-using Binding          = MessageFormatDataModel::Binding;
-using Bindings         = MessageFormatDataModel::Bindings;
-using Expression       = MessageFormatDataModel::Expression;
-using ExpressionList   = MessageFormatDataModel::ExpressionList;
-using FunctionName     = MessageFormatDataModel::FunctionName;
-using Key              = MessageFormatDataModel::Key;
-using KeyList          = MessageFormatDataModel::KeyList;
-using Literal          = MessageFormatDataModel::Literal;
-using OptionMap        = MessageFormatDataModel::OptionMap;
-using Operand          = MessageFormatDataModel::Operand;
-using Operator         = MessageFormatDataModel::Operator;
-using Pattern          = MessageFormatDataModel::Pattern;
-using PatternPart      = MessageFormatDataModel::PatternPart;
-using Reserved         = MessageFormatDataModel::Reserved;
-using SelectorKeys     = MessageFormatDataModel::SelectorKeys;
-using VariableName     = MessageFormatDataModel::VariableName;
-using VariantMap       = MessageFormatDataModel::VariantMap;
 
 // Implementation
 
@@ -712,36 +693,36 @@ Binding::~Binding() {}
 // --------------- MessageFormatDataModel
 
 const Bindings& MessageFormatDataModel::getLocalVariables() const {
-    return *(impl->bindings);
+    return *bindings;
 }
 
 // The `hasSelectors()` method is provided so that `getSelectors()`,
 // `getVariants()` and `getPattern()` can rely on preconditions
 // rather than taking error codes as arguments.
 UBool MessageFormatDataModel::hasSelectors() const {
-    if (impl->pattern.isValid()) {
-        U_ASSERT(!impl->selectors.isValid());
-        U_ASSERT(!impl->variants.isValid());
+    if (pattern.isValid()) {
+        U_ASSERT(!selectors.isValid());
+        U_ASSERT(!variants.isValid());
         return false;
     }
-    U_ASSERT(impl->selectors.isValid());
-    U_ASSERT(impl->variants.isValid());
+    U_ASSERT(selectors.isValid());
+    U_ASSERT(variants.isValid());
     return true;
 }
 
 const ExpressionList& MessageFormatDataModel::getSelectors() const {
     U_ASSERT(hasSelectors());
-    return *(impl->selectors);
+    return *selectors;
 }
 
 const VariantMap& MessageFormatDataModel::getVariants() const {
     U_ASSERT(hasSelectors());
-    return *(impl->variants);
+    return *variants;
 }
 
 const Pattern& MessageFormatDataModel::getPattern() const {
     U_ASSERT(!hasSelectors());
-    return *(impl->pattern);
+    return *pattern;
 }
 
 MessageFormatDataModel::Builder::Builder(UErrorCode& errorCode) {
@@ -829,30 +810,22 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::setPattern(Pat
 }
 
 MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode)
-    : impl(new MessageFormatDataModelImpl(builder, errorCode)) {
-    if (builder.pattern.isValid()) {
-        U_ASSERT(!hasSelectors());
-    } else {
-        U_ASSERT(hasSelectors());
-    }
-}
-
-MessageFormatDataModelImpl::MessageFormatDataModelImpl(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode)
     :  selectors(builder.pattern.isValid() ? nullptr : builder.selectors->build(errorCode)),
       variants(builder.pattern.isValid() ? nullptr : builder.variants->build(errorCode)),
       pattern(builder.pattern.isValid() ? new Pattern(*(builder.pattern)) : nullptr),
-      bindings(builder.locals->build(errorCode))
-{
+      bindings(builder.locals->build(errorCode)) {
     CHECK_ERROR(errorCode);
 
     if (builder.pattern.isValid()) {
         // If `pattern` has been set, then assume this is a Pattern message
         U_ASSERT(!builder.selectors.isValid());
         U_ASSERT(!builder.variants.isValid());
+        U_ASSERT(!hasSelectors());
     } else {
         // Otherwise, this is a Selectors message
         U_ASSERT(builder.selectors.isValid());
         U_ASSERT(builder.variants.isValid());
+        U_ASSERT(hasSelectors());
     }
 }
 

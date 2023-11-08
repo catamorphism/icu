@@ -8,7 +8,6 @@
 #include "unicode/messageformat2.h"
 #include "messageformat2_checker.h"
 #include "messageformat2_context.h"
-#include "messageformat2_data_model_impl.h"
 #include "messageformat2_macros.h"
 #include "uvector.h" // U_ASSERT
 
@@ -30,17 +29,6 @@ Missing Selector Annotation
 
 (Duplicate option names are checked by the parser)
 */
-
-// ------------------------------------------------
-
-using Binding     = MessageFormatDataModel::Binding;
-using Expression  = MessageFormatDataModel::Expression;
-using ExpressionList  = MessageFormatDataModel::ExpressionList;
-using KeyList     = MessageFormatDataModel::KeyList;
-using Operand     = MessageFormatDataModel::Operand;
-using Pattern     = MessageFormatDataModel::Pattern;
-using SelectorKeys = MessageFormatDataModel::SelectorKeys;
-using VariantMap    = MessageFormatDataModel::VariantMap;
 
 // Type environments
 // -----------------
@@ -186,7 +174,7 @@ void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& error) {
     // Only a very simple type system is necessary: local variables
     // have the type "annotated" or "unannotated".
     // Free variables (message arguments) are treated as unannotated.
-    const MessageFormatDataModel::Bindings& env = dataModel.getLocalVariables();
+    const Bindings& env = dataModel.getLocalVariables();
     for (int32_t i = 0; i < env.length(); i++) {
         const Binding* b = env.get(i);
         U_ASSERT(b != nullptr);

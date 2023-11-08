@@ -12,6 +12,8 @@
 
 U_NAMESPACE_BEGIN  namespace message2 {
 
+    using namespace data_model;
+
     // Serializer class (private)
     // Converts a data model back to a string
     class Serializer : public UMemory {
@@ -23,8 +25,6 @@ U_NAMESPACE_BEGIN  namespace message2 {
         UnicodeString& result;
 
     private:
-        using FunctionName     = MessageFormatDataModel::FunctionName;
-        using VariableName     = MessageFormatDataModel::VariableName;
 
         void whitespace();
         void emit(UChar32);
@@ -33,15 +33,15 @@ U_NAMESPACE_BEGIN  namespace message2 {
         void emit(const UnicodeString&);
         void emit(const FunctionName&);
         void emit(const VariableName&);
-        void emit(const MessageFormatDataModel::Literal&);
-        void emit(const MessageFormatDataModel::Key&);
-        void emit(const MessageFormatDataModel::SelectorKeys&);
-        void emit(const MessageFormatDataModel::Operand&);
-        void emit(const MessageFormatDataModel::Expression&);
-        void emit(const MessageFormatDataModel::PatternPart&);
-        void emit(const MessageFormatDataModel::Pattern&);
-        void emit(const MessageFormatDataModel::VariantMap&);
-        void emit(const MessageFormatDataModel::OptionMap&);
+        void emit(const Literal&);
+        void emit(const Key&);
+        void emit(const SelectorKeys&);
+        void emit(const Operand&);
+        void emit(const Expression&);
+        void emit(const PatternPart&);
+        void emit(const Pattern&);
+        void emit(const VariantMap&);
+        void emit(const OptionMap&);
         void serializeDeclarations();
         void serializeSelectors();
         void serializeVariants();

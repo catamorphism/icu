@@ -8,6 +8,7 @@
 #include "messageformat2test.h"
 
 using namespace icu::message2;
+using namespace data_model;
 
 /*
   Tests based on ICU4J's MessageFormat2Test.java
@@ -28,8 +29,6 @@ as of the following commit from 2023-05-09:
   https://github.com/unicode-org/message-format-wg/commit/194f6efcec5bf396df36a19bd6fa78d1fa2e0867
 
 */
-
-using FunctionName = MessageFormatDataModel::FunctionName;
 
 void TestMessageFormat2::testEmptyMessage(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
