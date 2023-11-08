@@ -254,25 +254,6 @@ public:
 
 } // namespace message2
 
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of MessageContext.
-// (When building DLLs for Windows this is required.)
-// (See messageformat2_data_model_forward_decls.h for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointer<message2::CachedFormatters>;
-template class U_I18N_API LocalPointer<message2::Errors>;
-template class U_I18N_API LocalPointerBase<message2::CachedFormatters>;
-template class U_I18N_API LocalPointerBase<message2::Errors>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
