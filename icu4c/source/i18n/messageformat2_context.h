@@ -48,7 +48,6 @@ class Environment;
 // to its free variables
 class Closure : public UMemory {
 public:
-    using Expression = Expression;
 
     static Closure* create(const Expression&, const Environment&, UErrorCode&);
     const Expression& getExpr() const {
