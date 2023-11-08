@@ -208,8 +208,11 @@ private:
 
     bool hasFormatter(const data_model::FunctionName& f) const;
     bool hasSelector(const data_model::FunctionName& s) const;
-    const LocalPointer<Hashtable> formatters;
-    const LocalPointer<Hashtable> selectors;
+
+    // For why these two fields aren't LocalPointers, see the comments on
+    // the CachedFormatters field in messageformat2.h
+    Hashtable* formatters;
+    Hashtable* selectors;
  }; // class FunctionRegistry
 
 /**
