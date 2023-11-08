@@ -194,7 +194,14 @@ bool tryFormattableAsNumber(const Formattable& optionValue, int64_t& result) {
 // Adopts `f` and `s`
 FunctionRegistry::FunctionRegistry(Hashtable* f, Hashtable* s) : formatters(f), selectors(s) {}
 
-FunctionRegistry::~FunctionRegistry() {}
+FunctionRegistry::~FunctionRegistry() {
+    if (formatters != nullptr) {
+        delete formatters;
+    }
+    if (selectors != nullptr) {
+        delete selectors;
+    }
+}
 
 // Specific formatter implementations
 
