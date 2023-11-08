@@ -100,7 +100,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    FormatterFactory* getFormatter(const MessageFormatDataModel::FunctionName& formatterName) const;
+    FormatterFactory* getFormatter(const data_model::FunctionName& formatterName) const;
     /**
      * Looks up a selector factory by the name of the selector.
      *
@@ -111,7 +111,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    const SelectorFactory* getSelector(const MessageFormatDataModel::FunctionName& selectorName) const;
+    const SelectorFactory* getSelector(const data_model::FunctionName& selectorName) const;
 
     /**
      * The mutable Builder class allows each formatter and selector factory
@@ -141,7 +141,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& setFormatter(const MessageFormatDataModel::FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& status);
+        Builder& setFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& status);
         /**
          * Registers a selector factory to a given selector name. Adopts `selectorFactory`.
          *
@@ -154,7 +154,7 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& setSelector(const MessageFormatDataModel::FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& status);
+        Builder& setSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& status);
         /**
          * Creates an immutable `FunctionRegistry` object with the selectors and formatters
          * that were previously registered. The builder cannot be used after this call.
@@ -206,8 +206,8 @@ private:
     void checkSelector(const char*) const;
     void checkStandard() const;
 
-    bool hasFormatter(const MessageFormatDataModel::FunctionName& f) const;
-    bool hasSelector(const MessageFormatDataModel::FunctionName& s) const;
+    bool hasFormatter(const data_model::FunctionName& f) const;
+    bool hasSelector(const data_model::FunctionName& s) const;
     const LocalPointer<Hashtable> formatters;
     const LocalPointer<Hashtable> selectors;
  }; // class FunctionRegistry

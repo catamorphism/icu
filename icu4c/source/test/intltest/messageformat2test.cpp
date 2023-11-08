@@ -342,7 +342,7 @@ void TestMessageFormat2::testAPICustomFunctions() {
     FunctionRegistry::Builder* builder = FunctionRegistry::builder(errorCode);
     // Note that this doesn't use `setDefaultFormatterNameForType()`; not implemented yet
     FunctionRegistry* functionRegistry =
-        builder->setFormatter(MessageFormatDataModel::FunctionName("person"), new PersonNameFormatterFactory(), errorCode)
+        builder->setFormatter(data_model::FunctionName("person"), new PersonNameFormatterFactory(), errorCode)
                .build(errorCode);
 
     Person* person = new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe"));

@@ -5,9 +5,7 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-// #include "unicode/messageformat2.h"
 #include "messageformat2_context.h"
-#include "messageformat2_data_model_impl.h"
 #include "messageformat2_macros.h"
 #include "messageformat2_parser.h"
 #include "plurrule_impl.h"
@@ -22,21 +20,7 @@ U_NAMESPACE_BEGIN namespace message2 {
 
 using namespace pluralimpl;
 
-using Binding         = MessageFormatDataModel::Binding;
-using Bindings        = MessageFormatDataModel::Bindings;
-using Expression      = MessageFormatDataModel::Expression;
-using ExpressionList  = MessageFormatDataModel::ExpressionList;
-using Key             = MessageFormatDataModel::Key;
-using KeyList         = MessageFormatDataModel::KeyList;
-using Literal         = MessageFormatDataModel::Literal;
-using OptionMap       = MessageFormatDataModel::OptionMap;
-using Operand         = MessageFormatDataModel::Operand;
-using Operator        = MessageFormatDataModel::Operator;
-using Pattern         = MessageFormatDataModel::Pattern;
-using PatternPart     = MessageFormatDataModel::PatternPart;
-using Reserved        = MessageFormatDataModel::Reserved;
-using SelectorKeys    = MessageFormatDataModel::SelectorKeys;
-using VariantMap      = MessageFormatDataModel::VariantMap;
+using namespace data_model;
 
 /*
     The `ERROR()` macro sets `errorCode` to `U_SYNTAX_WARNING
@@ -1295,16 +1279,16 @@ Key* Parser::parseKey(UErrorCode &errorCode) {
     return k.orphan();
 }
 
-MessageFormatDataModel::SelectorKeys::Builder* MessageFormatDataModel::SelectorKeys::builder(UErrorCode &errorCode) {
+SelectorKeys::Builder* SelectorKeys::builder(UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
-    LocalPointer<MessageFormatDataModel::SelectorKeys::Builder> result(new MessageFormatDataModel::SelectorKeys::Builder(errorCode));
+    LocalPointer<SelectorKeys::Builder> result(new SelectorKeys::Builder(errorCode));
     if (U_FAILURE(errorCode)) {
         return nullptr;
     }
     return result.orphan();        
 }
 
-MessageFormatDataModel::SelectorKeys* MessageFormatDataModel::SelectorKeys::Builder::build(UErrorCode &errorCode) const {
+SelectorKeys* SelectorKeys::Builder::build(UErrorCode &errorCode) const {
     NULL_ON_ERROR(errorCode);
 
     LocalPointer<KeyList> ks(keys->build(errorCode));
@@ -1323,7 +1307,7 @@ MessageFormatDataModel::SelectorKeys* MessageFormatDataModel::SelectorKeys::Buil
 
   Takes ownership of `keys`
 */
-MessageFormatDataModel::SelectorKeys* Parser::parseNonEmptyKeys(UErrorCode &errorCode) {
+SelectorKeys* Parser::parseNonEmptyKeys(UErrorCode &errorCode) {
     NULL_ON_ERROR(errorCode);
     U_ASSERT(inBounds(source, index));
 
@@ -1348,7 +1332,7 @@ or the optional space in [s] pattern?
 This is addressed using "backtracking" (similarly to `parseOptions()`).
 */
 
-    LocalPointer<MessageFormatDataModel::SelectorKeys::Builder> keysBuilder(MessageFormatDataModel::SelectorKeys::builder(errorCode));
+    LocalPointer<SelectorKeys::Builder> keysBuilder(SelectorKeys::builder(errorCode));
     NULL_ON_ERROR(errorCode);
 
     // Since the first key is required, it's simplest to parse the required
@@ -1531,7 +1515,7 @@ void Parser::parseSelectors(UErrorCode &errorCode) {
         parseToken(ID_WHEN, errorCode);
 
         // At least one key is required
-        LocalPointer<MessageFormatDataModel::SelectorKeys> keyList(parseNonEmptyKeys(errorCode));
+        LocalPointer<SelectorKeys> keyList(parseNonEmptyKeys(errorCode));
         CHECK_ERROR(errorCode);
 
         // parseNonEmptyKeys() consumes any trailing whitespace,

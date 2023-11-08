@@ -10,15 +10,9 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-/*
-#include "unicode/messageformat2_data_model.h"
-#include "unicode/unistr.h"
-#include "unicode/utypes.h"
-#include "hash.h"
-#include "uvector.h"
-*/
-
 U_NAMESPACE_BEGIN  namespace message2 {
+
+      using namespace data_model;
 
       // Parser class (private)
       class Parser : public UMemory {
@@ -94,20 +88,20 @@ U_NAMESPACE_BEGIN  namespace message2 {
           void parseEscapeSequence(EscapeKind, UErrorCode &, UnicodeString&);
           void parseLiteralEscape(UErrorCode &, UnicodeString&);
           void parseLiteral(UErrorCode &, bool&, UnicodeString&);
-          void parseOption(UErrorCode&, MessageFormatDataModel::Operator::Builder&);
-          void parseOptions(UErrorCode &, MessageFormatDataModel::Operator::Builder&);
+          void parseOption(UErrorCode&, Operator::Builder&);
+          void parseOptions(UErrorCode &, Operator::Builder&);
           void parseReservedEscape(UErrorCode&, UnicodeString&);
-          void parseReservedChunk(UErrorCode &, MessageFormatDataModel::Reserved::Builder&);
-          MessageFormatDataModel::Reserved* parseReserved(UErrorCode &);
-          MessageFormatDataModel::Operator* parseAnnotation(UErrorCode &);
-          void parseLiteralOrVariableWithAnnotation(bool, UErrorCode &, MessageFormatDataModel::Expression::Builder&);
-          MessageFormatDataModel::Expression* parseExpression(bool&, UErrorCode &);
+          void parseReservedChunk(UErrorCode &, Reserved::Builder&);
+          Reserved* parseReserved(UErrorCode &);
+          Operator* parseAnnotation(UErrorCode &);
+          void parseLiteralOrVariableWithAnnotation(bool, UErrorCode &, Expression::Builder&);
+          Expression* parseExpression(bool&, UErrorCode &);
           void parseTextEscape(UErrorCode&, UnicodeString&);
           void parseText(UErrorCode&, UnicodeString&);
-          MessageFormatDataModel::Key* parseKey(UErrorCode&);
-          MessageFormatDataModel::SelectorKeys* parseNonEmptyKeys(UErrorCode&);
+          Key* parseKey(UErrorCode&);
+          SelectorKeys* parseNonEmptyKeys(UErrorCode&);
           void errorPattern(UErrorCode&);
-          MessageFormatDataModel::Pattern* parsePattern(UErrorCode&);
+          Pattern* parsePattern(UErrorCode&);
 
           // The input string
           const UnicodeString &source;

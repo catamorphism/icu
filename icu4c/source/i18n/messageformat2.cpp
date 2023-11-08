@@ -8,7 +8,6 @@
 #include "unicode/messageformat2.h"
 #include "messageformat2_checker.h"
 #include "messageformat2_context.h"
-#include "messageformat2_data_model_impl.h"
 #include "messageformat2_expression_context.h"
 #include "messageformat2_macros.h"
 #include "messageformat2_serializer.h"
@@ -28,20 +27,7 @@ U_NAMESPACE_BEGIN
 
 namespace message2 {
 
-using Binding         = MessageFormatDataModel::Binding;
-using Bindings        = MessageFormatDataModel::Bindings;
-using Expression      = MessageFormatDataModel::Expression;
-using ExpressionList  = MessageFormatDataModel::ExpressionList;
-using Key             = MessageFormatDataModel::Key;
-using KeyList         = MessageFormatDataModel::KeyList;
-using Literal         = MessageFormatDataModel::Literal;
-using OptionMap       = MessageFormatDataModel::OptionMap;
-using Operand         = MessageFormatDataModel::Operand;
-using Operator        = MessageFormatDataModel::Operator;
-using Pattern         = MessageFormatDataModel::Pattern;
-using PatternPart     = MessageFormatDataModel::PatternPart;
-using SelectorKeys    = MessageFormatDataModel::SelectorKeys;
-using VariantMap      = MessageFormatDataModel::VariantMap;
+using namespace data_model;
 
 using PrioritizedVariantList = ImmutableVector<PrioritizedVariant>;
 

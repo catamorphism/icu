@@ -6,7 +6,6 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/messageformat2.h"
-#include "messageformat2_data_model_impl.h"
 #include "messageformat2_macros.h"
 #include "messageformat2_serializer.h"
 #include "uvector.h" // U_ASSERT
@@ -21,21 +20,7 @@ U_NAMESPACE_BEGIN namespace message2 {
 // Generates a string representation of a data model
 // ------------------------------------------------
 
-using Binding    = MessageFormatDataModel::Binding;
-using Bindings    = MessageFormatDataModel::Bindings;
-using Key         = MessageFormatDataModel::Key;
-using SelectorKeys = MessageFormatDataModel::SelectorKeys;
-using KeyList     = MessageFormatDataModel::KeyList;
-using Literal     = MessageFormatDataModel::Literal;
-using OptionMap   = MessageFormatDataModel::OptionMap;
-using Expression  = MessageFormatDataModel::Expression;
-using ExpressionList  = MessageFormatDataModel::ExpressionList;
-using Operand     = MessageFormatDataModel::Operand;
-using Operator    = MessageFormatDataModel::Operator;
-using Pattern     = MessageFormatDataModel::Pattern;
-using PatternPart = MessageFormatDataModel::PatternPart;
-using Reserved    = MessageFormatDataModel::Reserved;
-using VariantMap    = MessageFormatDataModel::VariantMap;
+using namespace data_model;
 
 // Private helper methods
 

@@ -11,14 +11,7 @@
 
 U_NAMESPACE_BEGIN namespace message2 {
 
-using Binding          = MessageFormatDataModel::Binding;
-using Expression       = MessageFormatDataModel::Expression;
-using Key              = MessageFormatDataModel::Key;
-using Literal          = MessageFormatDataModel::Literal;
-using Operand          = MessageFormatDataModel::Operand;
-using Pattern          = MessageFormatDataModel::Pattern;
-using PatternPart      = MessageFormatDataModel::PatternPart;
-using SelectorKeys     = MessageFormatDataModel::SelectorKeys;
+using namespace data_model;
 
 template<typename T>
 int32_t ImmutableVector<T>::length() const {
