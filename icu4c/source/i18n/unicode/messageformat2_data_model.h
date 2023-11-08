@@ -454,6 +454,41 @@ namespace data_model {
 
         using KeyList = ImmutableVector<Key>;
 
+} // namespace data_model
+} // namespace message2
+
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Key>::Builder>;
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Literal>::Builder>;
+template class U_I18N_API LocalPointerBase<message2::data_model::KeyList>;
+template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Operand>::Builder>;
+template class U_I18N_API LocalPointerBase<message2::data_model::FunctionName>;
+template class U_I18N_API LocalPointerBase<message2::data_model::Operand>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Key>::Builder>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Literal>::Builder>;
+template class U_I18N_API LocalPointer<message2::data_model::KeyList>;
+template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model::Operand>::Builder>;
+template class U_I18N_API LocalPointer<message2::data_model::FunctionName>;
+template class U_I18N_API LocalPointer<message2::data_model::Operand>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+namespace message2 {
+  namespace data_model {
     /**
      * The `SelectorKeys` class represents the key list for a single variant.
      * It corresponds to the `keys` array in the `Variant` interface
@@ -658,7 +693,35 @@ namespace data_model {
      * @deprecated This API is for technology preview only.
      */
     using OptionMap = OrderedMap<Operand>;
+  } // namespace data_model
+} // namespace message2
 
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::OptionMap>::Builder>;
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::OptionMap>>;
+template class U_I18N_API LocalPointerBase<message2::data_model::Reserved>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::OptionMap>::Builder>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::OptionMap>>;
+template class U_I18N_API LocalPointer<message2::data_model::Reserved>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+namespace message2 {
+  namespace data_model {
     /**
      * The `Operator` class corresponds to the `FunctionRef | Reserved` type in the
      * `Expression` interface defined in
@@ -825,7 +888,31 @@ namespace data_model {
         const LocalPointer<OptionMap> options;
         const LocalPointer<Reserved> reserved;
     }; // class Operator
+  } // namespace data_model
+} // namespace message2
 
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointerBase<message2::data_model::Operator>;
+template class U_I18N_API LocalPointer<message2::data_model::Operator>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+namespace message2 {
+  namespace data_model {
     /**
      * The `Expression` class corresponds to the `expression` nonterminal in the MessageFormat 2
      * grammar and the `Expression` interface defined in
@@ -1000,7 +1087,33 @@ namespace data_model {
         const LocalPointer<Operator> rator;
         const LocalPointer<Operand> rand;
     }; // class Expression
+  } // namespace data_model
+} // namespace message2
 
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Expression>::Builder>;
+template class U_I18N_API LocalPointerBase<message2::data_model::Expression>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Expression>::Builder>;
+template class U_I18N_API LocalPointer<message2::data_model::Expression>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+namespace message2 {
+  namespace data_model {
     /**
      *  A `PatternPart` is a single element (text or expression) in a `Pattern`.
      * It corresponds to the `body` field of the `Pattern` interface
@@ -1084,6 +1197,33 @@ namespace data_model {
         bool isBogus() const { return (!isRawText && !expression.isValid()); }
     }; // class PatternPart
 
+  } // namespace data_model
+} // namespace message2
+
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::PatternPart>::Builder>;
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::PatternPart>>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::PatternPart>::Builder>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::PatternPart>>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+namespace message2 {
+  namespace data_model {
     /**
      *  A `Pattern` is a sequence of formattable parts.
      * It corresponds to the `Pattern` interface
@@ -1196,6 +1336,37 @@ namespace data_model {
         // Takes ownership of `ps`
         Pattern(ImmutableVector<PatternPart> *ps);
     }; // class Pattern
+  } // namespace data_model
+} // namespace message
+
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::SelectorKeys>::Builder>;
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::SelectorKeys>>;
+template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Pattern>::Builder>;
+template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Pattern>>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::SelectorKeys>::Builder>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::SelectorKeys>>;
+template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model::Pattern>::Builder>;
+template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model::Pattern>>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+namespace message2 {
+  namespace data_model {
 
     /**
      * The `VariantMap` class represents the set of all variants in a message that has selectors,
@@ -1495,44 +1666,8 @@ extern template class OrderedMap<data_model::Pattern>;
 #pragma warning(disable: 4661)
 #endif
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Binding>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Expression>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Key>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Literal>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::PatternPart>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::PatternPart>>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::SelectorKeys>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::SelectorKeys>>;
-template class U_I18N_API LocalPointerBase<message2::data_model::KeyList>;
-template class U_I18N_API LocalPointerBase<message2::data_model::OptionMap>;
-template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Operand>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Pattern>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Pattern>>;
-template class U_I18N_API LocalPointerBase<message2::data_model::FunctionName>;
-template class U_I18N_API LocalPointerBase<message2::data_model::Expression>;
-template class U_I18N_API LocalPointerBase<message2::data_model::Operand>;
-template class U_I18N_API LocalPointerBase<message2::data_model::Operator>;
-template class U_I18N_API LocalPointerBase<message2::data_model::Pattern>;
-template class U_I18N_API LocalPointerBase<message2::data_model::Reserved>;
 template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Binding>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Expression>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Key>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Literal>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::PatternPart>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::PatternPart>>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::SelectorKeys>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::SelectorKeys>>;
-template class U_I18N_API LocalPointer<message2::data_model::KeyList>;
-template class U_I18N_API LocalPointer<message2::data_model::OptionMap>;
-template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model::Operand>::Builder>;
-template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model::Pattern>::Builder>;
-template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model::Pattern>>;
-template class U_I18N_API LocalPointer<message2::data_model::FunctionName>;
-template class U_I18N_API LocalPointer<message2::data_model::Expression>;
-template class U_I18N_API LocalPointer<message2::data_model::Operand>;
-template class U_I18N_API LocalPointer<message2::data_model::Operator>;
-template class U_I18N_API LocalPointer<message2::data_model::Pattern>;
-template class U_I18N_API LocalPointer<message2::data_model::Reserved>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
