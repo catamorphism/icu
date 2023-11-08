@@ -126,8 +126,11 @@ public:
         friend class FunctionRegistry;
 
         Builder(UErrorCode& status);
-        LocalPointer<Hashtable> formatters;
-        LocalPointer<Hashtable> selectors;
+        // For why these two fields aren't LocalPointers, see the comments on
+        // the CachedFormatters field in messageformat2.h
+
+        Hashtable* formatters;
+        Hashtable* selectors;
     public:
         /**
          * Registers a formatter factory to a given formatter name. Adopts `formatterFactory`.
