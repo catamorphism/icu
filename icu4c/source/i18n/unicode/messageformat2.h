@@ -164,13 +164,15 @@ public:
         friend class MessageArguments;
         Builder(UErrorCode&);
         Builder& add(const UnicodeString&, Formattable*, UErrorCode&);
-        LocalPointer<Hashtable> contents;
+        // For why these aren't LocalPointers, see the comment on
+        // MessageFormatter::cachedFormatters
+        Hashtable* contents;
         // Keep a separate hash table for objects, which does not
         // own the values
         // This is because a Formattable that wraps an object can't
         // be copied
         // Here, the values are UObjects*
-        LocalPointer<Hashtable> objectContents;
+        Hashtable* objectContents;
     }; // class MessageArguments::Builder
 
     /**
@@ -200,10 +202,12 @@ private:
 
     MessageArguments& add(const UnicodeString&, Formattable*, UErrorCode&);
     MessageArguments(Hashtable* c, Hashtable* o);
-    LocalPointer<Hashtable> contents;
+    // For why these aren't LocalPointers, see the comment on
+    // MessageFormatter::cachedFormatters
+    Hashtable* contents;
     // Keep a separate hash table for objects, which does not
     // own the values
-    LocalPointer<Hashtable> objectContents;
+    Hashtable* objectContents;
 }; // class MessageArguments
 
 /**

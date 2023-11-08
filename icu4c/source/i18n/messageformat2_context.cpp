@@ -28,12 +28,12 @@ U_NAMESPACE_BEGIN namespace message2 {
 using Arguments = MessageArguments;
 
 bool Arguments::hasFormattable(const VariableName& arg) const {
-    U_ASSERT(contents.isValid() && objectContents.isValid());
+    U_ASSERT(contents != nullptr && objectContents != nullptr);
     return contents->containsKey(arg.identifier());
 }
 
 bool Arguments::hasObject(const VariableName& arg) const {
-    U_ASSERT(contents.isValid() && objectContents.isValid());
+    U_ASSERT(contents != nullptr && objectContents != nullptr);
     return objectContents->containsKey(arg.identifier());
 }
 
@@ -54,9 +54,13 @@ const UObject* Arguments::getObject(const VariableName& arg) const {
 Arguments::Builder::Builder(UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    contents.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
-    objectContents.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
+    contents = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
+    objectContents = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
     CHECK_ERROR(errorCode);
+    if (contents == nullptr || objectContents == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+        return;
+    }
     // The `contents` hashtable owns the values, but does not own the keys
     contents->setValueDeleter(uprv_deleteUObject);
     // The `objectContents` hashtable does not own the values
@@ -141,7 +145,7 @@ Arguments::Builder& Arguments::Builder::add(const UnicodeString& name, Formattab
 
 MessageArguments* MessageArguments::Builder::build(UErrorCode& errorCode) const {
     NULL_ON_ERROR(errorCode);
-    U_ASSERT(contents.isValid() && objectContents.isValid());
+    U_ASSERT(contents != nullptr && objectContents != nullptr);
 
     LocalPointer<Hashtable> contentsCopied(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
     LocalPointer<Hashtable> objectContentsCopied(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
@@ -186,8 +190,22 @@ MessageArguments* MessageArguments::Builder::build(UErrorCode& errorCode) const 
 
 MessageArguments::MessageArguments(Hashtable* c, Hashtable* o) : contents(c), objectContents(o) {}
 
-MessageArguments::~MessageArguments() {}
-MessageArguments::Builder::~Builder() {}
+MessageArguments::~MessageArguments() {
+    if (contents != nullptr) {
+        delete contents;
+    }
+    if (objectContents != nullptr) {
+        delete objectContents;
+    }
+}
+MessageArguments::Builder::~Builder() {
+    if (contents != nullptr) {
+        delete contents;
+    }
+    if (objectContents != nullptr) {
+        delete objectContents;
+    }
+}
 
 // Message arguments
 // -----------------
