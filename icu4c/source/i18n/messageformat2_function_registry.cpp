@@ -32,8 +32,8 @@ SelectorFactory::~SelectorFactory() {}
 
 FunctionRegistry* FunctionRegistry::Builder::build(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
-    U_ASSERT(formatters.isValid() && selectors.isValid());
-    LocalPointer<FunctionRegistry> result(new FunctionRegistry(formatters.orphan(), selectors.orphan()));
+    U_ASSERT(formatters != nullptr && selectors != nullptr);
+    LocalPointer<FunctionRegistry> result(new FunctionRegistry(formatters, selectors));
     if (!result.isValid()) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
@@ -51,11 +51,15 @@ FunctionRegistry* FunctionRegistry::Builder::build(UErrorCode& errorCode) {
 FunctionRegistry::Builder::Builder(UErrorCode& errorCode)  {
     CHECK_ERROR(errorCode);
 
-    formatters.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
-    selectors.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
+    formatters = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
+    selectors = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
     if (U_FAILURE(errorCode)) {
-        formatters.adoptInstead(nullptr);
-        selectors.adoptInstead(nullptr);
+        formatters = nullptr;
+        selectors = nullptr;
+        return;
+    }
+    if (formatters == nullptr || selectors == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
         return;
     }
     // The hashtables own the values, but not the keys
