@@ -25,7 +25,7 @@ U_NAMESPACE_BEGIN
 #endif
 template class U_I18N_API LocalPointer<message2::FunctionRegistry::Builder>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Builder>;
-template class U_I18N_API LocalPointer<message2::MessageFormatter::Parser>;
+template class U_I18N_API LocalPointer<message2::Parser>;
 #endif
 
 namespace message2 {
