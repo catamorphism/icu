@@ -21,24 +21,6 @@
 #include "unicode/coleitr.h"
 #include "tscoll.h"
 
-#if !UCONFIG_NO_FORMATTING
-// Import an explicit template instantiation of LocalPointer<UnicodeString>.
-// (MessageFormat exports this, so if this is omitted, MSVC complains
-// about duplicate symbols)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointerBase<UnicodeString>;
-template class U_I18N_API LocalPointer<UnicodeString>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-#endif
-
 class CollationRegressionTest: public IntlTestCollator
 {
 public:

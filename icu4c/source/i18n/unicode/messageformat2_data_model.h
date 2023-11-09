@@ -1675,11 +1675,9 @@ extern template class OrderedMap<data_model::Pattern>;
 #endif
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Binding>::Builder>;
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Binding>>;
-template class U_I18N_API LocalPointerBase<UnicodeString>;
 template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Binding>::Builder>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Binding>>;
-template class U_I18N_API LocalPointer<UnicodeString>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
