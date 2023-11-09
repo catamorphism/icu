@@ -708,9 +708,11 @@ namespace message2 {
 #pragma warning(push)
 #pragma warning(disable: 4661)
 #endif
+template class U_I18N_API LocalPointerBase<message2::data_model::OptionMap>;
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::OptionMap>::Builder>;
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::OptionMap>>;
 template class U_I18N_API LocalPointerBase<message2::data_model::Reserved>;
+template class U_I18N_API LocalPointer<message2::data_model::OptionMap>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::OptionMap>::Builder>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::OptionMap>>;
 template class U_I18N_API LocalPointer<message2::data_model::Reserved>;
@@ -1103,7 +1105,9 @@ namespace message2 {
 #pragma warning(disable: 4661)
 #endif
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Expression>::Builder>;
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Expression>>;
 template class U_I18N_API LocalPointerBase<message2::data_model::Expression>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Expression>>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Expression>::Builder>;
 template class U_I18N_API LocalPointer<message2::data_model::Expression>;
 #if defined(_MSC_VER)
@@ -1353,8 +1357,10 @@ namespace message2 {
 #endif
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::SelectorKeys>::Builder>;
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::SelectorKeys>>;
+template class U_I18N_API LocalPointerBase<message2::data_model::Pattern>;
 template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Pattern>::Builder>;
 template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Pattern>>;
+template class U_I18N_API LocalPointer<message2::data_model::Pattern>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::SelectorKeys>::Builder>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::SelectorKeys>>;
 template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model::Pattern>::Builder>;
@@ -1590,7 +1596,9 @@ namespace message2 {
 #pragma warning(disable: 4661)
 #endif
 template class U_I18N_API LocalPointerBase<message2::data_model::VariantMap::Builder>;
+template class U_I18N_API LocalPointerBase<message2::data_model::VariantMap>;
 template class U_I18N_API LocalPointer<message2::data_model::VariantMap::Builder>;
+template class U_I18N_API LocalPointer<message2::data_model::VariantMap>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
@@ -1666,8 +1674,12 @@ extern template class OrderedMap<data_model::Pattern>;
 #pragma warning(disable: 4661)
 #endif
 template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Binding>::Builder>;
+template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Binding>>;
+template class U_I18N_API LocalPointerBase<UnicodeString>;
 template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel>;
 template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Binding>::Builder>;
+template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Binding>>;
+template class U_I18N_API LocalPointer<UnicodeString>;
 template class U_I18N_API LocalPointer<message2::MessageFormatDataModel>;
 #if defined(_MSC_VER)
 #pragma warning(pop)

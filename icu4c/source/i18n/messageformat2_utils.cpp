@@ -13,6 +13,12 @@ U_NAMESPACE_BEGIN namespace message2 {
 
 using namespace data_model;
 
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+
 template<typename T>
 int32_t ImmutableVector<T>::length() const {
     U_ASSERT(!isBogus());
@@ -297,6 +303,10 @@ template class ImmutableVector<PatternPart>;
 template class ImmutableVector<SelectorKeys>;
 template class OrderedMap<Operand>;
 template class OrderedMap<Pattern>;
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 } // namespace message2
 
