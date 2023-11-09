@@ -1920,32 +1920,21 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
     }; // class Builder
 
 private:
-/*
-    // TODO: The actual members are split into a separate class
-    // so that they can be declared after all the inner MessageFormatDataModel
-    // classes are defined
-    LocalPointer<MessageFormatDataModelImpl> impl;
-*/
 
-     // The expressions that are being matched on.
-     // Null iff this is a `pattern` message.
-     const LocalPointer<ExpressionList> selectors;
+    // The expressions that are being matched on.
+    // Null iff this is a `pattern` message.
+    const LocalPointer<ExpressionList> selectors;
 
-     // The list of `when` clauses (case arms).
-     // Null iff this is a `pattern` message.
-     const LocalPointer<VariantMap> variants;
+    // The list of `when` clauses (case arms).
+    // Null iff this is a `pattern` message.
+    const LocalPointer<VariantMap> variants;
 
-     // The pattern forming the body of the message.
-     // If this is non-null, then `variants` and `selectors` must be null.
-     const LocalPointer<Pattern> pattern;
+    // The pattern forming the body of the message.
+    // If this is non-null, then `variants` and `selectors` must be null.
+    const LocalPointer<Pattern> pattern;
 
-     // Bindings for local variables
-     const LocalPointer<Bindings> bindings;
-
-     // Normalized version of the input string (optional whitespace omitted)
-     // Used for testing purposes
-     const LocalPointer<UnicodeString> normalizedInput;
-
+    // Bindings for local variables
+    const LocalPointer<Bindings> bindings;
 
     // Do not define default assignment operator
     const MessageFormatDataModel &operator=(const MessageFormatDataModel &) = delete;
