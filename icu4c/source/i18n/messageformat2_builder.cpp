@@ -9,7 +9,23 @@
 #include "unicode/messageformat2_data_model.h"
 #include "uvector.h" // U_ASSERT
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See messageformat2_data_model_forward_decls.h for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointer<message2::FunctionRegistry::Builder>;
+template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Builder>;
+template class U_I18N_API LocalPointer<message2::MessageFormatter::Parser>;
+#endif
+
+namespace message2 {
 
 // -------------------------------------
 // Creates a MessageFormat instance based on the pattern.
