@@ -46,8 +46,6 @@ static inline UBool compareVariableName(const UElement e1, const UElement e2) {
     return uhash_compareUnicodeString(e1, e2);
 }
 
-// TODO: Removed the U_I18N_API macro from ImmutableVector and OrderedMap because it breaks the build on Windows
-
 /**
  * The `ImmutableVector` class represents a polymorphic immutable list,
  * constructed using the builder pattern. It's used to represent
