@@ -32,9 +32,6 @@ template class U_I18N_API LocalPointer<Hashtable>;
 template class U_I18N_API LocalPointer<UVector>;
 template class U_I18N_API LocalPointerBase<Hashtable>;
 template class U_I18N_API LocalPointerBase<UVector>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
 #endif
 
 namespace message2 {
@@ -367,6 +364,13 @@ private:
 #include "messageformat2_utils_impl.h"
 
 } // namespace message2
+
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
