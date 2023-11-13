@@ -108,7 +108,7 @@ public:
      * The mutable Builder class allows each part of the MessageFormatter to be initialized
      * separately; calling its `build()` method yields an immutable MessageFormatter.
      */
-    class U_I18N_API Builder {
+    class U_I18N_API Builder : public UObject {
     private:
        friend class MessageFormatter;
 
