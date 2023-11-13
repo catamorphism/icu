@@ -32,15 +32,12 @@ namespace message2 {
 
 // Returns a new (uninitialized) builder
 MessageFormatter::Builder* MessageFormatter::builder(UErrorCode& errorCode) {
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-    LocalPointer<MessageFormatter::Builder> tree(new Builder());
-    if (!tree.isValid()) {
+    NULL_ON_ERROR(errorCode);
+    MessageFormatter::Builder* tree = new Builder();
+    if (tree == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
     }
-    return tree.orphan();
+    return tree;
 }
 
 MessageFormatter::Builder& MessageFormatter::Builder::setPattern(const UnicodeString& pat) {
@@ -81,11 +78,7 @@ MessageFormatter::Builder& MessageFormatter::Builder::setDataModel(const Message
 MessageFormatter* MessageFormatter::Builder::build(UParseError& parseError, UErrorCode& errorCode) const {
     NULL_ON_ERROR(errorCode);
 
-    LocalPointer<MessageFormatter> mf(new MessageFormatter(*this, parseError, errorCode));
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-    return mf.orphan();
+    return new MessageFormatter(*this, parseError, errorCode);
 }
 
 void MessageFormatter::initErrors(UErrorCode& errorCode) {
@@ -135,9 +128,7 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     borrowedDataModel = nullptr;
 
     LocalPointer<MessageFormatDataModel::Builder> tree(MessageFormatDataModel::builder(success));
-    if (U_FAILURE(success)) {
-      return;
-    }
+    CHECK_ERROR(success);
 
     // Initialize formatter cache
     cachedFormatters.adoptInstead(new CachedFormatters(success));
