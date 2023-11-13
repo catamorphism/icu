@@ -191,7 +191,7 @@ public:
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class Builder {
+    class U_I18N_API Builder {
     public:
         /**
          * Adds an argument of type `UnicodeString`.
