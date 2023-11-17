@@ -32,7 +32,7 @@ class Selector;
 /**
  * Interface that factory classes for creating formatters must implement.
  *
- * @internal ICU 74.0 technology preview
+ * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
 class U_I18N_API FormatterFactory : public UObject {
@@ -50,7 +50,7 @@ public:
      * @param status    Input/output error code.
      * @return The new Formatter, which is non-null if U_SUCCESS(status).
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual Formatter* createFormatter(const Locale& locale, UErrorCode& status) = 0;
@@ -60,7 +60,7 @@ public:
 /**
  * Interface that factory classes for creating selectors must implement.
  *
- * @internal ICU 74.0 technology preview
+ * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
 class U_I18N_API SelectorFactory : public UObject {
@@ -72,7 +72,7 @@ public:
      * @param status    Input/output error code.
      * @return          The new selector, which is non-null if U_SUCCESS(status).
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual Selector* createSelector(const Locale& locale, UErrorCode& status) const = 0;
@@ -84,7 +84,9 @@ public:
  * The required set of formatter and selector functions is defined in the spec. Users can
  * also define custom formatter and selector functions.
  *
- * @internal ICU 74.0 technology preview
+ * `FunctionRegistry` is immutable and is not copyable or movable.
+ *
+ * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
 class U_I18N_API FunctionRegistry : public UObject {
@@ -97,7 +99,7 @@ public:
      * @return The new FormatterFactory, or null if no formatter factory has
      *         been registered under `formatterName`.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     FormatterFactory* getFormatter(const data_model::FunctionName& formatterName) const;
@@ -108,7 +110,7 @@ public:
      * @return The new SelectorFactory, or null if no selector factory has
      *         been registered under `selectorName`.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     const SelectorFactory* getSelector(const data_model::FunctionName& selectorName) const;
@@ -118,7 +120,9 @@ public:
      * to be initialized separately; calling its `build()` method yields an
      * immutable FunctionRegistry object.
      *
-     * @internal ICU 74.0 technology preview
+     * Builder is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Builder : public UObject {
@@ -141,7 +145,7 @@ public:
          * @param status Input/output error code.
          * @return A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& setFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& status);
@@ -154,7 +158,7 @@ public:
          * @param status Input/output error code.
          * @return A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& setSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& status);
@@ -165,14 +169,14 @@ public:
          * @param status  Input/output error code.
          * @return A reference to the new FunctionRegistry, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         FunctionRegistry* build(UErrorCode& status);
         /**
          * Destructor.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
          virtual ~Builder();
@@ -183,14 +187,14 @@ public:
      * @param status  Input/output error code.
      * @return A reference to the new Builder, which is non-null if U_SUCCESS(status).
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     static Builder* builder(UErrorCode& status);
     /**
      * Destructor.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual ~FunctionRegistry();
@@ -221,7 +225,7 @@ private:
 /**
  * Interface that formatter classes must implement.
  *
- * @internal ICU 74.0 technology preview
+ * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
 class U_I18N_API Formatter : public UObject {
@@ -238,7 +242,7 @@ public:
      *        to signal errors. The custom formatter may pass `status` to other ICU functions
      *        that can signal errors using this mechanism.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual void format(FormattingContext& context, UErrorCode& status) const = 0;
@@ -248,7 +252,7 @@ public:
 /**
  * Interface that selector classes must implement.
  *
- * @internal ICU 74.0 technology preview
+ * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
 class U_I18N_API Selector : public UObject {
@@ -270,7 +274,7 @@ public:
      *        to signal errors. The custom selector may pass `status` to other ICU functions
      *        that can signal errors using this mechanism.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const = 0;
