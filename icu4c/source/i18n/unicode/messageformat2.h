@@ -281,7 +281,6 @@ public:
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    // Give public access to the data model
     const MessageFormatDataModel& getDataModel() const;
 
     /**
