@@ -128,7 +128,7 @@ public:
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& add(const UnicodeString& key, const UnicodeString* value, int32_t length, UErrorCode& status);
+        Builder& adoptArray(const UnicodeString& key, const UnicodeString* value, int32_t length, UErrorCode& status);
         /**
          * Adds an argument of type UObject*, which must be non-null. Does not
          * adopt this argument.
