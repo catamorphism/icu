@@ -179,6 +179,8 @@ namespace data_model {
      * `Literal` interface defined in
      *   // https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#expressions
      *
+     * `Literal` is immutable. It is not copyable or movable.
+     *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
@@ -1546,6 +1548,8 @@ namespace message2 {
      *  A `Binding` pairs a variable name with an expression.
      * It corresponds to the `Declaration` interface
      * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
+     *
+     * `Binding` is immutable. It is not copyable or movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
