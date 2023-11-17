@@ -611,6 +611,7 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
     LocalPointer<MessageArguments::Builder> argumentsBuilder(MessageArguments::builder(errorCode));
     LocalPointer<MessageArguments> arguments;
     CHECK_ERROR(errorCode);
+
     for (int64_t count = 0; count < maxCount; count++) {
         snprintf(expected, sizeof(expected), "Testing %d\\u00B0C.", (int32_t) count);
 
@@ -619,9 +620,8 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
         arguments.adoptInstead(argumentsBuilder->build(errorCode));
         CHECK_ERROR(errorCode);
 
-        mf->formatToString(*arguments, errorCode, result);
+        result = mf->formatToString(*arguments, errorCode);
         assertEquals("temperature formatter", CharsToUnicodeString(expected), result);
-        result.remove();
 
         snprintf(expected, sizeof(expected), "Testing %d\\u00B0F.", (int32_t) count);
 
@@ -630,9 +630,8 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
         arguments.adoptInstead(argumentsBuilder->build(errorCode));
         CHECK_ERROR(errorCode);
         
-        mf->formatToString(*arguments, errorCode, result);
+        result = mf->formatToString(*arguments, errorCode);
         assertEquals("temperature formatter", CharsToUnicodeString(expected), result);
-        result.remove();
     }
 
     assertEquals("cached formatter", 1, counter->constructCount);
@@ -640,37 +639,33 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
     assertEquals("cached formatter", 1, counter->fFormatterCount);
     assertEquals("cached formatter", 1, counter->cFormatterCount);
 
-    result.remove();
     argumentsBuilder->addDouble(countKey, 12.0, errorCode);
     argumentsBuilder->add(unitKey, "C", errorCode);
     arguments.adoptInstead(argumentsBuilder->build(errorCode));
     CHECK_ERROR(errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
 
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12\\u00B0C."), result);
 
-    result.remove();
     argumentsBuilder->addDouble(countKey, 12.5, errorCode);
     argumentsBuilder->add(unitKey, "F", errorCode);
     arguments.adoptInstead(argumentsBuilder->build(errorCode));
     CHECK_ERROR(errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.50\\u00B0F."), result);
 
-    result.remove();
     argumentsBuilder->addDouble(countKey, 12.54, errorCode);
     argumentsBuilder->add(unitKey, "C", errorCode);
     arguments.adoptInstead(argumentsBuilder->build(errorCode));
     CHECK_ERROR(errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.54\\u00B0C."), result);
 
-    result.remove();
     argumentsBuilder->addDouble(countKey, 12.54321, errorCode);
     argumentsBuilder->add(unitKey, "F", errorCode);
     arguments.adoptInstead(argumentsBuilder->build(errorCode));
     CHECK_ERROR(errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.54\\u00B0F."), result);
 
     // Check skeleton
@@ -678,39 +673,35 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
     mfBuilder->setPattern(message);
     mf.adoptInstead(mfBuilder->build(parseError, errorCode));
 
-    result.remove();
     argumentsBuilder->addDouble(countKey, 12.0, errorCode);
     argumentsBuilder->add(unitKey, "C", errorCode);
     arguments.adoptInstead(argumentsBuilder->build(errorCode));
 
     CHECK_ERROR(errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12\\u00B0C."), result);
 
-    result.remove();
     argumentsBuilder->addDouble(countKey, 12.5, errorCode);
     argumentsBuilder->add(unitKey, "F", errorCode);
     arguments.adoptInstead(argumentsBuilder->build(errorCode));
 
     CHECK_ERROR(errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.5\\u00B0F."), result);
 
-    result.remove();
     argumentsBuilder->addDouble(countKey, 12.54, errorCode);
     argumentsBuilder->add(unitKey, "C", errorCode);
     arguments.adoptInstead(argumentsBuilder->build(errorCode));
 
     CHECK_ERROR(errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.5\\u00B0C."), result);
 
-    result.remove();
     argumentsBuilder->addDouble(countKey, 12.54321, errorCode);
     argumentsBuilder->add(unitKey, "F", errorCode);
     arguments.adoptInstead(argumentsBuilder->build(errorCode));
     CHECK_ERROR(errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.5\\u00B0F."), result);
 
 }

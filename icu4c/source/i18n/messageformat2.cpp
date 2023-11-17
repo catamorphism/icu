@@ -670,12 +670,12 @@ const FunctionRegistry& MessageFormatter::getCustomFunctionRegistry() const {
     return *customFunctionRegistry;
 }
 
-void MessageFormatter::formatToString(const MessageArguments& arguments, UErrorCode &status, UnicodeString& result) const {
-    CHECK_ERROR(status);
+UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments, UErrorCode &status) const {
+    EMPTY_ON_ERROR(status);
 
     // Create a new context with the given arguments and the `errors` structure
     LocalPointer<MessageContext> context(MessageContext::create(*this, arguments, *errors, status));
-    CHECK_ERROR(status);
+    EMPTY_ON_ERROR(status);
 
     const MessageFormatDataModel& dataModel = getDataModel();
 
@@ -690,13 +690,13 @@ void MessageFormatter::formatToString(const MessageArguments& arguments, UErrorC
 
     // Create a new environment that will store closures for all local variables
     Environment* env = Environment::create(status);
-    CHECK_ERROR(status);
+    EMPTY_ON_ERROR(status);
 
     // Check for unresolved variable errors
     checkDeclarations(*context, env, status);
-    CHECK_ERROR(status);
     LocalPointer<Environment> globalEnv(env);
 
+    UnicodeString result;
     if (!dataModel.hasSelectors()) {
         formatPattern(*context, *globalEnv, dataModel.getPattern(), status, result);
     } else {
@@ -714,7 +714,7 @@ void MessageFormatter::formatToString(const MessageArguments& arguments, UErrorC
     // Clear resolution and formatting errors, in case this MessageFormatter object
     // is used again with different arguments
     clearErrors();
-    return;
+    return result;
 }
 
 void MessageFormatter::clearErrors() const {

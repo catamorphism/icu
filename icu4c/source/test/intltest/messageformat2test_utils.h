@@ -259,7 +259,7 @@ class TestUtils {
         UnicodeString result;
 
         if (U_SUCCESS(errorCode)) {
-            mf->formatToString(*(testCase.arguments), errorCode, result);
+            result = mf->formatToString(*(testCase.arguments), errorCode);
         }
 
         if (testCase.expectNoSyntaxError()) {

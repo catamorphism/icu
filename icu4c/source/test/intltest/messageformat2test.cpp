@@ -211,9 +211,8 @@ void TestMessageFormat2::testAPISimple() {
     MessageArguments* args = argsBuilder->build(errorCode);
 
     UnicodeString result;
-    mf->formatToString(*args, errorCode, result);
+    result = mf->formatToString(*args, errorCode);
     assertEquals("testAPI", result, "Hello, John!");
-    result.remove();
 
     delete mf;
     mf = builder->setPattern("{Today is {$today :datetime skeleton=yMMMdEEE}.}")
@@ -228,9 +227,8 @@ void TestMessageFormat2::testAPISimple() {
     argsBuilder->addDate("today", date, errorCode);
     delete args;
     args = argsBuilder->build(errorCode);
-    mf->formatToString(*args, errorCode, result);
+    result = mf->formatToString(*args, errorCode);
     assertEquals("testAPI", "Today is Sun, Oct 28, 2136.", result);
-    result.remove();
 
     argsBuilder->addInt64("photoCount", 12, errorCode);
     argsBuilder->add("userGender", "feminine", errorCode);
@@ -248,7 +246,7 @@ void TestMessageFormat2::testAPISimple() {
                      when * * {{$userName} added {$photoCount} photos to their album.}")
         .setLocale(locale)
         .build(parseError, errorCode);
-    mf->formatToString(*args, errorCode, result);
+    result = mf->formatToString(*args, errorCode);
     assertEquals("testAPI", "Maria added 12 photos to her album.", result);
 
     delete builder;
@@ -357,32 +355,29 @@ void TestMessageFormat2::testAPICustomFunctions() {
     MessageFormatter* mf = mfBuilder->setPattern("{Hello {$name :person formality=informal}}")
                                     .setLocale(locale)
                                     .build(parseError, errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("testAPICustomFunctions", U_UNKNOWN_FUNCTION_ERROR, errorCode);
 
     errorCode = U_ZERO_ERROR;
-    result.remove();
     mfBuilder->setFunctionRegistry(functionRegistry)
               .setLocale(locale);
 
     delete mf;
     mf = mfBuilder->setPattern("{Hello {$name :person formality=informal}}")
                     .build(parseError, errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello John", result);
-    result.remove();
 
     delete mf;
     mf = mfBuilder->setPattern("{Hello {$name :person formality=formal}}")
                     .build(parseError, errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello Mr. Doe", result);
-    result.remove();
 
     delete mf;
     mf = mfBuilder->setPattern("{Hello {$name :person formality=formal length=long}}")
                     .build(parseError, errorCode);
-    mf->formatToString(*arguments, errorCode, result);
+    result = mf->formatToString(*arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello Mr. John Doe", result);
 
     delete arguments;
