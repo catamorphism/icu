@@ -35,12 +35,11 @@ class MessageContext;
 // ----------
 
 /**
- * <p>MessageFormatter is a Technical Preview API implementing MessageFormat 2.0.
- * Since it is not final, documentation has not yet been added everywhere.
  *
- * The following class represents the named arguments to a message.
+ * The `MessageArguments` class represents the named arguments to a message.
+ * It is immutable and is not copyable or movable.
  *
- * @internal ICU 74.0 technology preview
+ * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
 class U_I18N_API MessageArguments : public UObject {
@@ -49,7 +48,9 @@ public:
      * The mutable Builder class allows each message argument to be initialized
      * separately; calling its `build()` method yields an immutable MessageArguments.
      *
-     * @internal ICU 74.0 technology preview
+     * Builder is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Builder {
@@ -62,7 +63,7 @@ public:
          * @param status    Input/output error code.
          * @return          A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& add(const UnicodeString& key, const UnicodeString& value, UErrorCode& status);
@@ -74,7 +75,7 @@ public:
          * @param status    Input/output error code.
          * @return          A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& addDouble(const UnicodeString& key, double value, UErrorCode& status);
@@ -86,7 +87,7 @@ public:
          * @param status    Input/output error code.
          * @return          A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& addInt64(const UnicodeString& key, int64_t value, UErrorCode& status);
@@ -98,7 +99,7 @@ public:
          * @param status    Input/output error code.
          * @return          A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& addDate(const UnicodeString& key, UDate value, UErrorCode& status);
@@ -111,7 +112,7 @@ public:
          * @param status    Input/output error code.
          * @return          A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& addDecimal(const UnicodeString& key, StringPiece value, UErrorCode& status);
@@ -124,7 +125,7 @@ public:
          * @param status  Input/output error code.
          * @return        A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& add(const UnicodeString& key, const UnicodeString* value, int32_t length, UErrorCode& status);
@@ -137,7 +138,7 @@ public:
          * @param status  Input/output error code.
          * @return        A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& addObject(const UnicodeString& key, const UObject* value, UErrorCode& status);
@@ -149,14 +150,14 @@ public:
          * @param status  Input/output error code.
          * @return        The new MessageArguments object, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         MessageArguments* build(UErrorCode& status) const;
         /**
          * Destructor.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         virtual ~Builder();
@@ -181,14 +182,14 @@ public:
      * @param status  Input/output error code.
      * @return        The new builder, which is non-null if U_SUCCESS(status).
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     static Builder* builder(UErrorCode& status);
     /**
      * Destructor.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual ~MessageArguments();
@@ -212,13 +213,14 @@ private:
 
 /**
  * <p>MessageFormatter is a Technical Preview API implementing MessageFormat 2.0.
- * Since it is not final, documentation has not yet been added everywhere.
  *
  * <p>See <a target="github" href="https://github.com/unicode-org/message-format-wg/blob/main/spec/syntax.md">the
  * description of the syntax with examples and use cases</a> and the corresponding
  * <a target="github" href="https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf">ABNF</a> grammar.</p>
  *
- * @internal ICU 74.0 technology preview
+ * The MessageFormatter class is immutable and is not movable or copyable.
+ *
+ * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
 class U_I18N_API MessageFormatter : public UObject {
@@ -228,7 +230,7 @@ public:
     /**
      * Destructor.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual ~MessageFormatter();
@@ -244,7 +246,7 @@ public:
      *                  is still provided in the presence of most error types.
      * @return          The string result of formatting the message with the given arguments.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     UnicodeString formatToString(const MessageArguments& arguments, UErrorCode &status) const;
@@ -254,7 +256,7 @@ public:
      *
      * @return A reference to the locale.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     const Locale& getLocale() const { return locale; }
@@ -265,7 +267,7 @@ public:
      * @return result    A string representation of the data model.
      *                   The string is a valid MessageFormat 2.0 message.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     UnicodeString getPattern() const;
@@ -276,7 +278,7 @@ public:
      *
      * @return A reference to the data model.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     // Give public access to the data model
@@ -285,6 +287,8 @@ public:
     /**
      * The mutable Builder class allows each part of the MessageFormatter to be initialized
      * separately; calling its `build()` method yields an immutable MessageFormatter.
+     *
+     * Not copyable or movable.
      */
     class U_I18N_API Builder : public UObject {
     private:
@@ -310,7 +314,7 @@ public:
         * @param locale The desired locale.
         * @return       A reference to the builder.
         *
-        * @internal ICU 74.0 technology preview
+        * @internal ICU 75.0 technology preview
         * @deprecated This API is for technology preview only.
         */
         Builder& setLocale(const Locale& locale);
@@ -323,7 +327,7 @@ public:
         * @param pattern A string in MessageFormat 2.0 syntax.
         * @return       A reference to the builder.
         *
-        * @internal ICU 74.0 technology preview
+        * @internal ICU 75.0 technology preview
         * @deprecated This API is for technology preview only.
         */
         Builder& setPattern(const UnicodeString& pattern);
@@ -336,7 +340,7 @@ public:
         *        builder.
         * @return       A reference to the builder.
         *
-        * @internal ICU 74.0 technology preview
+        * @internal ICU 75.0 technology preview
         * @deprecated This API is for technology preview only.
         */
         Builder& setFunctionRegistry(const FunctionRegistry* functionRegistry);
@@ -349,7 +353,7 @@ public:
         *        builder.
         * @return       A reference to the builder.
         *
-        * @internal ICU 74.0 technology preview
+        * @internal ICU 75.0 technology preview
         * @deprecated This API is for technology preview only.
         */
         Builder& setDataModel(const MessageFormatDataModel* dataModel);
@@ -369,14 +373,14 @@ public:
          * @return          The new MessageFormatter object, which is non-null if
          *                  U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         MessageFormatter* build(UParseError& parseError, UErrorCode& status) const;
 	/**
 	 * Destructor.
 	 *
-	 * @internal ICU 74.0 technology preview
+	 * @internal ICU 75.0 technology preview
 	 * @deprecated This API is for technology preview only.
 	 */
 	virtual ~Builder();
@@ -388,7 +392,7 @@ public:
      * @param status  Input/output error code.
      * @return        The new Builder, which is non-null if U_SUCCESS(status).
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     static Builder* builder(UErrorCode& status);
@@ -399,7 +403,7 @@ public:
      *
      * @return        A normalized string representation of the input
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     const UnicodeString& getNormalizedPattern() const { return normalizedInput; }
