@@ -92,6 +92,12 @@ static constexpr UChar32 ID_MATCH[] = {
         return false; \
     }
 
+// Returns immediately if `errorCode` indicates failure
+#define EMPTY_ON_ERROR(errorCode)                                                                          \
+    if (U_FAILURE(errorCode)) {                                                                         \
+        return {}; \
+    }
+
 inline void setError(UErrorCode newError, UErrorCode& existingError) {
     // Don't overwrite an existing warning
     if (existingError == U_ZERO_ERROR) {

@@ -242,12 +242,12 @@ public:
      *                  errors, resolution errors, formatting errors, selection errors, as well
      *                  as other errors (such as memory allocation failures). Partial output
      *                  is still provided in the presence of most error types.
-     * @param result    Mutable reference to a string that the output will be appended to.
+     * @return          The string result of formatting the message with the given arguments.
      *
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    void formatToString(const MessageArguments& arguments, UErrorCode &status, UnicodeString &result) const;
+    UnicodeString formatToString(const MessageArguments& arguments, UErrorCode &status) const;
 
     /**
      * Accesses the locale that this `MessageFormatter` object was created with.
