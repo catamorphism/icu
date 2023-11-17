@@ -26,7 +26,9 @@ namespace data_model {
     /**
      * The `VariableName` class represents the name of a variable in a message.
      *
-     * @internal ICU 74.0 technology preview
+     * `VariableName` is immutable. It is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API VariableName : public UObject {
@@ -37,7 +39,7 @@ namespace data_model {
          * @param other    the object to be compared with.
          * @return        true if other is equal to this, false otherwise.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         inline bool operator== (const VariableName& other) const { return other.variableName == variableName; }
@@ -46,7 +48,7 @@ namespace data_model {
          *
          * @param s   The variable name, as a string
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         VariableName(const UnicodeString& s) : variableName(s) {}
@@ -54,7 +56,7 @@ namespace data_model {
          * Default constructor. (Needed for representing null operands)
          *
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         VariableName() {}
@@ -63,7 +65,7 @@ namespace data_model {
          *
          * @return        Reference to the variable's name
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const UnicodeString& identifier() const { return variableName; }
@@ -73,14 +75,14 @@ namespace data_model {
          *
          * @return        String representation of the variable as it appears in a declaration
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
          UnicodeString declaration() const;
          /**
           * Destructor.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          virtual ~VariableName();
@@ -96,7 +98,9 @@ namespace data_model {
      * It corresponds to the `FunctionRef` interface defined in
      * https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#expressions
      *
-     * @internal ICU 74.0 technology preview
+     * `FunctionName` is immutable and is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API FunctionName : public UMemory {
@@ -105,7 +109,7 @@ namespace data_model {
          * Type representing the function's kind, which is either ':' (the default)
          * or "open" ('+')/"close" ('-'), usually used for markup functions.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
          enum Sigil {
@@ -118,7 +122,7 @@ namespace data_model {
           *
           * @return A string beginning with the sigil, followed by the function's name.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          UnicodeString toString() const;
@@ -127,7 +131,7 @@ namespace data_model {
           *
           * @param s   The function name, as a string. Constructs a function name with the default sigil.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          FunctionName(UnicodeString s) : functionName(s), functionSigil(Sigil::DEFAULT) {}
@@ -175,7 +179,7 @@ namespace data_model {
      * `Literal` interface defined in
      *   // https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#expressions
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Literal : public UObject {
@@ -185,7 +189,7 @@ namespace data_model {
          *
          * @return A string representation of the literal enclosed in quote characters.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
          UnicodeString quotedString() const;
@@ -195,7 +199,7 @@ namespace data_model {
           * @return A reference to a Formattable whose string contents are
           *         the parsed string contents of this literal.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          const Formattable& getContents() const { return contents; }
@@ -204,7 +208,7 @@ namespace data_model {
           *
           * @return A string representation of this literal.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          const UnicodeString& stringContents() const;
@@ -214,7 +218,7 @@ namespace data_model {
           * @return true if and only if this literal appeared as a quoted literal in the
           *         message.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          UBool quoted() const { return isQuoted; }
@@ -226,14 +230,14 @@ namespace data_model {
           *  @param s The string contents of this literal; escape sequences are assumed to have
           *           been interpreted already.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          Literal(UBool q, const UnicodeString& s) : isQuoted(q), contents(s) {}
          /**
           * Destructor.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          virtual ~Literal();
@@ -265,7 +269,9 @@ namespace data_model {
      * with the difference that it can also represent a null operand (the absent operand in an
      * `annotation` with no operand).
      *
-     * @internal ICU 74.0 technology preview
+     * `Operand` is immutable and is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Operand : public UObject {
@@ -277,7 +283,7 @@ namespace data_model {
          * @param status    Input/output error code.
          * @return The new operand, guaranteed to be non-null if U_SUCCESS(status)
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Operand* create(const VariableName& var, UErrorCode& status);
@@ -288,7 +294,7 @@ namespace data_model {
          * @param status    Input/output error code.
          * @return The new operand, guaranteed to be non-null if U_SUCCESS(status)
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Operand* create(const Literal& lit, UErrorCode& status);
@@ -300,7 +306,7 @@ namespace data_model {
          * @param status    Input/output error code.
          * @return The new operand, guaranteed to be non-null if U_SUCCESS(status)
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Operand* create(UErrorCode& status);
@@ -309,7 +315,7 @@ namespace data_model {
          *
          * @return True if and only if the operand is a variable.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         UBool isVariable() const;
@@ -318,7 +324,7 @@ namespace data_model {
          *
          * @return True if and only if the operand is a literal.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         UBool isLiteral() const;
@@ -327,7 +333,7 @@ namespace data_model {
          *
          * @return True if and only if the operand is the null operand.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         UBool isNull() const;
@@ -337,7 +343,7 @@ namespace data_model {
          *
          * @return A reference to the name of the variable
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const VariableName& asVariable() const;
@@ -347,14 +353,14 @@ namespace data_model {
          *
          * @return A reference to the literal
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const Literal& asLiteral() const;
         /**
          * Destructor.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         virtual ~Operand();
@@ -389,7 +395,9 @@ namespace data_model {
      *
      * A key is either a literal or the wildcard symbol (represented in messages as '*')
      *
-     * @internal ICU 74.0 technology preview
+     * `Key` is immutable and is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Key : public UObject {
@@ -399,7 +407,7 @@ namespace data_model {
         *
         * @return True if and only if this is the wildcard key
         *
-        * @internal ICU 74.0 technology preview
+        * @internal ICU 75.0 technology preview
         * @deprecated This API is for technology preview only.
         */
         UBool isWildcard() const { return wildcard; }
@@ -409,7 +417,7 @@ namespace data_model {
          *
          * @return The literal contents of the key
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const Literal& asLiteral() const;
@@ -419,7 +427,7 @@ namespace data_model {
          * @param status    Input/output error code.
          * @return The new key, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Key* create(UErrorCode& status);
@@ -430,7 +438,7 @@ namespace data_model {
          * @param status    Input/output error code.
          * @return The new key, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Key* create(const Literal& lit, UErrorCode& status);
@@ -453,7 +461,7 @@ namespace data_model {
         /**
          * An immutable list of keys
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
 
@@ -499,7 +507,9 @@ namespace message2 {
      * It corresponds to the `keys` array in the `Variant` interface
      * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
      *
-     * @internal ICU 74.0 technology preview
+     * `SelectorKeys` is immutable and is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API SelectorKeys : public UObject {
@@ -509,7 +519,7 @@ namespace message2 {
          *
          * @return A reference to the list of keys for this variant.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const KeyList& getKeys() const;
@@ -517,7 +527,9 @@ namespace message2 {
          * The mutable `SelectorKeys::Builder` class allows the key list to be constructed
          * one key at a time.
          *
-         * @internal ICU 74.0 technology preview
+         * Builder is not copyable or movable.
+         *
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         class U_I18N_API Builder : public UMemory {
@@ -533,7 +545,7 @@ namespace message2 {
              * @param status Input/output error code.
              * @return A reference to the builder.
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
              Builder& add(Key* key, UErrorCode& status);
@@ -547,14 +559,14 @@ namespace message2 {
               * @return          The new SelectorKeys object, which is non-null if
               *                  U_SUCCESS(status).
               *
-              * @internal ICU 74.0 technology preview
+              * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
              SelectorKeys* build(UErrorCode& status) const;
              /**
               * Destructor.
               *
-              * @internal ICU 74.0 technology preview
+              * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
              virtual ~Builder();
@@ -565,7 +577,7 @@ namespace message2 {
          * @param status  Input/output error code.
          * @return The new Builder object, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Builder* builder(UErrorCode& status);
@@ -588,7 +600,9 @@ namespace message2 {
      * defined in
      * https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#expressions
      *
-     * @internal ICU 74.0 technology preview
+     * `Reserved` is immutable and is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class Reserved : public UMemory {
@@ -598,7 +612,7 @@ namespace message2 {
          *
          * @return The number of literals.
          *         *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         int32_t numParts() const;
@@ -610,7 +624,7 @@ namespace message2 {
          * @return The i'th literal in the sequence, which is
          *         guaranteed to be non-null.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const Literal* getPart(int32_t i) const;
@@ -618,7 +632,9 @@ namespace message2 {
          * The mutable `Reserved::Builder` class allows the reserved sequence to be
          * constructed one part at a time.
          *
-         * @internal ICU 74.0 technology preview
+         * Builder is not copyable or movable.
+         *
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         class U_I18N_API Builder : public UMemory {
@@ -636,7 +652,7 @@ namespace message2 {
              * @param status Input/output error code
              * @return A reference to the builder.
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             Builder& add(const Literal& part, UErrorCode& status);
@@ -650,14 +666,14 @@ namespace message2 {
              * @return          The new Reserved object, which is non-null if
              *                  U_SUCCESS(status).
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             Reserved* build(UErrorCode& status) const;
              /**
               * Destructor.
               *
-              * @internal ICU 74.0 technology preview
+              * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
              virtual ~Builder();
@@ -668,7 +684,7 @@ namespace message2 {
          * @param status  Input/output error code.
          * @return       The new Builder, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Builder *builder(UErrorCode& status);
@@ -694,7 +710,7 @@ namespace message2 {
     /**
      * An immutable map from strings to function options
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     using OptionMap = OrderedMap<Operand>;
@@ -739,7 +755,9 @@ namespace message2 {
      * or a reserved sequence, which has no meaning and results in an error if the formatter
      * is invoked.
      *
-     * @internal ICU 74.0 technology preview
+     * `Operator` is immutable and is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Operator : public UMemory {
@@ -749,7 +767,7 @@ namespace message2 {
          *
          * @return true if and only if this operator represents a reserved sequence.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         UBool isReserved() const { return isReservedSequence; }
@@ -759,7 +777,7 @@ namespace message2 {
          *
          * @return The function name of this operator.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const FunctionName& getFunctionName() const;
@@ -769,7 +787,7 @@ namespace message2 {
          *
          * @return The reserved sequence represented by this operator.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const Reserved& asReserved() const;
@@ -779,7 +797,7 @@ namespace message2 {
          *
          * @return A reference to the function options for this operator.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const OptionMap& getOptions() const;
@@ -788,7 +806,9 @@ namespace message2 {
          * The mutable `Operator::Builder` class allows the operator to be constructed
          * incrementally.
          *
-         * @internal ICU 74.0 technology preview
+         * Builder is not copyable or movable.
+         *
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         class U_I18N_API Builder : public UMemory {
@@ -807,7 +827,7 @@ namespace message2 {
              * @param reserved The reserved sequence to set as the contents of this Operator.
              * @return A reference to the builder.
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             Builder& setReserved(Reserved* reserved);
@@ -820,7 +840,7 @@ namespace message2 {
              * @param status Input/output error code.
              * @return A reference to the builder.
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             Builder& setFunctionName(const FunctionName& func, UErrorCode& status);
@@ -834,7 +854,7 @@ namespace message2 {
              * @param status Input/output error code.
              * @return A reference to the builder.
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             Builder& addOption(const UnicodeString &key, Operand* value, UErrorCode& status);
@@ -849,14 +869,14 @@ namespace message2 {
              * @param status    Input/output error code.
              * @return          The new Operator, which is non-null if U_SUCCESS(status).
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             Operator* build(UErrorCode& status) const;
              /**
               * Destructor.
               *
-              * @internal ICU 74.0 technology preview
+              * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
              virtual ~Builder();
@@ -867,7 +887,7 @@ namespace message2 {
          * @param status  Input/output error code.
          * @return        The new Builder, which is non-null if U_SUCCESS)status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Builder* builder(UErrorCode& status);
@@ -928,7 +948,9 @@ namespace message2 {
      * It represents either an operand with no annotation; an annotation with no operand;
      * or an operand annotated with an annotation.
      *
-     * @internal ICU 74.0 technology preview
+     * `Expression` is immutable and is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Expression : public UObject {
@@ -940,7 +962,7 @@ namespace message2 {
          * @return True if and only if the expression has
          *         an annotation and has no operand.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         UBool isStandaloneAnnotation() const;
@@ -952,7 +974,7 @@ namespace message2 {
          * @return True if and only if the expression has an annotation
          *         that is a function.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         UBool isFunctionCall() const;
@@ -963,7 +985,7 @@ namespace message2 {
          * @return True if and only if the expression has an
          *         annotation that is a reserved sequence,
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         UBool isReserved() const;
@@ -974,7 +996,7 @@ namespace message2 {
          *
          * @return A reference to the operator of this expression.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const Operator& getOperator() const;
@@ -984,7 +1006,7 @@ namespace message2 {
          * @return A reference to the operand of this expression,
          *         which may be the null operand.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const Operand& getOperand() const;
@@ -993,7 +1015,9 @@ namespace message2 {
          * The mutable `Expression::Builder` class allows the operator to be constructed
          * incrementally.
          *
-         * @internal ICU 74.0 technology preview
+         * Builder is not copyable or movable.
+         *
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         class U_I18N_API Builder : public UMemory {
@@ -1009,7 +1033,7 @@ namespace message2 {
              * @param rAnd The operand to set. Must be non-null.
              * @return A reference to the builder.
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
              Builder& setOperand(Operand* rAnd);
@@ -1019,7 +1043,7 @@ namespace message2 {
               * @param rAtor The operator to set. Must be non-null.
               * @return A reference to the builder.
               *
-              * @internal ICU 74.0 technology preview
+              * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
              Builder& setOperator(Operator* rAtor);
@@ -1035,14 +1059,14 @@ namespace message2 {
               * @param status    Input/output error code.
               * @return          The new Expression, which is non-null if U_SUCCESS(status).
               *
-              * @internal ICU 74.0 technology preview
+              * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
              Expression* build(UErrorCode& status) const;
              /**
               * Destructor.
               *
-              * @internal ICU 74.0 technology preview
+              * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
              virtual ~Builder();
@@ -1053,7 +1077,7 @@ namespace message2 {
          * @param status  Input/output error code.
          * @return        The new Builder, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Builder* builder(UErrorCode& status);
@@ -1128,7 +1152,9 @@ namespace message2 {
      * It corresponds to the `body` field of the `Pattern` interface
      *  defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#patterns
      *
-     * @internal ICU 74.0 technology preview
+     * `PatternPart` is immutable and is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API PatternPart : public UObject {
@@ -1140,7 +1166,7 @@ namespace message2 {
          * @param status    Input/output error code.
          * @return          The new PatternPart, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static PatternPart* create(const UnicodeString& t, UErrorCode& status);
@@ -1151,7 +1177,7 @@ namespace message2 {
          * @param status Input/output error code.
          * @return          The new PatternPart, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static PatternPart* create(Expression* e, UErrorCode& status);
@@ -1160,7 +1186,7 @@ namespace message2 {
          *
          * @return True if and only if this is a text part.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         UBool isText() const { return isRawText; }
@@ -1170,7 +1196,7 @@ namespace message2 {
          *
          * @return A reference to the part's underlying expression.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const Expression& contents() const;
@@ -1180,7 +1206,7 @@ namespace message2 {
          *
          * @return A reference to a string representing the part's text..
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const UnicodeString& asText() const;
@@ -1238,7 +1264,9 @@ namespace message2 {
      * It corresponds to the `Pattern` interface
      * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#patterns
      *
-     * @internal ICU 74.0 technology preview
+     * `Pattern` is immutable and is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Pattern : public UObject {
@@ -1248,7 +1276,7 @@ namespace message2 {
          *
          * @return The number of parts in the pattern.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         int32_t numParts() const { return parts->length(); }
@@ -1260,7 +1288,7 @@ namespace message2 {
          * @return  The part at index `i`, which is guaranteed
          *          to be non-null.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         const PatternPart* getPart(int32_t i) const;
@@ -1269,7 +1297,9 @@ namespace message2 {
          * The mutable `Pattern::Builder` class allows the pattern to be
          * constructed one part at a time.
          *
-         * @internal ICU 74.0 technology preview
+         * Builder is not copyable or movable.
+         *
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         class U_I18N_API Builder : public UMemory {
@@ -1290,7 +1320,7 @@ namespace message2 {
              * @param status Input/output error code
              * @return A reference to the builder.
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             Builder& add(PatternPart *part, UErrorCode& status);
@@ -1303,14 +1333,14 @@ namespace message2 {
              * @param status    Input/output error code.
              * @return          The new pattern, which is non-null if U_SUCCESS(status).
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             Pattern* build(UErrorCode &status) const;
              /**
               * Destructor.
               *
-              * @internal ICU 74.0 technology preview
+              * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
              virtual ~Builder();
@@ -1322,7 +1352,7 @@ namespace message2 {
          * @param status  Input/output error code.
          * @return        The new Builder, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Builder* builder(UErrorCode& status);
@@ -1388,7 +1418,9 @@ namespace message2 {
      *
      * https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf#L9
      *
-     * @internal ICU 74.0 technology preview
+     * `VariantMap` is immutable and is not copyable or movable.
+     *
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API VariantMap : public UMemory {
@@ -1396,7 +1428,7 @@ namespace message2 {
         /**
          * The initial iterator position to be used with `next()`.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static constexpr int32_t FIRST = OrderedMap<Pattern>::FIRST;
@@ -1413,7 +1445,7 @@ namespace message2 {
          *            If the return value is true, then `v` refers to a non-null pointer.
          * @return    True if and only if there are no further options after `pos`.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         UBool next(int32_t &pos, const SelectorKeys*& k, const Pattern*& v) const;
@@ -1422,7 +1454,7 @@ namespace message2 {
          *
          * @return The size of this VariantMap.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         int32_t size() const;
@@ -1430,7 +1462,9 @@ namespace message2 {
          * The mutable `VariantMap::Builder` class allows the variant map to be
          * constructed one variant at a time.
          *
-         * @internal ICU 74.0 technology preview
+         * Builder is not copyable or movable.
+         *
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         class U_I18N_API Builder : public UMemory {
@@ -1443,7 +1477,7 @@ namespace message2 {
              * @param status Input/output error code.
              * @return A reference to the builder.
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             Builder& add(SelectorKeys* key, Pattern* value, UErrorCode& status);
@@ -1457,14 +1491,14 @@ namespace message2 {
              * @return          The new VariantMap, which is non-null if
              *                  U_SUCCESS(status).
              *
-             * @internal ICU 74.0 technology preview
+             * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             VariantMap* build(UErrorCode& status) const;
              /**
               * Destructor.
               *
-              * @internal ICU 74.0 technology preview
+              * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
              virtual ~Builder();
@@ -1483,7 +1517,7 @@ namespace message2 {
          * @param status  Input/output error code.
          * @return        The new builder, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Builder* builder(UErrorCode& status);
@@ -1513,7 +1547,7 @@ namespace message2 {
      * It corresponds to the `Declaration` interface
      * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Binding : public UObject {
@@ -1526,7 +1560,7 @@ namespace message2 {
          * @param status    Input/output error code.
          * @return          The new binding, which is non-null if U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         static Binding* create(const VariableName& var, Expression* e, UErrorCode& status);
@@ -1535,7 +1569,7 @@ namespace message2 {
           *
           * @return A reference to the expression.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
         const Expression& getValue() const;
@@ -1544,14 +1578,14 @@ namespace message2 {
           *
           * @return A reference to the variable name.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
         const VariableName& getVariable() const { return var; }
         /**
           * Destructor.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
         virtual ~Binding();
@@ -1573,14 +1607,14 @@ namespace message2 {
         /**
          * An immutable list of variable bindings
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         using Bindings = ImmutableVector<Binding>;
         /**
          * An immutable list of expressions
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         using ExpressionList = ImmutableVector<Expression>;
@@ -1698,8 +1732,6 @@ using namespace data_model;
 // Public MessageFormatDataModel class
 
 /**
- * <p>MessageFormat2 is a Technical Preview API implementing MessageFormat 2.0.
- * Since it is not final, documentation has not yet been added everywhere.
  *
  * The `MessageFormatDataModel` class describes a parsed representation of the text of a message.
  * This representation is public as higher-level APIs for messages will need to know its public
@@ -1710,10 +1742,12 @@ variables.
 href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md">the
  * specification of the abstract syntax (data model representation)</a> for MessageFormat.
  *
- * @internal ICU 74.0 technology preview
+ * `MessageFormatDataModel` is immutable and is not copyable or movable.
+ *
+ * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-    class U_I18N_API MessageFormatDataModel : public UMemory {
+class U_I18N_API MessageFormatDataModel : public UMemory {
 /*
   Classes that represent nodes in the data model are nested inside the
   `MessageFormatDataModel` class.
@@ -1750,14 +1784,12 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
 */
       public:
 
-    // Public MessageFormatDataModel methods
-
     /**
      * Accesses the local variable declarations for this data model.
      *
      * @return A reference to a list of bindings for local variables.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     const Bindings& getLocalVariables() const;
@@ -1768,7 +1800,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
      *         (if it represents a `match` construct with selectors and variants).
      *
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     UBool hasSelectors() const;
@@ -1778,7 +1810,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
      *
      * @return A reference to the selector list.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     const ExpressionList& getSelectors() const;
@@ -1788,7 +1820,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
      *
      * @return A reference to the variant map.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     const VariantMap& getVariants() const;
@@ -1798,7 +1830,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
      *
      * @return A reference to the pattern.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     const Pattern& getPattern() const;
@@ -1807,7 +1839,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
      * The mutable `MessageFormatDataModel::Builder` class allows the data model to be
      * constructed incrementally.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Builder;
@@ -1818,7 +1850,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
      * @param status  Input/output error code.
      * @return        The new Builder object, which is non-null if U_SUCCESS(status).
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     static Builder* builder(UErrorCode& status);
@@ -1826,7 +1858,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
     /**
      * Destructor.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual ~MessageFormatDataModel();
@@ -1835,7 +1867,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
      * The mutable `MessageFormatDataModel::Builder` class allows the data model to be
      * constructed incrementally.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Builder : public UMemory {
@@ -1858,7 +1890,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
          * @param status Input/output error code.
          * @return A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& addLocalVariable(const VariableName& variableName, Expression* expression, UErrorCode &status);
@@ -1870,7 +1902,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
          * @param status Input/output error code.
          * @return A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& addSelector(Expression* selector, UErrorCode& status);
@@ -1883,7 +1915,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
          * @param status Input/output error code.
          * @return A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& addVariant(SelectorKeys* keys, Pattern* pattern, UErrorCode& status);
@@ -1895,7 +1927,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
          * @param pattern Pattern to represent the body of the message.
          * @return A reference to the builder.
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         Builder& setPattern(Pattern* pattern);
@@ -1916,7 +1948,7 @@ href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model
          * @return       The new MessageFormatDataModel, which is non-null if
          *               U_SUCCESS(status).
          *
-         * @internal ICU 74.0 technology preview
+         * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         MessageFormatDataModel* build(UErrorCode& status) const;
