@@ -18,6 +18,7 @@
 
 U_NAMESPACE_BEGIN namespace message2 {
 
+class ExpressionContext;
 class MessageFormatDataModel;
 
 namespace data_model {
@@ -136,30 +137,34 @@ namespace data_model {
           * @param n   The function name, as a string.
           * @param s   The function sigil to use.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          FunctionName(UnicodeString n, Sigil s) : functionName(n), functionSigil(s) {}
          /**
-          * Copy constructor.
-          *
-          * @param other   The function name to copy.
-          *
-          * @internal ICU 74.0 technology preview
-          * @deprecated This API is for technology preview only.
-          */
-         FunctionName(const FunctionName& other) : functionName(other.functionName), functionSigil(other.functionSigil) {}
-         /**
           * Destructor.
           *
-          * @internal ICU 74.0 technology preview
+          * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          virtual ~FunctionName();
 
     private:
+         friend class Operator;
+         friend class icu::message2::ExpressionContext;
+
          const UnicodeString functionName;
          const Sigil functionSigil;
+
+         /**
+          * Copy constructor.
+          *
+          * @param other   The function name to copy.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         FunctionName(const FunctionName& other) : functionName(other.functionName), functionSigil(other.functionSigil) {}
 
          UChar sigilChar() const;
     }; // class FunctionName
