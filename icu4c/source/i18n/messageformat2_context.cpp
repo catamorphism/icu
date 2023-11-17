@@ -106,7 +106,7 @@ Arguments::Builder& Arguments::Builder::addDecimal(const UnicodeString& name, St
     return add(name, valPtr, errorCode);
 }
 
-Arguments::Builder& Arguments::Builder::add(const UnicodeString& name, const UnicodeString* arr, int32_t count, UErrorCode& errorCode) {
+Arguments::Builder& Arguments::Builder::adoptArray(const UnicodeString& name, const UnicodeString* arr, int32_t count, UErrorCode& errorCode) {
     THIS_ON_ERROR(errorCode);
 
     Formattable* valPtr(ExpressionContext::createFormattable(arr, count, errorCode));

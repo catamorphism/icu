@@ -86,7 +86,7 @@ class TestCase : public UMemory {
         Builder& setArgument(const UnicodeString& k, const UnicodeString* val, int32_t count, UErrorCode& errorCode) {
             THIS_ON_ERROR(errorCode);
             U_ASSERT(val != nullptr);
-            arguments->add(k, val, count, errorCode);
+            arguments->adoptArray(k, val, count, errorCode);
             return *this;
         }
         Builder& setArgument(const UnicodeString& k, double val, UErrorCode& errorCode) {
