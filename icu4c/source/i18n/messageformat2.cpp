@@ -426,18 +426,6 @@ int32_t comparePrioritizedVariants(UElement left, UElement right) {
     return 1;
 }
 
-int32_t comparecomparePrioritizedVariants(UElement left, UElement right) {
-    const PrioritizedVariant& tuple1 = *(static_cast<PrioritizedVariant*>(left.pointer));
-    const PrioritizedVariant& tuple2 = *(static_cast<PrioritizedVariant*>(right.pointer));
-    if (tuple1.priority < tuple2.priority) {
-        return -1;
-    }
-    if (tuple1.priority == tuple2.priority) {
-        return 0;
-    }
-    return 1;
-}
-
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#sort-variants
 // `sortable` is a vector of PrioritizedVariants
 static void sortVariantTuples(UVector& sortable, UErrorCode& errorCode) {
