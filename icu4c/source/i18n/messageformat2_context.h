@@ -243,8 +243,8 @@ private:
 class PrioritizedVariant : public UObject {
 public:
     int32_t priority;
-    const SelectorKeys& keys;
-    const Pattern& pat;
+    const SelectorKeys keys;
+    const Pattern pat;
     PrioritizedVariant(uint32_t p,
                        const SelectorKeys& k,
                        const Pattern& pattern) : priority(p), keys(k), pat(pattern) {}

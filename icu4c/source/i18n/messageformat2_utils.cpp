@@ -173,6 +173,29 @@ typename OrderedMap<V>::Builder& OrderedMap<V>::Builder::add(const UnicodeString
     return *this;
 }
 
+// Precondition: `key` is not already in the map. (The caller must
+// check this)
+template<typename V>
+typename OrderedMap<V>::Builder& OrderedMap<V>::Builder::add(const UnicodeString& key, V&& value, UErrorCode& errorCode) {
+    THIS_ON_ERROR(errorCode);
+    // Check that the key is not already in the map.
+    // (If not for this check, the invariant that keys->size()
+    // == contents->count() could be violated.)
+    U_ASSERT(!contents->containsKey(key));
+
+    // Copy `key` so it can be stored in the vector
+    LocalPointer<UnicodeString> adoptedKey(new UnicodeString(key));
+    if (!adoptedKey.isValid()) {
+        return *this;
+    }
+    UnicodeString* k = adoptedKey.orphan();
+    keys->adoptElement(k, errorCode);
+
+// TODO: make this a real move operation
+    contents->put(key, new V(value), errorCode);
+    return *this;
+}
+
 // This is provided so that builders can check for duplicate keys
 // (for example, adding duplicate options is an error)
 template<typename V>

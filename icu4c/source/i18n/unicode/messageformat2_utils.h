@@ -12,6 +12,8 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+#include <vector>
+
 #include "unicode/localpointer.h"
 #include "unicode/unistr.h"
 
@@ -186,7 +188,7 @@ private:
  * @deprecated This API is for technology preview only.
  */
 template<typename V>
-class OrderedMap : public UMemory {
+class OrderedMap : public UObject {
 
 private:
     // See comments under `ImmutableVector::isBogus()`
@@ -261,6 +263,20 @@ public:
          * @deprecated This API is for technology preview only.
          */
         Builder& add(const UnicodeString& key, V* value, UErrorCode& status);
+        /**
+         * Adds to the map.
+         * Precondition: !has(key)
+         *
+         * @param key    The name to be added. It is an internal error to
+         *               call `add()` with a key that has already been added.
+         * @param value  The value to be associated with the name. Passed by move.
+         * @param status Input/output error code.
+         * @return A reference to the builder.
+         *
+         * @internal ICU 74.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder& add(const UnicodeString& key, V&& value, UErrorCode& status);
         /**
          * Checks if a key is in the map.
          *

@@ -221,16 +221,15 @@ void MessageFormatter::formatPattern(MessageContext& globalContext, const Enviro
 
     LocalPointer<ExpressionContext> context;
     for (int32_t i = 0; i < pat.numParts(); i++) {
-        const PatternPart* part = pat.getPart(i);
-        U_ASSERT(part != nullptr);
-        if (part->isText()) {
-            result += part->asText();
+        const PatternPart& part = pat.getPart(i);
+        if (part.isText()) {
+            result += part.asText();
         } else {
             // Create a new context to evaluate the expression part
             context.adoptInstead(ExpressionContext::create(globalContext, status));
             CHECK_ERROR(status);
             // Format the expression
-            formatExpression(globalEnv, part->contents(), *context, status);
+            formatExpression(globalEnv, part.contents(), *context, status);
             // Force full evaluation, e.g. applying default formatters to
             // unformatted input (or formatting numbers as strings)
             context->formatToString(locale, status);
@@ -252,11 +251,11 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
     // (Implicit, since `res` is an out-parameter)
     // 2. For each expression exp of the message's selectors
     LocalPointer<ExpressionContext> rv;
-    for (int32_t i = 0; i < selectors.length(); i++) {
+    for (int32_t i = 0; i < (int32_t) selectors.size(); i++) {
         rv.adoptInstead(ExpressionContext::create(context, status));
         CHECK_ERROR(status);
         // 2i. Let rv be the resolved value of exp.
-        formatSelectorExpression(env, *selectors.get(i), *rv, status);
+        formatSelectorExpression(env, selectors[i], *rv, status);
         if (rv->hasSelector()) {
             // 2ii. If selection is supported for rv:
             // (True if this code has been reached)
@@ -318,18 +317,18 @@ void MessageFormatter::resolvePreferences(const UVector& res, const VariantMap& 
         CHECK_ERROR(status);
         // 2ii. For each variant `var` of the message
         int32_t pos = VariantMap::FIRST;
+        SelectorKeys selectorKeys;
+        const Pattern* p; // Not used
         while (true) {
-            const SelectorKeys* selectorKeys;
-            const Pattern* p; // Not used
             if (!variants.next(pos, selectorKeys, p)) {
                 break;
             }
             // Note: Here, `var` names the key list of `var`,
             // not a Variant itself
-            const KeyList& var = selectorKeys->getKeys();
+            const KeyList& var = selectorKeys.getKeys();
             // 2ii(a). Let `key` be the `var` key at position i.
-            U_ASSERT(i < var.length()); // established by semantic check in formatSelectors()
-            const Key& key = *var.get(i);
+            U_ASSERT(i < (int32_t) var.size()); // established by semantic check in formatSelectors()
+            const Key& key = var[i];
             // 2ii(b). If `key` is not the catch-all key '*'
             if (!key.isWildcard()) {
                 // 2ii(b)(a) Assert that key is a literal.
@@ -368,21 +367,21 @@ void filterVariants(const VariantMap& variants, const UVector& pref, UErrorCode 
     // (Not needed since `vars` is an out-parameter)
     // 2. For each variant `var` of the message:
     int32_t pos = VariantMap::FIRST;
+    SelectorKeys selectorKeys;
+    const Pattern* p;
     while (true) {
-        const SelectorKeys* selectorKeys;
-        const Pattern* p;
         if (!variants.next(pos, selectorKeys, p)) {
             break;
         }
         // Note: Here, `var` names the key list of `var`,
         // not a Variant itself
-        const KeyList& var = selectorKeys->getKeys();
+        const KeyList& var = selectorKeys.getKeys();
         // 2i. For each index `i` in `pref`:
         bool noMatch = false;
         for (int32_t i = 0; i < pref.size(); i++) {
             // 2i(a). Let `key` be the `var` key at position `i`.
-            U_ASSERT(i < var.length());
-            const Key& key = *var.get(i);
+            U_ASSERT(i < (int32_t) var.size());
+            const Key& key = var[i];
             // 2i(b). If key is the catch-all key '*':
             if (key.isWildcard()) {
                 // 2i(b)(a). Continue the inner loop on pref.
@@ -406,7 +405,7 @@ void filterVariants(const VariantMap& variants, const UVector& pref, UErrorCode 
         }
         if (!noMatch) {
             // Append `var` as the last element of the list `vars`.
-            LocalPointer<PrioritizedVariant> tuple(new PrioritizedVariant(-1, *selectorKeys, *p));
+            LocalPointer<PrioritizedVariant> tuple(new PrioritizedVariant(-1, selectorKeys, *p));
             if (!tuple.isValid()) {
                 status = U_MEMORY_ALLOCATION_ERROR;
                 return;
@@ -480,8 +479,8 @@ void sortVariants(const UVector& pref, UErrorCode& status, UVector& vars) {
             int32_t matchpref = minpref;
             // 5iii(b). Let `key` be the tuple variant key at position `i`.
             const KeyList& tupleVariantKeys = tuple->keys.getKeys();
-            U_ASSERT(i < ((int32_t) tupleVariantKeys.length())); // Given by earlier semantic checking
-            const Key& key = *tupleVariantKeys.get(((int32_t) i));
+            U_ASSERT(i < ((int32_t) tupleVariantKeys.size())); // Given by earlier semantic checking
+            const Key& key = tupleVariantKeys[i];
             // 5iii(c) If `key` is not the catch-all key '*':
             if (!key.isWildcard()) {
                 // 5iii(c)(a). Assert that `key` is a literal.
@@ -615,7 +614,7 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
 
     // Resolve Selectors
     // res is a vector of ResolvedExpressions
-    int32_t numSelectors = selectors.length();
+    int32_t numSelectors = selectors.size();
 
     // vector of ExpressionContexts
     LocalPointer<UVector> res(new UVector(numSelectors, status));
@@ -780,10 +779,9 @@ void MessageFormatter::checkDeclarations(MessageContext& context, Environment*& 
     const Bindings& decls = getDataModel().getLocalVariables();
     U_ASSERT(env != nullptr);
 
-    for (int32_t i = 0; i < decls.length(); i++) {
-        const Binding* decl = decls.get(i);
-        U_ASSERT(decl != nullptr);
-        const Expression& rhs = decl->getValue();
+    for (int32_t i = 0; i < (int32_t) decls.size(); i++) {
+        const Binding& decl = decls[i];
+        const Expression& rhs = decl.getValue();
         check(context, *env, rhs, status);
 
         // Add a closure to the global environment,
@@ -792,7 +790,7 @@ void MessageFormatter::checkDeclarations(MessageContext& context, Environment*& 
         CHECK_ERROR(status);
 
         // Add the LHS to the environment for checking the next declaration
-        env = Environment::create(decl->getVariable(), closure, env, status);
+        env = Environment::create(decl.getVariable(), closure, env, status);
         CHECK_ERROR(status);
     }
 }

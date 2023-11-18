@@ -26,7 +26,7 @@ namespace data_model {
     /**
      * The `VariableName` class represents the name of a variable in a message.
      *
-     * `VariableName` is immutable. It is not copyable or movable.
+     * `VariableName` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -86,8 +86,12 @@ namespace data_model {
           * @deprecated This API is for technology preview only.
           */
          virtual ~VariableName();
+
+         // TODO
+         VariableName& operator=(VariableName&&) = default;
+         VariableName(const VariableName&) = default;
     private:
-        const UnicodeString variableName;
+        /* const */ UnicodeString variableName;
     }; // class VariableName
 
 
@@ -98,7 +102,7 @@ namespace data_model {
      * It corresponds to the `FunctionRef` interface defined in
      * https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#expressions
      *
-     * `FunctionName` is immutable and is not copyable or movable.
+     * `FunctionName` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -153,13 +157,7 @@ namespace data_model {
           */
          virtual ~FunctionName();
 
-    private:
-         friend class Operator;
-         friend class icu::message2::ExpressionContext;
-
-         const UnicodeString functionName;
-         const Sigil functionSigil;
-
+// TODO
          /**
           * Copy constructor.
           *
@@ -169,6 +167,16 @@ namespace data_model {
           * @deprecated This API is for technology preview only.
           */
          FunctionName(const FunctionName& other) : functionName(other.functionName), functionSigil(other.functionSigil) {}
+         FunctionName& operator=(FunctionName&& other) noexcept;
+         FunctionName() : functionSigil(Sigil::DEFAULT) {}
+    private:
+         friend class Operator;
+         friend class icu::message2::ExpressionContext;
+
+         /* const */ UnicodeString functionName;
+         /* const */ Sigil functionSigil;
+
+         bool isEmpty() { return functionName.length() == 0; }
 
          UChar sigilChar() const;
     }; // class FunctionName
@@ -179,7 +187,7 @@ namespace data_model {
      * `Literal` interface defined in
      *   // https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#expressions
      *
-     * `Literal` is immutable. It is not copyable or movable.
+     * `Literal` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -236,6 +244,14 @@ namespace data_model {
           * @deprecated This API is for technology preview only.
           */
          Literal(UBool q, const UnicodeString& s) : isQuoted(q), contents(s) {}
+// TODO
+        Literal(const Literal& other) : isQuoted(other.isQuoted), contents(other.contents) {}
+        Literal(Literal&& other) noexcept;
+        Literal& operator=(Literal&&) noexcept;
+        // Because Key uses `Literal` as its underlying representation,
+        // this provides a default constructor for wildcard keys
+        Literal() : isQuoted(false), contents(Formattable("")) {}
+
          /**
           * Destructor.
           *
@@ -245,21 +261,11 @@ namespace data_model {
          virtual ~Literal();
 
     private:
-        friend class Key;
-        friend class ImmutableVector<Literal>;
-        friend class Operand;
-        friend class Reserved;
-
-        Literal(const Literal& other) : isQuoted(other.isQuoted), contents(other.contents) {}
-
-        const bool isQuoted = false;
+        /* const */ bool isQuoted = false;
         // Contents is stored as a Formattable to avoid allocating
         // new Formattables during formatting, but it's guaranteed
         // to be a string
-        const Formattable contents;
-        // Because Key uses `Literal` as its underlying representation,
-        // this provides a default constructor for wildcard keys
-        Literal() {}
+        /* const */ Formattable contents;
     };
 
     /**
@@ -271,47 +277,13 @@ namespace data_model {
      * with the difference that it can also represent a null operand (the absent operand in an
      * `annotation` with no operand).
      *
-     * `Operand` is immutable and is not copyable or movable.
+     * `Operand` is immutable and is copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Operand : public UObject {
     public:
-        /**
-         * Creates a new `variable` operand.
-         *
-         * @param var       The variable name this operand represents.
-         * @param status    Input/output error code.
-         * @return The new operand, guaranteed to be non-null if U_SUCCESS(status)
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        static Operand* create(const VariableName& var, UErrorCode& status);
-        /**
-         * Creates a new `literal` operand.
-         *
-         * @param lit       The literal this operand represents.
-         * @param status    Input/output error code.
-         * @return The new operand, guaranteed to be non-null if U_SUCCESS(status)
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        static Operand* create(const Literal& lit, UErrorCode& status);
-        /**
-         * Creates a new `null` operand, which should only appear when
-         * representing the following production in the grammar:
-         * expression = "{" [s] annotation [s] "}"
-         *
-         * @param status    Input/output error code.
-         * @return The new operand, guaranteed to be non-null if U_SUCCESS(status)
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        static Operand* create(UErrorCode& status);
         /**
          * Determines if this operand represents a variable.
          *
@@ -359,6 +331,13 @@ namespace data_model {
          * @deprecated This API is for technology preview only.
          */
         const Literal& asLiteral() const;
+        // TODO
+        Operand() : type(Type::NULL_OPERAND) {}
+        Operand(const VariableName& v) : var(v), type(Type::VARIABLE) {}
+        Operand(const Literal& l) : lit(l), type(Type::LITERAL) {}
+        Operand(const Operand&);
+        Operand& operator=(Operand&&) noexcept;
+
         /**
          * Destructor.
          *
@@ -367,8 +346,6 @@ namespace data_model {
          */
         virtual ~Operand();
     private:
-        friend class Expression;
-        friend class OrderedMap<Operand>;
 
         enum Type {
             VARIABLE,
@@ -377,14 +354,11 @@ namespace data_model {
         };
         // This wastes some space, but it's simpler than defining a copy
         // constructor for a union
-        const VariableName var;
-        const Literal lit;
-        const Type type;
-        Operand(const Operand&);
-        Operand() : type(Type::NULL_OPERAND) {}
+        // Should be const, but declared non-const to make the move assignment operator work
+        VariableName var;
+        Literal lit;
+        Type type;
 
-        Operand(const VariableName& v) : var(v), type(Type::VARIABLE) {}
-        Operand(const Literal& l) : lit(l), type(Type::LITERAL) {}
     }; // class Operand
 
     /**
@@ -397,7 +371,7 @@ namespace data_model {
      *
      * A key is either a literal or the wildcard symbol (represented in messages as '*')
      *
-     * `Key` is immutable and is not copyable or movable.
+     * `Key` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -432,7 +406,7 @@ namespace data_model {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Key* create(UErrorCode& status);
+  //      static Key* create(UErrorCode& status);
         /**
          * Creates a new literal key.
          *
@@ -443,21 +417,23 @@ namespace data_model {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Key* create(const Literal& lit, UErrorCode& status);
+//        static Key* create(const Literal& lit, UErrorCode& status);
 
-    private:
-        friend class ImmutableVector<Key>;
-        friend class VariantMap;
-
+// TODO
         Key(const Key& other) : wildcard(other.wildcard), contents(other.contents) {}
-        void toString(UnicodeString& result) const;
-    
         // Wildcard constructor
         Key() : wildcard(true) {}
         // Concrete key constructor
         Key(const Literal& lit) : wildcard(false), contents(lit) {}
-        const bool wildcard; // True if this represents the wildcard "*"
-        const Literal contents;
+        Key& operator=(Key&& other) noexcept;
+
+    private:
+        friend class VariantMap;
+
+        UnicodeString toString() const;
+
+        /* const */ bool wildcard; // True if this represents the wildcard "*"
+        /* const */ Literal contents;
     }; // class Key
 
         /**
@@ -467,7 +443,7 @@ namespace data_model {
          * @deprecated This API is for technology preview only.
          */
 
-        using KeyList = ImmutableVector<Key>;
+        using KeyList = std::vector<Key>;
 
 } // namespace data_model
 } // namespace message2
@@ -509,13 +485,21 @@ namespace message2 {
      * It corresponds to the `keys` array in the `Variant` interface
      * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
      *
-     * `SelectorKeys` is immutable and is not copyable or movable.
+     * `SelectorKeys` is immutable and copyable. It is not movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API SelectorKeys : public UObject {
     public:
+// TODO
+        SelectorKeys();
+// TODO
+        virtual ~SelectorKeys();
+// Note: these are public in order to make vector addition work
+        // Copy constructor
+        SelectorKeys(const SelectorKeys& other);
+
         /**
          * Returns the underlying list of keys.
          *
@@ -537,34 +521,30 @@ namespace message2 {
         class U_I18N_API Builder : public UMemory {
         private:
             friend class SelectorKeys;
-            Builder(UErrorCode&);
-            LocalPointer<ImmutableVector<Key>::Builder> keys;
+            std::vector<Key> keys;
         public:
             /**
-             * Adds a single key to the list. Adopts `key`.
+             * Adds a single key to the list.
              *
-             * @param key The key to be added.
-             * @param status Input/output error code.
+             * @param key A reference to the key to be added. `key` is copied.
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-             Builder& add(Key* key, UErrorCode& status);
+             Builder& add(const Key& key);
              /**
               * Constructs a new immutable `SelectorKeys` using the list of keys
               * set with previous `add()` calls.
               *
               * The builder object (`this`) can still be used after calling `build()`.
               *
-              * @param status    Input/output error code.
-              * @return          The new SelectorKeys object, which is non-null if
-              *                  U_SUCCESS(status).
+              * @return          The new SelectorKeys object
               *
               * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
-             SelectorKeys* build(UErrorCode& status) const;
+             SelectorKeys build() const;
              /**
               * Destructor.
               *
@@ -572,28 +552,23 @@ namespace message2 {
               * @deprecated This API is for technology preview only.
               */
              virtual ~Builder();
+             // TODO
+            Builder();
         }; // class SelectorKeys::Builder
-        /**
-         * Returns a new `SelectorKeys::Builder` object.
-         *
-         * @param status  Input/output error code.
-         * @return The new Builder object, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        static Builder* builder(UErrorCode& status);
 
     private:
-        friend class ImmutableVector<SelectorKeys>;
         friend class VariantMap;
+        friend class Builder;
 
-        SelectorKeys(const SelectorKeys& other);
+        // Copy assignment operator
+        SelectorKeys& operator=(const SelectorKeys& other) {
+            keys = KeyList(other.keys);
+            return *this;
+        }
 
-        const LocalPointer<KeyList> keys;
-        bool isBogus() const { return !keys.isValid(); }
-        // Adopts `keys`
-        SelectorKeys(KeyList* ks) : keys(ks) {}
+        // Non-const so copy assignment operator works, but actually const
+        KeyList keys;
+        SelectorKeys(const KeyList& ks) : keys(ks) {}
     }; // class SelectorKeys
 
     /**
@@ -602,7 +577,7 @@ namespace message2 {
      * defined in
      * https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#expressions
      *
-     * `Reserved` is immutable and is not copyable or movable.
+     * `Reserved` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -623,13 +598,19 @@ namespace message2 {
          * Precondition: i < numParts()
          *
          * @param i Index of the part being accessed.
-         * @return The i'th literal in the sequence, which is
-         *         guaranteed to be non-null.
+         * @return A reference to he i'th literal in the sequence
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const Literal* getPart(int32_t i) const;
+        const Literal& getPart(int32_t i) const;
+// TODO
+        // Reserved needs a copy constructor in order to make Expression deeply copyable
+        Reserved(const Reserved& other);
+        Reserved(Reserved&& other);
+        Reserved& operator=(Reserved&& other) noexcept;
+        Reserved() : parts(std::vector<Literal>()) { }
+
         /**
          * The mutable `Reserved::Builder` class allows the reserved sequence to be
          * constructed one part at a time.
@@ -643,21 +624,19 @@ namespace message2 {
         private:
             friend class Reserved;
           
-            Builder(UErrorCode &errorCode);
-            LocalPointer<ImmutableVector<Literal>::Builder> parts;
+            std::vector<Literal> parts;
           
         public:
             /**
              * Adds a single literal to the reserved sequence.
              *
              * @param part The literal to be added
-             * @param status Input/output error code
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& add(const Literal& part, UErrorCode& status);
+            Builder& add(const Literal& part);
             /**
              * Constructs a new immutable `Reserved` using the list of parts
              * set with previous `add()` calls.
@@ -665,13 +644,16 @@ namespace message2 {
              * The builder object (`this`) can still be used after calling `build()`.
              *
              * @param status    Input/output error code.
-             * @return          The new Reserved object, which is non-null if
-             *                  U_SUCCESS(status).
+             * @return          The new Reserved object
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Reserved* build(UErrorCode& status) const;
+            Reserved build() const;
+
+            // TODO comment
+            Builder();
+
              /**
               * Destructor.
               *
@@ -680,33 +662,15 @@ namespace message2 {
               */
              virtual ~Builder();
         }; // class Reserved::Builder
-        /**
-         * Returns a new `Reserved::Builder` object.
-         *
-         * @param status  Input/output error code.
-         * @return       The new Builder, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        static Builder *builder(UErrorCode& status);
     private:
         friend class Operator;
-      
-        // See comments under SelectorKeys' copy constructor; this is analogous
-        bool isBogus() const { return !parts.isValid(); }
-      
-        // Reserved needs a copy constructor in order to make Expression deeply copyable
-        Reserved(const Reserved& other);
 
         // Possibly-empty list of parts
         // `literal` reserved as a quoted literal; `reserved-char` / `reserved-escape`
         // strings represented as unquoted literals
-        const LocalPointer<ImmutableVector<Literal>> parts;
-      
-        // Should only be called by Builder
-        // Takes ownership of `ps`
-        Reserved(ImmutableVector<Literal> *ps);
+        /* const */ std::vector<Literal> parts;
+
+        Reserved(const std::vector<Literal>&);
     };
 
     /**
@@ -757,12 +721,12 @@ namespace message2 {
      * or a reserved sequence, which has no meaning and results in an error if the formatter
      * is invoked.
      *
-     * `Operator` is immutable and is not copyable or movable.
+     * `Operator` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Operator : public UMemory {
+    class U_I18N_API Operator : public UObject {
     public:
         /**
          * Determines if this operator is a reserved annotation.
@@ -816,36 +780,37 @@ namespace message2 {
         class U_I18N_API Builder : public UMemory {
         private:
             friend class Operator;
-            Builder() {}
-            LocalPointer<Reserved> asReserved;
-            LocalPointer<FunctionName> functionName;
+            bool isReservedSequence = false;
+            bool hasFunctionName = false;
+            Reserved asReserved;
+            FunctionName functionName;
             LocalPointer<OptionMap::Builder> options;
         public:
             /**
              * Sets this operator to be a reserved sequence.
              * If a function name and/or options were previously set,
-             * clears them. Adopts `reserved`.
+             * clears them.
              *
              * @param reserved The reserved sequence to set as the contents of this Operator.
+             *                 (Passed by move.)
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setReserved(Reserved* reserved);
+            Builder& setReserved(Reserved&& reserved);
             /**
              * Sets this operator to be a function annotation and sets its name
              * to `func`.
              * If a reserved sequence was previously set, clears it.
              *
              * @param func The function name.
-             * @param status Input/output error code.
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setFunctionName(const FunctionName& func, UErrorCode& status);
+            Builder& setFunctionName(FunctionName&& func);
             /**
              * Sets this operator to be a function annotation and adds a
              * single option.
@@ -859,7 +824,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& addOption(const UnicodeString &key, Operand* value, UErrorCode& status);
+            Builder& addOption(const UnicodeString &key, Operand&& value, UErrorCode& status);
             /**
              * Constructs a new immutable `Operator` using the `reserved` annotation
              * or the function name and options that were previously set.
@@ -869,12 +834,12 @@ namespace message2 {
              * The builder object (`this`) can still be used after calling `build()`.
              *
              * @param status    Input/output error code.
-             * @return          The new Operator, which is non-null if U_SUCCESS(status).
+             * @return          The new Operator
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operator* build(UErrorCode& status) const;
+            Operator build(UErrorCode& status) const;
              /**
               * Destructor.
               *
@@ -883,39 +848,29 @@ namespace message2 {
               */
              virtual ~Builder();
         }; // class Operator::Builder
+        // TODO
+        Operator& operator=(Operator&& other) noexcept;
+        Operator() : isReservedSequence(true) {}
+        // Copy constructor
+        Operator(const Operator& other);
         /**
-         * Returns a new `Operator::Builder` object.
-         *
-         * @param status  Input/output error code.
-         * @return        The new Builder, which is non-null if U_SUCCESS)status).
+         * Destructor.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Builder* builder(UErrorCode& status);
+        virtual ~Operator();
     private:
-        friend class Expression;
-      
-        // Postcondition: if U_SUCCESS(errorCode), then return value is non-bogus
-        static Operator* create(const Reserved& r, UErrorCode& errorCode);
-
-        // Adopts `opts`
-        // Postcondition: if U_SUCCESS(errorCode), then return value is non-bogus
-        static Operator* create(const FunctionName& f, OptionMap* opts, UErrorCode& errorCode);
-
         // Function call constructor; adopts `l` if it's non-null (creates empty options otherwise)
         Operator(const FunctionName& f, OptionMap *l);
         // Reserved sequence constructor
         // Result is bogus if copy of `r` fails
-        Operator(const Reserved& r) : isReservedSequence(true), functionName(FunctionName(UnicodeString(""))), options(nullptr), reserved(new Reserved(r)) {}
-        // Copy constructor
-        Operator(const Operator& other);
+        Operator(const Reserved& r) : isReservedSequence(true), functionName(FunctionName(UnicodeString(""))), options(nullptr), reserved(Reserved(r)) {}
 
-        bool isBogus() const;
-        const bool isReservedSequence;
-        const FunctionName functionName;
-        const LocalPointer<OptionMap> options;
-        const LocalPointer<Reserved> reserved;
+        /* const */ bool isReservedSequence;
+        /* const */ FunctionName functionName;
+        /* const */ LocalPointer<OptionMap> options;
+        /* const */ Reserved reserved;
     }; // class Operator
   } // namespace data_model
 } // namespace message2
@@ -950,7 +905,7 @@ namespace message2 {
      * It represents either an operand with no annotation; an annotation with no operand;
      * or an operand annotated with an annotation.
      *
-     * `Expression` is immutable and is not copyable or movable.
+     * `Expression` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -1025,30 +980,34 @@ namespace message2 {
         class U_I18N_API Builder : public UMemory {
         private:
             friend class Expression;
-            Builder() {}
-            LocalPointer<Operand> rand;
-            LocalPointer<Operator> rator;
+            bool hasOperand = false;
+            bool hasOperator = false;
+            Operand rand;
+            Operator rator;
         public:
+// TODO
+          Builder() {}
+
             /**
-             * Sets the operand of this expression. Adopts `rAnd`.
+             * Sets the operand of this expression.
              *
-             * @param rAnd The operand to set. Must be non-null.
+             * @param rAnd The operand to set. Passed by move.
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-             Builder& setOperand(Operand* rAnd);
+             Builder& setOperand(Operand&& rAnd);
              /**
-              * Sets the operator of this expression. Adopts `rAtor`.
+              * Sets the operator of this expression.
               *
-              * @param rAtor The operator to set. Must be non-null.
+              * @param rAtor The operator to set. Passed by move.
               * @return A reference to the builder.
               *
               * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
-             Builder& setOperator(Operator* rAtor);
+             Builder& setOperator(Operator&& rAtor);
              /**
               * Constructs a new immutable `Expression` using the operand and operator that
               * were previously set. If neither `setOperand()` nor `setOperator()` was
@@ -1059,12 +1018,12 @@ namespace message2 {
               * The builder object (`this`) can still be used after calling `build()`.
               *
               * @param status    Input/output error code.
-              * @return          The new Expression, which is non-null if U_SUCCESS(status).
+              * @return          The new Expression.
               *
               * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
-             Expression* build(UErrorCode& status) const;
+             Expression build(UErrorCode& status) const;
              /**
               * Destructor.
               *
@@ -1082,13 +1041,17 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Builder* builder(UErrorCode& status);
+//        static Builder* builder(UErrorCode& status);
+
+// TODO
+
+        // Expression needs a copy constructor in order to make Pattern deeply copyable
+        // (and for closures)
+        Expression(const Expression& other);
+        Expression();
+        Expression& operator=(Expression&&) noexcept;
 
     private:
-        friend class ImmutableVector<Expression>;
-        friend class PatternPart;
-        friend class Binding;
-
         /*
           Internally, an expression is represented as the application of an optional operator to an operand.
           The operand is always present; for function calls with no operand, it's represented
@@ -1103,22 +1066,13 @@ namespace message2 {
                                       options={opt: value})  | NullOperand()
         */
 
-        // Here, a separate variable isBogus tracks if any copies failed.
-        // This is because rator = nullptr and rand = nullptr are semantic here,
-        // so this can't just be a predicate that checks if those are null
-        bool bogus = false; // copy constructors explicitly set this to true on failure
+        bool hasOperator;
 
-        bool isBogus() const;
-
-        // Expression needs a copy constructor in order to make Pattern deeply copyable
-        // (and for closures)
-        Expression(const Expression& other);
-
-        Expression(const Operator &rAtor, const Operand &rAnd) : rator(new Operator(rAtor)), rand(new Operand(rAnd)) {}
-        Expression(const Operand &rAnd) : rator(nullptr), rand(new Operand(rAnd)) {}
-        Expression(const Operator &rAtor) : rator(new Operator(rAtor)), rand(new Operand()) {}
-        const LocalPointer<Operator> rator;
-        const LocalPointer<Operand> rand;
+        Expression(const Operator &rAtor, const Operand &rAnd) : hasOperator(true), rator(Operator(rAtor)), rand(Operand(rAnd)) {}
+        Expression(const Operand &rAnd) : hasOperator(false), rator(), rand(Operand(rAnd)) {}
+        Expression(const Operator &rAtor) : hasOperator(true), rator(Operator(rAtor)), rand(Operand()) {}
+        /* const */ Operator rator; // Ignored if !hasOperator
+        /* const */ Operand rand;
     }; // class Expression
   } // namespace data_model
 } // namespace message2
@@ -1154,35 +1108,13 @@ namespace message2 {
      * It corresponds to the `body` field of the `Pattern` interface
      *  defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#patterns
      *
-     * `PatternPart` is immutable and is not copyable or movable.
+     * `PatternPart` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API PatternPart : public UObject {
     public:
-        /**
-         * Creates a new text part.
-         *
-         * @param t         An arbitrary string.
-         * @param status    Input/output error code.
-         * @return          The new PatternPart, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        static PatternPart* create(const UnicodeString& t, UErrorCode& status);
-        /**
-         * Creates a new expression part. Adopts `e`, which must be non-null.
-         *
-         * @param e      Expression to use for this part.
-         * @param status Input/output error code.
-         * @return          The new PatternPart, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        static PatternPart* create(Expression* e, UErrorCode& status);
         /**
          * Checks if the part is a text part.
          *
@@ -1212,26 +1144,24 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         const UnicodeString& asText() const;
-
-    private:
-        friend class ImmutableVector<PatternPart>;
-        friend class Pattern;
-
-        // Text
-        PatternPart(const UnicodeString& t) : isRawText(true), text(t), expression(nullptr) {}
-        // Expression
-        PatternPart(Expression* e) : isRawText(false), expression(e) {}
-
+// TODO
         // PatternPart needs a copy constructor in order to make Pattern deeply copyable
         PatternPart(const PatternPart& other);
+        PatternPart& operator=(PatternPart&&) noexcept;
+        virtual ~PatternPart();
+        PatternPart() : isRawText(true) {}
 
-        const bool isRawText;
+        // Text
+        PatternPart(const UnicodeString& t) : isRawText(true), text(t) {}
+        // Expression
+        PatternPart(Expression&& e) : isRawText(false), expression(e) {}
+
+    private:
+        /* const */ bool isRawText;
         // Not used if !isRawText
-        const UnicodeString text;
-        // null if isRawText
-        const LocalPointer<Expression> expression;
-      
-        bool isBogus() const { return (!isRawText && !expression.isValid()); }
+        /* const */ UnicodeString text;
+        // Not used if isRawText
+        /* const */ Expression expression;
     }; // class PatternPart
 
   } // namespace data_model
@@ -1266,13 +1196,17 @@ namespace message2 {
      * It corresponds to the `Pattern` interface
      * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#patterns
      *
-     * `Pattern` is immutable and is not copyable or movable.
+     * `Pattern` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Pattern : public UObject {
     public:
+        // TODO: should only be for initializing
+        // MessageFormatDataModel::Builder
+        Pattern() : parts(std::vector<PatternPart>()) {}
+
         /**
          * Returns the size.
          *
@@ -1281,19 +1215,25 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        int32_t numParts() const { return parts->length(); }
+        int32_t numParts() const { return parts.size(); }
         /**
          * Returns the `i`th part in the pattern.
          * Precondition: i < numParts()
          *
          * @param i Index of the part being accessed.
-         * @return  The part at index `i`, which is guaranteed
-         *          to be non-null.
+         * @return  A reference to the part at index `i`.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const PatternPart* getPart(int32_t i) const;
+        const PatternPart& getPart(int32_t i) const;
+
+// TODO
+        // Pattern needs a copy constructor in order to make MessageFormatDataModel::build() be a copying rather than
+        // moving build
+        Pattern(const Pattern& other);
+        Pattern& operator=(const Pattern& other);
+        Pattern& operator=(Pattern&& other) noexcept;
 
         /**
          * The mutable `Pattern::Builder` class allows the pattern to be
@@ -1308,24 +1248,22 @@ namespace message2 {
         private:
             friend class Pattern;
           
-            Builder(UErrorCode &errorCode);
             // Note this is why PatternPart and all its enclosed classes need
             // copy constructors: when the build() method is called on `parts`,
             // it should copy `parts` rather than moving it
-            LocalPointer<ImmutableVector<PatternPart>::Builder> parts;
+            std::vector<PatternPart> parts;
           
         public:
             /**
-             * Adds a single part to the pattern. Adopts `part`.
+             * Adds a single part to the pattern. Copies `part`.
              *
-             * @param part The part to be added. Must be non-null.
-             * @param status Input/output error code
+             * @param part The part to be added.
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& add(PatternPart *part, UErrorCode& status);
+            Builder& add(const PatternPart& part);
             /**
              * Constructs a new immutable `Pattern` using the list of parts
              * set with previous `add()` calls.
@@ -1333,12 +1271,14 @@ namespace message2 {
              * The builder object (`this`) can still be used after calling `build()`.
              *
              * @param status    Input/output error code.
-             * @return          The new pattern, which is non-null if U_SUCCESS(status).
+             * @return          The pattern object
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Pattern* build(UErrorCode &status) const;
+            Pattern build() const;
+            // TODO
+            Builder() = default;
              /**
               * Destructor.
               *
@@ -1348,34 +1288,13 @@ namespace message2 {
              virtual ~Builder();
         }; // class Pattern::Builder
 
-        /**
-         * Returns a new `Pattern::Builder` object.
-         *
-         * @param status  Input/output error code.
-         * @return        The new Builder, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        static Builder* builder(UErrorCode& status);
-
 
     private:
-        friend class icu::message2::MessageFormatDataModel;
-        friend class OrderedMap<Pattern>;
-
         // Possibly-empty list of parts
-        const LocalPointer<ImmutableVector<PatternPart>> parts;
+        /* const */ std::vector<PatternPart> parts;
       
-        bool isBogus() const { return !parts.isValid(); }
-
         // Should only be called by Builder
-        // Takes ownership of `ps`
-        Pattern(ImmutableVector<PatternPart> *ps);
-
-        // Pattern needs a copy constructor in order to make MessageFormatDataModel::build() be a copying rather than
-        // moving build
-        Pattern(const Pattern& other);
+        Pattern(const std::vector<PatternPart>& ps);
     }; // class Pattern
   } // namespace data_model
 } // namespace message
@@ -1439,7 +1358,7 @@ namespace message2 {
          *
          * @param pos A mutable reference to the current iterator position. Should be set to
          *            `FIRST` before the first call to `next()`.
-         * @param k   A mutable reference to a const pointer to a SelectorKeys object,
+         * @param k   A mutable reference to a SelectorKeys object,
          *            representing the key list for a single variant.
          *            If the return value is true, then `k` refers to a non-null pointer.
          * @param v   A mutable reference to a const pointer to a Pattern object,
@@ -1450,7 +1369,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        UBool next(int32_t &pos, const SelectorKeys*& k, const Pattern*& v) const;
+        UBool next(int32_t &pos, SelectorKeys& k, const Pattern*& v) const;
         /**
          * Returns the number of variants.
          *
@@ -1472,7 +1391,8 @@ namespace message2 {
         class U_I18N_API Builder : public UMemory {
         public:
             /**
-             * Adds a single variant to the map. Adopts `key` and `value`.
+             * Adds a single variant to the map. Adopts `value`.
+             * Passes `key` by move.
              *
              * @param key The key list for this variant.
              * @param value The pattern for this variant.
@@ -1482,7 +1402,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& add(SelectorKeys* key, Pattern* value, UErrorCode& status);
+            Builder& add(SelectorKeys &&key, Pattern&& value, UErrorCode& status);
             /**
              * Constructs a new immutable `VariantMap` using the variants
              * added with previous `add()` calls.
@@ -1510,7 +1430,7 @@ namespace message2 {
             static void concatenateKeys(const SelectorKeys& keys, UnicodeString& result);
             Builder(UErrorCode& errorCode);
             LocalPointer<OrderedMap<Pattern>::Builder> contents;
-            LocalPointer<ImmutableVector<SelectorKeys>::Builder> keyLists;
+            std::vector<SelectorKeys> keyLists;
         }; // class VariantMap::Builder
 
         /**
@@ -1537,11 +1457,11 @@ namespace message2 {
       a string, and the VariantMap::next() method decodes it.
     */
         friend class Builder;
-        VariantMap(OrderedMap<Pattern>* vs, ImmutableVector<SelectorKeys>* ks);
+        VariantMap(OrderedMap<Pattern>* vs, const std::vector<SelectorKeys>& ks);
         const LocalPointer<OrderedMap<Pattern>> contents;
         // See the method implementations for comments on
         // how `keyLists` is used.
-        const LocalPointer<ImmutableVector<SelectorKeys>> keyLists;
+        const std::vector<SelectorKeys> keyLists;
     }; // class VariantMap
 
     /**
@@ -1549,7 +1469,7 @@ namespace message2 {
      * It corresponds to the `Declaration` interface
      * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
      *
-     * `Binding` is immutable. It is not copyable or movable.
+     * `Binding` is immutable and copyable. It is not movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -1567,7 +1487,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        static Binding* create(const VariableName& var, Expression* e, UErrorCode& status);
+//        static Binding* create(const VariableName& var, Expression* e, UErrorCode& status);
         /**
           * Accesses the right-hand side of the binding.
           *
@@ -1586,6 +1506,13 @@ namespace message2 {
           * @deprecated This API is for technology preview only.
           */
         const VariableName& getVariable() const { return var; }
+// TODO
+        Binding(const VariableName& v, const Expression& e) : var(v), value(e){}
+        // This needs a copy constructor so that `Bindings` is deeply-copyable,
+        // which is in turn so that MessageFormatDataModel::build() can be copying
+        // (it has to copy the builder's locals)
+        Binding(const Binding& other);
+
         /**
           * Destructor.
           *
@@ -1594,18 +1521,8 @@ namespace message2 {
           */
         virtual ~Binding();
     private:
-        friend class ImmutableVector<Binding>;
-
         const VariableName var;
-        const LocalPointer<Expression> value;
-
-        bool isBogus() const { return !value.isValid(); }
-
-        Binding(const VariableName& v, Expression* e) : var(v), value(e){}
-        // This needs a copy constructor so that `Bindings` is deeply-copyable,
-        // which is in turn so that MessageFormatDataModel::build() can be copying
-        // (it has to copy the builder's locals)
-        Binding(const Binding& other);
+        const Expression value;
     }; // class Binding
 
         /**
@@ -1614,14 +1531,14 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        using Bindings = ImmutableVector<Binding>;
+        using Bindings = std::vector<Binding>;
         /**
          * An immutable list of expressions
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        using ExpressionList = ImmutableVector<Expression>;
+        using ExpressionList = std::vector<Expression>;
 
 } // namespace data_model
 } // namespace message2
@@ -1653,30 +1570,7 @@ namespace message2 {
 
 // These explicit instantiations have to come before the
 // destructor definitions
-template<>
-ImmutableVector<data_model::Binding>::Builder::~Builder();
-template<>
-ImmutableVector<data_model::Binding>::~ImmutableVector();
-template<>
-ImmutableVector<data_model::Expression>::Builder::~Builder();
-template<>
-ImmutableVector<data_model::Expression>::~ImmutableVector();
-template<>
-ImmutableVector<data_model::Key>::Builder::~Builder();
-template<>
-ImmutableVector<data_model::Key>::~ImmutableVector();
-template<>
-ImmutableVector<data_model::Literal>::Builder::~Builder();
-template<>
-ImmutableVector<data_model::Literal>::~ImmutableVector();
-template<>
-ImmutableVector<data_model::PatternPart>::Builder::~Builder();
-template<>
-ImmutableVector<data_model::PatternPart>::~ImmutableVector();
-template<>
-ImmutableVector<data_model::SelectorKeys>::Builder::~Builder();
-template<>
-ImmutableVector<data_model::SelectorKeys>::~ImmutableVector();
+
 template<>
 OrderedMap<data_model::Pattern>::Builder::~Builder();
 template<>
@@ -1686,17 +1580,12 @@ OrderedMap<data_model::Operand>::Builder::~Builder();
 template<>
 OrderedMap<data_model::Operand>::~OrderedMap();
 
+
 // Explicit instantiations in source/i18n/messageformat2_utils.cpp
 // See numberformatter.h for another example
 
 // (MSVC treats imports/exports of explicit instantiations differently.)
 #ifndef _MSC_VER
-extern template class ImmutableVector<data_model::Binding>;
-extern template class ImmutableVector<data_model::Expression>;
-extern template class ImmutableVector<data_model::Key>;
-extern template class ImmutableVector<data_model::Literal>;
-extern template class ImmutableVector<data_model::PatternPart>;
-extern template class ImmutableVector<data_model::SelectorKeys>;
 extern template class OrderedMap<data_model::Operand>;
 extern template class OrderedMap<data_model::Pattern>;
 #endif
@@ -1880,26 +1769,27 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
 
         Builder(UErrorCode& errorCode);
         void buildSelectorsMessage(UErrorCode& errorCode);
-        LocalPointer<Pattern> pattern;
-        LocalPointer<ExpressionList::Builder> selectors;
+        bool hasPattern = true;
+        bool hasSelectors = false;
+        Pattern pattern;
+        ExpressionList selectors;
         LocalPointer<VariantMap::Builder> variants;
-        LocalPointer<Bindings::Builder> locals;
+        Bindings locals;
       
     public:
         /**
-         * Adds a local variable declaration. Adopts `expression`, which must be non-null.
+         * Adds a local variable declaration.
          *
          * @param variableName The variable name of the declaration.
          * @param expression The expression to which `variableName` should be bound.
-         * @param status Input/output error code.
          * @return A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addLocalVariable(const VariableName& variableName, Expression* expression, UErrorCode &status);
+        Builder& addLocalVariable(const VariableName& variableName, const Expression& expression);
         /**
-         * Adds a selector expression. Adopts `expression`, which must be non-null.
+         * Adds a selector expression. Copies `expression`.
          * If a pattern was previously set, clears the pattern.
          *
          * @param selector Expression to add as a selector.
@@ -1909,32 +1799,32 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addSelector(Expression* selector, UErrorCode& status);
+        Builder& addSelector(const Expression& selector, UErrorCode& status);
         /**
-         * Adds a single variant. Adopts `keys` and `pattern`, which must be non-null.
+         * Adds a single variant.
          * If a pattern was previously set using `setPattern()`, clears the pattern.
          *
-         * @param keys Keys for the variant.
-         * @param pattern Pattern for the variant.
+         * @param keys Keys for the variant. Passed by move.
+         * @param pattern Pattern for the variant. Passed by move.
          * @param status Input/output error code.
          * @return A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addVariant(SelectorKeys* keys, Pattern* pattern, UErrorCode& status);
+        Builder& addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& status);
         /**
          * Sets the body of the message as a pattern.
          * If selectors and/or variants were previously set, clears them.
-         * Adopts `pattern`, which must be non-null.
          *
          * @param pattern Pattern to represent the body of the message.
+         *                Passed by move.
          * @return A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& setPattern(Pattern* pattern);
+        Builder& setPattern(Pattern&& pattern);
         /**
          * Constructs a new immutable data model.
          * If `setPattern()` has not been called and if `addSelector()` and
@@ -1960,20 +1850,22 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
 
 private:
 
+    const bool hasPattern;
+
     // The expressions that are being matched on.
-    // Null iff this is a `pattern` message.
-    const LocalPointer<ExpressionList> selectors;
+    // Ignored if `hasPattern`
+    const ExpressionList selectors;
 
     // The list of `when` clauses (case arms).
-    // Null iff this is a `pattern` message.
+    // Null if `hasPattern`
     const LocalPointer<VariantMap> variants;
 
     // The pattern forming the body of the message.
-    // If this is non-null, then `variants` and `selectors` must be null.
-    const LocalPointer<Pattern> pattern;
+    // Ignored if !hasPattern
+    const Pattern pattern;
 
     // Bindings for local variables
-    const LocalPointer<Bindings> bindings;
+    const Bindings bindings;
 
     // Do not define default assignment operator
     const MessageFormatDataModel &operator=(const MessageFormatDataModel &) = delete;

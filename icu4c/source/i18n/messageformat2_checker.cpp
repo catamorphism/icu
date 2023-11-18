@@ -78,9 +78,9 @@ TypeEnvironment::~TypeEnvironment() {}
 // ---------------------
 
 static bool areDefaultKeys(const KeyList& keys) {
-    U_ASSERT(keys.length() > 0);
-    for (int32_t i = 0; i < keys.length(); i++) {
-        if (!keys.get(i)->isWildcard()) {
+    U_ASSERT(keys.size() > 0);
+    for (int32_t i = 0; i < (int32_t) keys.size(); i++) {
+        if (!keys[i].isWildcard()) {
             return false;
         }
     }
@@ -92,21 +92,21 @@ void Checker::checkVariants(UErrorCode& error) {
     U_ASSERT(dataModel.hasSelectors());
 
     // Determine the number of selectors
-    int32_t numSelectors = dataModel.getSelectors().length();
+    int32_t numSelectors = dataModel.getSelectors().size();
 
-    // Check that each variant has a key list with length
+    // Check that each variant has a key list with size
     // equal to the number of selectors
     const VariantMap& variants = dataModel.getVariants();
     int32_t pos = VariantMap::FIRST;
-    const SelectorKeys* selectorKeys;
+    SelectorKeys selectorKeys;
     const Pattern* pattern;
 
     // Check that one variant includes only wildcards
     bool defaultExists = false;
 
     while (variants.next(pos, selectorKeys, pattern)) {
-        const KeyList& keys = selectorKeys->getKeys();
-        if (keys.length() != numSelectors) {
+        const KeyList& keys = selectorKeys.getKeys();
+        if ((int32_t) keys.size() != numSelectors) {
             // Variant key mismatch
             errors.addError(Error::Type::VariantKeyMismatchError, error);
             return;
@@ -144,10 +144,8 @@ void Checker::checkSelectors(const TypeEnvironment& t, UErrorCode& error) {
     // Check each selector; if it's not annotated, emit a
     // "missing selector annotation" error
     const ExpressionList& selectors = dataModel.getSelectors();
-    for (int32_t i = 0; i < selectors.length(); i++) {
-        const Expression* expr = selectors.get(i);
-        U_ASSERT(expr != nullptr);
-        requireAnnotated(t, *expr, error);
+    for (int32_t i = 0; i < (int32_t) selectors.size(); i++) {
+        requireAnnotated(t, selectors[i], error);
     }
 }
 
@@ -175,11 +173,9 @@ void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& error) {
     // have the type "annotated" or "unannotated".
     // Free variables (message arguments) are treated as unannotated.
     const Bindings& env = dataModel.getLocalVariables();
-    for (int32_t i = 0; i < env.length(); i++) {
-        const Binding* b = env.get(i);
-        U_ASSERT(b != nullptr);
-        const Expression& rhs = b->getValue();
-        t.extend(b->getVariable(), typeOf(t, rhs), error);
+    for (int32_t i = 0; i < (int32_t) env.size(); i++) {
+        const Binding& b = env[i];
+        t.extend(b.getVariable(), typeOf(t, b.getValue()), error);
     }
 }
 
