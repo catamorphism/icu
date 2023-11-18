@@ -19,110 +19,6 @@ using namespace data_model;
 #pragma warning(disable: 4661)
 #endif
 
-template<typename T>
-int32_t ImmutableVector<T>::length() const {
-    U_ASSERT(!isBogus());
-    return contents->size();
-}
-
-template<typename T>
-const T* ImmutableVector<T>::get(int32_t i) const {
-    // Because UVector::element() returns a void*,
-    // to avoid either copying the result or returning a reference
-    // to a temporary value, get() returns a T*
-    U_ASSERT(!isBogus());
-    U_ASSERT(i < length());
-    return static_cast<const T *>(contents->elementAt(i));
-}
-
-// Copy constructor
-template<typename T>
-ImmutableVector<T>::ImmutableVector(const ImmutableVector<T>& other) {
-    UErrorCode errorCode = U_ZERO_ERROR;
-    U_ASSERT(!other.isBogus());
-    contents.adoptInstead(new UVector(other.length(), errorCode));
-    if (U_FAILURE(errorCode)) {
-        contents.adoptInstead(nullptr);
-        return;
-    }
-    contents->setDeleter(uprv_deleteUObject);
-    contents->assign(*other.contents, &copyElements<T>, errorCode);
-    if (U_FAILURE(errorCode)) {
-        contents.adoptInstead(nullptr);
-    }
-}
-
-// Adopts its argument
-template<typename T>
-typename ImmutableVector<T>::Builder& ImmutableVector<T>::Builder::add(T *element, UErrorCode &errorCode) {
-    THIS_ON_ERROR(errorCode);
-    U_ASSERT(contents != nullptr);
-    contents->adoptElement(element, errorCode);
-    return *this;
-}
-
-// Postcondition: U_FAILURE(errorCode) or returns a list such that isBogus() = false
-template<typename T>
-ImmutableVector<T>* ImmutableVector<T>::Builder::build(UErrorCode &errorCode) const {
-    NULL_ON_ERROR(errorCode);
-    LocalPointer<ImmutableVector<T>> adopted(buildList(*this, errorCode));
-    if (!adopted.isValid() || adopted->isBogus()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-    return adopted.orphan();
-}
-
-template<typename T>
-ImmutableVector<T>::Builder::Builder(UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-    contents.adoptInstead(new UVector(errorCode));
-    CHECK_ERROR(errorCode);
-    contents->setDeleter(uprv_deleteUObject);
-}
-
-template<typename T>
-/* static */ typename ImmutableVector<T>::Builder* ImmutableVector<T>::builder(UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
-    LocalPointer<Builder> result(new Builder(errorCode));
-    NULL_ON_ERROR(errorCode);
-    return result.orphan();
-}
-
-// Helper functions for vector copying
-// T1 must have a copy constructor
-// This may leave dst->pointer == nullptr, which is handled by the UVector assign() method
-template<typename T>
-template<typename T1>
-/* static */ void ImmutableVector<T>::copyElements(UElement *dst, UElement *src) {
-    dst->pointer = new T1(*(static_cast<T1 *>(src->pointer)));
-}
-
- // Copies the contents of `builder`
-// This won't compile unless T is a type that has a copy assignment operator
-template<typename T>
-/* static */ ImmutableVector<T>* ImmutableVector<T>::buildList(const Builder &builder, UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
-    ImmutableVector<T>* result;
-    U_ASSERT(builder.contents != nullptr);
-
-    LocalPointer<UVector> adoptedContents(new UVector(builder.contents->size(), errorCode));
-    NULL_ON_ERROR(errorCode);
-    adoptedContents->setDeleter(uprv_deleteUObject);
-    adoptedContents->assign(*builder.contents, &copyElements<T>, errorCode);
-    NULL_ON_ERROR(errorCode);
-    result = new ImmutableVector<T>(adoptedContents.orphan());
-
-    // Finally, check for null
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-} 
-
-// Adopts `contents`
-template<typename T>
-ImmutableVector<T>::ImmutableVector(UVector* things) : contents(things) { U_ASSERT(things != nullptr); }
 
 // Iterates over keys in the order in which they were added.
 // Returns true iff `pos` indicates that there are elements
@@ -318,12 +214,6 @@ OrderedMap<V>::OrderedMap(Hashtable* c, UVector* k) : contents(c), keys(k) {
 // appear in the data model API
 // See https://stackoverflow.com/a/495056/1407170
 // (and see number_fluent.cpp for another example)
-template class ImmutableVector<Binding>;
-template class ImmutableVector<Expression>;
-template class ImmutableVector<Key>;
-template class ImmutableVector<Literal>;
-template class ImmutableVector<PatternPart>;
-template class ImmutableVector<SelectorKeys>;
 template class OrderedMap<Operand>;
 template class OrderedMap<Pattern>;
 

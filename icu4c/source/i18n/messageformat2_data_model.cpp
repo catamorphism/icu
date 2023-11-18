@@ -670,30 +670,6 @@ MessageFormatDataModel* MessageFormatDataModel::Builder::build(UErrorCode &error
 
 MessageFormatDataModel::~MessageFormatDataModel() {}
 template<>
-ImmutableVector<Binding>::Builder::~Builder() {}
-template<>
-ImmutableVector<Binding>::~ImmutableVector() {}
-template<>
-ImmutableVector<Expression>::Builder::~Builder() {}
-template<>
-ImmutableVector<Expression>::~ImmutableVector() {}
-template<>
-ImmutableVector<Key>::Builder::~Builder() {}
-template<>
-ImmutableVector<Key>::~ImmutableVector() {}
-template<>
-ImmutableVector<Literal>::Builder::~Builder() {}
-template<>
-ImmutableVector<Literal>::~ImmutableVector() {}
-template<>
-ImmutableVector<PatternPart>::Builder::~Builder() {}
-template<>
-ImmutableVector<PatternPart>::~ImmutableVector() {}
-template<>
-ImmutableVector<SelectorKeys>::Builder::~Builder() {}
-template<>
-ImmutableVector<SelectorKeys>::~ImmutableVector() {}
-template<>
 OrderedMap<Pattern>::Builder::~Builder() {}
 template<>
 OrderedMap<Pattern>::~OrderedMap() {}
