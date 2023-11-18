@@ -29,8 +29,6 @@ namespace message2 {
 
 using namespace data_model;
 
-using PrioritizedVariantList = ImmutableVector<PrioritizedVariant>;
-
 #define TEXT_SELECTOR UnicodeString("select")
 
 // ------------------------------------------------------
