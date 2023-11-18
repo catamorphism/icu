@@ -445,50 +445,63 @@ void Parser::parseTokenWithWhitespace(UChar32 c,
   also a `name-start`.
   that begins with a character `start` such that `isNameStart(start)`.
 
-  Initializes `name` to this sequence.
+  Returns this sequence.
 
   (Matches the `name` nonterminal in the grammar.)
 */
-void Parser::parseName(UErrorCode &errorCode,
-                       UnicodeString &name) {
-    CHECK_ERROR(errorCode);
+UnicodeString Parser::parseName(UErrorCode &errorCode) {
+    UnicodeString name;
+    if (U_FAILURE(errorCode)) {
+        return name;
+    }
 
     U_ASSERT(inBounds(source, index));
 
     if (!isNameStart(source[index])) {
         ERROR(parseError, errorCode, index);
-        return;
+        return name;
     }
 
     while (isNameChar(source[index])) {
         name += source[index];
         normalizedInput += source[index];
         index++;
-        CHECK_BOUNDS(source, index, parseError, errorCode);
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            break;
+        }
     }
+    return name;
 }
 
 /*
-  Consumes a '$' followed by a `name`, initializing `var` to `name`.
+  Consumes a '$' followed by a `name`, returning a VariableName
+  with `name` as its name
 
   (Matches the `variable` nonterminal in the grammar.)
 */
-void Parser::parseVariableName(UErrorCode &errorCode,
-                               UnicodeString& var) {
-    CHECK_ERROR(errorCode);
+VariableName Parser::parseVariableName(UErrorCode &errorCode) {
+    VariableName result;
+    if (U_FAILURE(errorCode)) {
+        return result;
+    }
 
     U_ASSERT(inBounds(source, index));
     // If the '$' is missing, we don't want a binding
     // for this variable to be created.
     bool valid = source[index] == DOLLAR;
     parseToken(DOLLAR, errorCode);
-    CHECK_BOUNDS(source, index, parseError, errorCode);
-    parseName(errorCode, var);
+    if (!inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+        return result;
+    }
+    UnicodeString varName = parseName(errorCode);
     // Set the name to "" if the variable wasn't
     // declared correctly
     if (!valid) {
-        var.remove();
+        varName.remove();
     }
+    return VariableName(varName);
 }
 
 static FunctionName::Sigil functionSigil(UChar32 c) {
@@ -507,26 +520,25 @@ static FunctionName::Sigil functionSigil(UChar32 c) {
 
   Initializes `func` to this name.
 */
-FunctionName* Parser::parseFunction(UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
+FunctionName Parser::parseFunction(UErrorCode &errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return FunctionName();
+    }
 
     U_ASSERT(inBounds(source, index));
     if (!isFunctionStart(source[index])) {
         ERROR(parseError, errorCode, index);
-        return nullptr;
+        return FunctionName();
     }
 
     FunctionName::Sigil sigil = functionSigil(source[index]);
     normalizedInput += source[index];
     index++; // Consume the function start character
-    CHECK_BOUNDS_NULL(source, index, parseError, errorCode);
-    UnicodeString name;
-    parseName(errorCode, name);
-    FunctionName* result = new FunctionName(name, sigil);
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    if (!inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+        return FunctionName();
     }
-    return result;
+    return FunctionName(parseName(errorCode), sigil);
 }
 
 
@@ -541,8 +553,8 @@ FunctionName* Parser::parseFunction(UErrorCode &errorCode) {
   Appends result to `str`
 */
 void Parser::parseEscapeSequence(EscapeKind kind,
-                                 UErrorCode &errorCode,
-                                 UnicodeString &str) {
+                                 UnicodeString &str,
+                                 UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
 
     U_ASSERT(inBounds(source, index));
@@ -608,37 +620,48 @@ void Parser::parseEscapeSequence(EscapeKind kind,
   Consume an escaped pipe or backslash, matching the `literal-escape`
   nonterminal in the grammar
 */
-void Parser::parseLiteralEscape(UErrorCode &errorCode,
-                                UnicodeString &str) {
-    parseEscapeSequence(LITERAL, errorCode, str);
+void Parser::parseLiteralEscape(UnicodeString &str,
+                                UErrorCode &errorCode) {
+    parseEscapeSequence(LITERAL, str, errorCode);
 }
 
 /*
-  Consume a literal, matching the `literal` nonterminal in the grammar.
+  Consume and return a literal, matching the `literal` nonterminal in the grammar.
   May be quoted or unquoted -- returns true iff quoted
 */
-void Parser::parseLiteral(UErrorCode &errorCode, bool& quoted, UnicodeString& contents) {
-    CHECK_ERROR(errorCode);
-    CHECK_BOUNDS(source, index, parseError, errorCode);
+Literal Parser::parseLiteral(UErrorCode &errorCode) {
+    Literal result;
+    if (U_FAILURE(errorCode)) {
+        return result;
+    }
+    if (!inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+        return result;
+    }
 
+    bool quoted;
     // Parse the opening '|' if present
     if (source[index] == PIPE) {
         quoted = true;
         parseToken(PIPE, errorCode);
-        CHECK_BOUNDS(source, index, parseError, errorCode);
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            return result;
+        }
     } else {
         if (!isUnquotedStart(source[index])) {
             ERROR(parseError, errorCode, index);
-            return;
+            return result;
         }
         quoted = false;
     }
 
     // Parse the contents
+    UnicodeString contents;
     bool done = false;
     while (!done) {
         if (quoted && source[index] == BACKSLASH) {
-            parseLiteralEscape(errorCode, contents);
+            parseLiteralEscape(contents, errorCode);
         } else if ((!quoted && isNameChar(source[index]))
                    || (quoted && isQuotedChar(source[index]))) {
             contents += source[index];
@@ -649,7 +672,10 @@ void Parser::parseLiteral(UErrorCode &errorCode, bool& quoted, UnicodeString& co
           // Assume the sequence of literal characters ends here
           done = true;
         }
-        CHECK_BOUNDS(source, index, parseError, errorCode);
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            return result;
+        }
     }
 
     // Parse the closing '|' if we saw an opening '|'
@@ -658,7 +684,12 @@ void Parser::parseLiteral(UErrorCode &errorCode, bool& quoted, UnicodeString& co
     }
 
     // Guarantee postcondition
-    CHECK_BOUNDS(source, index, parseError, errorCode);
+    if (!inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+        return result;
+    }
+
+    return Literal(quoted, contents);
 }
 
 /*
@@ -666,47 +697,42 @@ void Parser::parseLiteral(UErrorCode &errorCode, bool& quoted, UnicodeString& co
 
   Adds the option to `optionList`
 */
-void Parser::parseOption(UErrorCode &errorCode,
-                         Operator::Builder &builder) {
+void Parser::parseOption(Operator::Builder &builder, UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
 
     U_ASSERT(inBounds(source, index));
 
     // Parse LHS
-    UnicodeString lhs;
-    parseName(errorCode, lhs);
+    UnicodeString lhs = parseName(errorCode);
 
     // Parse '='
     parseTokenWithWhitespace(EQUALS, errorCode);
 
     UnicodeString rhsStr;
-    LocalPointer<Operand> rand;
+    Operand rand;
     // Parse RHS, which is either a literal or variable
     switch (source[index]) {
     case DOLLAR: {
-        parseVariableName(errorCode, rhsStr);
-        rand.adoptInstead(Operand::create(VariableName(rhsStr), errorCode));
+        rand = Operand(parseVariableName(errorCode));
         break;
     }
     default: {
         // Must be a literal
-        bool isQuoted;
-        parseLiteral(errorCode, isQuoted, rhsStr);
-        Literal lit(isQuoted, rhsStr);
-        rand.adoptInstead(Operand::create(lit, errorCode));
+        rand = Operand(parseLiteral(errorCode));
         break;
     }
     }
+    U_ASSERT(!rand.isNull());
     // Finally, add the key=value mapping
     CHECK_ERROR(errorCode);
-    builder.addOption(lhs, rand.orphan(), errorCode);
+    builder.addOption(lhs, std::move(rand), errorCode);
 }
 
 /*
   Consume optional whitespace followed by a sequence of options
   (possibly empty), separated by whitespace
 */
-void Parser::parseOptions(UErrorCode &errorCode, Operator::Builder& builder) {
+void Parser::parseOptions(Operator::Builder& builder, UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
 
     // Early exit if out of bounds -- no more work is possible
@@ -779,13 +805,12 @@ is involved and there's no state to save.
             U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
             break;
         }
-        parseOption(errorCode, builder);
+        parseOption(builder, errorCode);
     }
 }
 
-void Parser::parseReservedEscape(UErrorCode &errorCode,
-                                 UnicodeString &str) {
-    parseEscapeSequence(RESERVED, errorCode, str);
+void Parser::parseReservedEscape(UnicodeString &str, UErrorCode &errorCode) {
+    parseEscapeSequence(RESERVED, str, errorCode);
 }
 
 /*
@@ -794,8 +819,7 @@ void Parser::parseReservedEscape(UErrorCode &errorCode,
 
   Appends it to `str`
 */
-void Parser::parseReservedChunk(UErrorCode &errorCode,
-                                Reserved::Builder& result) {
+void Parser::parseReservedChunk(Reserved::Builder& result, UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
 
     bool empty = true;
@@ -815,25 +839,17 @@ void Parser::parseReservedChunk(UErrorCode &errorCode,
 
         if (chunk.length() > 0) {
           Literal lit(false, chunk);
-          result.add(lit, errorCode);
-          CHECK_ERROR(errorCode);
+          result.add(lit);
           chunk.setTo(u"", 0);
         }
 
         if (source[index] == BACKSLASH) {
             // reserved-escape
-            parseReservedEscape(errorCode, chunk);
-            Literal lit(false, chunk);
-            result.add(lit, errorCode);
-            CHECK_ERROR(errorCode);
+            parseReservedEscape(chunk, errorCode);
+            result.add(Literal(false, chunk));
             chunk.setTo(u"", 0);
         } else if (source[index] == PIPE || isUnquotedStart(source[index])) {
-            UnicodeString s;
-            bool isQuoted;
-            parseLiteral(errorCode, isQuoted, s);
-            Literal lit(isQuoted, s);
-            result.add(lit, errorCode);
-            CHECK_ERROR(errorCode);
+            result.add(parseLiteral(errorCode));
         } else {
             // The reserved chunk ends here
             break;
@@ -842,8 +858,7 @@ void Parser::parseReservedChunk(UErrorCode &errorCode,
 
     // Add the last chunk if necessary
     if (chunk.length() > 0) {
-        Literal lit(false, chunk);
-        result.add(lit, errorCode);
+        result.add(Literal(false, chunk));
     }
 
     if (empty) {
@@ -857,25 +872,25 @@ void Parser::parseReservedChunk(UErrorCode &errorCode,
   Matches the `reserved` nonterminal in the grammar
 
 */
-Reserved* Parser::parseReserved(UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
+Reserved Parser::parseReserved(UErrorCode &errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return Reserved();
+    }
 
     U_ASSERT(inBounds(source, index));
 
-    LocalPointer<Reserved::Builder> builder(Reserved::builder(errorCode));
-    NULL_ON_ERROR(errorCode);
+    Reserved::Builder builder;
 
     // Require a `reservedStart` character
     if (!isReservedStart(source[index])) {
         ERROR(parseError, errorCode, index);
-        return nullptr;
+        return Reserved();
     }
 
     // Add the start char as a separate text chunk
     UnicodeString firstCharString(source[index]);
     Literal firstChunk(false, firstCharString);
-    builder->add(firstChunk, errorCode);
-    NULL_ON_ERROR(errorCode);
+    builder.add(firstChunk);
     // Consume reservedStart
     normalizedInput += source[index];
     index++;
@@ -929,7 +944,7 @@ Reserved* Parser::parseReserved(UErrorCode &errorCode) {
         }
 
         if (reservedChunkFollows(source[index])) {
-            parseReservedChunk(errorCode, *builder);
+            parseReservedChunk(builder, errorCode);
 
             // Avoid looping infinitely
             if (!inBounds(source, index)) {
@@ -953,9 +968,7 @@ Reserved* Parser::parseReserved(UErrorCode &errorCode) {
         }
     }
 
-    LocalPointer<Reserved> r(builder->build(errorCode));
-    NULL_ON_ERROR(errorCode);
-    return r.orphan();
+    return builder.build();
 }
 
 
@@ -965,27 +978,33 @@ Reserved* Parser::parseReserved(UErrorCode &errorCode) {
 
   Returns an `Operator` representing this (a reserved is a parse error)
 */
-Operator* Parser::parseAnnotation(UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
+Operator Parser::parseAnnotation(UErrorCode &errorCode) {
+    Operator result;
+    if (U_FAILURE(errorCode)) {
+        return result;
+    }
 
     U_ASSERT(inBounds(source, index));
-    LocalPointer<Operator::Builder> ratorBuilder(Operator::builder(errorCode));
-    NULL_ON_ERROR(errorCode);
+    Operator::Builder ratorBuilder;
     if (isFunctionStart(source[index])) {
         // Consume the function name
-        LocalPointer<FunctionName> func(parseFunction(errorCode));
-        NULL_ON_ERROR(errorCode);
-        ratorBuilder->setFunctionName(*func, errorCode);
+        FunctionName func = parseFunction(errorCode);
+        if (U_FAILURE(errorCode)) {
+            return result;
+        }
+        ratorBuilder.setFunctionName(std::move(func));
         // Consume the options (which may be empty)
-        parseOptions(errorCode, *ratorBuilder);
+        parseOptions(ratorBuilder, errorCode);
     } else {
       // Must be reserved
       // A reserved sequence is not a parse error, but might be a formatting error
-      LocalPointer<Reserved> rator(parseReserved(errorCode));
-      NULL_ON_ERROR(errorCode);
-      ratorBuilder->setReserved(rator.orphan());
+      Reserved rator = parseReserved(errorCode);
+      if (U_FAILURE(errorCode)) {
+          return result;
+      }
+      ratorBuilder.setReserved(std::move(rator));
     }
-    return ratorBuilder->build(errorCode);
+    return ratorBuilder.build(errorCode);
 }
 
 /*
@@ -994,28 +1013,22 @@ Operator* Parser::parseAnnotation(UErrorCode &errorCode) {
   or optional whitespace.
 */
 void Parser::parseLiteralOrVariableWithAnnotation(bool isVariable,
-                                                  UErrorCode &errorCode,
-                                                  Expression::Builder& builder) {
+                                                  Expression::Builder& builder,
+                                                  UErrorCode &errorCode) {
     CHECK_ERROR(errorCode);
 
     U_ASSERT(inBounds(source, index));
 
-    LocalPointer<Operand> adoptedRand;
+    Operand rand;
     if (isVariable) {
-        UnicodeString var;
-        parseVariableName(errorCode, var);
-        adoptedRand.adoptInstead(Operand::create(VariableName(var), errorCode));
+        rand = Operand(parseVariableName(errorCode));
     } else {
-        UnicodeString s;
-        bool isQuoted;
-        parseLiteral(errorCode, isQuoted, s);
-        Literal lit(isQuoted, s);
-        adoptedRand.adoptInstead(Operand::create(lit, errorCode));
+        rand = Operand(parseLiteral(errorCode));
     }
 
     // Set the operand (if allocation succeeded)
     CHECK_ERROR(errorCode);
-    builder.setOperand(adoptedRand.orphan());
+    builder.setOperand(std::move(rand));
 
 /*
 Parsing a literal or variable with an optional annotation requires arbitrary lookahead.
@@ -1054,9 +1067,9 @@ the comment in `parseOptions()` for details.
       if (isAnnotationStart(source[index])) {
         normalizedInput += SPACE;
         // The previously consumed whitespace precedes an annotation
-        LocalPointer<Operator> adoptedRator(parseAnnotation(errorCode));
+        Operator r = parseAnnotation(errorCode);
         CHECK_ERROR(errorCode);
-        builder.setOperator(adoptedRator.orphan());
+        builder.setOperator(std::move(r));
       }
     } else {
       // Either there was never whitespace, or
@@ -1070,37 +1083,35 @@ the comment in `parseOptions()` for details.
   Consume an expression, matching the `expression` nonterminal in the grammar
 */
 
-static void exprFallback(Expression::Builder& exprBuilder, UErrorCode &errorCode) {
-    CHECK_ERROR(errorCode);
-
+static void exprFallback(Expression::Builder& exprBuilder) {
     // Construct a literal consisting just of  The U+FFFD REPLACEMENT CHARACTER
     // per https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fallback-resolution
-    LocalPointer<Operand> fallbackOperand(Operand::create(Literal(false, UnicodeString(REPLACEMENT)), errorCode));
-    CHECK_ERROR(errorCode);
-    
-    exprBuilder.setOperand(fallbackOperand.orphan());
+    exprBuilder.setOperand(Operand(Literal(false, UnicodeString(REPLACEMENT))));
 }
 
-static Expression* exprFallback(UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
+static Expression exprFallback(UErrorCode &errorCode) {
+    Expression result;
+    if (U_FAILURE(errorCode)) {
+        return result;
+    }
 
-    LocalPointer<Expression::Builder> exprBuilder(Expression::builder(errorCode));
-    NULL_ON_ERROR(errorCode);
+    Expression::Builder exprBuilder;
 
     // Construct a literal consisting just of  The U+FFFD REPLACEMENT CHARACTER
     // per https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fallback-resolution
-    LocalPointer<Operand> fallbackOperand(Operand::create(Literal(false, UnicodeString(REPLACEMENT)), errorCode));
-    NULL_ON_ERROR(errorCode);
-    
-    exprBuilder->setOperand(fallbackOperand.orphan());
-    return exprBuilder->build(errorCode);
+    exprBuilder.setOperand(Operand(Literal(false, UnicodeString(REPLACEMENT))));
+    return exprBuilder.build(errorCode);
 }
 
 // Sets `parseError` to true if there was an error parsing this expression
 // Uses a flag rather than just returning a fallback expression because which
 // fallback to use depends on context
-Expression* Parser::parseExpression(bool& err, UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
+Expression Parser::parseExpression(bool& err, UErrorCode &errorCode) {
+    Expression result;
+
+    if (U_FAILURE(errorCode)) {
+        return result;
+    }
     err = false;
 
     // Early return if out of input -- no more work is possible
@@ -1112,38 +1123,39 @@ Expression* Parser::parseExpression(bool& err, UErrorCode &errorCode) {
     // Optional whitespace after opening brace
     parseOptionalWhitespace(errorCode);
 
-    LocalPointer<Expression::Builder> exprBuilder(Expression::builder(errorCode));
-    NULL_ON_ERROR(errorCode);
+    Expression::Builder exprBuilder;
     // Restore precondition
     if (!inBounds(source, index)) {
-        exprFallback(*exprBuilder, errorCode);
+        exprFallback(exprBuilder);
     } else {
         // literal '|', variable '$' or annotation
         switch (source[index]) {
         case PIPE: {
             // Quoted literal
-            parseLiteralOrVariableWithAnnotation(false, errorCode, *exprBuilder);
+            parseLiteralOrVariableWithAnnotation(false, exprBuilder, errorCode);
             break;
         }
         case DOLLAR: {
             // Variable
-            parseLiteralOrVariableWithAnnotation(true, errorCode, *exprBuilder);
+            parseLiteralOrVariableWithAnnotation(true, exprBuilder, errorCode);
             break;
         }
         default: {
             if (isAnnotationStart(source[index])) {
-                LocalPointer<Operator> rator(parseAnnotation(errorCode));
-                NULL_ON_ERROR(errorCode);
-                exprBuilder->setOperator(rator.orphan());
+                Operator rator = parseAnnotation(errorCode);
+                if (U_FAILURE(errorCode)) {
+                    return result;
+                }
+                exprBuilder.setOperator(std::move(rator));
             } else if (isUnquotedStart(source[index])) {
                 // Unquoted literal
-                parseLiteralOrVariableWithAnnotation(false, errorCode, *exprBuilder);
+                parseLiteralOrVariableWithAnnotation(false, exprBuilder, errorCode);
             } else {
                 // Not a literal, variable or annotation -- error out
                 ERROR(parseError, errorCode, index);
                 // Set the operand in order to avoid an invalid state error --
                 // however, the caller will ignore the result
-                exprFallback(*exprBuilder, errorCode);
+                exprFallback(exprBuilder);
                 err = true;
                 break;
             }
@@ -1157,7 +1169,7 @@ Expression* Parser::parseExpression(bool& err, UErrorCode &errorCode) {
     // Parse closing brace
     parseToken(RIGHT_CURLY_BRACE, errorCode);
 
-    return exprBuilder->build(errorCode);
+    return exprBuilder.build(errorCode);
 }
 
 /*
@@ -1178,8 +1190,7 @@ void Parser::parseDeclarations(UErrorCode &errorCode) {
         parseRequiredWhitespace(errorCode);
         // Restore precondition
         CHECK_BOUNDS(source, index, parseError, errorCode);
-        UnicodeString lhs;
-        parseVariableName(errorCode, lhs);
+        VariableName lhs = parseVariableName(errorCode);
         parseTokenWithWhitespace(EQUALS, errorCode);
 
         // Restore precondition before calling parseExpression()
@@ -1187,9 +1198,9 @@ void Parser::parseDeclarations(UErrorCode &errorCode) {
         CHECK_BOUNDS(source, index, parseError, errorCode);
         
         bool rhsError = false;
-        LocalPointer<Expression> rhs(parseExpression(rhsError, errorCode));
+        Expression rhs = parseExpression(rhsError, errorCode);
         if (rhsError) {
-            rhs.adoptInstead(exprFallback(errorCode));
+            rhs = exprFallback(errorCode);
         }
         parseOptionalWhitespace(errorCode);
         // Restore precondition
@@ -1199,8 +1210,8 @@ void Parser::parseDeclarations(UErrorCode &errorCode) {
             return;
         }
         // Add binding from lhs to rhs, unless there was an error
-        if (lhs.length() > 0) {
-            dataModel.addLocalVariable(lhs, rhs.orphan(), errorCode);
+        if (lhs.identifier().length() > 0) {
+            dataModel.addLocalVariable(lhs, rhs);
         }
     }
 }
@@ -1209,23 +1220,29 @@ void Parser::parseDeclarations(UErrorCode &errorCode) {
   Consume an escaped curly brace, or backslash, matching the `text-escape`
   nonterminal in the grammar
 */
-void Parser::parseTextEscape(UErrorCode &errorCode, UnicodeString &str) {
-    parseEscapeSequence(TEXT, errorCode, str);
+void Parser::parseTextEscape(UnicodeString &str, UErrorCode &errorCode) {
+    parseEscapeSequence(TEXT, str, errorCode);
 }
 
 /*
   Consume a non-empty sequence of text characters and escaped text characters,
   matching the `text` nonterminal in the grammar
 */
-void Parser::parseText(UErrorCode &errorCode, UnicodeString &str) {
-    CHECK_ERROR(errorCode);
-    CHECK_BOUNDS(source, index, parseError, errorCode);
+UnicodeString Parser::parseText(UErrorCode &errorCode) {
+    UnicodeString str;
+    if (U_FAILURE(errorCode)) {
+        return str;
+    }
+    if (!inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+        return str;
+    }
     
     bool empty = true;
 
     while (true) {
         if (source[index] == BACKSLASH) {
-            parseTextEscape(errorCode, str);
+            parseTextEscape(str, errorCode);
         } else if (isTextChar(source[index])) {
             normalizedInput += source[index];
             str += source[index];
@@ -1235,71 +1252,56 @@ void Parser::parseText(UErrorCode &errorCode, UnicodeString &str) {
             break;
         }
         // Restore precondition
-        CHECK_BOUNDS(source, index, parseError, errorCode);
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            return str;
+        }
         empty = false;
     }
-
     if (empty) {
         // text must be non-empty
         ERROR(parseError, errorCode, index);
     }
+
+    return str;
 }
 
 /*
   Consume an `nmtoken`, `literal`, or the string "*", matching
   the `key` nonterminal in the grammar
 */
-Key* Parser::parseKey(UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
+Key Parser::parseKey(UErrorCode &errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return Key();
+    }
     U_ASSERT(inBounds(source, index));
 
-    LocalPointer<Key> k;
+    Key k; // wildcard by default
     // Literal | '*'
     switch (source[index]) {
     case ASTERISK: {
         index++;
         // Guarantee postcondition
-        CHECK_BOUNDS_NULL(source, index, parseError, errorCode);
-        k.adoptInstead(Key::create(errorCode));
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            return k;
+        }
         normalizedInput += ASTERISK;
         break;
     }
     default: {
         // Literal
-        UnicodeString s;
-        bool isQuoted;
-        parseLiteral(errorCode, isQuoted, s);
-        Literal lit(isQuoted, s);
-        k.adoptInstead(Key::create(lit, errorCode));
+        k = Key(parseLiteral(errorCode));
         break;
     }
     }
-
-    NULL_ON_ERROR(errorCode);
-    return k.orphan();
+    return k;
 }
 
-SelectorKeys::Builder* SelectorKeys::builder(UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
-    LocalPointer<SelectorKeys::Builder> result(new SelectorKeys::Builder(errorCode));
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-    return result.orphan();        
-}
-
-SelectorKeys* SelectorKeys::Builder::build(UErrorCode &errorCode) const {
-    NULL_ON_ERROR(errorCode);
-
-    LocalPointer<KeyList> ks(keys->build(errorCode));
-    NULL_ON_ERROR(errorCode);
+SelectorKeys SelectorKeys::Builder::build() const {
     // Key list must be non-empty (this should be checked earlier on)
-    U_ASSERT(ks->length() >= 1);
-    SelectorKeys* result = new SelectorKeys(ks.orphan());
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
+    U_ASSERT(keys.size() >= 1);
+    return SelectorKeys(keys);
 }
 
 /*
@@ -1307,8 +1309,12 @@ SelectorKeys* SelectorKeys::Builder::build(UErrorCode &errorCode) const {
 
   Takes ownership of `keys`
 */
-SelectorKeys* Parser::parseNonEmptyKeys(UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
+SelectorKeys Parser::parseNonEmptyKeys(UErrorCode &errorCode) {
+    SelectorKeys result;
+
+    if (U_FAILURE(errorCode)) {
+        return result;
+    }
     U_ASSERT(inBounds(source, index));
 
 /*
@@ -1332,27 +1338,19 @@ or the optional space in [s] pattern?
 This is addressed using "backtracking" (similarly to `parseOptions()`).
 */
 
-    LocalPointer<SelectorKeys::Builder> keysBuilder(SelectorKeys::builder(errorCode));
-    NULL_ON_ERROR(errorCode);
-
+    SelectorKeys::Builder keysBuilder;
     // Since the first key is required, it's simplest to parse the required
     // whitespace and then the first key separately.
     parseRequiredWhitespace(errorCode);
     // Restore precondition
-    CHECK_BOUNDS_NULL(source, index, parseError, errorCode);
-    LocalPointer<Key> k(parseKey(errorCode));
+    if (!inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+        return result;
+    }
+    Key k = parseKey(errorCode);
     if (U_SUCCESS(errorCode)) {
-        keysBuilder->add(k.orphan(), errorCode);
+        keysBuilder.add(std::move(k));
     }
-
-/*
-    // Try to recover from errors, e.g. when*{foo}
-    if (!isWhitespace(source[index])) {
-        while (inBounds(source, index) && source[index] != LEFT_CURLY_BRACE) {
-            index++;
-        }
-    }
-*/
 
     // We've seen at least one whitespace-key pair, so now we can parse
     // *(s key) [s]
@@ -1366,7 +1364,10 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
         }
 
         // Restore precondition
-        CHECK_BOUNDS_NULL(source, index, parseError, errorCode);
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            return result;
+        }
 
         // At this point, it's ambiguous whether we are inside (s key) or [s].
         // This check resolves that ambiguity.
@@ -1378,18 +1379,13 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
             U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
             break;
         }
-        k.adoptInstead(parseKey(errorCode));
+        k = parseKey(errorCode);
         if (U_SUCCESS(errorCode)) {
-            keysBuilder->add(k.orphan(), errorCode);
+            keysBuilder.add(k);
         }
     }
 
-    // Check error code so we won't overwrite the error
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-
-    return keysBuilder->build(errorCode);
+    return keysBuilder.build();
 }
 
 /*
@@ -1397,52 +1393,44 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
   No postcondition (on return, `index` might equal `source.length()` with U_SUCCESS(errorCode)),
   because a message can end with a pattern
 */
-Pattern* Parser::parsePattern(UErrorCode &errorCode) {
-    NULL_ON_ERROR(errorCode);
+Pattern Parser::parsePattern(UErrorCode &errorCode) {
+    Pattern p;
+
+    if (U_FAILURE(errorCode)) {
+        return p;
+    }
+
     U_ASSERT(inBounds(source, index));
     
-    LocalPointer<Pattern::Builder> result(Pattern::builder(errorCode));
-    // Fail immediately if the pattern builder can't be constructed
-    NULL_ON_ERROR(errorCode);
+    Pattern::Builder result;
 
     parseToken(LEFT_CURLY_BRACE, errorCode);
 
-    LocalPointer<Expression> expression;
-    LocalPointer<PatternPart> part;
+    Expression expression;
     while (source[index] != RIGHT_CURLY_BRACE) {
         switch (source[index]) {
         case LEFT_CURLY_BRACE: {
             // Must be expression
             bool rhsError = false;
-            expression.adoptInstead(parseExpression(rhsError, errorCode));
-            NULL_ON_ERROR(errorCode);
-            part.adoptInstead(PatternPart::create(expression.orphan(), errorCode));
-            NULL_ON_ERROR(errorCode);
-            result->add(part.orphan(), errorCode);
+            result.add(PatternPart(parseExpression(rhsError, errorCode)));
             break;
         }
         default: {
             // Must be text
-            UnicodeString s;
-            parseText(errorCode, s);
-            part.adoptInstead(PatternPart::create(s, errorCode));
-            NULL_ON_ERROR(errorCode);
-            result->add(part.orphan(), errorCode);
+            result.add(PatternPart(parseText(errorCode)));
             break;
         }
         }
         // Need an explicit error check here so we don't loop infinitely
-        NULL_ON_ERROR(errorCode);
-        if (!inBounds(source, index)) {
-            // Avoid returning null
-            return result->build(errorCode);
+        if (U_FAILURE(errorCode) || !inBounds(source, index)) {
+            return result.build();
         }
     }
     // Consume the closing brace
     index++;
     normalizedInput += RIGHT_CURLY_BRACE;
 
-    return result->build(errorCode);
+    return result.build();
 }
 
 
@@ -1459,7 +1447,6 @@ void Parser::parseSelectors(UErrorCode &errorCode) {
 
     parseToken(ID_MATCH, errorCode);
 
-    LocalPointer<Expression> expression;
     bool empty = true;
     // Parse selectors
     while (isWhitespace(source[index]) || source[index] == LEFT_CURLY_BRACE) {
@@ -1475,19 +1462,20 @@ void Parser::parseSelectors(UErrorCode &errorCode) {
         }
 
         bool selectorError = false;
-        expression.adoptInstead(parseExpression(selectorError, errorCode));
+        Expression expression;
+        expression = parseExpression(selectorError, errorCode);
         if (selectorError) {
             // What happens if one of the variant keys is the
             // fallback string? this should be a `nomatch` according
             // to the spec, but there's no way to pass that through
-            expression.adoptInstead(exprFallback(errorCode));
+            expression = exprFallback(errorCode);
         }
         empty = false;
 
         if (U_FAILURE(errorCode)) {
             break;
         }
-        dataModel.addSelector(expression.orphan(), errorCode);
+        dataModel.addSelector(expression, errorCode);
     }
 
     // At least one selector is required
@@ -1515,7 +1503,7 @@ void Parser::parseSelectors(UErrorCode &errorCode) {
         parseToken(ID_WHEN, errorCode);
 
         // At least one key is required
-        LocalPointer<SelectorKeys> keyList(parseNonEmptyKeys(errorCode));
+        SelectorKeys keyList(parseNonEmptyKeys(errorCode));
         CHECK_ERROR(errorCode);
 
         // parseNonEmptyKeys() consumes any trailing whitespace,
@@ -1524,12 +1512,12 @@ void Parser::parseSelectors(UErrorCode &errorCode) {
         // Restore precondition before calling parsePattern()
         // (which must return a non-null value)
         CHECK_BOUNDS(source, index, parseError, errorCode);
-        LocalPointer<Pattern> rhs(parsePattern(errorCode));
+        Pattern rhs = parsePattern(errorCode);
         if (U_FAILURE(errorCode)) {
             break;
         }
 
-        dataModel.addVariant(keyList.orphan(), rhs.orphan(), errorCode);
+        dataModel.addVariant(std::move(keyList), std::move(rhs), errorCode);
         if (U_FAILURE(errorCode)) {
             break;
         }
@@ -1551,11 +1539,9 @@ void Parser::parseSelectors(UErrorCode &errorCode) {
 */
 
 void Parser::errorPattern(UErrorCode &errorCode) {
-    CHECK_ERROR(errorCode);
     errors.addSyntaxError(errorCode);
     // Set to empty pattern
-    LocalPointer<Pattern::Builder> result(Pattern::builder(errorCode));
-    CHECK_ERROR(errorCode);
+    Pattern::Builder result = Pattern::Builder();
     // If still in bounds, then add the remaining input as a single text part
     // to the pattern
     /*
@@ -1570,11 +1556,8 @@ void Parser::errorPattern(UErrorCode &errorCode) {
     }
     // Add curly braces around the entire output (same comment as above)
     partStr += RIGHT_CURLY_BRACE;
-    LocalPointer<PatternPart> part(PatternPart::create(partStr, errorCode));
-    if (U_SUCCESS(errorCode)) {
-        result->add(part.orphan(), errorCode);
-    }
-    dataModel.setPattern(result->build(errorCode));
+    result.add(PatternPart(partStr));
+    dataModel.setPattern(result.build());
 }
 
 void Parser::parseBody(UErrorCode &errorCode) {
@@ -1589,9 +1572,7 @@ void Parser::parseBody(UErrorCode &errorCode) {
     switch (source[index]) {
     case LEFT_CURLY_BRACE: {
         // Pattern
-        LocalPointer<Pattern> pattern(parsePattern(errorCode));
-        CHECK_ERROR(errorCode);
-        dataModel.setPattern(pattern.orphan());
+        dataModel.setPattern(parsePattern(errorCode));
         break;
     }
     case ID_MATCH[0]: {

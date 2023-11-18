@@ -86,7 +86,7 @@ void Serializer::emit(const Key& k) {
 
 void Serializer::emit(const SelectorKeys& k) {
   const KeyList& ks = k.getKeys();
-  int32_t len = ks.length();
+  int32_t len = (int32_t) ks.size();
   // It would be an error for `keys` to be empty;
   // that would mean this is the single `pattern`
   // variant, and in that case, this method shouldn't be called
@@ -95,7 +95,7 @@ void Serializer::emit(const SelectorKeys& k) {
     if (i != 0) {
       whitespace();
     }
-    emit(*ks.get(i));
+    emit(ks[i]);
   }
 }
 
@@ -140,7 +140,7 @@ void Serializer::emit(const Expression& expr) {
           const Reserved& reserved = rator.asReserved();
           // Re-escape '\' / '{' / '|' / '}'
           for (int32_t i = 0; i < reserved.numParts(); i++) {
-            const Literal& l = *reserved.getPart(i);
+            const Literal& l = reserved.getPart(i);
             if (l.quoted()) {
               emit(l);
             } else {
@@ -202,7 +202,7 @@ void Serializer::emit(const Pattern& pat) {
     emit(LEFT_CURLY_BRACE);
     for (int32_t i = 0; i < len; i++) {
         // No whitespace is needed here -- see the `pattern` nonterminal in the grammar
-        emit(*pat.getPart(i));
+        emit(pat.getPart(i));
     }
     emit(RIGHT_CURLY_BRACE);
 }
@@ -210,8 +210,8 @@ void Serializer::emit(const Pattern& pat) {
 void Serializer::serializeDeclarations() {
     const Bindings& locals = dataModel.getLocalVariables();
     
-    for (int32_t i = 0; i < locals.length(); i++) {
-        const Binding& b = *locals.get(i);
+    for (int32_t i = 0; i < (int32_t) locals.size(); i++) {
+        const Binding& b = locals[i];
         // No whitespace needed here -- see `message` in the grammar
         emit(ID_LET);
         whitespace();
@@ -226,13 +226,13 @@ void Serializer::serializeDeclarations() {
 void Serializer::serializeSelectors() {
     U_ASSERT(dataModel.hasSelectors());
     const ExpressionList& selectors = dataModel.getSelectors();
-    int32_t len = selectors.length();
+    int32_t len = (int32_t) selectors.size();
     U_ASSERT(len > 0);
 
     emit(ID_MATCH);
     for (int32_t i = 0; i < len; i++) {
         // No whitespace needed here -- see `selectors` in the grammar
-        emit(*selectors.get(i));
+        emit(selectors[i]);
     }
 }
 
@@ -241,13 +241,13 @@ void Serializer::serializeVariants() {
     const VariantMap& variants = dataModel.getVariants();
     int32_t pos = VariantMap::FIRST;
 
-    const SelectorKeys* selectorKeys;
+    SelectorKeys selectorKeys;
     const Pattern* pattern;
 
     while (variants.next(pos, selectorKeys, pattern)) {
       emit(ID_WHEN);
       whitespace();
-      emit(*selectorKeys);
+      emit(selectorKeys);
       // No whitespace needed here -- see `variant` in the grammar
       emit(*pattern);
     }    

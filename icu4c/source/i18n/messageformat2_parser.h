@@ -82,26 +82,26 @@ U_NAMESPACE_BEGIN  namespace message2 {
           void parseToken(const UChar32 (&)[N], UErrorCode &);
           template <int32_t N>
           void parseTokenWithWhitespace(const UChar32 (&)[N], UErrorCode &);
-          void parseName(UErrorCode&, UnicodeString&);
-          void parseVariableName(UErrorCode&, UnicodeString&);
-          FunctionName* parseFunction(UErrorCode&);
-          void parseEscapeSequence(EscapeKind, UErrorCode &, UnicodeString&);
-          void parseLiteralEscape(UErrorCode &, UnicodeString&);
-          void parseLiteral(UErrorCode &, bool&, UnicodeString&);
-          void parseOption(UErrorCode&, Operator::Builder&);
-          void parseOptions(UErrorCode &, Operator::Builder&);
-          void parseReservedEscape(UErrorCode&, UnicodeString&);
-          void parseReservedChunk(UErrorCode &, Reserved::Builder&);
-          Reserved* parseReserved(UErrorCode &);
-          Operator* parseAnnotation(UErrorCode &);
-          void parseLiteralOrVariableWithAnnotation(bool, UErrorCode &, Expression::Builder&);
-          Expression* parseExpression(bool&, UErrorCode &);
-          void parseTextEscape(UErrorCode&, UnicodeString&);
-          void parseText(UErrorCode&, UnicodeString&);
-          Key* parseKey(UErrorCode&);
-          SelectorKeys* parseNonEmptyKeys(UErrorCode&);
+          UnicodeString parseName(UErrorCode&);
+          VariableName parseVariableName(UErrorCode&);
+          FunctionName parseFunction(UErrorCode&);
+          void parseEscapeSequence(EscapeKind, UnicodeString&, UErrorCode &);
+          void parseLiteralEscape(UnicodeString&, UErrorCode &);
+          Literal parseLiteral(UErrorCode &);
+          void parseOption(Operator::Builder&, UErrorCode&);
+          void parseOptions(Operator::Builder&, UErrorCode&);
+          void parseReservedEscape(UnicodeString&, UErrorCode&);
+          void parseReservedChunk(Reserved::Builder&, UErrorCode&);
+          Reserved parseReserved(UErrorCode &);
+          Operator parseAnnotation(UErrorCode &);
+          void parseLiteralOrVariableWithAnnotation(bool, Expression::Builder&, UErrorCode &);
+          Expression parseExpression(bool&, UErrorCode &);
+          void parseTextEscape(UnicodeString&, UErrorCode&);
+          UnicodeString parseText(UErrorCode&);
+          Key parseKey(UErrorCode&);
+          SelectorKeys parseNonEmptyKeys(UErrorCode&);
           void errorPattern(UErrorCode&);
-          Pattern* parsePattern(UErrorCode&);
+          Pattern parsePattern(UErrorCode&);
 
           // The input string
           const UnicodeString &source;
