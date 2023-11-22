@@ -109,21 +109,17 @@ void MessageFormatter::formatOperand(const Environment& env, const Operand& rand
 void MessageFormatter::resolveOptions(const Environment& env, const OptionMap& options, ExpressionContext& context, UErrorCode& status) const {
     CHECK_ERROR(status);
 
-    int32_t pos = OptionMap::FIRST;
     LocalPointer<ExpressionContext> rhsContext;
-    while (true) {
-        UnicodeString k;
-        const Operand* v;
-        if (!options.next(pos, k, v)) {
-            break;
-        }
-        U_ASSERT(v != nullptr);
+    for (auto iter = options.begin(); iter != options.end(); ++iter) {
+        const UnicodeString& k = iter.first();
+        const Operand& v = iter.second();
+
         // Options are fully evaluated before calling the function
         // Create a new context for formatting the right-hand side of the option
         rhsContext.adoptInstead(context.create(status));
         CHECK_ERROR(status);
         // Format the operand in its own context
-        formatOperand(env, *v, *rhsContext, status);
+        formatOperand(env, v, *rhsContext, status);
         // If formatting succeeded, pass the string
         if (rhsContext->hasStringOutput()) {
             context.setStringOption(k, rhsContext->getStringOutput(), status);
@@ -314,13 +310,9 @@ void MessageFormatter::resolvePreferences(const UVector& res, const VariantMap& 
         keys->setDeleter(uprv_deleteUObject);
         CHECK_ERROR(status);
         // 2ii. For each variant `var` of the message
-        int32_t pos = VariantMap::FIRST;
-        SelectorKeys selectorKeys;
-        const Pattern* p; // Not used
-        while (true) {
-            if (!variants.next(pos, selectorKeys, p)) {
-                break;
-            }
+        for (auto iter = variants.begin(); iter != variants.end(); ++iter) {
+            const SelectorKeys& selectorKeys = iter.first();
+
             // Note: Here, `var` names the key list of `var`,
             // not a Variant itself
             const KeyList& var = selectorKeys.getKeys();
@@ -364,13 +356,10 @@ void filterVariants(const VariantMap& variants, const UVector& pref, UErrorCode 
     // 1. Let `vars` be a new empty list of variants.
     // (Not needed since `vars` is an out-parameter)
     // 2. For each variant `var` of the message:
-    int32_t pos = VariantMap::FIRST;
-    SelectorKeys selectorKeys;
-    const Pattern* p;
-    while (true) {
-        if (!variants.next(pos, selectorKeys, p)) {
-            break;
-        }
+    for (auto iter = variants.begin(); iter != variants.end(); ++iter) {
+        const SelectorKeys& selectorKeys = iter.first();
+        const Pattern& p = iter.second();
+
         // Note: Here, `var` names the key list of `var`,
         // not a Variant itself
         const KeyList& var = selectorKeys.getKeys();
@@ -403,7 +392,7 @@ void filterVariants(const VariantMap& variants, const UVector& pref, UErrorCode 
         }
         if (!noMatch) {
             // Append `var` as the last element of the list `vars`.
-            LocalPointer<PrioritizedVariant> tuple(new PrioritizedVariant(-1, selectorKeys, *p));
+            LocalPointer<PrioritizedVariant> tuple(new PrioritizedVariant(-1, selectorKeys, p));
             if (!tuple.isValid()) {
                 status = U_MEMORY_ALLOCATION_ERROR;
                 return;
@@ -642,7 +631,6 @@ PrioritizedVariant::~PrioritizedVariant() {}
 
 UnicodeString MessageFormatter::getPattern() const {
     // Converts the current data model back to a string
-    U_ASSERT(dataModelOK());
     UnicodeString result;
     Serializer serializer(getDataModel(), result);
     serializer.serialize();
@@ -713,15 +701,8 @@ void MessageFormatter::check(MessageContext& context, const Environment& localEn
     CHECK_ERROR(status);
 
     // Check the RHS of each option
-    int32_t pos = OptionMap::FIRST;
-    UnicodeString k; // not used
-    const Operand* rhs;
-    while(true) {
-        if (!options.next(pos, k, rhs)) {
-            break;
-        }
-        U_ASSERT(rhs != nullptr);
-        check(context, localEnv, *rhs, status);
+    for (auto iter = options.begin(); iter != options.end(); ++iter) {
+        check(context, localEnv, iter.second(), status);
     }
 }
 

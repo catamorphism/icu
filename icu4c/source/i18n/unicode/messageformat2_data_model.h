@@ -89,6 +89,7 @@ namespace data_model {
 
          // TODO
          VariableName& operator=(VariableName&&) = default;
+         VariableName& operator=(const VariableName&) = default;
          VariableName(const VariableName&) = default;
     private:
         /* const */ UnicodeString variableName;
@@ -168,6 +169,7 @@ namespace data_model {
           */
          FunctionName(const FunctionName& other) : functionName(other.functionName), functionSigil(other.functionSigil) {}
          FunctionName& operator=(FunctionName&& other) noexcept;
+         FunctionName& operator=(const FunctionName&) = default;
          FunctionName() : functionSigil(Sigil::DEFAULT) {}
     private:
          friend class Operator;
@@ -248,9 +250,14 @@ namespace data_model {
         Literal(const Literal& other) : isQuoted(other.isQuoted), contents(other.contents) {}
         Literal(Literal&& other) noexcept;
         Literal& operator=(Literal&&) noexcept;
+        Literal& operator=(const Literal&);
         // Because Key uses `Literal` as its underlying representation,
         // this provides a default constructor for wildcard keys
         Literal() : isQuoted(false), contents(Formattable("")) {}
+        // TODO
+        // Defined so Keys can be compared
+        bool operator<(const Literal& rhs) const;
+        bool operator==(const Literal& rhs) const;
 
          /**
           * Destructor.
@@ -337,6 +344,7 @@ namespace data_model {
         Operand(const Literal& l) : lit(l), type(Type::LITERAL) {}
         Operand(const Operand&);
         Operand& operator=(Operand&&) noexcept;
+        Operand& operator=(const Operand&);
 
         /**
          * Destructor.
@@ -426,10 +434,12 @@ namespace data_model {
         // Concrete key constructor
         Key(const Literal& lit) : wildcard(false), contents(lit) {}
         Key& operator=(Key&& other) noexcept;
+        // TODO
+        // Defined so SelectorKeys can be compared
+        bool operator<(const Key& rhs) const;
+        bool operator==(const Key& rhs) const;
 
     private:
-        friend class VariantMap;
-
         UnicodeString toString() const;
 
         /* const */ bool wildcard; // True if this represents the wildcard "*"
@@ -485,7 +495,7 @@ namespace message2 {
      * It corresponds to the `keys` array in the `Variant` interface
      * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
      *
-     * `SelectorKeys` is immutable and copyable. It is not movable.
+     * `SelectorKeys` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -499,6 +509,14 @@ namespace message2 {
 // Note: these are public in order to make vector addition work
         // Copy constructor
         SelectorKeys(const SelectorKeys& other);
+// TODO
+        // Move assignment operator
+        SelectorKeys& operator=(SelectorKeys&&) noexcept;
+        // Copy assignment operator
+        SelectorKeys& operator=(const SelectorKeys& other) {
+            keys = KeyList(other.keys);
+            return *this;
+        }
 
         /**
          * Returns the underlying list of keys.
@@ -556,15 +574,13 @@ namespace message2 {
             Builder();
         }; // class SelectorKeys::Builder
 
+        // TODO
+        // Defined for use by VariantMap
+        bool operator<(const SelectorKeys& rhs) const;
+
     private:
-        friend class VariantMap;
         friend class Builder;
 
-        // Copy assignment operator
-        SelectorKeys& operator=(const SelectorKeys& other) {
-            keys = KeyList(other.keys);
-            return *this;
-        }
 
         // Non-const so copy assignment operator works, but actually const
         KeyList keys;
@@ -609,6 +625,7 @@ namespace message2 {
         Reserved(const Reserved& other);
         Reserved(Reserved&& other);
         Reserved& operator=(Reserved&& other) noexcept;
+        Reserved& operator=(const Reserved& other);
         Reserved() : parts(std::vector<Literal>()) { }
 
         /**
@@ -679,7 +696,7 @@ namespace message2 {
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    using OptionMap = OrderedMap<Operand>;
+    using OptionMap = OrderedMap<UnicodeString, Operand>;
   } // namespace data_model
 } // namespace message2
 
@@ -710,6 +727,11 @@ template class U_I18N_API LocalPointer<message2::data_model::Reserved>;
 /// @endcond
 
 namespace message2 {
+    template<>
+    OrderedMap<UnicodeString, data_model::Operand>::Builder::~Builder();
+    template<>
+    OrderedMap<UnicodeString, data_model::Operand>::~OrderedMap();
+
   namespace data_model {
     /**
      * The `Operator` class corresponds to the `FunctionRef | Reserved` type in the
@@ -782,9 +804,10 @@ namespace message2 {
             friend class Operator;
             bool isReservedSequence = false;
             bool hasFunctionName = false;
+            bool hasOptions = false;
             Reserved asReserved;
             FunctionName functionName;
-            LocalPointer<OptionMap::Builder> options;
+            OptionMap::Builder options;
         public:
             /**
              * Sets this operator to be a reserved sequence.
@@ -850,6 +873,7 @@ namespace message2 {
         }; // class Operator::Builder
         // TODO
         Operator& operator=(Operator&& other) noexcept;
+        Operator& operator=(const Operator&);
         Operator() : isReservedSequence(true) {}
         // Copy constructor
         Operator(const Operator& other);
@@ -861,15 +885,15 @@ namespace message2 {
          */
         virtual ~Operator();
     private:
-        // Function call constructor; adopts `l` if it's non-null (creates empty options otherwise)
-        Operator(const FunctionName& f, OptionMap *l);
+        // Function call constructor
+        Operator(const FunctionName& f, OptionMap&& l);
         // Reserved sequence constructor
         // Result is bogus if copy of `r` fails
-        Operator(const Reserved& r) : isReservedSequence(true), functionName(FunctionName(UnicodeString(""))), options(nullptr), reserved(Reserved(r)) {}
+        Operator(const Reserved& r) : isReservedSequence(true), functionName(FunctionName(UnicodeString(""))), reserved(Reserved(r)) {}
 
         /* const */ bool isReservedSequence;
         /* const */ FunctionName functionName;
-        /* const */ LocalPointer<OptionMap> options;
+        /* const */ OptionMap options;
         /* const */ Reserved reserved;
     }; // class Operator
   } // namespace data_model
@@ -1050,6 +1074,7 @@ namespace message2 {
         Expression(const Expression& other);
         Expression();
         Expression& operator=(Expression&&) noexcept;
+        Expression& operator=(const Expression&);
 
     private:
         /*
@@ -1148,6 +1173,7 @@ namespace message2 {
         // PatternPart needs a copy constructor in order to make Pattern deeply copyable
         PatternPart(const PatternPart& other);
         PatternPart& operator=(PatternPart&&) noexcept;
+        PatternPart& operator=(const PatternPart& other);
         virtual ~PatternPart();
         PatternPart() : isRawText(true) {}
 
@@ -1330,139 +1356,7 @@ template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model
 namespace message2 {
   namespace data_model {
 
-    /**
-     * The `VariantMap` class represents the set of all variants in a message that has selectors,
-     * relating `SelectorKeys` objects to `Pattern` objects,
-     * following  the `variant` production in the grammar:
-     *
-     * variant = when 1*(s key) [s] pattern
-     *
-     * https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf#L9
-     *
-     * `VariantMap` is immutable and is not copyable or movable.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    class U_I18N_API VariantMap : public UMemory {
-    public:
-        /**
-         * The initial iterator position to be used with `next()`.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        static constexpr int32_t FIRST = OrderedMap<Pattern>::FIRST;
-        /**
-         * Iterates over all variants. The order in which variants are returned is unspecified.
-         *
-         * @param pos A mutable reference to the current iterator position. Should be set to
-         *            `FIRST` before the first call to `next()`.
-         * @param k   A mutable reference to a SelectorKeys object,
-         *            representing the key list for a single variant.
-         *            If the return value is true, then `k` refers to a non-null pointer.
-         * @param v   A mutable reference to a const pointer to a Pattern object,
-         *            representing the pattern of a single variant.
-         *            If the return value is true, then `v` refers to a non-null pointer.
-         * @return    True if and only if there are no further options after `pos`.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        UBool next(int32_t &pos, SelectorKeys& k, const Pattern*& v) const;
-        /**
-         * Returns the number of variants.
-         *
-         * @return The size of this VariantMap.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        int32_t size() const;
-        /**
-         * The mutable `VariantMap::Builder` class allows the variant map to be
-         * constructed one variant at a time.
-         *
-         * Builder is not copyable or movable.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        class U_I18N_API Builder : public UMemory {
-        public:
-            /**
-             * Adds a single variant to the map. Adopts `value`.
-             * Passes `key` by move.
-             *
-             * @param key The key list for this variant.
-             * @param value The pattern for this variant.
-             * @param status Input/output error code.
-             * @return A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& add(SelectorKeys &&key, Pattern&& value, UErrorCode& status);
-            /**
-             * Constructs a new immutable `VariantMap` using the variants
-             * added with previous `add()` calls.
-             *
-             * The builder object (`this`) can still be used after calling `build()`.
-             *
-             * @param status    Input/output error code.
-             * @return          The new VariantMap, which is non-null if
-             *                  U_SUCCESS(status).
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            VariantMap* build(UErrorCode& status) const;
-             /**
-              * Destructor.
-              *
-              * @internal ICU 75.0 technology preview
-              * @deprecated This API is for technology preview only.
-              */
-             virtual ~Builder();
-        private:
-            friend class VariantMap;
-          
-            static void concatenateKeys(const SelectorKeys& keys, UnicodeString& result);
-            Builder(UErrorCode& errorCode);
-            LocalPointer<OrderedMap<Pattern>::Builder> contents;
-            std::vector<SelectorKeys> keyLists;
-        }; // class VariantMap::Builder
-
-        /**
-         * Returns a new `VariantMap::Builder` object.
-         *
-         * @param status  Input/output error code.
-         * @return        The new builder, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        static Builder* builder(UErrorCode& status);
-    private:
-    /*
-      Internally, the map uses the `SelectorKeys` as its key, and the `pattern` as the value.
-
-      This representation mirrors the ICU4J API:
-      public OrderedMap<SelectorKeys, Pattern> getVariants();
-
-      Since the `OrderedMap` class defined above is not polymorphic on its key
-      values, `VariantMap` is defined as a separate data type that wraps an
-      `OrderedMap<Pattern>`.
-      The `VariantMap::Builder::add()` method encodes its `SelectorKeys` as
-      a string, and the VariantMap::next() method decodes it.
-    */
-        friend class Builder;
-        VariantMap(OrderedMap<Pattern>* vs, const std::vector<SelectorKeys>& ks);
-        const LocalPointer<OrderedMap<Pattern>> contents;
-        // See the method implementations for comments on
-        // how `keyLists` is used.
-        const std::vector<SelectorKeys> keyLists;
-    }; // class VariantMap
+      using VariantMap = OrderedMap<SelectorKeys, Pattern>;
 
     /**
      *  A `Binding` pairs a variable name with an expression.
@@ -1512,6 +1406,7 @@ namespace message2 {
         // which is in turn so that MessageFormatDataModel::build() can be copying
         // (it has to copy the builder's locals)
         Binding(const Binding& other);
+        Binding& operator=(const Binding& other);
 
         /**
           * Destructor.
@@ -1521,8 +1416,8 @@ namespace message2 {
           */
         virtual ~Binding();
     private:
-        const VariableName var;
-        const Expression value;
+        /* const */ VariableName var;
+        /* const */ Expression value;
     }; // class Binding
 
         /**
@@ -1567,27 +1462,20 @@ template class U_I18N_API LocalPointer<message2::data_model::VariantMap>;
 
 namespace message2 {
 
-
 // These explicit instantiations have to come before the
 // destructor definitions
-
 template<>
-OrderedMap<data_model::Pattern>::Builder::~Builder();
+OrderedMap<data_model::SelectorKeys, data_model::Pattern>::Builder::~Builder();
 template<>
-OrderedMap<data_model::Pattern>::~OrderedMap();
-template<>
-OrderedMap<data_model::Operand>::Builder::~Builder();
-template<>
-OrderedMap<data_model::Operand>::~OrderedMap();
-
+OrderedMap<data_model::SelectorKeys, data_model::Pattern>::~OrderedMap();
 
 // Explicit instantiations in source/i18n/messageformat2_utils.cpp
 // See numberformatter.h for another example
 
 // (MSVC treats imports/exports of explicit instantiations differently.)
 #ifndef _MSC_VER
-extern template class OrderedMap<data_model::Operand>;
-extern template class OrderedMap<data_model::Pattern>;
+extern template class OrderedMap<UnicodeString, data_model::Operand>;
+extern template class OrderedMap<data_model::SelectorKeys, data_model::Pattern>;
 #endif
 
 
@@ -1635,7 +1523,7 @@ variables.
 href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md">the
  * specification of the abstract syntax (data model representation)</a> for MessageFormat.
  *
- * `MessageFormatDataModel` is immutable and is not copyable or movable.
+ * `MessageFormatDataModel` is immutable, copyable and movable.
  *
  * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
@@ -1676,6 +1564,11 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
   provided as well, if this proved useful.
 */
       public:
+// TODO
+    MessageFormatDataModel();
+    MessageFormatDataModel(MessageFormatDataModel&&) noexcept;
+    MessageFormatDataModel& operator=(MessageFormatDataModel&&) noexcept;
+    MessageFormatDataModel &operator=(const MessageFormatDataModel &);
 
     /**
      * Accesses the local variable declarations for this data model.
@@ -1738,17 +1631,6 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
     class U_I18N_API Builder;
 
     /**
-     * Returns a new `MessageFormatDataModel::Builder` object.
-     *
-     * @param status  Input/output error code.
-     * @return        The new Builder object, which is non-null if U_SUCCESS(status).
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    static Builder* builder(UErrorCode& status);
-
-    /**
      * Destructor.
      *
      * @internal ICU 75.0 technology preview
@@ -1767,16 +1649,18 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
     private:
         friend class MessageFormatDataModel;
 
-        Builder(UErrorCode& errorCode);
-        void buildSelectorsMessage(UErrorCode& errorCode);
+        void buildSelectorsMessage();
         bool hasPattern = true;
         bool hasSelectors = false;
         Pattern pattern;
         ExpressionList selectors;
-        LocalPointer<VariantMap::Builder> variants;
+        VariantMap::Builder variants;
         Bindings locals;
       
     public:
+// TODO
+        Builder();
+
         /**
          * Adds a local variable declaration.
          *
@@ -1806,13 +1690,12 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
          *
          * @param keys Keys for the variant. Passed by move.
          * @param pattern Pattern for the variant. Passed by move.
-         * @param status Input/output error code.
          * @return A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& status);
+        Builder& addVariant(SelectorKeys&& keys, Pattern&& pattern);
         /**
          * Sets the body of the message as a pattern.
          * If selectors and/or variants were previously set, clears them.
@@ -1839,38 +1722,33 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
          * The builder object (`this`) can still be used after calling `build()`.
          *
          * @param status Input/output error code.
-         * @return       The new MessageFormatDataModel, which is non-null if
-         *               U_SUCCESS(status).
+         * @return       The new MessageFormatDataModel
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatDataModel* build(UErrorCode& status) const;
+        MessageFormatDataModel build(UErrorCode& status) const;
     }; // class Builder
 
 private:
-
-    const bool hasPattern;
+    /* const */ bool hasPattern;
 
     // The expressions that are being matched on.
     // Ignored if `hasPattern`
-    const ExpressionList selectors;
+    /* const */ ExpressionList selectors;
 
     // The list of `when` clauses (case arms).
-    // Null if `hasPattern`
-    const LocalPointer<VariantMap> variants;
+    // Ignored if `hasPattern`
+    /* const */ VariantMap variants;
 
     // The pattern forming the body of the message.
     // Ignored if !hasPattern
-    const Pattern pattern;
+    /* const */ Pattern pattern;
 
     // Bindings for local variables
-    const Bindings bindings;
+    /* const */ Bindings bindings;
 
-    // Do not define default assignment operator
-    const MessageFormatDataModel &operator=(const MessageFormatDataModel &) = delete;
-
-    MessageFormatDataModel(const Builder& builder, UErrorCode &status);
+    MessageFormatDataModel(const Builder& builder);
     }; // class MessageFormatDataModel
 
 } // namespace message2
