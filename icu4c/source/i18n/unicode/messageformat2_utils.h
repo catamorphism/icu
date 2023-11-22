@@ -12,6 +12,7 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+#include <map>
 #include <vector>
 
 #include "unicode/localpointer.h"
@@ -21,11 +22,9 @@ union UElement;
 
 U_NAMESPACE_BEGIN
 
-class Hashtable;
-class UVector;
-
 namespace message2 {
 
+// TODO update comment
 /**
  * The `OrderedMap` class represents a polymorphic hash table with string
  * keys, constructed using the builder pattern. It's used to represent
@@ -36,41 +35,36 @@ namespace message2 {
  * explicit instantiations of it are exported only for the types
  * `Operand` and `Pattern`.
  *
+ * The class is immutable, movable and copyable.
+ *
  * @internal ICU 74.0 technology preview
  * @deprecated This API is for technology preview only.
  */
-template<typename V>
+template<class K, class V>
 class OrderedMap : public UObject {
 
-private:
-    // See comments under `ImmutableVector::isBogus()`
-    bool isBogus() const { return (!contents.isValid() || !keys.isValid()); }
-
 public:
-    /**
-     * Used with `next()`.
-     *
-     * The initial iterator position for `next()`.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    static constexpr int32_t FIRST = 0;
-    /**
-     * Iterates over all keys in the order in which they were added.
-     *
-     * @param pos A mutable reference to the current iterator position. Should be set to
-     *            `FIRST` before the first call to `next()`.
-     * @param k   A mutable reference that is set to the name of the next key
-     *            if the return value is true.
-     * @param v   A mutable reference to a pointer to an element of the map's value type,
-     *            which is non-null if the return value is true.
-     * @return True if and only if there are elements starting at `pos`.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    UBool next(int32_t &pos, UnicodeString& k, const V*& v) const;
+// TODO
+    class Iterator {
+        public:
+        const K& first() const;
+        const V& second() const;
+        Iterator& operator++();
+        bool operator==(const Iterator&) const;
+        bool operator!=(const Iterator&) const;
+        private:
+        friend class OrderedMap<K, V>;
+
+        int32_t pos;
+        const std::map<K, V> contents;
+        const std::vector<K> keys;
+        Iterator(int32_t, const std::map<K, V>&, const std::vector<K>&);
+    };
+
+    Iterator begin() const noexcept;
+    Iterator end() const noexcept;
+    OrderedMap();
+
     /**
      * Size accessor.
      *
@@ -91,6 +85,9 @@ public:
      * @deprecated This API is for technology preview only.
      */
     OrderedMap(const OrderedMap& other);
+// TODO
+    OrderedMap& operator=(OrderedMap&&) noexcept;
+    OrderedMap& operator=(const OrderedMap&);
 
     /**
      * The mutable `OrderedMap::Builder` class allows the map to be constructed
@@ -102,19 +99,18 @@ public:
     class Builder : public UMemory {
     public:
         /**
-         * Adds to the map. Adopts `value`.
+         * Adds to the map.
          * Precondition: !has(key)
          *
          * @param key    The name to be added. It is an internal error to
          *               call `add()` with a key that has already been added.
-         * @param value  The value to be associated with the name.
-         * @param status Input/output error code.
+         * @param value  The value to be associated with the name. Passed by move.
          * @return A reference to the builder.
          *
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& add(const UnicodeString& key, V* value, UErrorCode& status);
+        Builder& add(const K& key, V&& value);
         /**
          * Adds to the map.
          * Precondition: !has(key)
@@ -122,23 +118,22 @@ public:
          * @param key    The name to be added. It is an internal error to
          *               call `add()` with a key that has already been added.
          * @param value  The value to be associated with the name. Passed by move.
-         * @param status Input/output error code.
          * @return A reference to the builder.
          *
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& add(const UnicodeString& key, V&& value, UErrorCode& status);
+        Builder& add(K&& key, V&& value);
         /**
          * Checks if a key is in the map.
          *
-         * @param key Reference to a (string) key.
+         * @param key Reference to a key.
          * @return    True if and only if `key` is mapped to a value in the map.
          *
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        UBool has(const UnicodeString& key) const;
+        UBool has(const K& key) const;
         /**
          * Constructs a new `OrderedMap` using the keys and values
          * set with previous `add()` calls.
@@ -151,7 +146,10 @@ public:
          * @internal ICU 74.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        OrderedMap<V>* build(UErrorCode& status) const;
+        OrderedMap<K, V> build() const;
+// TODO
+        Builder();
+
         /**
          * Destructor.
          *
@@ -162,16 +160,12 @@ public:
     private:
         friend class OrderedMap;
 
-        // Only called by builder()
-        Builder(UErrorCode& errorCode);
-
-        // Hashtable representing the underlying map
-        LocalPointer<Hashtable> contents;
+        // The underlying map
+        std::map<K, V> contents;
         // Maintain a list of keys that encodes the order in which
-        // keys are added. This wastes some space, but allows us to
-        // re-use ICU4C's Hashtable abstraction without re-implementing
-        // an ordered version of it.
-        LocalPointer<UVector> keys;
+        // keys are added. (The STL has no equivalent to Java's standard
+        // `OrderedMap` class.)
+        std::vector<K> keys;
     }; // class OrderedMap<V>::Builder
 
     /**
@@ -181,30 +175,14 @@ public:
      * @deprecated This API is for technology preview only.
      */
     virtual ~OrderedMap();
-    /**
-     * Returns a new `OrderedMap::Builder` object.
-     *
-     * @param status  Input/output error code.
-     * @return The new Builder object, which is non-null if U_SUCCESS(status).
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    static Builder* builder(UErrorCode &status);
 
 private:
+    // The underlying map
+    std::map<K, V> contents;
+    // List of keys in insertion order
+    std::vector<K> keys;
 
-    // Helper methods for copy constructor
-    static void copyStrings(UElement *dst, UElement *src);
-    static UVector* copyStringVector(const UVector& other);
-    // Postcondition: U_FAILURE(errorCode) || !((return value).isBogus())
-    static OrderedMap<V>* create(Hashtable* c, UVector* k, UErrorCode& errorCode);
-    static Hashtable* copyHashtable(const Hashtable& other);
-    OrderedMap(Hashtable* c, UVector* k);
-    // Hashtable representing the underlying map
-    const LocalPointer<Hashtable> contents;
-    // List of keys
-    const LocalPointer<UVector> keys;
+    OrderedMap(const std::map<K, V>& cs, const std::vector<K>& ks);
 }; // class OrderedMap<V>
 
 } // namespace message2

@@ -37,6 +37,31 @@ SelectorKeys::SelectorKeys() : keys(KeyList()) {}
 
 SelectorKeys::SelectorKeys(const SelectorKeys& other) : keys(KeyList(other.keys)) {}
 
+// Lexically order key lists
+bool SelectorKeys::operator<(const SelectorKeys& other) const {
+    // Handle key lists of different sizes first --
+    // this case does have to be handled (even though it would
+    // reflect a data model error) because of the need to produce
+    // partial output
+    if (keys.size() < other.keys.size()) {
+        return true;
+    }
+    if (keys.size() > other.keys.size()) {
+        return false;
+    }
+
+    for (int32_t i = 0; i < (int32_t) keys.size(); i++) {
+        if (keys[i] < other.keys.at(i)) {
+            return true;
+        }
+        if (!(keys[i] == other.keys[i])) {
+            return false;
+        }
+    }
+    // If we've reached here, all keys must be equal
+    return false;
+}
+
 SelectorKeys::Builder::~Builder() {}
 
 SelectorKeys::~SelectorKeys() {}
@@ -52,6 +77,20 @@ UnicodeString VariableName::declaration() const {
 VariableName::~VariableName() {}
 
 //------------------ Literal
+
+bool Literal::operator<(const Literal& other) const {
+    // Ignore quoting for the purposes of ordering
+    U_ASSERT(contents.getType() == Formattable::kString && other.contents.getType() == Formattable::kString);
+
+    return contents.getString() < other.contents.getString();
+}
+
+bool Literal::operator==(const Literal& other) const {
+    // Ignore quoting for the purposes of ordering
+    U_ASSERT(contents.getType() == Formattable::kString && other.contents.getType() == Formattable::kString);
+
+    return contents.getString() == other.contents.getString();
+}
 
 UnicodeString Literal::quotedString() const {
     UnicodeString result(PIPE);
@@ -72,6 +111,15 @@ Literal& Literal::operator=(Literal&& other) noexcept {
     U_ASSERT(other.contents.getType() == Formattable::Type::kString);
     contents = std::move(other.contents);
 
+    return *this;
+}
+
+Literal& Literal::operator=(const Literal& other) {
+    if (this != &other) {
+        isQuoted = other.isQuoted;
+        U_ASSERT(other.contents.getType() == Formattable::Type::kString);
+        contents = other.contents;
+    }
     return *this;
 }
 
@@ -107,6 +155,26 @@ Operand& Operand::operator=(Operand&& other) noexcept {
     return *this;
 }
 
+Operand& Operand::operator=(const Operand& other) {
+    if (this != &other) {
+        switch (other.type) {
+        case Type::VARIABLE: {
+            var = other.var;
+            break;
+        }
+        case Type::LITERAL: {
+            lit = other.lit;
+            break;
+        }
+        default: {
+            break;
+        }
+        }
+        type = other.type;
+    }
+    return *this;
+}
+
 UBool Operand::isVariable() const { return type == Type::VARIABLE; }
 UBool Operand::isLiteral() const { return type == Type::LITERAL; }
 UBool Operand::isNull() const { return type == Type::NULL_OPERAND; }
@@ -135,6 +203,24 @@ Key& Key::operator=(Key&& other) noexcept {
     return *this;
 }
 
+bool Key::operator<(const Key& other) const {
+    // Arbitrarily treat * as greater than all concrete keys
+    if (wildcard) {
+        return false;
+    }
+    if (other.wildcard) {
+        return true;
+    }
+    return (asLiteral() < other.asLiteral());
+}
+
+bool Key::operator==(const Key& other) const {
+    if (wildcard) {
+        return other.wildcard;
+    }
+    return (asLiteral() == other.asLiteral());
+}
+
 UnicodeString Key::toString() const {
     if (isWildcard()) {
         return UnicodeString(ASTERISK);
@@ -146,78 +232,6 @@ const Literal& Key::asLiteral() const {
     U_ASSERT(!isWildcard());
     return contents;
 }
-
-//---------------- VariantMap
-
-int32_t VariantMap::size() const {
-    return contents->size();
-}
-
-// TODO
-// k is copied
-UBool VariantMap::next(int32_t &pos, SelectorKeys& k, const Pattern*& v) const {
-    UnicodeString unused;
-    if (!contents->next(pos, unused, v)) {
-        return false;
-    }
-    k = keyLists[pos - 1];
-    return true;
-}
-
-VariantMap::Builder& VariantMap::Builder::add(SelectorKeys&& key, Pattern&& value, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-    // Stringify `key`
-    UnicodeString keyResult;
-    concatenateKeys(key, keyResult);
-    contents->add(keyResult, std::move(value), errorCode);
-    keyLists.push_back(key);
-    return *this;
-}
-
-VariantMap* VariantMap::Builder::build(UErrorCode& errorCode) const {
-    NULL_ON_ERROR(errorCode);
-
-    LocalPointer<OrderedMap<Pattern>> adoptedContents(contents->build(errorCode));
-    NULL_ON_ERROR(errorCode);
-    VariantMap* result = new VariantMap(adoptedContents.orphan(), keyLists);
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
-/* static */ void VariantMap::Builder::concatenateKeys(const SelectorKeys& keys, UnicodeString& result) {
-    const KeyList& ks = keys.getKeys();
-    int32_t len = ks.size();
-    for (int32_t i = 0; i < len; i++) {
-        result += ks[i].toString();
-        if (i != len - 1) {
-            result += SPACE;
-        }
-    }
-}
-
-VariantMap::Builder::Builder(UErrorCode& errorCode) {
-    // initialize `contents`
-    // No value comparator needed
-    contents.adoptInstead(OrderedMap<Pattern>::builder(errorCode));
-    // initialize `keyLists`
-    keyLists = std::vector<SelectorKeys>();
-}
-
-/* static */ VariantMap::Builder* VariantMap::builder(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-    LocalPointer<VariantMap::Builder> result(new VariantMap::Builder(errorCode));
-    NULL_ON_ERROR(errorCode);
-    return result.orphan();
-}
-
-VariantMap::VariantMap(OrderedMap<Pattern>* vs, const std::vector<SelectorKeys>& ks) : contents(vs), keyLists(std::vector<SelectorKeys>(ks)) {
-    // Check invariant: `vs` and `ks` have the same size
-    U_ASSERT(vs->size() == (int32_t) ks.size());
-}
-
-VariantMap::Builder::~Builder() {}
 
 // ------------ Reserved
 
@@ -251,6 +265,13 @@ Reserved& Reserved::operator=(Reserved&& other) noexcept {
 
     parts = std::move(other.parts);
 
+    return *this;
+}
+
+Reserved& Reserved::operator=(const Reserved& other) {
+    if (this != &other) {
+        parts = other.parts;
+    }
     return *this;
 }
 
@@ -296,7 +317,7 @@ const Reserved& Operator::asReserved() const {
 
 const OptionMap& Operator::getOptions() const {
     U_ASSERT(!isReserved());
-    return *options;
+    return options;
 }
 
 Operator::Builder& Operator::Builder::setReserved(Reserved&& reserved) {
@@ -317,15 +338,12 @@ Operator::Builder& Operator::Builder::addOption(const UnicodeString &key, Operan
     THIS_ON_ERROR(errorCode);
 
     isReservedSequence = false;
-    if (!options.isValid()) {
-        options.adoptInstead(OptionMap::builder(errorCode));
-        THIS_ON_ERROR(errorCode);
-    }
+    hasOptions = true;
     // If the option name is already in the map, emit a data model error
-    if (options->has(key)) {
+    if (options.has(key)) {
         errorCode = U_DUPLICATE_OPTION_NAME_ERROR;
     } else {
-        options->add(key, std::move(value), errorCode);
+        options.add(key, std::move(value));
     }
     return *this;
 }
@@ -340,7 +358,7 @@ Operator Operator::Builder::build(UErrorCode& errorCode) const {
         // Methods enforce that the function name and options are unset
         // if `setReserved()` is called, so if they were valid, that
         // would indicate a bug.
-        U_ASSERT(!options.isValid() && !hasFunctionName);
+        U_ASSERT(!hasOptions && !hasFunctionName);
         result = Operator(asReserved);
     } else {
         if (!hasFunctionName) {
@@ -351,31 +369,16 @@ Operator Operator::Builder::build(UErrorCode& errorCode) const {
             errorCode = U_INVALID_STATE_ERROR;
             return result;
         }
-        if (options.isValid()) {
-            LocalPointer<OptionMap> opts(options->build(errorCode));
-            if (U_FAILURE(errorCode)) {
-                return result;
-            }
-            result = Operator(functionName, opts.orphan());
-        } else {
-            // If option were never added, create a new empty options map
-            LocalPointer<OptionMap::Builder> optsBuilder(OptionMap::builder(errorCode));
-            if (U_SUCCESS(errorCode)) {
-                LocalPointer<OptionMap> opts(optsBuilder->build(errorCode));
-                if (U_SUCCESS(errorCode)) {
-                    result = Operator(functionName, opts.orphan());
-                }
-            }
-        }
+        result = Operator(functionName, options.build());
     }
     return result;
 }
 
 Operator::Operator(const Operator& other) : isReservedSequence(other.isReservedSequence),
                                             functionName(other.functionName),
-                                            options(isReservedSequence ? nullptr
-                                                    : new OptionMap(*other.options)),
-                                            reserved(isReservedSequence? Reserved(other.reserved)
+                                            options(isReservedSequence ? OptionMap()
+                                                    : OptionMap(other.options)),
+                                            reserved(isReservedSequence ? Reserved(other.reserved)
                                                      : Reserved()) {}
 
 Operator& Operator::operator=(Operator&& other) noexcept {
@@ -391,10 +394,21 @@ Operator& Operator::operator=(Operator&& other) noexcept {
     return *this;
 }
 
-// Function call constructor; adopts `f` and `l`, which must be non-null
-Operator::Operator(const FunctionName& f, OptionMap *l) : isReservedSequence(false), functionName(f), options(l) {
-    U_ASSERT(l != nullptr);
- }
+Operator& Operator::operator=(const Operator& other) {
+    if (this != &other) {
+        isReservedSequence = other.isReservedSequence;
+        if (!other.isReservedSequence) {
+            functionName = other.functionName;
+            options = other.options;
+        } else {
+            reserved = other.reserved;
+        }
+    }
+    return *this;
+}
+
+// Function call constructor
+Operator::Operator(const FunctionName& f, OptionMap&& l) : isReservedSequence(false), functionName(f), options(l) {}
 
 Operator::Builder::~Builder() {}
 
@@ -477,6 +491,17 @@ Expression& Expression::operator=(Expression&& other) noexcept {
     return *this;
 }
 
+Expression& Expression::operator=(const Expression& other) {
+    if (this != &other) {
+        hasOperator = other.hasOperator;
+        if (other.hasOperator) {
+            rator = other.rator;
+        }
+        rand = other.rand;
+    }
+    return *this;
+}
+
 Expression::Builder::~Builder() {}
 
 // ----------- PatternPart
@@ -504,6 +529,19 @@ PatternPart& PatternPart::operator=(PatternPart&& other) noexcept {
     text = other.text;
     if (!isRawText) {
         expression = std::move(other.expression);
+    }
+    return *this;
+}
+
+PatternPart& PatternPart::operator=(const PatternPart& other) {
+    if (this != &other) {
+        this->~PatternPart();
+
+        isRawText = other.isRawText;
+        text = other.text;
+        if (!isRawText) {
+            expression = other.expression;
+        }
     }
     return *this;
 }
@@ -541,6 +579,16 @@ Pattern& Pattern::operator=(Pattern&& other) noexcept {
     return *this;
 }
 
+Pattern& Pattern::operator=(const Pattern& other) {
+    if (this != &other) {
+        this->~Pattern();
+
+        parts = other.parts;
+    }
+    return *this;
+}
+
+
 Pattern::Builder::~Builder() {}
 
 // ---------------- Binding
@@ -548,6 +596,15 @@ Pattern::Builder::~Builder() {}
 const Expression& Binding::getValue() const { return value; }
 
 Binding::Binding(const Binding& other) : var(other.var), value(other.value) {}
+
+Binding& Binding::operator=(const Binding& other) {
+    if (this != &other) {
+        var = other.var;
+        value = other.value;
+    }
+
+    return *this;
+}
 
 Binding::~Binding() {}
 
@@ -560,14 +617,7 @@ const Bindings& MessageFormatDataModel::getLocalVariables() const {
 // The `hasSelectors()` method is provided so that `getSelectors()`,
 // `getVariants()` and `getPattern()` can rely on preconditions
 // rather than taking error codes as arguments.
-UBool MessageFormatDataModel::hasSelectors() const {
-    if (hasPattern) {
-        U_ASSERT(!variants.isValid());
-        return false;
-    }
-    U_ASSERT(variants.isValid());
-    return true;
-}
+UBool MessageFormatDataModel::hasSelectors() const { return !hasPattern; }
 
 const ExpressionList& MessageFormatDataModel::getSelectors() const {
     U_ASSERT(hasSelectors());
@@ -576,7 +626,7 @@ const ExpressionList& MessageFormatDataModel::getSelectors() const {
 
 const VariantMap& MessageFormatDataModel::getVariants() const {
     U_ASSERT(hasSelectors());
-    return *variants;
+    return variants;
 }
 
 const Pattern& MessageFormatDataModel::getPattern() const {
@@ -584,21 +634,14 @@ const Pattern& MessageFormatDataModel::getPattern() const {
     return pattern;
 }
 
-MessageFormatDataModel::Builder::Builder(UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-    variants.adoptInstead(VariantMap::builder(errorCode));
-}
+MessageFormatDataModel::Builder::Builder() {}
 
 // Invalidate pattern and create selectors/variants if necessary
-void MessageFormatDataModel::Builder::buildSelectorsMessage(UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-
+void MessageFormatDataModel::Builder::buildSelectorsMessage() {
     if (hasPattern) {
         selectors = ExpressionList();
-        variants.adoptInstead(VariantMap::builder(errorCode));
+        variants = VariantMap::Builder();
         hasPattern = false;
-    } else {
-        U_ASSERT(variants.isValid());
     }
     hasPattern = false;
     hasSelectors = true;
@@ -616,7 +659,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariab
 MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(const Expression& selector, UErrorCode& errorCode) {
     THIS_ON_ERROR(errorCode);
 
-    buildSelectorsMessage(errorCode);
+    buildSelectorsMessage();
     selectors.push_back(selector);
 
     return *this;
@@ -625,22 +668,11 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(co
 /*
   `pattern` must be non-null
 */
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-
-    buildSelectorsMessage(errorCode);
-    variants->add(std::move(keys), std::move(pattern), errorCode);
+MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addVariant(SelectorKeys&& keys, Pattern&& pattern) {
+    buildSelectorsMessage();
+    variants.add(std::move(keys), std::move(pattern));
 
     return *this;
-}
-
-MessageFormatDataModel::Builder* MessageFormatDataModel::builder(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-    LocalPointer<Builder> result(new Builder(errorCode));
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-    return result.orphan();
 }
 
 MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::setPattern(Pattern&& pat) {
@@ -648,35 +680,77 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::setPattern(Pat
     hasPattern = true;
     hasSelectors = false;
     // Invalidate variants
-    variants.adoptInstead(nullptr);
+    variants = VariantMap::Builder();
     return *this;
 }
 
-MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder, UErrorCode &errorCode)
+MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder)
     : hasPattern(builder.hasPattern),
       selectors(hasPattern ? ExpressionList() : ExpressionList(builder.selectors)),
-      variants(hasPattern ? nullptr : builder.variants->build(errorCode)),
+      variants(hasPattern ? VariantMap() : builder.variants.build()),
       pattern(hasPattern ? builder.pattern : Pattern()),
       bindings(Bindings(builder.locals)) {}
 
-MessageFormatDataModel* MessageFormatDataModel::Builder::build(UErrorCode &errorCode) const {
-    NULL_ON_ERROR(errorCode);
+MessageFormatDataModel::MessageFormatDataModel(MessageFormatDataModel&& other) noexcept
+    : hasPattern(other.hasPattern),
+      selectors(hasPattern ? ExpressionList() : ExpressionList(other.selectors)),
+      variants(hasPattern ? VariantMap() : other.variants),
+      pattern(hasPattern ? other.pattern : Pattern()),
+      bindings(other.bindings) {}
 
-    // Initialize the data model
-    LocalPointer<MessageFormatDataModel> dataModel(new MessageFormatDataModel(*this, errorCode));
-    NULL_ON_ERROR(errorCode);
-    return dataModel.orphan();
+MessageFormatDataModel::MessageFormatDataModel() : hasPattern(true) {}
+
+MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel&& other) noexcept {
+    this->~MessageFormatDataModel();
+
+    hasPattern = other.hasPattern;
+    if (hasPattern) {
+        pattern = std::move(other.pattern);
+    } else {
+        selectors = std::move(other.selectors);
+        variants = std::move(other.variants);
+    }
+    bindings = std::move(other.bindings);
+    return *this;
+}
+
+MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDataModel& other) {
+    if (this != &other) {
+        this->~MessageFormatDataModel();
+
+        hasPattern = other.hasPattern;
+        if (hasPattern) {
+            pattern = other.pattern;
+        } else {
+            selectors = other.selectors;
+            variants = other.variants;
+        }
+        bindings = other.bindings;
+    }
+
+    return *this;
+}
+
+MessageFormatDataModel MessageFormatDataModel::Builder::build(UErrorCode& errorCode) const {
+    MessageFormatDataModel result;
+    if (U_FAILURE(errorCode)) {
+        return result;
+    }
+    if (!hasPattern && !hasSelectors) {
+        errorCode = U_INVALID_STATE_ERROR;
+    }
+    return MessageFormatDataModel(*this);
 }
 
 MessageFormatDataModel::~MessageFormatDataModel() {}
 template<>
-OrderedMap<Pattern>::Builder::~Builder() {}
+OrderedMap<SelectorKeys, Pattern>::Builder::~Builder() {}
 template<>
-OrderedMap<Pattern>::~OrderedMap() {}
+OrderedMap<SelectorKeys, Pattern>::~OrderedMap() {}
 template<>
-OrderedMap<Operand>::Builder::~Builder() {}
+OrderedMap<UnicodeString, Operand>::Builder::~Builder() {}
 template<>
-OrderedMap<Operand>::~OrderedMap() {}
+OrderedMap<UnicodeString, Operand>::~OrderedMap() {}
 
 } // namespace message2
 
