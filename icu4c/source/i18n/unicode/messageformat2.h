@@ -297,10 +297,11 @@ public:
 
        // The pattern to be parsed to generate the formatted message
        UnicodeString pattern;
-       bool hasPattern;
+       bool hasPattern = false;
+       bool hasDataModel = false;
        // The data model to be used to generate the formatted message
-       // Invariant: !(hasPattern && dataModel != nullptr)
-       const MessageFormatDataModel* dataModel;
+       // Ignored if hasPattern
+       MessageFormatDataModel dataModel;
        Locale locale;
        LocalPointer<FunctionRegistry> standardFunctionRegistry;
        // Not owned
@@ -346,16 +347,13 @@ public:
        /**
         * Sets a data model. If a pattern was previously set, it is removed.
         *
-        * @param dataModel Data model to format; this argument is
-        *        not adopted, and the caller must ensure its lifetime contains
-        *        the lifetime of the `MessageFormatter` object built by this
-        *        builder.
+        * @param dataModel Data model to format. Passed by move.
         * @return       A reference to the builder.
         *
         * @internal ICU 75.0 technology preview
         * @deprecated This API is for technology preview only.
         */
-        Builder& setDataModel(const MessageFormatDataModel* dataModel);
+        Builder& setDataModel(MessageFormatDataModel&& dataModel);
         /**
          * Constructs a new immutable MessageFormatter using the pattern or data model
          * that was previously set, and the locale (if it was previously set)
@@ -467,16 +465,7 @@ public:
      const FunctionRegistry* customFunctionRegistry;
 
      // Data model, representing the parsed message
-     // May be either owned (if created by parsing a pattern), or
-     // borrowed (if supplied by the builder's setDataModel() method) --
-     // the ownedDataModel flag determines which one
-     LocalPointer<MessageFormatDataModel> dataModel;
-     const MessageFormatDataModel* borrowedDataModel;
-     bool ownedDataModel;
-
-     // Upholds the invariant that either the data model or borrowed data model is valid,
-     // but not both
-     bool dataModelOK() const;
+     MessageFormatDataModel dataModel;
 
      // Normalized version of the input string (optional whitespace removed)
      UnicodeString normalizedInput;

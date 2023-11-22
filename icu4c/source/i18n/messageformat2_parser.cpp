@@ -1517,10 +1517,7 @@ void Parser::parseSelectors(UErrorCode &errorCode) {
             break;
         }
 
-        dataModel.addVariant(std::move(keyList), std::move(rhs), errorCode);
-        if (U_FAILURE(errorCode)) {
-            break;
-        }
+        dataModel.addVariant(std::move(keyList), std::move(rhs));
 
         // Restore the precondition, *without* erroring out if we've
         // reached the end of input. That's because it's valid for the

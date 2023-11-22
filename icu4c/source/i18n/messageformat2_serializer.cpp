@@ -111,14 +111,11 @@ void Serializer::emit(const Operand& rand) {
 }
 
 void Serializer::emit(const OptionMap& options) {
-    int32_t pos = OptionMap::FIRST;
-    UnicodeString k;
-    const Operand* v;
-    while (options.next(pos, k, v)) {
+    for (auto iter = options.begin(); iter != options.end(); ++iter) {
       whitespace();
-      emit(k);
+      emit(iter.first());
       emit(EQUALS);
-      emit(*v);
+      emit(iter.second());
     }
 }
 
@@ -239,17 +236,12 @@ void Serializer::serializeSelectors() {
 void Serializer::serializeVariants() {
     U_ASSERT(dataModel.hasSelectors());
     const VariantMap& variants = dataModel.getVariants();
-    int32_t pos = VariantMap::FIRST;
-
-    SelectorKeys selectorKeys;
-    const Pattern* pattern;
-
-    while (variants.next(pos, selectorKeys, pattern)) {
+    for (auto iter = variants.begin(); iter != variants.end(); ++iter) {
       emit(ID_WHEN);
       whitespace();
-      emit(selectorKeys);
+      emit(iter.first());
       // No whitespace needed here -- see `variant` in the grammar
-      emit(*pattern);
+      emit(iter.second());
     }    
 }
 

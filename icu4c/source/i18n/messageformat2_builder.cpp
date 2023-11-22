@@ -45,8 +45,8 @@ MessageFormatter::Builder* MessageFormatter::builder(UErrorCode& errorCode) {
 
 MessageFormatter::Builder& MessageFormatter::Builder::setPattern(const UnicodeString& pat) {
     hasPattern = true;
+    hasDataModel = false;
     pattern = pat;
-    dataModel = nullptr;
 
     return *this;
 }
@@ -64,11 +64,10 @@ MessageFormatter::Builder& MessageFormatter::Builder::setLocale(const Locale& lo
     return *this;
 }
 
-// Does not adopt `dataModel`
-MessageFormatter::Builder& MessageFormatter::Builder::setDataModel(const MessageFormatDataModel* newDataModel) {
-    U_ASSERT(newDataModel != nullptr);
+MessageFormatter::Builder& MessageFormatter::Builder::setDataModel(MessageFormatDataModel&& newDataModel) {
     hasPattern = false;
-    dataModel = newDataModel;
+    hasDataModel = true;
+    dataModel = std::move(newDataModel);
 
     return *this;
 }
@@ -109,56 +108,34 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     // Validate pattern and build data model
     // First, check that exactly one of the pattern and data model are set, but not both
 
-    bool dataModelSet = builder.dataModel != nullptr;
-
-    if ((!builder.hasPattern && !dataModelSet)
-        || (builder.hasPattern && dataModelSet)) {
+    if ((!builder.hasPattern && !builder.hasDataModel)
+        || (builder.hasPattern && builder.hasDataModel)) {
       success = U_INVALID_STATE_ERROR;
       return;
     }
 
     // If data model was set, just assign it
-    if (dataModelSet) {
-        ownedDataModel = false;
-        borrowedDataModel = builder.dataModel;
+    if (builder.hasDataModel) {
+        dataModel = builder.dataModel;
         return;
     }
-    borrowedDataModel = nullptr;
 
-    LocalPointer<MessageFormatDataModel::Builder> tree(MessageFormatDataModel::builder(success));
-    CHECK_ERROR(success);
+    MessageFormatDataModel::Builder tree;
 
     // Initialize formatter cache
     cachedFormatters = new CachedFormatters(success);
     CHECK_ERROR(success);
 
     // Parse the pattern
-    LocalPointer<Parser> parser(Parser::create(builder.pattern, *tree, normalizedInput, *errors, success));
+    LocalPointer<Parser> parser(Parser::create(builder.pattern, tree, normalizedInput, *errors, success));
     CHECK_ERROR(success);
     parser->parse(parseError, success);
 
     // Build the data model based on what was parsed
-    LocalPointer<MessageFormatDataModel> dataModelPtr(tree->build(success));
-    if (U_SUCCESS(success)) {
-        ownedDataModel = true;
-        dataModel.adoptInstead(dataModelPtr.orphan());
-    }
+    dataModel = tree.build(success);
 }
 
-const MessageFormatDataModel& MessageFormatter::getDataModel() const {
-    U_ASSERT(dataModelOK());
-    if (ownedDataModel) {
-        return *dataModel;
-    }
-    return *borrowedDataModel;
-}
-
-bool MessageFormatter::dataModelOK() const {
-    if (ownedDataModel) {
-        return dataModel.isValid() && borrowedDataModel == nullptr;
-    }
-    return !dataModel.isValid() && borrowedDataModel != nullptr;
-}
+const MessageFormatDataModel& MessageFormatter::getDataModel() const { return dataModel; }
 
 MessageFormatter::~MessageFormatter() {
     if (cachedFormatters != nullptr) {
