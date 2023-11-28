@@ -572,8 +572,6 @@ Pattern::Builder& Pattern::Builder::add(const PatternPart& part) {
 }
 
 Pattern& Pattern::operator=(Pattern&& other) noexcept {
-    this->~Pattern();
-
     parts = std::move(other.parts);
 
     return *this;
@@ -581,8 +579,6 @@ Pattern& Pattern::operator=(Pattern&& other) noexcept {
 
 Pattern& Pattern::operator=(const Pattern& other) {
     if (this != &other) {
-        this->~Pattern();
-
         parts = other.parts;
     }
     return *this;
@@ -701,8 +697,6 @@ MessageFormatDataModel::MessageFormatDataModel(MessageFormatDataModel&& other) n
 MessageFormatDataModel::MessageFormatDataModel() : hasPattern(true) {}
 
 MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel&& other) noexcept {
-    this->~MessageFormatDataModel();
-
     hasPattern = other.hasPattern;
     if (hasPattern) {
         pattern = std::move(other.pattern);
