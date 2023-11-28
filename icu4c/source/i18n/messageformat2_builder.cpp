@@ -34,16 +34,6 @@ namespace message2 {
 // -------------------------------------
 // Creates a MessageFormat instance based on the pattern.
 
-// Returns a new (uninitialized) builder
-MessageFormatter::Builder* MessageFormatter::builder(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-    MessageFormatter::Builder* tree = new Builder();
-    if (tree == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return tree;
-}
-
 MessageFormatter::Builder& MessageFormatter::Builder::setPattern(const UnicodeString& pat) {
     hasPattern = true;
     hasDataModel = false;
@@ -78,10 +68,8 @@ MessageFormatter::Builder& MessageFormatter::Builder::setDataModel(MessageFormat
   its borrowed FunctionRegistry and (if the setDataModel() method was called)
   MessageFormatDataModel pointers could become invalidated.
 */
-MessageFormatter* MessageFormatter::Builder::build(UParseError& parseError, UErrorCode& errorCode) const {
-    NULL_ON_ERROR(errorCode);
-
-    return new MessageFormatter(*this, parseError, errorCode);
+MessageFormatter MessageFormatter::Builder::build(UParseError& parseError, UErrorCode& errorCode) const {
+    return MessageFormatter(*this, parseError, errorCode);
 }
 
 MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError,
@@ -140,6 +128,40 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
 
     // Check for resolution errors
     Checker(dataModel, errors).check(success);
+}
+
+MessageFormatter& MessageFormatter::operator=(MessageFormatter&& other) noexcept {
+// TODO: this doesn't set `standardFunctionRegistry` to null,
+// causing a double-free below when it's re-assigned
+//  this->~MessageFormatter();
+
+  locale = std::move(other.locale);
+  if (other.standardFunctionRegistry.isValid()) {
+    standardFunctionRegistry = LocalPointer<FunctionRegistry>(other.standardFunctionRegistry.orphan());
+  }
+  customFunctionRegistry = other.customFunctionRegistry;
+  dataModel = std::move(other.dataModel);
+  normalizedInput = std::move(other.normalizedInput);
+  cachedFormatters = other.cachedFormatters;
+  other.cachedFormatters = nullptr;
+  errors = std::move(other.errors);
+
+  return *this;
+}
+
+MessageFormatter::MessageFormatter(MessageFormatter&& other) {
+  if (this != &other) {
+    locale = std::move(other.locale);
+    if (other.standardFunctionRegistry.isValid()) {
+      standardFunctionRegistry = LocalPointer<FunctionRegistry>(other.standardFunctionRegistry.orphan());
+    }
+    customFunctionRegistry = other.customFunctionRegistry;
+    dataModel = std::move(other.dataModel);
+    normalizedInput = std::move(other.normalizedInput);
+    cachedFormatters = other.cachedFormatters;
+    other.cachedFormatters = nullptr;
+    errors = std::move(other.errors);
+  }
 }
 
 const MessageFormatDataModel& MessageFormatter::getDataModel() const { return dataModel; }

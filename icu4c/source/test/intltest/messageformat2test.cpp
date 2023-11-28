@@ -202,8 +202,8 @@ void TestMessageFormat2::testAPISimple() {
     // design doc, it elides null checks and error checks.
     // To be used in the test suite, it should include those checks
     // Null checks and error checks elided
-    MessageFormatter::Builder* builder = MessageFormatter::builder(errorCode);
-    MessageFormatter* mf = builder->setPattern(u"{Hello, {$userName}!}")
+    MessageFormatter::Builder builder;
+    MessageFormatter mf = builder.setPattern(u"{Hello, {$userName}!}")
         .build(parseError, errorCode);
 
     MessageArguments::Builder argsBuilder = MessageArguments::Builder();
@@ -211,11 +211,10 @@ void TestMessageFormat2::testAPISimple() {
     MessageArguments args = argsBuilder.build();
 
     UnicodeString result;
-    result = mf->formatToString(args, errorCode);
+    result = mf.formatToString(args, errorCode);
     assertEquals("testAPI", result, "Hello, John!");
 
-    delete mf;
-    mf = builder->setPattern("{Today is {$today :datetime skeleton=yMMMdEEE}.}")
+    mf = builder.setPattern("{Today is {$today :datetime skeleton=yMMMdEEE}.}")
         .setLocale(locale)
         .build(parseError, errorCode);
 
@@ -226,7 +225,7 @@ void TestMessageFormat2::testAPISimple() {
 
     argsBuilder.addDate("today", date);
     args = argsBuilder.build();
-    result = mf->formatToString(args, errorCode);
+    result = mf.formatToString(args, errorCode);
     assertEquals("testAPI", "Today is Sun, Oct 28, 2136.", result);
 
     argsBuilder.addInt64("photoCount", 12);
@@ -234,8 +233,7 @@ void TestMessageFormat2::testAPISimple() {
     argsBuilder.add("userName", "Maria");
     args = argsBuilder.build();
 
-    delete mf;
-    mf = builder->setPattern("match {$photoCount :plural} {$userGender :select}\n\
+    mf = builder.setPattern("match {$photoCount :plural} {$userGender :select}\n\
                      when 1 masculine {{$userName} added a new photo to his album.}\n \
                      when 1 feminine {{$userName} added a new photo to her album.}\n \
                      when 1 * {{$userName} added a new photo to their album.}\n \
@@ -244,12 +242,10 @@ void TestMessageFormat2::testAPISimple() {
                      when * * {{$userName} added {$photoCount} photos to their album.}")
         .setLocale(locale)
         .build(parseError, errorCode);
-    result = mf->formatToString(args, errorCode);
+    result = mf.formatToString(args, errorCode);
     assertEquals("testAPI", "Maria added 12 photos to her album.", result);
 
-    delete builder;
     delete cal;
-    delete mf;
 }
 
 // Design doc example, with more details
@@ -343,42 +339,37 @@ void TestMessageFormat2::testAPICustomFunctions() {
     argsBuilder.addObject("name", person);
     MessageArguments arguments = argsBuilder.build();
 
-    MessageFormatter::Builder* mfBuilder = MessageFormatter::builder(errorCode);
+    MessageFormatter::Builder mfBuilder;
     UnicodeString result;
     // This fails, because we did not provide a function registry:
-    MessageFormatter* mf = mfBuilder->setPattern("{Hello {$name :person formality=informal}}")
+    MessageFormatter mf = mfBuilder.setPattern("{Hello {$name :person formality=informal}}")
                                     .setLocale(locale)
                                     .build(parseError, errorCode);
-    result = mf->formatToString(arguments, errorCode);
+    result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", U_UNKNOWN_FUNCTION_ERROR, errorCode);
 
     errorCode = U_ZERO_ERROR;
-    mfBuilder->setFunctionRegistry(functionRegistry)
+    mfBuilder.setFunctionRegistry(functionRegistry)
               .setLocale(locale);
 
-    delete mf;
-    mf = mfBuilder->setPattern("{Hello {$name :person formality=informal}}")
+    mf = mfBuilder.setPattern("{Hello {$name :person formality=informal}}")
                     .build(parseError, errorCode);
-    result = mf->formatToString(arguments, errorCode);
+    result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello John", result);
 
-    delete mf;
-    mf = mfBuilder->setPattern("{Hello {$name :person formality=formal}}")
+    mf = mfBuilder.setPattern("{Hello {$name :person formality=formal}}")
                     .build(parseError, errorCode);
-    result = mf->formatToString(arguments, errorCode);
+    result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello Mr. Doe", result);
 
-    delete mf;
-    mf = mfBuilder->setPattern("{Hello {$name :person formality=formal length=long}}")
+    mf = mfBuilder.setPattern("{Hello {$name :person formality=formal length=long}}")
                     .build(parseError, errorCode);
-    result = mf->formatToString(arguments, errorCode);
+    result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello Mr. John Doe", result);
 
     delete builder;
     delete functionRegistry;
     delete person;
-    delete mf;
-    delete mfBuilder;
 }
 
 void TestMessageFormat2::testValidPatterns(const TestResult* patterns, int32_t len, IcuTestErrorCode& errorCode) {

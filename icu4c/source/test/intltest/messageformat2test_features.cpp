@@ -578,11 +578,10 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
                                        .build(errorCode));
     UnicodeString message = "{Testing {$count :temp unit=$unit skeleton=|.00/w|}.}";
 
-    LocalPointer<MessageFormatter::Builder> mfBuilder(MessageFormatter::builder(errorCode));
-    CHECK_ERROR(errorCode);
-    mfBuilder->setPattern(message).setFunctionRegistry(reg.getAlias());
+    MessageFormatter::Builder mfBuilder;
+    mfBuilder.setPattern(message).setFunctionRegistry(reg.getAlias());
     UParseError parseError;
-    LocalPointer<MessageFormatter> mf(mfBuilder->build(parseError, errorCode));
+    MessageFormatter mf = mfBuilder.build(parseError, errorCode);
     UnicodeString result;
     UnicodeString countKey("count");
     UnicodeString unitKey("unit");
@@ -597,7 +596,7 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
         argumentsBuilder.addInt64(countKey, count);
         argumentsBuilder.add(unitKey, "C");
 
-        result = mf->formatToString(argumentsBuilder.build(), errorCode);
+        result = mf.formatToString(argumentsBuilder.build(), errorCode);
         assertEquals("temperature formatter", CharsToUnicodeString(expected), result);
 
         snprintf(expected, sizeof(expected), "Testing %d\\u00B0F.", (int32_t) count);
@@ -605,7 +604,7 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
         argumentsBuilder.addInt64(countKey, count);
         argumentsBuilder.add(unitKey, "F");
 
-        result = mf->formatToString(argumentsBuilder.build(), errorCode);
+        result = mf.formatToString(argumentsBuilder.build(), errorCode);
         assertEquals("temperature formatter", CharsToUnicodeString(expected), result);
     }
 
@@ -616,48 +615,48 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
 
     argumentsBuilder.addDouble(countKey, 12.0);
     argumentsBuilder.add(unitKey, "C");
-    result = mf->formatToString(argumentsBuilder.build(), errorCode);
+    result = mf.formatToString(argumentsBuilder.build(), errorCode);
 
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12\\u00B0C."), result);
 
     argumentsBuilder.addDouble(countKey, 12.5);
     argumentsBuilder.add(unitKey, "F");
-    result = mf->formatToString(argumentsBuilder.build(), errorCode);
+    result = mf.formatToString(argumentsBuilder.build(), errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.50\\u00B0F."), result);
 
     argumentsBuilder.addDouble(countKey, 12.54);
     argumentsBuilder.add(unitKey, "C");
-    result = mf->formatToString(argumentsBuilder.build(), errorCode);
+    result = mf.formatToString(argumentsBuilder.build(), errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.54\\u00B0C."), result);
 
     argumentsBuilder.addDouble(countKey, 12.54321);
     argumentsBuilder.add(unitKey, "F");
-    result = mf->formatToString(argumentsBuilder.build(), errorCode);
+    result = mf.formatToString(argumentsBuilder.build(), errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.54\\u00B0F."), result);
 
     // Check skeleton
     message = "{Testing {$count :temp unit=$unit skeleton=|.0/w|}.}";
-    mfBuilder->setPattern(message);
-    mf.adoptInstead(mfBuilder->build(parseError, errorCode));
+    mfBuilder.setPattern(message);
+    mf = mfBuilder.build(parseError, errorCode);
 
     argumentsBuilder.addDouble(countKey, 12.0);
     argumentsBuilder.add(unitKey, "C");
-    result = mf->formatToString(argumentsBuilder.build(), errorCode);
+    result = mf.formatToString(argumentsBuilder.build(), errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12\\u00B0C."), result);
 
     argumentsBuilder.addDouble(countKey, 12.5);
     argumentsBuilder.add(unitKey, "F");
-    result = mf->formatToString(argumentsBuilder.build(), errorCode);
+    result = mf.formatToString(argumentsBuilder.build(), errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.5\\u00B0F."), result);
 
     argumentsBuilder.addDouble(countKey, 12.54);
     argumentsBuilder.add(unitKey, "C");
-    result = mf->formatToString(argumentsBuilder.build(), errorCode);
+    result = mf.formatToString(argumentsBuilder.build(), errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.5\\u00B0C."), result);
 
     argumentsBuilder.addDouble(countKey, 12.54321);
     argumentsBuilder.add(unitKey, "F");
-    result = mf->formatToString(argumentsBuilder.build(), errorCode);
+    result = mf.formatToString(argumentsBuilder.build(), errorCode);
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.5\\u00B0F."), result);
 
 }
