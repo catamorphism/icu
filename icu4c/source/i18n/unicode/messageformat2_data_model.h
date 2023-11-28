@@ -1273,12 +1273,12 @@ namespace message2 {
         class U_I18N_API Builder : public UMemory {
         private:
             friend class Pattern;
-          
+
             // Note this is why PatternPart and all its enclosed classes need
             // copy constructors: when the build() method is called on `parts`,
             // it should copy `parts` rather than moving it
             std::vector<PatternPart> parts;
-          
+
         public:
             /**
              * Adds a single part to the pattern. Copies `part`.
@@ -1318,7 +1318,7 @@ namespace message2 {
     private:
         // Possibly-empty list of parts
         /* const */ std::vector<PatternPart> parts;
-      
+
         // Should only be called by Builder
         Pattern(const std::vector<PatternPart>& ps);
     }; // class Pattern
