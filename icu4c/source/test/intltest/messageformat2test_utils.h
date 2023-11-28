@@ -14,25 +14,28 @@
 U_NAMESPACE_BEGIN namespace message2 {
 
 class TestCase : public UMemory {
-    public:
-    const UnicodeString testName;
-    const UnicodeString pattern;
-    const Locale locale;
-    LocalPointer<MessageArguments> arguments;
-
     private:
-    const UErrorCode expectedError;
-    const bool expectedNoSyntaxError;
-    const bool hasExpectedOutput;
-    const UnicodeString& expected;
-    const bool hasLineNumberAndOffset;
-    const uint32_t lineNumber;
-    const uint32_t offset;
-    const bool ignoreError;
+    /* const */ UnicodeString testName;
+    /* const */ UnicodeString pattern;
+    /* const */ Locale locale;
+    /* const */ MessageArguments arguments;
+    /* const */ UErrorCode expectedError;
+    /* const */ bool expectedNoSyntaxError;
+    /* const */ bool hasExpectedOutput;
+    /* const */ UnicodeString expected;
+    /* const */ bool hasLineNumberAndOffset;
+    /* const */ uint32_t lineNumber;
+    /* const */ uint32_t offset;
+    /* const */ bool ignoreError;
+
     // Function registry is not owned by the TestCase object
-    const FunctionRegistry* functionRegistry;
+    const FunctionRegistry* functionRegistry = nullptr;
 
     public:
+    const UnicodeString& getPattern() const { return pattern; }
+    const Locale& getLocale() const { return locale; }
+    const MessageArguments& getArguments() const { return arguments; }
+    const UnicodeString& getTestName() const { return testName; }
     bool expectSuccess() const {
         return (!ignoreError && U_SUCCESS(expectedError));
     }
@@ -70,6 +73,8 @@ class TestCase : public UMemory {
         U_ASSERT(hasCustomRegistry());
         return functionRegistry;
     }
+    TestCase(const TestCase&);
+    TestCase& operator=(TestCase&& other) noexcept = default;
     virtual ~TestCase();
  
     class Builder : public UObject {
@@ -78,55 +83,43 @@ class TestCase : public UMemory {
         public:
         Builder& setName(UnicodeString name) { testName = name; return *this; }
         Builder& setPattern(UnicodeString pat) { pattern = pat; return *this; }
-        Builder& setArgument(const UnicodeString& k, const UnicodeString& val, UErrorCode& errorCode) {
-            THIS_ON_ERROR(errorCode);
-            arguments->add(k, val, errorCode);
+        Builder& setArgument(const UnicodeString& k, const UnicodeString& val) {
+            arguments.add(k, val);
             return *this;
         }
-        Builder& setArgument(const UnicodeString& k, const UnicodeString* val, int32_t count, UErrorCode& errorCode) {
-            THIS_ON_ERROR(errorCode);
+        Builder& setArgument(const UnicodeString& k, const Formattable* val, int32_t count) {
             U_ASSERT(val != nullptr);
-            arguments->adoptArray(k, val, count, errorCode);
+            arguments.adoptArray(k, val, count);
             return *this;
         }
-        Builder& setArgument(const UnicodeString& k, double val, UErrorCode& errorCode) {
-            THIS_ON_ERROR(errorCode);
-
-            arguments->addDouble(k, val, errorCode);
+        Builder& setArgument(const UnicodeString& k, double val) {
+            arguments.addDouble(k, val);
             return *this;
         }
-        Builder& setArgument(const UnicodeString& k, int64_t val, UErrorCode& errorCode) {
-            THIS_ON_ERROR(errorCode);
-
-            arguments->addInt64(k, val, errorCode);
+        Builder& setArgument(const UnicodeString& k, int64_t val) {
+            arguments.addInt64(k, val);
             return *this;
         }
-        Builder& setDateArgument(const UnicodeString& k, UDate date, UErrorCode& errorCode) {
-            THIS_ON_ERROR(errorCode);
-
-            arguments->addDate(k, date, errorCode);
+        Builder& setDateArgument(const UnicodeString& k, UDate date) {
+            arguments.addDate(k, date);
             return *this;
         }
         Builder& setDecimalArgument(const UnicodeString& k, StringPiece decimal, UErrorCode& errorCode) {
             THIS_ON_ERROR(errorCode);
 
-            arguments->addDecimal(k, decimal, errorCode);
+            arguments.addDecimal(k, decimal, errorCode);
             return *this;
         }
         // val has to be uniquely owned because the copy constructor for
         // a Formattable of an object doesn't work
-        Builder& setArgument(const UnicodeString& k, UObject* val, UErrorCode& errorCode) {
-            THIS_ON_ERROR(errorCode);
+        Builder& setArgument(const UnicodeString& k, UObject* val) {
             U_ASSERT(val != nullptr);
 
-            arguments->addObject(k, val, errorCode);
+            arguments.addObject(k, val);
             return *this;
         }
-        Builder& clearArguments(UErrorCode& errorCode) {
-            THIS_ON_ERROR(errorCode);
-            if (arguments.isValid()) {
-                arguments.adoptInstead(MessageArguments::builder(errorCode));
-            };
+        Builder& clearArguments() {
+            arguments = MessageArguments::Builder();
             return *this;
         }
         Builder& setExpected(UnicodeString e) {
@@ -149,21 +142,8 @@ class TestCase : public UMemory {
         Builder& setExpectSuccess() {
             return setExpectedError(U_ZERO_ERROR);
         }
-        Builder& clearLocale() {
-            if (locale.isValid()) {
-                locale.adoptInstead(nullptr);
-            }
-            return *this;
-        }
-
-        Builder& setLocale(const Locale& loc, UErrorCode& errorCode) {
-            THIS_ON_ERROR(errorCode);
-            Locale* l = new Locale(loc);
-            if (l == nullptr) {
-                errorCode = U_MEMORY_ALLOCATION_ERROR;
-            } else {
-                locale.adoptInstead(l);
-            }
+        Builder& setLocale(Locale&& loc) {
+            locale = loc;
             return *this;
         }
         Builder& setExpectedLineNumberAndOffset(uint32_t line, uint32_t o) {
@@ -180,24 +160,21 @@ class TestCase : public UMemory {
             ignoreError = false;
             return *this;
         }
-        Builder& setFunctionRegistry(FunctionRegistry* reg) {
+        Builder& setFunctionRegistry(const FunctionRegistry* reg) {
             U_ASSERT(reg != nullptr);
-            functionRegistry.adoptInstead(reg);
+            functionRegistry = reg;
             return *this;
         }
-        TestCase* build(UErrorCode& errorCode) const {
-            NULL_ON_ERROR(errorCode);
-            LocalPointer<TestCase> result(new TestCase(*this, errorCode));
-            NULL_ON_ERROR(errorCode);
-            return result.orphan();
+        TestCase build() const {
+            return TestCase(*this);
         }
         virtual ~Builder();
 
         private:
         UnicodeString testName;
         UnicodeString pattern;
-        LocalPointer<Locale> locale;
-        LocalPointer<MessageArguments::Builder> arguments;
+        Locale locale;
+        MessageArguments::Builder arguments;
         bool hasExpectedOutput;
         UnicodeString expected;
         UErrorCode expectedError;
@@ -206,17 +183,18 @@ class TestCase : public UMemory {
         uint32_t lineNumber;
         uint32_t offset;
         bool ignoreError;
-        LocalPointer<FunctionRegistry> functionRegistry;
+        const FunctionRegistry* functionRegistry = nullptr; // Not owned
 
-        Builder(UErrorCode& errorCode) : pattern(""), arguments(MessageArguments::builder(errorCode)), hasExpectedOutput(false), expected(""), expectedError(U_ZERO_ERROR), expectNoSyntaxError(false), hasLineNumberAndOffset(false), ignoreError(false) {}
+        public:
+        Builder() : pattern(""), locale(Locale::getDefault()), arguments(MessageArguments::Builder()), hasExpectedOutput(false), expected(""), expectedError(U_ZERO_ERROR), expectNoSyntaxError(false), hasLineNumberAndOffset(false), ignoreError(false) {}
     };
 
     private:
-    TestCase(const Builder& builder, UErrorCode& errorCode) :
+    TestCase(const Builder& builder) :
         testName(builder.testName),
         pattern(builder.pattern),
-        locale(!builder.locale.isValid() ? Locale::getDefault() : *builder.locale),
-        arguments(builder.arguments->build(errorCode)),
+        locale(builder.locale),
+        arguments(builder.arguments.build()),
         expectedError(builder.expectedError),
         expectedNoSyntaxError(builder.expectNoSyntaxError),
         hasExpectedOutput(builder.hasExpectedOutput),
@@ -225,16 +203,10 @@ class TestCase : public UMemory {
         lineNumber(builder.hasLineNumberAndOffset ? builder.lineNumber : 0),
         offset(builder.hasLineNumberAndOffset ? builder.offset : 0),
         ignoreError(builder.ignoreError),
-        functionRegistry(builder.functionRegistry.getAlias()) {
-        U_ASSERT(builder.arguments.isValid());
+        functionRegistry(builder.functionRegistry) {
         // If an error is not expected, then the expected
         // output should be present
         U_ASSERT(expectFailure() || expectNoSyntaxError() || hasExpectedOutput);
-    }
-    public:
-    static TestCase::Builder* builder(UErrorCode& errorCode) {
-        NULL_ON_ERROR(errorCode);
-        return new Builder(errorCode);
     }
 }; // class TestCase
 
@@ -249,7 +221,7 @@ class TestUtils {
 
         LocalPointer<MessageFormatter::Builder> mfBuilder(MessageFormatter::builder(errorCode));
         CHECK_ERROR(errorCode);
-        mfBuilder->setPattern(testCase.pattern).setLocale(testCase.locale);
+        mfBuilder->setPattern(testCase.getPattern()).setLocale(testCase.getLocale());
 
         if (testCase.hasCustomRegistry()) {
             mfBuilder->setFunctionRegistry(testCase.getCustomRegistry());
@@ -259,7 +231,7 @@ class TestUtils {
         UnicodeString result;
 
         if (U_SUCCESS(errorCode)) {
-            result = mf->formatToString(*(testCase.arguments), errorCode);
+            result = mf->formatToString(testCase.getArguments(), errorCode);
         }
 
         if (testCase.expectNoSyntaxError()) {
@@ -288,29 +260,29 @@ class TestUtils {
     }
 
     static void failSyntaxError(IntlTest& tmsg, const TestCase& testCase) {
-        tmsg.dataerrln(testCase.testName);
-        tmsg.logln(testCase.testName + " failed test with pattern: " + testCase.pattern + " and error code U_SYNTAX_WARNING; expected no syntax error");
+        tmsg.dataerrln(testCase.getTestName());
+        tmsg.logln(testCase.getTestName() + " failed test with pattern: " + testCase.getPattern() + " and error code U_SYNTAX_WARNING; expected no syntax error");
     }
 
     static void failExpectedSuccess(IntlTest& tmsg, const TestCase& testCase, IcuTestErrorCode& errorCode) {
-        tmsg.dataerrln(testCase.testName);
-        tmsg.logln(testCase.testName + " failed test with pattern: " + testCase.pattern + " and error code " + ((int32_t) errorCode));
+        tmsg.dataerrln(testCase.getTestName());
+        tmsg.logln(testCase.getTestName() + " failed test with pattern: " + testCase.getPattern() + " and error code " + ((int32_t) errorCode));
         errorCode.reset();
     }
     static void failExpectedFailure(IntlTest& tmsg, const TestCase& testCase, IcuTestErrorCode& errorCode) {
-        tmsg.dataerrln(testCase.testName);
-        tmsg.logln(testCase.testName + " failed test with wrong error code; pattern: " + testCase.pattern + " and error code " + ((int32_t) errorCode) + "(expected error code: " + ((int32_t) testCase.expectedErrorCode()) + " )");
+        tmsg.dataerrln(testCase.getTestName());
+        tmsg.logln(testCase.getTestName() + " failed test with wrong error code; pattern: " + testCase.getPattern() + " and error code " + ((int32_t) errorCode) + "(expected error code: " + ((int32_t) testCase.expectedErrorCode()) + " )");
         errorCode.reset();
     }
     static void failWrongOutput(IntlTest& tmsg, const TestCase& testCase, const UnicodeString& result) {
-        tmsg.dataerrln(testCase.testName);
-        tmsg.logln(testCase.testName + " failed test with wrong output; pattern: " + testCase.pattern + " and expected output = " + testCase.expectedOutput() + " and actual output = " + result);
+        tmsg.dataerrln(testCase.getTestName());
+        tmsg.logln(testCase.getTestName() + " failed test with wrong output; pattern: " + testCase.getPattern() + " and expected output = " + testCase.expectedOutput() + " and actual output = " + result);
     }
 
     static void failWrongOffset(IntlTest& tmsg, const TestCase& testCase, uint32_t actualLine, uint32_t actualOffset) {
         tmsg.dataerrln("Test failed with wrong line or character offset in parse error; expected (line %d, offset %d), got (line %d, offset %d)", testCase.getLineNumber(), testCase.getOffset(),
                   actualLine, actualOffset);
-        tmsg.logln(UnicodeString(testCase.testName) + " pattern = " + testCase.pattern + " - failed by returning the wrong line number or offset in the parse error");
+        tmsg.logln(UnicodeString(testCase.getTestName()) + " pattern = " + testCase.getPattern() + " - failed by returning the wrong line number or offset in the parse error");
     }
 }; // class TestUtils
 
