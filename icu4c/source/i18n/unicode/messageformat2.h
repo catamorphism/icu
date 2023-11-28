@@ -49,7 +49,7 @@ public:
      * The mutable Builder class allows each message argument to be initialized
      * separately; calling its `build()` method yields an immutable MessageArguments.
      *
-     * Builder is not copyable or movable.
+     * Builder is movable and not copyable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -61,49 +61,45 @@ public:
          *
          * @param key The name of the argument.
          * @param value The value of the argument.
-         * @param status    Input/output error code.
          * @return          A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& add(const UnicodeString& key, const UnicodeString& value, UErrorCode& status);
+        Builder& add(const UnicodeString& key, const UnicodeString& value);
         /**
          * Adds an argument of type `double`.
          *
          * @param key The name of the argument.
          * @param value The value of the argument.
-         * @param status    Input/output error code.
          * @return          A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addDouble(const UnicodeString& key, double value, UErrorCode& status);
+        Builder& addDouble(const UnicodeString& key, double value);
         /**
          * Adds an argument of type `int64_t`.
          *
          * @param key The name of the argument.
          * @param value The value of the argument.
-         * @param status    Input/output error code.
          * @return          A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addInt64(const UnicodeString& key, int64_t value, UErrorCode& status);
+        Builder& addInt64(const UnicodeString& key, int64_t value);
         /**
          * Adds an argument of type `UDate`.
          *
          * @param key The name of the argument.
          * @param value The value of the argument.
-         * @param status    Input/output error code.
          * @return          A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addDate(const UnicodeString& key, UDate value, UErrorCode& status);
+        Builder& addDate(const UnicodeString& key, UDate value);
         /**
          * Adds an argument of type `StringPiece`, representing a
          * decimal number.
@@ -121,40 +117,38 @@ public:
          * Adds an argument of type UnicodeString[]. Adopts `value`.
          *
          * @param key The name of the argument.
-         * @param value The value of the argument, interpreted as an array of strings.
+         * @param value The value of the argument, interpreted as an array of Formattables
+         *                (which must have string values)
          * @param length The length of the array.
-         * @param status  Input/output error code.
          * @return        A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& adoptArray(const UnicodeString& key, const UnicodeString* value, int32_t length, UErrorCode& status);
+        Builder& adoptArray(const UnicodeString& key, const Formattable* value, int32_t length);
         /**
          * Adds an argument of type UObject*, which must be non-null. Does not
          * adopt this argument.
          *
          * @param key The name of the argument.
          * @param value The value of the argument.
-         * @param status  Input/output error code.
          * @return        A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addObject(const UnicodeString& key, const UObject* value, UErrorCode& status);
+        Builder& addObject(const UnicodeString& key, const UObject* value);
         /**
          * Creates an immutable `MessageArguments` object with the argument names
          * and values that were added by previous calls. The builder can still be used
          * after this call.
          *
-         * @param status  Input/output error code.
-         * @return        The new MessageArguments object, which is non-null if U_SUCCESS(status).
+         * @return        The new MessageArguments object
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageArguments* build(UErrorCode& status) const;
+        MessageArguments build() const;
         /**
          * Destructor.
          *
@@ -162,31 +156,20 @@ public:
          * @deprecated This API is for technology preview only.
          */
         virtual ~Builder();
+// TODO
+        Builder();
+        Builder(Builder&&);
+        Builder& operator=(Builder&&) noexcept = default;
     private:
         friend class MessageArguments;
-        Builder(UErrorCode&);
-        Builder& add(const UnicodeString&, Formattable*, UErrorCode&);
-        // For why these aren't LocalPointers, see the comment on
-        // MessageFormatter::cachedFormatters
-        Hashtable* contents;
-        // Keep a separate hash table for objects, which does not
+        Builder& addFormattable(const UnicodeString&, Formattable&&);
+        std::map<UnicodeString, Formattable> contents;
+        // Keep a separate map for objects, which does not
         // own the values
         // This is because a Formattable that wraps an object can't
         // be copied
-        // Here, the values are UObjects*
-        Hashtable* objectContents;
+        std::map<UnicodeString, const UObject*> objectContents;
     }; // class MessageArguments::Builder
-
-    /**
-     * Returns a new `MessageArguments::Builder` object.
-     *
-     * @param status  Input/output error code.
-     * @return        The new builder, which is non-null if U_SUCCESS(status).
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    static Builder* builder(UErrorCode& status);
     /**
      * Destructor.
      *
