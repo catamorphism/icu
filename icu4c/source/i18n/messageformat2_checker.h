@@ -46,7 +46,7 @@ class TypeEnvironment : public UMemory {
 class Checker {
 public:
     void check(UErrorCode& error);
-    Checker(const MessageFormatDataModel& m, Errors& e) : dataModel(m), errors(e) {}
+    Checker(const MessageFormatDataModel& m, StaticErrors& e) : dataModel(m), errors(e) {}
 private:
 
     void requireAnnotated(const TypeEnvironment&, const Expression&, UErrorCode&);
@@ -58,7 +58,7 @@ private:
     void check(const Expression&, UErrorCode&);
     void check(const Pattern&, UErrorCode&);
     const MessageFormatDataModel& dataModel;
-    Errors& errors;
+    StaticErrors& errors;
 }; // class Checker
 
 } // namespace message2

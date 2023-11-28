@@ -111,72 +111,6 @@ private:
     const LocalPointer<Environment> parent;
 };
 
-// Errors
-// ----------
-
-class Error : public UObject {
-    public:
-    enum Type {
-        DuplicateOptionName,
-        UnresolvedVariable,
-        FormattingError,
-        MissingSelectorAnnotation,
-        NonexhaustivePattern,
-        ReservedError,
-        SelectorError,
-        SyntaxError,
-        UnknownFunction,
-        VariantKeyMismatchError
-    };
-    Error(Type ty) : type(ty) {}
-    Error(Type ty, const UnicodeString& s) : type(ty), contents(s) {}
-    virtual ~Error();
-    private:
-    friend class Errors;
-
-    Type type;
-    UnicodeString contents;
-}; // class Error
-
-class Errors : public UObject {
-    private:
-    LocalPointer<UVector> syntaxAndDataModelErrors;
-    LocalPointer<UVector> resolutionAndFormattingErrors;
-    bool dataModelError;
-    bool formattingError;
-    bool missingSelectorAnnotationError;
-    bool selectorError;
-    bool syntaxError;
-    bool unknownFunctionError;
-    bool unresolvedVariableError;
-    Errors(UErrorCode& errorCode);
-
-    public:
-    static Errors* create(UErrorCode&);
-
-    int32_t count() const;
-    void setSelectorError(const FunctionName&, UErrorCode&);
-    void setReservedError(UErrorCode&);
-    void setMissingSelectorAnnotation(UErrorCode&);
-    void setUnresolvedVariable(const VariableName&, UErrorCode&);
-    void addSyntaxError(UErrorCode&);
-    void setUnknownFunction(const FunctionName&, UErrorCode&);
-    void setFormattingError(const FunctionName&, UErrorCode&);
-    bool hasDataModelError() const { return dataModelError; }
-    bool hasFormattingError() const { return formattingError; }
-    bool hasSelectorError() const { return selectorError; }
-    bool hasSyntaxError() const { return syntaxError; }
-    bool hasUnknownFunctionError() const { return unknownFunctionError; }
-    bool hasMissingSelectorAnnotationError() const { return missingSelectorAnnotationError; }
-    bool hasUnresolvedVariableError() const { return unresolvedVariableError; }
-    void addError(Error, UErrorCode&);
-    void checkErrors(UErrorCode&);
-    void clearResolutionAndFormattingErrors();
-    bool hasError() const;
-
-    virtual ~Errors();
-}; // class Errors
-
 // Formatter cache
 // --------------
 
@@ -200,11 +134,11 @@ class MessageFormatter;
 
 class MessageContext : public UMemory {
 public:
-    static MessageContext* create(const MessageFormatter& mf, const MessageArguments& args, Errors& errors, UErrorCode& errorCode);
+    static MessageContext* create(const MessageFormatter& mf, const MessageArguments& args, const StaticErrors& e, UErrorCode& errorCode);
 
     bool isCustomFormatter(const FunctionName&) const;
     const Formatter* maybeCachedFormatter(const FunctionName&, UErrorCode&);
-    const SelectorFactory* lookupSelectorFactory(const FunctionName&, UErrorCode& status) const;
+    const SelectorFactory* lookupSelectorFactory(const FunctionName&, UErrorCode& status);
     bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
     bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
 
@@ -216,16 +150,16 @@ public:
 
     // If any errors were set, update `status` accordingly
     void checkErrors(UErrorCode& status) const;
-    Errors& getErrors() const { return errors; }
+    DynamicErrors& getErrors() { return errors; }
 
     const MessageFormatter& messageFormatter() const { return parent; }
 
     virtual ~MessageContext();
     
 private:
-    MessageContext(const MessageFormatter&, const MessageArguments&, Errors&);
+    MessageContext(const MessageFormatter&, const MessageArguments&, const StaticErrors&);
 
-    FormatterFactory* lookupFormatterFactory(const FunctionName&, UErrorCode&) const;
+    FormatterFactory* lookupFormatterFactory(const FunctionName&, UErrorCode&);
     bool isBuiltInSelector(const FunctionName&) const;
     bool isBuiltInFormatter(const FunctionName&) const;
     bool isCustomSelector(const FunctionName&) const;
@@ -233,7 +167,7 @@ private:
     const MessageFormatter& parent;
     const MessageArguments& arguments; // External message arguments
     // Errors accumulated during parsing/formatting
-    Errors& errors;
+    DynamicErrors errors;
 }; // class MessageContext
 
 // For how this class is used, see the references to (integer, variant) tuples

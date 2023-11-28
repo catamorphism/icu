@@ -546,7 +546,7 @@ void MessageFormatter::formatSelectorExpression(const Environment& globalEnv, co
     // Resolve expression to determine if it's a function call
     resolveVariables(globalEnv, expr, context, status);
 
-    Errors& err = context.messageContext().getErrors();
+    DynamicErrors& err = context.messageContext().getErrors();
 
     // If there is a selector, then `resolveVariables()` recorded it in the context
     if (context.hasSelector()) {
@@ -574,7 +574,7 @@ void MessageFormatter::formatSelectorExpression(const Environment& globalEnv, co
             }
         } else {
             // No function name -- this is a missing selector annotation error
-            err.setMissingSelectorAnnotation(status);
+            U_ASSERT(err.hasMissingSelectorAnnotationError());
         }
         context.clearFunctionName();
         context.clearFunctionOptions();
@@ -646,23 +646,10 @@ const FunctionRegistry& MessageFormatter::getCustomFunctionRegistry() const {
 UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments, UErrorCode &status) const {
     EMPTY_ON_ERROR(status);
 
-    // Create a new context with the given arguments and the `errors` structure
-    LocalPointer<MessageContext> context(MessageContext::create(*this, arguments, *errors, status));
-    EMPTY_ON_ERROR(status);
-
-    const MessageFormatDataModel& dataModel = getDataModel();
-
-    // Note: we currently evaluate variables lazily,
-    // without memoization. This call is still necessary
-    // to check out-of-scope uses of local variables in
-    // right-hand sides (unresolved variable errors can
-    // only be checked when arguments are known)
-
-    // Check for resolution errors
-    Checker(dataModel, context->getErrors()).check(status);
-
     // Create a new environment that will store closures for all local variables
     Environment* env = Environment::create(status);
+    // Create a new context with the given arguments and the `errors` structure
+    LocalPointer<MessageContext> context(MessageContext::create(*this, arguments, errors, status));
     EMPTY_ON_ERROR(status);
 
     // Check for unresolved variable errors
@@ -675,7 +662,7 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
     } else {
         // Check for errors/warnings -- if so, then the result of pattern selection is the fallback value
         // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
-        Errors& err = context->getErrors();
+        const DynamicErrors& err = context->getErrors();
         if (err.hasSyntaxError() || err.hasDataModelError()) {
             result += REPLACEMENT;
         } else {
@@ -684,14 +671,7 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
     }
     // Update status according to all errors seen while formatting
     context->checkErrors(status);
-    // Clear resolution and formatting errors, in case this MessageFormatter object
-    // is used again with different arguments
-    clearErrors();
     return result;
-}
-
-void MessageFormatter::clearErrors() const {
-    errors->clearResolutionAndFormattingErrors();
 }
 
 // ----------------------------------------
