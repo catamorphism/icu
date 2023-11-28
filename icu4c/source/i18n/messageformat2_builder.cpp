@@ -6,6 +6,7 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/messageformat2.h"
+#include "messageformat2_checker.h"
 #include "messageformat2_context.h"
 #include "messageformat2_function_registry_internal.h"
 #include "messageformat2_macros.h"
@@ -102,9 +103,6 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     CHECK_ERROR(success);
     standardFunctionRegistry->checkStandard();
 
-    errors = Errors::create(success);
-    CHECK_ERROR(success);
-
     // Validate pattern and build data model
     // First, check that exactly one of the pattern and data model are set, but not both
 
@@ -127,12 +125,21 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     CHECK_ERROR(success);
 
     // Parse the pattern
-    LocalPointer<Parser> parser(Parser::create(builder.pattern, tree, normalizedInput, *errors, success));
+    LocalPointer<Parser> parser(Parser::create(builder.pattern, tree, normalizedInput, errors, success));
     CHECK_ERROR(success);
     parser->parse(parseError, success);
 
     // Build the data model based on what was parsed
     dataModel = tree.build(success);
+
+    // Note: we currently evaluate variables lazily,
+    // without memoization. This call is still necessary
+    // to check out-of-scope uses of local variables in
+    // right-hand sides (unresolved variable errors can
+    // only be checked when arguments are known)
+
+    // Check for resolution errors
+    Checker(dataModel, errors).check(success);
 }
 
 const MessageFormatDataModel& MessageFormatter::getDataModel() const { return dataModel; }
@@ -140,9 +147,6 @@ const MessageFormatDataModel& MessageFormatter::getDataModel() const { return da
 MessageFormatter::~MessageFormatter() {
     if (cachedFormatters != nullptr) {
         delete cachedFormatters;
-    }
-    if (errors != nullptr) {
-        delete errors;
     }
 }
 MessageFormatter::Builder::~Builder() {}

@@ -122,7 +122,7 @@ class ExpressionContext : public FormattingContext {
     // Creates a new context sharing this's context and parent
     ExpressionContext* create(UErrorCode&);
 
-    const MessageContext& messageContext() const { return context; }
+    MessageContext& messageContext() const { return context; }
 
     // Resets input and output and uses existing fallback
     void setFallback();
