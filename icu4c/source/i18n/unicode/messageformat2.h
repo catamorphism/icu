@@ -550,6 +550,12 @@ public:
      LocalPointer<FunctionRegistry> standardFunctionRegistry;
      // Registry for custom functions; may be null if no custom registry supplied
      // Note: this is *not* owned by the MessageFormatter object
+     // The reason for this choice is to have a non-destructive MessageFormatter::Builder,
+     // while also not requiring the function registry to be deeply-copyable. Making the
+     // function registry copyable would impose a requirement on any implementations
+     // of the FormatterFactory and SelectorFactory interfaces to implement a custom
+     // clone() method, which is necessary to avoid sharing between copies of the
+     // function registry (and thus double-frees)
      const FunctionRegistry* customFunctionRegistry;
 
      // Data model, representing the parsed message
