@@ -219,19 +219,18 @@ class TestUtils {
                             IcuTestErrorCode& errorCode) {
         CHECK_ERROR(errorCode);
 
-        LocalPointer<MessageFormatter::Builder> mfBuilder(MessageFormatter::builder(errorCode));
-        CHECK_ERROR(errorCode);
-        mfBuilder->setPattern(testCase.getPattern()).setLocale(testCase.getLocale());
+	MessageFormatter::Builder mfBuilder;
+        mfBuilder.setPattern(testCase.getPattern()).setLocale(testCase.getLocale());
 
         if (testCase.hasCustomRegistry()) {
-            mfBuilder->setFunctionRegistry(testCase.getCustomRegistry());
+            mfBuilder.setFunctionRegistry(testCase.getCustomRegistry());
         }
         UParseError parseError;
-        LocalPointer<MessageFormatter> mf(mfBuilder->build(parseError, errorCode));
+	MessageFormatter mf = mfBuilder.build(parseError, errorCode);
         UnicodeString result;
 
         if (U_SUCCESS(errorCode)) {
-            result = mf->formatToString(testCase.getArguments(), errorCode);
+            result = mf.formatToString(testCase.getArguments(), errorCode);
         }
 
         if (testCase.expectNoSyntaxError()) {

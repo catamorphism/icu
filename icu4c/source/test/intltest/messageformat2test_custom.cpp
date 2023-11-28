@@ -665,18 +665,16 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
             context.setFormattingError("msgref", errorCode);
             return;
         }
-        LocalPointer<MessageFormatter::Builder> mfBuilder(MessageFormatter::builder(errorCode));
-        CHECK_ERROR(errorCode);
+	MessageFormatter::Builder mfBuilder;
         UParseError parseErr;
         // Any parse/data model errors will be propagated
-        LocalPointer<MessageFormatter> mf(mfBuilder->setPattern(*msg)
-                                          .build(parseErr, errorCode));
+	MessageFormatter mf = mfBuilder.setPattern(*msg).build(parseErr, errorCode);
         CHECK_ERROR(errorCode);
 
         Arguments arguments = localToGlobal(context);
 
         UErrorCode savedStatus = errorCode;
-        UnicodeString result = mf->formatToString(arguments, errorCode);
+        UnicodeString result = mf.formatToString(arguments, errorCode);
         // Here, we want to ignore errors (this matches the behavior in the ICU4J test).
         // For example: we want $gcase to default to "$gcase" if the gcase option was
         // omitted.

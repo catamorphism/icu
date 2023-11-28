@@ -306,7 +306,7 @@ class DynamicErrors : public UObject {
  * description of the syntax with examples and use cases</a> and the corresponding
  * <a target="github" href="https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf">ABNF</a> grammar.</p>
  *
- * The MessageFormatter class is immutable and is not movable or copyable.
+ * The MessageFormatter class is immutable and movable. It is not copyable.
  *
  * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
@@ -381,8 +381,6 @@ public:
     private:
        friend class MessageFormatter;
 
-       Builder() : locale(Locale::getDefault()), customFunctionRegistry(nullptr) {}
-
        // The pattern to be parsed to generate the formatted message
        UnicodeString pattern;
        bool hasPattern = false;
@@ -455,13 +453,12 @@ public:
          * @param status    Input/output error code.  If the
          *                  pattern cannot be parsed, or if neither the pattern
          *                  nor the data model is set, set to failure code.
-         * @return          The new MessageFormatter object, which is non-null if
-         *                  U_SUCCESS(status).
+         * @return          The new MessageFormatter object
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatter* build(UParseError& parseError, UErrorCode& status) const;
+        MessageFormatter build(UParseError& parseError, UErrorCode& status) const;
 	/**
 	 * Destructor.
 	 *
@@ -469,18 +466,9 @@ public:
 	 * @deprecated This API is for technology preview only.
 	 */
 	virtual ~Builder();
+// TODO
+       Builder() : locale(Locale::getDefault()), customFunctionRegistry(nullptr) {}
     }; // class MessageFormatter::Builder
-
-   /**
-     * Returns a new `MessageFormatter::Builder` object.
-     *
-     * @param status  Input/output error code.
-     * @return        The new Builder, which is non-null if U_SUCCESS(status).
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    static Builder* builder(UErrorCode& status);
 
     // TODO: Shouldn't be public; only used for testing
    /**
@@ -492,6 +480,10 @@ public:
      * @deprecated This API is for technology preview only.
      */
     const UnicodeString& getNormalizedPattern() const { return normalizedInput; }
+
+// TODO
+    MessageFormatter& operator=(MessageFormatter&&) noexcept;
+    MessageFormatter(MessageFormatter&&);
 
   private:
       friend class Builder;
@@ -544,7 +536,7 @@ public:
      void clearErrors() const;
 
      // The locale this MessageFormatter was created with
-     const Locale locale;
+     /* const */ Locale locale;
 
      // Registry for built-in functions
      LocalPointer<FunctionRegistry> standardFunctionRegistry;
