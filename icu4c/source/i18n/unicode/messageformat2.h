@@ -23,11 +23,12 @@
 #include "unicode/messageformat2_function_registry.h"
 #include "unicode/unistr.h"
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 class CachedFormatters;
 class Environment;
-class Errors;
 class ExpressionContext;
 class MessageContext;
 
@@ -202,14 +203,118 @@ private:
     const UObject* getObject(const data_model::VariableName&) const;
 
     MessageArguments& add(const UnicodeString&, Formattable*, UErrorCode&);
-    MessageArguments(Hashtable* c, Hashtable* o);
-    // For why these aren't LocalPointers, see the comment on
-    // MessageFormatter::cachedFormatters
-    Hashtable* contents;
-    // Keep a separate hash table for objects, which does not
+    MessageArguments(const std::map<UnicodeString, Formattable>&, const std::map<UnicodeString, const UObject*>&);
+
+    std::map<UnicodeString, Formattable> contents;
+    // Keep a separate map for objects, which does not
     // own the values
-    Hashtable* objectContents;
+    // This is because a Formattable that wraps an object can't
+    // be copied
+    std::map<UnicodeString, const UObject*> objectContents;
 }; // class MessageArguments
+
+// Errors
+// ----------
+
+class DynamicErrors;
+class StaticErrors;
+
+// Internal class -- used as a private field in MessageFormatter
+template <typename ErrorType>
+class Error : public UObject {
+    public:
+    Error(ErrorType ty) : type(ty) {}
+    Error(ErrorType ty, const UnicodeString& s) : type(ty), contents(s) {}
+    virtual ~Error();
+    private:
+    friend class DynamicErrors;
+    friend class StaticErrors;
+
+    ErrorType type;
+    UnicodeString contents;
+}; // class Error
+
+enum StaticErrorType {
+    DuplicateOptionName,
+    MissingSelectorAnnotation,
+    NonexhaustivePattern,
+    SyntaxError,
+    VariantKeyMismatchError
+};
+
+enum DynamicErrorType {
+    UnresolvedVariable,
+    FormattingError,
+    ReservedError,
+    SelectorError,
+    UnknownFunction,
+};
+
+using StaticError = Error<StaticErrorType>;
+using DynamicError = Error<DynamicErrorType>;
+
+// These explicit instantiations have to come before the
+// destructor definitions
+template<>
+Error<StaticErrorType>::~Error();
+template<>
+Error<DynamicErrorType>::~Error();
+
+class StaticErrors : public UObject {
+    private:
+    friend class DynamicErrors;
+
+    std::vector<StaticError> syntaxAndDataModelErrors;
+    bool dataModelError = false;
+    bool missingSelectorAnnotationError = false;
+    bool syntaxError = false;
+
+    public:
+    StaticErrors();
+
+  //  int32_t count() const;
+    void setMissingSelectorAnnotation(UErrorCode&);
+    void addSyntaxError(UErrorCode&);
+    bool hasDataModelError() const { return dataModelError; }
+    bool hasSyntaxError() const { return syntaxError; }
+    bool hasMissingSelectorAnnotationError() const { return missingSelectorAnnotationError; }
+    void addError(StaticError, UErrorCode&);
+    void checkErrors(UErrorCode&);
+
+    virtual ~StaticErrors();
+}; // class StaticErrors
+
+class DynamicErrors : public UObject {
+    private:
+    const StaticErrors& staticErrors;
+    std::vector<DynamicError> resolutionAndFormattingErrors;
+    bool formattingError = false;
+    bool selectorError = false;
+    bool unknownFunctionError = false;
+    bool unresolvedVariableError = false;
+
+    public:
+    DynamicErrors(const StaticErrors&);
+
+    int32_t count() const;
+    void setSelectorError(const FunctionName&, UErrorCode&);
+    void setReservedError(UErrorCode&);
+    void setUnresolvedVariable(const VariableName&, UErrorCode&);
+    void setUnknownFunction(const FunctionName&, UErrorCode&);
+    void setFormattingError(const FunctionName&, UErrorCode&);
+    bool hasDataModelError() const { return staticErrors.hasDataModelError(); }
+    bool hasFormattingError() const { return formattingError; }
+    bool hasSelectorError() const { return selectorError; }
+    bool hasSyntaxError() const { return staticErrors.hasSyntaxError(); }
+    bool hasUnknownFunctionError() const { return unknownFunctionError; }
+    bool hasMissingSelectorAnnotationError() const { return staticErrors.hasMissingSelectorAnnotationError(); }
+    bool hasUnresolvedVariableError() const { return unresolvedVariableError; }
+    void addError(DynamicError, UErrorCode&);
+    void checkErrors(UErrorCode&) const;
+    bool hasError() const;
+
+    virtual ~DynamicErrors();
+}; // class DynamicErrors
 
 /**
  * <p>MessageFormatter is a Technical Preview API implementing MessageFormat 2.0.
@@ -485,8 +590,7 @@ public:
 
      // Errors -- only used while parsing and checking for data model errors; then
      // the MessageContext keeps track of errors
-     // Note: Not a LocalPointer for the same reason as cachedFormatters above
-     Errors* errors;
+     StaticErrors errors;
 }; // class MessageFormatter
 
 } // namespace message2

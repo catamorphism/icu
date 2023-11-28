@@ -17,7 +17,9 @@
 #pragma warning(disable: 4661)
 #endif
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 // The context contains all the information needed to process
 // an entire message: arguments, formatter cache, and error list
@@ -266,7 +268,7 @@ bool MessageContext::isBuiltInFormatter(const FunctionName& functionName) const 
 // Unknown function = unknown function error
 // Formatter used as selector  = selector error
 // Selector used as formatter = formatting error
-const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName& functionName, UErrorCode& status) const {
+const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName& functionName, UErrorCode& status) {
     NULL_ON_ERROR(status);
 
     if (isBuiltInSelector(functionName)) {
@@ -295,7 +297,7 @@ const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName&
     return nullptr;
 }
 
-FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& functionName, UErrorCode& status) const {
+FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& functionName, UErrorCode& status) {
     NULL_ON_ERROR(status);
 
     if (isBuiltInFormatter(functionName)) {
@@ -366,13 +368,14 @@ const Formatter* MessageContext::maybeCachedFormatter(const FunctionName& f, UEr
     }
 }
 
+MessageArguments::MessageArguments(const std::map<UnicodeString, Formattable>& vals, const std::map<UnicodeString, const UObject*>& objs) : contents(vals), objectContents(objs) {}
 
 // -------------------------------------------------------
 // MessageContext accessors and constructors
 
-MessageContext::MessageContext(const MessageFormatter& mf, const MessageArguments& args, Errors& e) : parent(mf), arguments(args), errors(e) {}
+MessageContext::MessageContext(const MessageFormatter& mf, const MessageArguments& args, const StaticErrors& e) : parent(mf), arguments(args), errors(e) {}
 
-/* static */ MessageContext* MessageContext::create(const MessageFormatter& mf, const MessageArguments& args, Errors& e, UErrorCode& errorCode) {
+/* static */ MessageContext* MessageContext::create(const MessageFormatter& mf, const MessageArguments& args, const StaticErrors& e, UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
     LocalPointer<MessageContext> result(new MessageContext(mf, args, e));
@@ -388,85 +391,62 @@ void MessageContext::checkErrors(UErrorCode& status) const {
     errors.checkErrors(status);
 }
 
-void Errors::setReservedError(UErrorCode& status) {
+void DynamicErrors::setReservedError(UErrorCode& status) {
     CHECK_ERROR(status);
 
-    Error err(Error::Type::ReservedError);
+    DynamicError err(DynamicErrorType::ReservedError);
     addError(err, status);
 }
 
-void Errors::setFormattingError(const FunctionName& formatterName, UErrorCode& status) {
+void DynamicErrors::setFormattingError(const FunctionName& formatterName, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    Error err(Error::Type::FormattingError, formatterName.toString());
+    DynamicError err(DynamicErrorType::FormattingError, formatterName.toString());
     addError(err, status);
 }
 
 
-void Errors::setMissingSelectorAnnotation(UErrorCode& status) {
+void StaticErrors::setMissingSelectorAnnotation(UErrorCode& status) {
     CHECK_ERROR(status);
 
-    Error err(Error::Type::MissingSelectorAnnotation);
+    StaticError err(StaticErrorType::MissingSelectorAnnotation);
     addError(err, status);
 }
 
-void Errors::setSelectorError(const FunctionName& selectorName, UErrorCode& status) {
+void DynamicErrors::setSelectorError(const FunctionName& selectorName, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    Error err(Error::Type::SelectorError, selectorName.toString());
+    DynamicError err(DynamicErrorType::SelectorError, selectorName.toString());
     addError(err, status);
 }
 
-void Errors::setUnknownFunction(const FunctionName& functionName, UErrorCode& status) {
+void DynamicErrors::setUnknownFunction(const FunctionName& functionName, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    Error err(Error::Type::UnknownFunction, functionName.toString());
+    DynamicError err(DynamicErrorType::UnknownFunction, functionName.toString());
     addError(err, status);
 }
 
-void Errors::setUnresolvedVariable(const VariableName& v, UErrorCode& status) {
+void DynamicErrors::setUnresolvedVariable(const VariableName& v, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    Error err(Error::Type::UnresolvedVariable, v.identifier());
+    DynamicError err(DynamicErrorType::UnresolvedVariable, v.identifier());
     addError(err, status);
 }
 
-Errors* Errors::create(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-    return new Errors(errorCode);
+DynamicErrors::DynamicErrors(const StaticErrors& e) : staticErrors(e) {}
+
+StaticErrors::StaticErrors() {}
+
+int32_t DynamicErrors::count() const {
+    return resolutionAndFormattingErrors.size() + staticErrors.syntaxAndDataModelErrors.size();
 }
 
-Errors::Errors(UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-    syntaxAndDataModelErrors.adoptInstead(new UVector(errorCode));
-    resolutionAndFormattingErrors.adoptInstead(new UVector(errorCode));
-    CHECK_ERROR(errorCode);
-    syntaxAndDataModelErrors->setDeleter(uprv_deleteUObject);
-    resolutionAndFormattingErrors->setDeleter(uprv_deleteUObject);
-    dataModelError = false;
-    formattingError = false;
-    missingSelectorAnnotationError = false;
-    selectorError = false;
-    syntaxError = false;
-    unknownFunctionError = false;
-}
-
-int32_t Errors::count() const {
-    return syntaxAndDataModelErrors->size() + resolutionAndFormattingErrors->size();
-}
-
-bool Errors::hasError() const {
+bool DynamicErrors::hasError() const {
     return count() > 0;
 }
 
-void Errors::clearResolutionAndFormattingErrors() {
-    U_ASSERT(resolutionAndFormattingErrors.isValid());
-    resolutionAndFormattingErrors->removeAllElements();
-    formattingError = false;
-    selectorError = false;    
-}
-
-void Errors::checkErrors(UErrorCode& status) {
+void DynamicErrors::checkErrors(UErrorCode& status) const {
     if (status != U_ZERO_ERROR) {
         return;
     }
@@ -476,128 +456,136 @@ void Errors::checkErrors(UErrorCode& status) {
     if (count() == 0) {
         return;
     }
-    Error* err;
-    if (syntaxAndDataModelErrors->size() > 0) {
-        err = (Error*) (*syntaxAndDataModelErrors)[0];
-    } else {
-        U_ASSERT(resolutionAndFormattingErrors->size() > 0);
-        err = (Error*) (*resolutionAndFormattingErrors)[0];
-    }
-    switch (err->type) {
-        case Error::Type::DuplicateOptionName: {
-            status = U_DUPLICATE_OPTION_NAME_ERROR;
+    if (staticErrors.syntaxAndDataModelErrors.size() > 0) {
+        switch (staticErrors.syntaxAndDataModelErrors[0].type) {
+        case StaticErrorType::DuplicateOptionName: {
+	    status = U_DUPLICATE_OPTION_NAME_ERROR;
             break;
         }
-        case Error::Type::VariantKeyMismatchError: {
+        case StaticErrorType::VariantKeyMismatchError: {
             status = U_VARIANT_KEY_MISMATCH_ERROR;
             break;
         }
-        case Error::Type::NonexhaustivePattern: {
+        case StaticErrorType::NonexhaustivePattern: {
             status = U_NONEXHAUSTIVE_PATTERN_ERROR;
             break;
         }
-        case Error::Type::UnknownFunction: {
-            status = U_UNKNOWN_FUNCTION_ERROR;
-            break;
-        }
-        case Error::Type::UnresolvedVariable: {
-            status = U_UNRESOLVED_VARIABLE_ERROR;
-            break;
-        }
-        case Error::Type::FormattingError: {
-            status = U_FORMATTING_ERROR;
-            break;
-        }
-        case Error::Type::MissingSelectorAnnotation: {
+        case StaticErrorType::MissingSelectorAnnotation: {
             status = U_MISSING_SELECTOR_ANNOTATION_ERROR;
             break;
         }
-
-        case Error::Type::ReservedError: {
-            status = U_UNSUPPORTED_PROPERTY;
-            break;
-        }
-        case Error::Type::SyntaxError: {
+        case StaticErrorType::SyntaxError: {
             status = U_SYNTAX_ERROR;
             break;
         }
-        case Error::Type::SelectorError: {
+	}
+    } else {
+        U_ASSERT(resolutionAndFormattingErrors.size() > 0);
+	switch (resolutionAndFormattingErrors[0].type) {
+        case DynamicErrorType::UnknownFunction: {
+            status = U_UNKNOWN_FUNCTION_ERROR;
+            break;
+        }
+        case DynamicErrorType::UnresolvedVariable: {
+            status = U_UNRESOLVED_VARIABLE_ERROR;
+            break;
+        }
+        case DynamicErrorType::FormattingError: {
+            status = U_FORMATTING_ERROR;
+            break;
+        }
+        case DynamicErrorType::ReservedError: {
+            status = U_UNSUPPORTED_PROPERTY;
+            break;
+        }
+        case DynamicErrorType::SelectorError: {
             status = U_SELECTOR_ERROR;
             break;
         }
+	}
     }
 }
 
-void Errors::addSyntaxError(UErrorCode& status) {
+void StaticErrors::addSyntaxError(UErrorCode& status) {
     CHECK_ERROR(status);
-    addError(Error(Error::Type::SyntaxError), status);
+    addError(StaticError(StaticErrorType::SyntaxError), status);
 }
 
-void Errors::addError(Error e, UErrorCode& status) {
+void StaticErrors::addError(StaticError e, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    Error* eP = new Error(e);
-    if (eP == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-        return;
-    }
     switch (e.type) {
-        case Error::Type::SyntaxError: {
+        case StaticErrorType::SyntaxError: {
             syntaxError = true;
-            syntaxAndDataModelErrors->adoptElement(eP, status);
+            syntaxAndDataModelErrors.push_back(e);
             break;
         }
-        case Error::Type::DuplicateOptionName: {
+        case StaticErrorType::DuplicateOptionName: {
             dataModelError = true;
-            syntaxAndDataModelErrors->adoptElement(eP, status);
+            syntaxAndDataModelErrors.push_back(e);
             break;
         }
-        case Error::Type::VariantKeyMismatchError: {
+        case StaticErrorType::VariantKeyMismatchError: {
             dataModelError = true;
-            syntaxAndDataModelErrors->adoptElement(eP, status);
+            syntaxAndDataModelErrors.push_back(e);
             break;
         }
-        case Error::Type::NonexhaustivePattern: {
+        case StaticErrorType::NonexhaustivePattern: {
             dataModelError = true;
-            syntaxAndDataModelErrors->adoptElement(eP, status);
+            syntaxAndDataModelErrors.push_back(e);
             break;
         }
-        case Error::Type::UnresolvedVariable: {
-            unresolvedVariableError = true;
-            syntaxAndDataModelErrors->adoptElement(eP, status);
-            break;
-        }
-        case Error::Type::FormattingError: {
-            formattingError = true;
-            resolutionAndFormattingErrors->adoptElement(eP, status);
-            break;
-        }
-        case Error::Type::MissingSelectorAnnotation: {
+        case StaticErrorType::MissingSelectorAnnotation: {
             missingSelectorAnnotationError = true;
             dataModelError = true;
-            syntaxAndDataModelErrors->adoptElement(eP, status);
-            break;
-        }
-        case Error::Type::ReservedError: {
-            dataModelError = true;
-            syntaxAndDataModelErrors->adoptElement(eP, status);
-            break;
-        }
-        case Error::Type::SelectorError: {
-            selectorError = true;
-            resolutionAndFormattingErrors->adoptElement(eP, status);
-            break;
-        }
-        case Error::Type::UnknownFunction: {
-            unknownFunctionError = true;
-            resolutionAndFormattingErrors->adoptElement(eP, status);
+            syntaxAndDataModelErrors.push_back(e);
             break;
         }
     }
 }
 
-Errors::~Errors() {}
-Error::~Error() {}
+void DynamicErrors::addError(DynamicError e, UErrorCode& status) {
+    CHECK_ERROR(status);
+
+    switch (e.type) {
+        case DynamicErrorType::UnresolvedVariable: {
+            unresolvedVariableError = true;
+            resolutionAndFormattingErrors.push_back(e);
+            break;
+        }
+        case DynamicErrorType::FormattingError: {
+            formattingError = true;
+            resolutionAndFormattingErrors.push_back(e);
+            break;
+        }
+        case DynamicErrorType::ReservedError: {
+            resolutionAndFormattingErrors.push_back(e);
+            break;
+        }
+        case DynamicErrorType::SelectorError: {
+            selectorError = true;
+            resolutionAndFormattingErrors.push_back(e);
+            break;
+        }
+        case DynamicErrorType::UnknownFunction: {
+            unknownFunctionError = true;
+            resolutionAndFormattingErrors.push_back(e);
+            break;
+        }
+    }
+}
+
+
+StaticErrors::~StaticErrors() {}
+DynamicErrors::~DynamicErrors() {}
+
+template<typename ErrorType>
+Error<ErrorType>::~Error() {}
+
+template<>
+Error<StaticErrorType>::~Error() {}
+template<>
+Error<DynamicErrorType>::~Error() {}
 
 MessageContext::~MessageContext() {}
 
