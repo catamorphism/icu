@@ -30,184 +30,70 @@ namespace message2 {
 using Arguments = MessageArguments;
 
 bool Arguments::hasFormattable(const VariableName& arg) const {
-    U_ASSERT(contents != nullptr && objectContents != nullptr);
-    return contents->containsKey(arg.identifier());
+    return contents.count(arg.identifier()) > 0;
 }
 
 bool Arguments::hasObject(const VariableName& arg) const {
-    U_ASSERT(contents != nullptr && objectContents != nullptr);
-    return objectContents->containsKey(arg.identifier());
+    return objectContents.count(arg.identifier()) > 0;
 }
 
 const Formattable& Arguments::getFormattable(const VariableName& arg) const {
     U_ASSERT(hasFormattable(arg));
-    const Formattable* result = static_cast<const Formattable*>(contents->get(arg.identifier()));
-    U_ASSERT(result != nullptr);
-    return *result;
+    return contents.at(arg.identifier());
 }
 
 const UObject* Arguments::getObject(const VariableName& arg) const {
     U_ASSERT(hasObject(arg));
-    const UObject* result = static_cast<const UObject*>(objectContents->get(arg.identifier()));
-    U_ASSERT(result != nullptr);
-    return result;
+    return objectContents.at(arg.identifier());
 }
 
-Arguments::Builder::Builder(UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
+Arguments::Builder::Builder() {}
 
-    contents = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
-    objectContents = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
-    CHECK_ERROR(errorCode);
-    if (contents == nullptr || objectContents == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return;
-    }
-    // The `contents` hashtable owns the values, but does not own the keys
-    contents->setValueDeleter(uprv_deleteUObject);
-    // The `objectContents` hashtable does not own the values
+Arguments::Builder& Arguments::Builder::add(const UnicodeString& name, const UnicodeString& val) {
+    return addFormattable(name, Formattable(val));
 }
 
-Arguments::Builder& Arguments::Builder::add(const UnicodeString& name, const UnicodeString& val, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-
-    Formattable* valPtr(ExpressionContext::createFormattable(val, errorCode));
-    THIS_ON_ERROR(errorCode);
-    return add(name, valPtr, errorCode);
+Arguments::Builder& Arguments::Builder::addDouble(const UnicodeString& name, double val) {
+    return addFormattable(name, Formattable(val));
 }
 
-Arguments::Builder& Arguments::Builder::addDouble(const UnicodeString& name, double val, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-
-    Formattable* valPtr(ExpressionContext::createFormattable(val, errorCode));
-    THIS_ON_ERROR(errorCode);
-    return add(name, valPtr, errorCode);
+Arguments::Builder& Arguments::Builder::addInt64(const UnicodeString& name, int64_t val) {
+    return addFormattable(name, Formattable(val));
 }
 
-Arguments::Builder& Arguments::Builder::addInt64(const UnicodeString& name, int64_t val, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-
-    Formattable* valPtr(ExpressionContext::createFormattable(val, errorCode));
-    THIS_ON_ERROR(errorCode);
-    return add(name, valPtr, errorCode);
-}
-
-Arguments::Builder& Arguments::Builder::addDate(const UnicodeString& name, UDate val, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-
-    Formattable* valPtr(ExpressionContext::createFormattableDate(val, errorCode));
-    THIS_ON_ERROR(errorCode);
-    return add(name, valPtr, errorCode);
+Arguments::Builder& Arguments::Builder::addDate(const UnicodeString& name, UDate val) {
+    return addFormattable(name, Formattable(val, Formattable::kIsDate));
 }
 
 Arguments::Builder& Arguments::Builder::addDecimal(const UnicodeString& name, StringPiece val, UErrorCode& errorCode) {
+    Formattable result(val, errorCode);
     THIS_ON_ERROR(errorCode);
-
-    Formattable* valPtr(ExpressionContext::createFormattableDecimal(val, errorCode));
-    THIS_ON_ERROR(errorCode);
-    return add(name, valPtr, errorCode);
+    return addFormattable(name, std::move(result));
 }
 
-Arguments::Builder& Arguments::Builder::adoptArray(const UnicodeString& name, const UnicodeString* arr, int32_t count, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-
-    Formattable* valPtr(ExpressionContext::createFormattable(arr, count, errorCode));
-    THIS_ON_ERROR(errorCode);
-    return add(name, valPtr, errorCode);
+// members of `arr` should be strings
+Arguments::Builder& Arguments::Builder::adoptArray(const UnicodeString& name, const Formattable* arr, int32_t count) {
+    return addFormattable(name, Formattable(arr, count));
 }
 
 // Does not adopt the object
-Arguments::Builder& Arguments::Builder::addObject(const UnicodeString& name, const UObject* obj, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-
-    // This const is safe because the values in the objectContents hash table
-    // will only be accessed through a (const UObject*) pointer
-    objectContents->put(name, const_cast<UObject*>(obj), errorCode);
+Arguments::Builder& Arguments::Builder::addObject(const UnicodeString& name, const UObject* obj) {
+    objectContents[name] = obj;
     return *this;
 }
 
-// Adopts its argument
-Arguments::Builder& Arguments::Builder::add(const UnicodeString& name, Formattable* value, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-
-    U_ASSERT(value != nullptr);
-
-    contents->put(name, value, errorCode);
+Arguments::Builder& Arguments::Builder::addFormattable(const UnicodeString& name, Formattable&& value) {
+    contents[name] = std::move(value);
     return *this;
 }
 
-/* static */ MessageArguments::Builder* MessageArguments::builder(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-    MessageArguments::Builder* result = new MessageArguments::Builder(errorCode);
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
+MessageArguments MessageArguments::Builder::build() const {
+    return MessageArguments(contents, objectContents);
 }
 
-MessageArguments* MessageArguments::Builder::build(UErrorCode& errorCode) const {
-    NULL_ON_ERROR(errorCode);
-    U_ASSERT(contents != nullptr && objectContents != nullptr);
+MessageArguments::~MessageArguments() {}
 
-    LocalPointer<Hashtable> contentsCopied(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
-    LocalPointer<Hashtable> objectContentsCopied(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
-    NULL_ON_ERROR(errorCode);
-    // The `contents` hashtable owns the values, but does not own the keys
-    contentsCopied->setValueDeleter(uprv_deleteUObject);
-    // The `objectContents` hashtable does not own the values
-
-    int32_t pos = UHASH_FIRST;
-    LocalPointer<Formattable> optionValue;
-    // Copy the non-objects
-    while (true) {
-        const UHashElement* element = contents->nextElement(pos);
-        if (element == nullptr) {
-            break;
-        }
-        const Formattable& toCopy = *(static_cast<Formattable*>(element->value.pointer));
-        optionValue.adoptInstead(new Formattable(toCopy));
-        if (!optionValue.isValid()) {
-            errorCode = U_MEMORY_ALLOCATION_ERROR;
-            return nullptr;
-        }
-        UnicodeString* key = static_cast<UnicodeString*>(element->key.pointer);
-        contentsCopied->put(*key, optionValue.orphan(), errorCode);
-    }
-    // Copy the objects
-    pos = UHASH_FIRST;
-    while (true) {
-        const UHashElement* element = objectContents->nextElement(pos);
-        if (element == nullptr) {
-            break;
-        }
-        UnicodeString* key = static_cast<UnicodeString*>(element->key.pointer);
-        objectContentsCopied->put(*key, element->value.pointer, errorCode);
-    }
-    MessageArguments* result = new MessageArguments(contentsCopied.orphan(), objectContentsCopied.orphan());
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
-MessageArguments::MessageArguments(Hashtable* c, Hashtable* o) : contents(c), objectContents(o) {}
-
-MessageArguments::~MessageArguments() {
-    if (contents != nullptr) {
-        delete contents;
-    }
-    if (objectContents != nullptr) {
-        delete objectContents;
-    }
-}
-MessageArguments::Builder::~Builder() {
-    if (contents != nullptr) {
-        delete contents;
-    }
-    if (objectContents != nullptr) {
-        delete objectContents;
-    }
-}
+MessageArguments::Builder::~Builder() {}
 
 // Message arguments
 // -----------------
