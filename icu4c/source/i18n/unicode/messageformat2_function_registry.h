@@ -53,6 +53,7 @@ public:
      */
     virtual Formatter* createFormatter(const Locale& locale, UErrorCode& status) = 0;
     virtual ~FormatterFactory();
+    FormatterFactory& operator=(const FormatterFactory&) = delete;
 }; // class FormatterFactory
 
 /**
@@ -75,6 +76,7 @@ public:
      */
     virtual Selector* createSelector(const Locale& locale, UErrorCode& status) const = 0;
     virtual ~SelectorFactory();
+    SelectorFactory& operator=(const SelectorFactory&) = delete;
 }; // class SelectorFactory
 
   // TODO
@@ -82,8 +84,8 @@ public:
     Note: since FormatterFactory and SelectorFactory are interfaces,
     they are not copyable or movable and thus we have to use (owned) pointers here.
    */
-  using FormatterMap = std::map<FunctionName, FormatterFactory*>;
-  using SelectorMap = std::map<FunctionName, SelectorFactory*>;
+  using FormatterMap = std::map<FunctionName, std::unique_ptr<FormatterFactory>>;
+  using SelectorMap = std::map<FunctionName, std::unique_ptr<SelectorFactory>>;
 
 /**
  * Defines mappings from names of formatters and selectors to functions implementing them.
@@ -179,6 +181,8 @@ public:
          virtual ~Builder();
 	 // TODO
 	 Builder() = default;
+	 Builder& operator=(const Builder&) = delete;
+	 Builder(const Builder&) = delete;
     }; // class FunctionRegistry::Builder
     /**
      * Destructor.
@@ -187,6 +191,12 @@ public:
      * @deprecated This API is for technology preview only.
      */
     virtual ~FunctionRegistry();
+
+    // TODO
+    FunctionRegistry& operator=(const FunctionRegistry&) = delete;
+    FunctionRegistry(const FunctionRegistry&) = delete;
+    FunctionRegistry& operator=(FunctionRegistry&&) noexcept;
+    FunctionRegistry(FunctionRegistry&&);
 
 private:
     friend class MessageContext;
