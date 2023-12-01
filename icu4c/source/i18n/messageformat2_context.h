@@ -119,12 +119,16 @@ class CachedFormatters : public UObject {
 private:
     friend class MessageFormatter;
 
-    LocalPointer<Hashtable> cache;
-    CachedFormatters(UErrorCode&);
+    std::map<FunctionName, std::unique_ptr<Formatter>> cache;
+    CachedFormatters();
 
 public:
     const Formatter* getFormatter(const FunctionName&);
-    void setFormatter(const FunctionName&, Formatter*, UErrorCode& errorCode);
+    void setFormatter(const FunctionName&, Formatter*);
+
+    // TODO
+    CachedFormatters& operator=(const CachedFormatters&) = delete;
+    virtual ~CachedFormatters();
 };
 
 // The context contains all the information needed to process

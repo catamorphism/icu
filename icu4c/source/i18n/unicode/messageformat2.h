@@ -556,16 +556,8 @@ public:
      UnicodeString normalizedInput;
 
      // Formatter cache
-     // Note: it would be preferable to use a LocalPointer, but on Windows platforms,
-     // a fully-specified template instantiation for LocalPointer<CachedFormatters>
-     // would need to be exported. Then, the entire definition of the internal
-     // CachedFormatters class would need to be included in a public header
-     // file in order for the compiler to generate this template instantiation.
-     // (Just forward-declaring CachedFormatters wouldn't work.)
-     // To work around this, we just avoid using a LocalPointer<T>
-     // as a member of a public class where T is an internal class.
-     // (See the comment on the CurrencyPluralInfoWrapper class in
-     // number_decimfmtprops.h for a description of a similar problem.)
+     // Must be a pointer to avoid including the internal header file
+     // defining CachedFormatters
      std::unique_ptr<CachedFormatters> cachedFormatters;
 
      // Errors -- only used while parsing and checking for data model errors; then

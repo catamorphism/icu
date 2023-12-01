@@ -107,7 +107,7 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     MessageFormatDataModel::Builder tree;
 
     // Initialize formatter cache
-    CachedFormatters* cachedFormattersPtr = new CachedFormatters(success);
+    CachedFormatters* cachedFormattersPtr = new CachedFormatters();
     if (cachedFormattersPtr == nullptr) {
       success = U_MEMORY_ALLOCATION_ERROR;
       return;

@@ -120,23 +120,19 @@ const Formattable& MessageContext::getGlobalAsFormattable(const VariableName& v)
 // Formatter cache
 
 const Formatter* CachedFormatters::getFormatter(const FunctionName& f) {
-    U_ASSERT(cache.isValid());
-    return ((Formatter*) cache->get(f.toString()));
+    if (cache.count(f) <= 0) {
+	return nullptr;
+    }
+    return cache[f].get();
 }
 
-void CachedFormatters::setFormatter(const FunctionName& f, Formatter* val, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-    U_ASSERT(cache.isValid());
-    cache->put(f.toString(), val, errorCode);
+void CachedFormatters::setFormatter(const FunctionName& f, Formatter* val) {
+    cache[f] = std::unique_ptr<Formatter>(val);
 }
 
-CachedFormatters::CachedFormatters(UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-    cache.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
-    CHECK_ERROR(errorCode);
-    // The cache owns the values
-    cache->setValueDeleter(uprv_deleteUObject);
-}
+CachedFormatters::CachedFormatters() {}
+
+CachedFormatters::~CachedFormatters() {}
 
 // ---------------------------------------------------
 // Function registry
@@ -247,7 +243,7 @@ const Formatter* MessageContext::maybeCachedFormatter(const FunctionName& f, UEr
             errorCode = U_MEMORY_ALLOCATION_ERROR;
             return nullptr;
         }
-        parent.cachedFormatters->setFormatter(f, formatter, errorCode);
+        parent.cachedFormatters->setFormatter(f, formatter);
         return formatter;
     } else {
         return result;
