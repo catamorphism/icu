@@ -259,12 +259,10 @@ public:
      *
      * @param context Formatting context; captures the unnamed function argument and named options.
      *        See the `FormattingContext` documentation for more details.
-     * @param keys An array of pointers to strings that are compared to the input (`context.getFormattableInput()`)
+     * @param keys A vector of strings that are compared to the input (`context.getFormattableInput()`)
      *        in an implementation-specific way.
-     * @param numKeys The length of the `keys` array.
-     * @param prefs A mutable reference to an array of pointers to strings. `selectKey()` should set the contents
+     * @param prefs A vector of strings. `selectKey()` should set the contents
      *        of `prefs` to a subset of `keys`, with the best match placed at the lowest index.
-     * @param numMatching A mutable reference that should be set to the length of the `prefs` array.
      * @param status    Input/output error code. Should not be set directly by the
      *        custom selector, which should use `FormattingContext::setSelectorError()`
      *        to signal errors. The custom selector may pass `status` to other ICU functions
@@ -273,7 +271,10 @@ public:
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    virtual void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const = 0;
+  virtual void selectKey(FormattingContext& context,
+			 const std::vector<UnicodeString>& keys,
+			 std::vector<UnicodeString>& prefs,
+			 UErrorCode& status) const = 0;
     virtual ~Selector();
 }; // class Selector
 

@@ -231,30 +231,10 @@ class U_I18N_API FormattingContext : public UObject {
      * @deprecated This API is for technology preview only.
      */
     virtual const UObject& getObjectOption(const UnicodeString& optionName) const = 0;
-    /**
-     * Iterates over all options. The order in which the options are returned is unspecified.
-     *
-     * @param pos A mutable reference to the current iterator position. Should be set to
-     *            `firstOption()` before the first call to `nextOption()`.
-     * @param optionName A mutable reference that is set to the name of the next option
-     *        if the return value is non-null.
-     * @return A pointer to a `Formattable`  (whose value will be string, double, date, or int64;
-     *         other types are not used). The pointer is null if there are no further options
-     *         from `pos`.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual const Formattable* nextOption(int32_t& pos, UnicodeString& optionName) const = 0;
-    /**
-     * Used with `nextOption()`.
-     *
-     * @return The initial iterator position for `nextOption()`.
-     *
-     * @internal ICU 74.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual int32_t firstOption() const = 0;
+    // TODO
+    using FunctionOptionsMap = std::map<UnicodeString, Formattable>;
+    virtual FunctionOptionsMap::const_iterator begin() const = 0;
+    virtual FunctionOptionsMap::const_iterator end() const = 0;
     /**
      * Gets the number of options.
      *

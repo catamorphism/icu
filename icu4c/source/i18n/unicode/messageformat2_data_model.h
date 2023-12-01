@@ -462,7 +462,7 @@ namespace data_model {
         SelectorKeys(const SelectorKeys& other);
 // TODO
         // Move assignment operator
-        SelectorKeys& operator=(SelectorKeys&&) noexcept;
+        SelectorKeys& operator=(SelectorKeys&&) noexcept = default;
         // Copy assignment operator
         SelectorKeys& operator=(const SelectorKeys& other) {
             keys = KeyList(other.keys);

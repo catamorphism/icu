@@ -566,40 +566,36 @@ using Arguments = MessageArguments;
 static Arguments localToGlobal(const FormattingContext& context) {
     Arguments::Builder args;
 
-    int32_t pos = context.firstOption();
-    UnicodeString optionName;
-    while (true) {
-        const Formattable* optionValue = context.nextOption(pos, optionName);
-        if (optionValue == nullptr) {
-            break;
-        }
-        switch (optionValue->getType()) {
+    for (auto iter = context.begin(); iter != context.end(); ++iter) {
+        const Formattable& optionValue = iter->second;
+        const UnicodeString& optionName = iter->first;
+        switch (optionValue.getType()) {
             case Formattable::Type::kString: {
                 // add it as a string arg
-                args.add(optionName, optionValue->getString());
+                args.add(optionName, optionValue.getString());
                 break;
             }
             case Formattable::Type::kDouble: {
-                args.addDouble(optionName, optionValue->getDouble());
+                args.addDouble(optionName, optionValue.getDouble());
                 break;
             }
             case Formattable::Type::kInt64: {
-                args.addInt64(optionName, optionValue->getInt64());
+                args.addInt64(optionName, optionValue.getInt64());
                 break;
             }
             case Formattable::Type::kLong: {
-                args.addInt64(optionName, (int64_t) optionValue->getLong());
+                args.addInt64(optionName, (int64_t) optionValue.getLong());
                 break;
             }
             case Formattable::Type::kDate: {
-                args.addDate(optionName, optionValue->getDate());
+                args.addDate(optionName, optionValue.getDate());
                 break;
             }
             default: {
                 // Ignore other types
                 continue;
             }
-            }
+	}
     }
     return args.build();
 }

@@ -16,6 +16,7 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/messageformat2_data_model.h"
+#include <iterator>
 
 U_NAMESPACE_BEGIN namespace message2 {
 
@@ -56,12 +57,11 @@ class ExpressionContext : public FormattingContext {
     // Precondition: hasFormatter()
     const Formatter* getFormatter(UErrorCode&);
 
-    void initFunctionOptions(UErrorCode&);
-    void addFunctionOption(const UnicodeString&, Formattable*, UErrorCode&);
+    void addFunctionOption(const UnicodeString&, Formattable&&);
     void clearFunctionOptions();
     Formattable* getOption(const UnicodeString&, Formattable::Type) const;
     bool tryStringAsNumberOption(const UnicodeString&, double&) const;
-    Formattable* getNumericOption(const UnicodeString&) const;
+    UBool getNumericOption(const UnicodeString&, Formattable&) const;
 
     void doFormattingCall();
     void doSelectorCall(const UnicodeString[], int32_t, UnicodeString[], int32_t&, UErrorCode&);
@@ -72,8 +72,6 @@ class ExpressionContext : public FormattingContext {
     void promoteFallbackToOutput();
     void formatInputWithDefaults(const Locale&, UErrorCode&);
 
-    ExpressionContext(MessageContext&, UErrorCode&);
-
     friend class MessageArguments;
     friend class MessageFormatter;
 
@@ -83,7 +81,8 @@ class ExpressionContext : public FormattingContext {
     OutputState outState;
 
     // Function name that has been set but not yet invoked on an argument
-    LocalPointer<FunctionName> pendingFunctionName;
+    FunctionName pendingFunctionName;
+    bool hasPendingFunctionName = false;
 
     // Fallback string to use in case of errors
     UnicodeString fallback;
@@ -103,24 +102,18 @@ class ExpressionContext : public FormattingContext {
     // Invariant: ((isObject && objectInput != nullptr) || (!isObject && objectInput == nullptr)
     const UObject* objectInput;
     const UObject* getObjectInputPointer() const;
- 
+
     // Output is returned by a formatting function
     UnicodeString stringOutput;
     number::FormattedNumber numberOutput;
 
     // Named options passed to functions
-    LocalPointer<Hashtable> functionOptions;
+    FunctionOptionsMap functionOptions;
     // Named options passed to functions that have type UObject
-    // This must be a separate hash table because objects wrapped in
+    // This must be a separate map because objects wrapped in
     // a Formattable will be deleted by the destructor of the Formattable,
     // and object values passed as arguments are not owned
-    LocalPointer<Hashtable> functionObjectOptions;
-
-
-    // Creates a new context with the given `MessageContext` as its parent
-    static ExpressionContext* create(MessageContext&, UErrorCode&);
-    // Creates a new context sharing this's context and parent
-    ExpressionContext* create(UErrorCode&);
+    std::map<UnicodeString, const UObject*> functionObjectOptions;
 
     MessageContext& messageContext() const { return context; }
 
@@ -133,14 +126,14 @@ class ExpressionContext : public FormattingContext {
     // Sets the fallback string as input and exits the error state
     void promoteFallbackToInput();
 
-    void setFunctionName(const FunctionName&, UErrorCode&);
+    void setFunctionName(const FunctionName&);
     // Function name must be set; clears it
     void resolveSelector(Selector*);
 
-    void setStringOption(const UnicodeString&, const UnicodeString&, UErrorCode&);
-    void setDateOption(const UnicodeString&, UDate, UErrorCode&);
-    void setNumericOption(const UnicodeString&, double, UErrorCode&);
-    void setObjectOption(const UnicodeString&, const UObject*, UErrorCode&);
+    void setStringOption(const UnicodeString&, const UnicodeString&);
+    void setDateOption(const UnicodeString&, UDate);
+    void setNumericOption(const UnicodeString&, double);
+    void setObjectOption(const UnicodeString&, const UObject*);
 
     void setNoOperand();
     void setInput(const UObject*);
@@ -157,7 +150,7 @@ class ExpressionContext : public FormattingContext {
     // If there is a function name, clear it and
     // call the function, setting the input and/or output appropriately
     // Precondition: hasSelector()
-    void evalPendingSelectorCall(const UVector&, UVector&, UErrorCode&);
+    void evalPendingSelectorCall(const std::vector<UnicodeString>&, std::vector<UnicodeString>&, UErrorCode&);
 
     static Formattable* createFormattable(const UnicodeString&, UErrorCode&);
     static Formattable* createFormattable(double, UErrorCode&);
@@ -168,6 +161,8 @@ class ExpressionContext : public FormattingContext {
     static Formattable* createFormattable(const UObject*, UErrorCode&);
 
     public:
+
+    ExpressionContext create() const;
 
     // Precondition: pending function name is set
     bool hasSelector() const;
@@ -197,13 +192,15 @@ class ExpressionContext : public FormattingContext {
     UBool hasObjectOption(const UnicodeString&) const override;
     const UObject& getObjectOption(const UnicodeString&) const override;
     // Function options iterator
-    int32_t firstOption() const override;
+    FunctionOptionsMap::const_iterator begin() const override;
+    FunctionOptionsMap::const_iterator end() const override;
     int32_t optionsCount() const override;
-    const Formattable* nextOption(int32_t&, UnicodeString&) const override;
 
     void setSelectorError(const UnicodeString&) override;
     void setFormattingError(const UnicodeString&) override;
 
+    ExpressionContext(MessageContext&);
+    ExpressionContext(ExpressionContext&&);
     virtual ~ExpressionContext();
 };
 
