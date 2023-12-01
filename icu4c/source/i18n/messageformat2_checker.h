@@ -13,7 +13,6 @@
 #include "unicode/messageformat2_data_model.h"
 #include "unicode/unistr.h"
 #include "unicode/utypes.h"
-#include "uvector.h"
 
 U_NAMESPACE_BEGIN  namespace message2 {
 
@@ -28,34 +27,34 @@ class TypeEnvironment : public UMemory {
         Annotated,
         Unannotated
     };
-    void extend(const VariableName&, Type, UErrorCode&);
+    void extend(const VariableName&, Type);
     Type get(const VariableName&) const;
-    TypeEnvironment(UErrorCode&);
+    TypeEnvironment();
 
     virtual ~TypeEnvironment();
 
     private:
     // Stores variables known to be annotated.
     // All others are assumed to be unannotated
-    LocalPointer<UVector> annotated;
+    std::vector<VariableName> annotated;
 }; // class TypeEnvironment
 
 // Checks a data model for semantic errors
 // (Errors are defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md       )
 class Checker {
 public:
-    void check(UErrorCode& error);
+    void check();
     Checker(const MessageFormatDataModel& m, StaticErrors& e) : dataModel(m), errors(e) {}
 private:
 
-    void requireAnnotated(const TypeEnvironment&, const Expression&, UErrorCode&);
-    void checkDeclarations(TypeEnvironment&, UErrorCode&);
-    void checkSelectors(const TypeEnvironment&, UErrorCode&);
-    void checkVariants(UErrorCode&);
-    void check(const OptionMap&, UErrorCode&);
-    void check(const Operand&, UErrorCode&);
-    void check(const Expression&, UErrorCode&);
-    void check(const Pattern&, UErrorCode&);
+    void requireAnnotated(const TypeEnvironment&, const Expression&);
+    void checkDeclarations(TypeEnvironment&);
+    void checkSelectors(const TypeEnvironment&);
+    void checkVariants();
+    void check(const OptionMap&);
+    void check(const Operand&);
+    void check(const Expression&);
+    void check(const Pattern&);
     const MessageFormatDataModel& dataModel;
     StaticErrors& errors;
 }; // class Checker

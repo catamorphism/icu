@@ -127,7 +127,7 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     // only be checked when arguments are known)
 
     // Check for resolution errors
-    Checker(dataModel, errors).check(success);
+    Checker(dataModel, errors).check();
 }
 
 MessageFormatter& MessageFormatter::operator=(MessageFormatter&& other) noexcept {
