@@ -22,21 +22,10 @@ namespace message2 {
     class Parser : public UMemory {
     public:
 	virtual ~Parser();
-	static Parser* create(const UnicodeString &input, MessageFormatDataModel::Builder& dataModelBuilder, UnicodeString& normalizedInput, StaticErrors& errors, UErrorCode& errorCode) {
-	  if (U_FAILURE(errorCode)) {
-	    return nullptr;
-	  }
-	  Parser* p = new Parser(input, dataModelBuilder, errors, normalizedInput);
-	  if (p == nullptr) {
-	    errorCode = U_MEMORY_ALLOCATION_ERROR;
-	  }
-	  return p;
-	}
-	// The parser validates the message and builds the data model
-	// from it.
-        void parse(UParseError &);
     private:
-	friend class MessageFormatDataModel::Builder;
+        friend class MessageFormatter;
+
+        void parse(UParseError &);
 
 	/*
 	  Use an internal "parse error" structure to make it easier to translate

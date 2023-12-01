@@ -110,12 +110,9 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
 
     // Initialize formatter cache
     cachedFormatters = new CachedFormatters(success);
-    CHECK_ERROR(success);
 
     // Parse the pattern
-    LocalPointer<Parser> parser(Parser::create(builder.pattern, tree, normalizedInput, errors, success));
-    CHECK_ERROR(success);
-    parser->parse(parseError);
+    Parser(builder.pattern, tree, errors, normalizedInput).parse(parseError);
 
     // Build the data model based on what was parsed
     dataModel = tree.build(success);
