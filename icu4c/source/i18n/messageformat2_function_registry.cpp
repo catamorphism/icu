@@ -390,7 +390,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context, UnicodeStr
 
     // No argument => return "NaN"
     if (!context.hasFormattableInput()) {
-        context.setSelectorError(UnicodeString("plural"), errorCode);
+        context.setSelectorError(UnicodeString("plural"));
         return;
     }
 
@@ -414,7 +414,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context, UnicodeStr
 
     if (noMatch) {
         // Non-number => selector error
-        context.setSelectorError(UnicodeString("plural"), errorCode);
+        context.setSelectorError(UnicodeString("plural"));
         numMatching = 0;
         return;
     }
@@ -504,7 +504,7 @@ void StandardFunctions::DateTime::format(FormattingContext& context, UErrorCode&
     // also, if there is existing string output, that's
     // like passing in a string, so we return
     if (!context.hasFormattableInput() || context.hasStringOutput()) {
-        context.setFormattingError(UnicodeString("datetime"), errorCode);
+        context.setFormattingError(UnicodeString("datetime"));
         return;
     }
 
@@ -569,7 +569,7 @@ void StandardFunctions::TextSelector::selectKey(FormattingContext& context, Unic
 
     // Argument must be present
     if (!context.hasFormattableInput()) {
-        context.setSelectorError(UnicodeString("select"), errorCode);
+        context.setSelectorError(UnicodeString("select"));
         return;
     }
 
@@ -615,7 +615,7 @@ void StandardFunctions::Identity::format(FormattingContext& context, UErrorCode&
 
     // Argument must be present
     if (!context.hasFormattableInput()) {
-        context.setFormattingError(UnicodeString("text"), errorCode);
+        context.setFormattingError(UnicodeString("text"));
         return;
     }
 

@@ -115,7 +115,7 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     // Parse the pattern
     LocalPointer<Parser> parser(Parser::create(builder.pattern, tree, normalizedInput, errors, success));
     CHECK_ERROR(success);
-    parser->parse(parseError, success);
+    parser->parse(parseError);
 
     // Build the data model based on what was parsed
     dataModel = tree.build(success);

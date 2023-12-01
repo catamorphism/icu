@@ -462,7 +462,7 @@ void TemperatureFormatter::format(FormattingContext& context, UErrorCode& errorC
 
     // Argument must be present
     if (!context.hasFormattableInput()) {
-        context.setFormattingError("temp", errorCode);
+        context.setFormattingError("temp");
         return;
     }
     // Assume arg is not-yet-formatted
@@ -473,7 +473,7 @@ void TemperatureFormatter::format(FormattingContext& context, UErrorCode& errorC
     UnicodeString unit;
     bool unitExists = context.getStringOption(UnicodeString("unit"), unit);
     if (!unitExists) {
-        context.setFormattingError("temp", errorCode);
+        context.setFormattingError("temp");
         return;
     }
     UnicodeString skeleton;

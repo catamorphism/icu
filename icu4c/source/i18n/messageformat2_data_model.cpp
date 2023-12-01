@@ -652,9 +652,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariab
 /*
   selector must be non-null
 */
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(const Expression& selector, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-
+MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(const Expression& selector) {
     buildSelectorsMessage();
     selectors.push_back(selector);
 

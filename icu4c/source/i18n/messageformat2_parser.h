@@ -34,7 +34,7 @@ namespace message2 {
 	}
 	// The parser validates the message and builds the data model
 	// from it.
-	void parse(UParseError &, UErrorCode &);
+        void parse(UParseError &);
     private:
 	friend class MessageFormatDataModel::Builder;
 
@@ -73,39 +73,39 @@ namespace message2 {
 	static void translateParseError(const MessageParseError&, UParseError&);
 	static void setParseError(MessageParseError&, uint32_t);
 	void maybeAdvanceLine();
-	void parseBody(UErrorCode &);
-	void parseDeclarations(UErrorCode &);
-	void parseSelectors(UErrorCode &);
+	void parseBody();
+	void parseDeclarations();
+	void parseSelectors();
 
-	void parseWhitespaceMaybeRequired(bool, UErrorCode &);
-	void parseRequiredWhitespace(UErrorCode &);
-	void parseOptionalWhitespace(UErrorCode &);
-	void parseToken(UChar32, UErrorCode &);
-	void parseTokenWithWhitespace(UChar32, UErrorCode &);
+	void parseWhitespaceMaybeRequired(bool);
+	void parseRequiredWhitespace();
+	void parseOptionalWhitespace();
+	void parseToken(UChar32);
+	void parseTokenWithWhitespace(UChar32);
 	template <int32_t N>
-	void parseToken(const UChar32 (&)[N], UErrorCode &);
+	void parseToken(const UChar32 (&)[N]);
 	template <int32_t N>
-	void parseTokenWithWhitespace(const UChar32 (&)[N], UErrorCode &);
-	UnicodeString parseName(UErrorCode&);
-	VariableName parseVariableName(UErrorCode&);
-	FunctionName parseFunction(UErrorCode&);
-	void parseEscapeSequence(EscapeKind, UnicodeString&, UErrorCode &);
-	void parseLiteralEscape(UnicodeString&, UErrorCode &);
-	Literal parseLiteral(UErrorCode &);
-	void parseOption(Operator::Builder&, UErrorCode&);
-	void parseOptions(Operator::Builder&, UErrorCode&);
-	void parseReservedEscape(UnicodeString&, UErrorCode&);
-	void parseReservedChunk(Reserved::Builder&, UErrorCode&);
-	Reserved parseReserved(UErrorCode &);
-	Operator parseAnnotation(UErrorCode &);
-	void parseLiteralOrVariableWithAnnotation(bool, Expression::Builder&, UErrorCode &);
-	Expression parseExpression(bool&, UErrorCode &);
-	void parseTextEscape(UnicodeString&, UErrorCode&);
-	UnicodeString parseText(UErrorCode&);
-	Key parseKey(UErrorCode&);
-	SelectorKeys parseNonEmptyKeys(UErrorCode&);
-	void errorPattern(UErrorCode&);
-	Pattern parsePattern(UErrorCode&);
+	void parseTokenWithWhitespace(const UChar32 (&)[N]);
+	UnicodeString parseName();
+	VariableName parseVariableName();
+	FunctionName parseFunction();
+	void parseEscapeSequence(EscapeKind, UnicodeString&);
+	void parseLiteralEscape(UnicodeString&);
+	Literal parseLiteral();
+	void parseOption(Operator::Builder&);
+	void parseOptions(Operator::Builder&);
+	void parseReservedEscape(UnicodeString&);
+	void parseReservedChunk(Reserved::Builder&);
+	Reserved parseReserved();
+	Operator parseAnnotation();
+	void parseLiteralOrVariableWithAnnotation(bool, Expression::Builder&);
+	Expression parseExpression(bool&);
+	void parseTextEscape(UnicodeString&);
+	UnicodeString parseText();
+	Key parseKey();
+	SelectorKeys parseNonEmptyKeys();
+	void errorPattern();
+	Pattern parsePattern();
 
 	// The input string
 	const UnicodeString &source;

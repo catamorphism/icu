@@ -255,13 +255,13 @@ class StaticErrors : public UObject {
     public:
     StaticErrors();
 
-  //  int32_t count() const;
-    void setMissingSelectorAnnotation(UErrorCode&);
-    void addSyntaxError(UErrorCode&);
+    void setMissingSelectorAnnotation();
+    void setDuplicateOptionName();
+    void addSyntaxError();
     bool hasDataModelError() const { return dataModelError; }
     bool hasSyntaxError() const { return syntaxError; }
     bool hasMissingSelectorAnnotationError() const { return missingSelectorAnnotationError; }
-    void addError(StaticError, UErrorCode&);
+    void addError(StaticError);
     void checkErrors(UErrorCode&);
 
     virtual ~StaticErrors();
@@ -280,11 +280,11 @@ class DynamicErrors : public UObject {
     DynamicErrors(const StaticErrors&);
 
     int32_t count() const;
-    void setSelectorError(const FunctionName&, UErrorCode&);
-    void setReservedError(UErrorCode&);
-    void setUnresolvedVariable(const VariableName&, UErrorCode&);
-    void setUnknownFunction(const FunctionName&, UErrorCode&);
-    void setFormattingError(const FunctionName&, UErrorCode&);
+    void setSelectorError(const FunctionName&);
+    void setReservedError();
+    void setUnresolvedVariable(const VariableName&);
+    void setUnknownFunction(const FunctionName&);
+    void setFormattingError(const FunctionName&);
     bool hasDataModelError() const { return staticErrors.hasDataModelError(); }
     bool hasFormattingError() const { return formattingError; }
     bool hasSelectorError() const { return selectorError; }
@@ -292,7 +292,7 @@ class DynamicErrors : public UObject {
     bool hasUnknownFunctionError() const { return unknownFunctionError; }
     bool hasMissingSelectorAnnotationError() const { return staticErrors.hasMissingSelectorAnnotationError(); }
     bool hasUnresolvedVariableError() const { return unresolvedVariableError; }
-    void addError(DynamicError, UErrorCode&);
+    void addError(DynamicError);
     void checkErrors(UErrorCode&) const;
     bool hasError() const;
 
