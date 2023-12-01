@@ -642,7 +642,7 @@ void ExpressionContext::evalPendingSelectorCall(const UVector& keys, UVector& ke
         if (U_FAILURE(status)) {
             setFallback();
             status = U_ZERO_ERROR;
-            setSelectorError(pendingFunctionName->toString(), status);
+            setSelectorError(pendingFunctionName->toString());
         } else {
             // Ignore warnings
             status = savedStatus;
@@ -684,7 +684,7 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
                 // as a formatting error
                 setFallback();
                 status = U_ZERO_ERROR;
-                setFormattingError(functionName.toString(), status);
+                setFormattingError(functionName.toString());
             } else {
                 // Ignore warnings
                 status = savedStatus;
@@ -702,9 +702,9 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
     }
     // No formatter with this name -- set error
     if (context.isSelector(functionName)) {
-        setFormattingError(functionName.toString(), status);
+        setFormattingError(functionName.toString());
     } else {
-        context.getErrors().setUnknownFunction(functionName, status);
+        context.getErrors().setUnknownFunction(functionName);
     }
     setFallback();
 }
@@ -749,16 +749,12 @@ void formatDateWithDefaults(const Locale& locale, UDate date, UnicodeString& res
 // Errors
 // -------
 
-void ExpressionContext::setFormattingError(const UnicodeString& formatterName, UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    context.getErrors().setFormattingError(formatterName, status);
+void ExpressionContext::setFormattingError(const UnicodeString& formatterName) {
+    context.getErrors().setFormattingError(formatterName);
 }
 
-void ExpressionContext::setSelectorError(const UnicodeString& selectorName, UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    context.getErrors().setSelectorError(selectorName, status);
+void ExpressionContext::setSelectorError(const UnicodeString& selectorName) {
+    context.getErrors().setSelectorError(selectorName);
 }
 
 ExpressionContext::~ExpressionContext() {}

@@ -118,7 +118,7 @@ private:
 class CachedFormatters : public UObject {
 private:
     friend class MessageFormatter;
-    
+
     LocalPointer<Hashtable> cache;
     CachedFormatters(UErrorCode&);
 
@@ -155,7 +155,7 @@ public:
     const MessageFormatter& messageFormatter() const { return parent; }
 
     virtual ~MessageContext();
-    
+
 private:
     MessageContext(const MessageFormatter&, const MessageArguments&, const StaticErrors&);
 

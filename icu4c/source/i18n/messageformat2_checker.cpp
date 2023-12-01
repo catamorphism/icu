@@ -105,13 +105,13 @@ void Checker::checkVariants(UErrorCode& error) {
         const KeyList& keys = iter.first().getKeys();
         if ((int32_t) keys.size() != numSelectors) {
             // Variant key mismatch
-            errors.addError(StaticErrorType::VariantKeyMismatchError, error);
+            errors.addError(StaticErrorType::VariantKeyMismatchError);
             return;
         }
         defaultExists |= areDefaultKeys(keys);
     }
     if (!defaultExists) {
-        errors.addError(StaticErrorType::NonexhaustivePattern, error);
+        errors.addError(StaticErrorType::NonexhaustivePattern);
         return;
     }
 }
@@ -131,7 +131,7 @@ void Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selec
         }
     }
     // If this code is reached, an error was detected
-    errors.addError(StaticErrorType::MissingSelectorAnnotation, error);
+    errors.addError(StaticErrorType::MissingSelectorAnnotation);
 }
 
 void Checker::checkSelectors(const TypeEnvironment& t, UErrorCode& error) {
