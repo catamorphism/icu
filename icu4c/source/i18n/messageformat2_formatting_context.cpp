@@ -18,7 +18,9 @@
 #pragma warning(disable: 4661)
 #endif
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 using namespace data_model;
 
@@ -27,36 +29,24 @@ using namespace data_model;
 // Constructors
 // ------------
 
-/* static */ ExpressionContext* ExpressionContext::create(MessageContext& globalContext, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
+ExpressionContext::ExpressionContext(MessageContext& c) : context(c), inState(FALLBACK), outState(NONE) {}
 
-    LocalPointer<ExpressionContext> result(new ExpressionContext(globalContext, errorCode));
-    NULL_ON_ERROR(errorCode);
-    return result.orphan();
+ExpressionContext ExpressionContext::create() const {
+    return ExpressionContext(context);
 }
 
-ExpressionContext* ExpressionContext::create(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    LocalPointer<ExpressionContext> result(new ExpressionContext(context, errorCode));
-    NULL_ON_ERROR(errorCode);
-    return result.orphan();
-}
-
-ExpressionContext::ExpressionContext(MessageContext& c, UErrorCode& errorCode) : context(c), inState(FALLBACK), outState(NONE) {
-    CHECK_ERROR(errorCode);
-
-    initFunctionOptions(errorCode);
-}
-
-void ExpressionContext::initFunctionOptions(UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-    functionOptions.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
-    functionObjectOptions.adoptInstead(new Hashtable(uhash_compareUnicodeString, nullptr, errorCode));
-    CHECK_ERROR(errorCode);
-    // `functionOptions` owns its values
-    functionOptions->setValueDeleter(uprv_deleteUObject);
-    // `functionObjectOptions` does not own its values
+ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.context), inState(other.inState), outState(other.outState) {
+    hasPendingFunctionName = other.hasPendingFunctionName;
+    if (hasPendingFunctionName) {
+	pendingFunctionName = std::move(other.pendingFunctionName);
+    }
+    fallback = std::move(other.fallback);
+    input = std::move(other.input);
+    objectInput = other.objectInput;
+    stringOutput = std::move(other.stringOutput);
+    numberOutput = std::move(other.numberOutput);
+    functionOptions = std::move(other.functionOptions);
+    functionObjectOptions = std::move(other.functionObjectOptions);
 }
 
 // State
@@ -68,7 +58,6 @@ void ExpressionContext::enterState(InputState s) {
         enterState(OutputState::NONE);
     }
     inState = s;
-    
 }
 
 void ExpressionContext::enterState(OutputState s) {
@@ -304,192 +293,76 @@ void ExpressionContext::formatToString(const Locale& locale, UErrorCode& status)
 }
 
 void ExpressionContext::clearFunctionName() {
-    U_ASSERT(pendingFunctionName.isValid());
-    pendingFunctionName.adoptInstead(nullptr);
-}            
+    U_ASSERT(hasPendingFunctionName);
+    hasPendingFunctionName = false;
+}
 
 const FunctionName& ExpressionContext::getFunctionName() {
-    U_ASSERT(pendingFunctionName.isValid());
-    return *pendingFunctionName;
-}            
-
-// Helper functions for function options
-// -------------------------------------
-
-/* static */ Formattable* ExpressionContext::createFormattable(const UnicodeString& v, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    Formattable* result = new Formattable(v);
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
-/* static */  Formattable* ExpressionContext::createFormattable(double v, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    Formattable* result = new Formattable(v);
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
-/* static */  Formattable* ExpressionContext::createFormattable(int64_t v, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    Formattable* result = new Formattable(v);
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
-/* static */ Formattable* ExpressionContext::createFormattable(const UnicodeString* in, int32_t count, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    LocalArray<Formattable> arr(new Formattable[count]);
-    if (!arr.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-
-    for (int32_t i = 0; i < count; i++) {
-        Formattable val((const UnicodeString&) in[i]);
-        arr[i] = val;
-    }
-
-    Formattable* result(new Formattable(arr.getAlias(), count));
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
-/* static */ Formattable* ExpressionContext::createFormattableDate(UDate v, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    Formattable* result = new Formattable(v, Formattable::kIsDate);
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
-/* static */ Formattable* ExpressionContext::createFormattableDecimal(StringPiece val, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    Formattable* result = new Formattable(val, errorCode);
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
+    U_ASSERT(hasPendingFunctionName);
+    return pendingFunctionName;
 }
 
 // Function options iterator
 // TODO: this only iterates over non-object options
-int32_t ExpressionContext::firstOption() const { return UHASH_FIRST; }
-
-const Formattable* ExpressionContext::nextOption(int32_t& pos, UnicodeString& key) const {
-    U_ASSERT(functionOptions.isValid());
-    const UHashElement* next = functionOptions->nextElement(pos);
-    if (next == nullptr) {
-        return nullptr;
-    }
-    key = *((UnicodeString*) next->key.pointer);
-    return (const Formattable*) next->value.pointer;
-}
+FormattingContext::FunctionOptionsMap::const_iterator ExpressionContext::begin() const { return functionOptions.cbegin(); }
+FormattingContext::FunctionOptionsMap::const_iterator ExpressionContext::end() const { return functionOptions.cend(); }
 
 int32_t ExpressionContext::optionsCount() const {
-    U_ASSERT(functionOptions.isValid());
-    return functionOptions->count();
+    return functionOptions.size();
 }
-
 
 // Function options
 // ----------------
 
-// Adopts `val`
-void ExpressionContext::addFunctionOption(const UnicodeString& k, Formattable* val, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-    U_ASSERT(functionOptions.isValid());
-    functionOptions->put(k, val, errorCode);
+void ExpressionContext::addFunctionOption(const UnicodeString& k, Formattable&& val) {
+    functionOptions[k] = val;
 }
 
-void ExpressionContext::setStringOption(const UnicodeString& key, const UnicodeString& value, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-
-    LocalPointer<Formattable> valuePtr(createFormattable(value, errorCode));
-    CHECK_ERROR(errorCode);
-    addFunctionOption(key, valuePtr.orphan(), errorCode);
+void ExpressionContext::setStringOption(const UnicodeString& key, const UnicodeString& value) {
+    addFunctionOption(key, Formattable(value));
 }
 
-void ExpressionContext::setDateOption(const UnicodeString& key, UDate date, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-
-    LocalPointer<Formattable> valuePtr(createFormattableDate(date, errorCode));
-    CHECK_ERROR(errorCode);
-    addFunctionOption(key, valuePtr.orphan(), errorCode);
+void ExpressionContext::setDateOption(const UnicodeString& key, UDate date) {
+    addFunctionOption(key, Formattable(date, Formattable::kIsDate));
 }
 
-void ExpressionContext::setNumericOption(const UnicodeString& key, double value, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-
-    LocalPointer<Formattable> valuePtr(createFormattable(value, errorCode));
-    CHECK_ERROR(errorCode);
-    addFunctionOption(key, valuePtr.orphan(), errorCode);
+void ExpressionContext::setNumericOption(const UnicodeString& key, double value) {
+    addFunctionOption(key, Formattable(value));
 }
 
-void ExpressionContext::setObjectOption(const UnicodeString& key, const UObject* value, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-
-    U_ASSERT(functionObjectOptions.isValid());
+void ExpressionContext::setObjectOption(const UnicodeString& key, const UObject* value) {
     // The const_cast is safe because no methods that allow
     // writing to `value` are exposed
-    functionObjectOptions->put(key, const_cast<UObject*>(value), errorCode);
+    functionObjectOptions[key] = const_cast<UObject*>(value);
 }
 
-Formattable* ExpressionContext::getOption(const UnicodeString& key, Formattable::Type type) const {
-    U_ASSERT(functionOptions.isValid());
-    Formattable* result = (Formattable*) functionOptions->get(key);
-    if (result == nullptr || result->getType() != type) {
-        return nullptr;
+UBool ExpressionContext::getNumericOption(const UnicodeString& key, Formattable& result) const {
+    if (functionOptions.count(key) <= 0) {
+	return false;
     }
-    return result;
-}
-
-Formattable* ExpressionContext::getNumericOption(const UnicodeString& key) const {
-    U_ASSERT(functionOptions.isValid());
-    Formattable* result = (Formattable*) functionOptions->get(key);
-    if (result == nullptr || !result->isNumeric()) {
-        return nullptr;
+    const Formattable& val = functionOptions.at(key);
+    if (!val.isNumeric()) {
+        return false;
     }
-    return result;
+    result = val;
+    return true;
 }
 
 UBool ExpressionContext::getStringOption(const UnicodeString& key, UnicodeString& value) const {
-    Formattable* result = getOption(key, Formattable::Type::kString);
-    if (result == nullptr) {
-        return false;
+    if (functionOptions.count(key) <= 0) {
+      return false;
     }
-    value = result->getString();
+    value = functionOptions.at(key).getString();
     return true;
 }
 
 const UObject& ExpressionContext::getObjectOption(const UnicodeString& key) const {
-    U_ASSERT(functionObjectOptions.isValid());
-    UObject* result = static_cast<UObject*>(functionObjectOptions->get(key));
-    U_ASSERT(result != nullptr);
-    return *result;
+    U_ASSERT(functionObjectOptions.count(key) > 0);
+    return *(functionObjectOptions.at(key));
 }
 
 UBool ExpressionContext::hasObjectOption(const UnicodeString& key) const {
-    U_ASSERT(functionObjectOptions.isValid());
-    return (functionObjectOptions->get(key) != nullptr);
+    return (functionObjectOptions.count(key) > 0);
 }
 
 bool ExpressionContext::tryStringAsNumberOption(const UnicodeString& key, double& value) const {
@@ -516,8 +389,9 @@ bool ExpressionContext::tryStringAsNumberOption(const UnicodeString& key, double
 }
 
 UBool ExpressionContext::getInt64Option(const UnicodeString& key, int64_t& value) const {
-    Formattable* result = getNumericOption(key);
-    if (result == nullptr) {
+    Formattable val;
+    UBool isNumeric = getNumericOption(key, val);
+    if (!isNumeric) {
         double doubleResult;
         if (tryStringAsNumberOption(key, doubleResult)) {
             value = (int64_t) doubleResult;
@@ -526,7 +400,7 @@ UBool ExpressionContext::getInt64Option(const UnicodeString& key, int64_t& value
         return false;
     }
     UErrorCode localErrorCode = U_ZERO_ERROR;
-    value = result->getInt64(localErrorCode);
+    value = val.getInt64(localErrorCode);
     if (U_SUCCESS(localErrorCode)) {
         return true;
     }
@@ -535,12 +409,13 @@ UBool ExpressionContext::getInt64Option(const UnicodeString& key, int64_t& value
 }
 
 UBool ExpressionContext::getDoubleOption(const UnicodeString& key, double& value) const {
-    Formattable* result = getNumericOption(key);
-    if (result == nullptr) {
+    Formattable val;
+    UBool isNumeric = getNumericOption(key, val);
+    if (!isNumeric) {
         return tryStringAsNumberOption(key, value);
     }
     UErrorCode localErrorCode = U_ZERO_ERROR;
-    value = result->getDouble(localErrorCode);
+    value = val.getDouble(localErrorCode);
     // The conversion must succeed, since the result is numeric
     U_ASSERT(U_SUCCESS(localErrorCode));
     return true;
@@ -550,18 +425,14 @@ UBool ExpressionContext::getDoubleOption(const UnicodeString& key, double& value
 // Functions
 // -------------
 
-void ExpressionContext::setFunctionName(const FunctionName& fn, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-
+void ExpressionContext::setFunctionName(const FunctionName& fn) {
     U_ASSERT(!hasFunctionName());
-    pendingFunctionName.adoptInstead(new FunctionName(fn));
-    if (!pendingFunctionName.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
+    hasPendingFunctionName = true;
+    pendingFunctionName = fn;
 }
 
 bool ExpressionContext::hasFunctionName() const {
-    return pendingFunctionName.isValid();
+    return hasPendingFunctionName;
 }
 
 void ExpressionContext::returnFromFunction() {
@@ -571,8 +442,7 @@ void ExpressionContext::returnFromFunction() {
 }
 
 void ExpressionContext::clearFunctionOptions() {
-    U_ASSERT(functionOptions.isValid());
-    functionOptions->removeAll();
+    functionOptions.clear();
 }
 
 // Precondition: pending function name is set and selector is defined
@@ -580,9 +450,8 @@ void ExpressionContext::clearFunctionOptions() {
 Selector* ExpressionContext::getSelector(UErrorCode& status) const {
     NULL_ON_ERROR(status);
 
-    U_ASSERT(pendingFunctionName.isValid());
-    const FunctionName& functionName = *pendingFunctionName;
-    const SelectorFactory* selectorFactory = context.lookupSelectorFactory(functionName, status);
+    U_ASSERT(hasFunctionName());
+    const SelectorFactory* selectorFactory = context.lookupSelectorFactory(pendingFunctionName, status);
     NULL_ON_ERROR(status);
     // Create a specific instance of the selector
     LocalPointer<Selector> result(selectorFactory->createSelector(context.messageFormatter().getLocale(), status));
@@ -595,82 +464,58 @@ Selector* ExpressionContext::getSelector(UErrorCode& status) const {
 const Formatter* ExpressionContext::getFormatter(UErrorCode& status) {
     NULL_ON_ERROR(status);
 
-    U_ASSERT(pendingFunctionName.isValid());
+    U_ASSERT(hasFunctionName());
     U_ASSERT(hasFormatter());
-    return context.maybeCachedFormatter(*pendingFunctionName, status);
+    return context.maybeCachedFormatter(pendingFunctionName, status);
 }
 
 bool ExpressionContext::hasFormatter() const {
-    U_ASSERT(pendingFunctionName.isValid());
-    return context.isFormatter(*pendingFunctionName);
+    U_ASSERT(hasFunctionName());
+    return context.isFormatter(pendingFunctionName);
 }
 
 bool ExpressionContext::hasSelector() const {
-    if (!pendingFunctionName.isValid()) {
+    if (!hasFunctionName()) {
         return false;
     }
-    return context.isSelector(*pendingFunctionName);
+    return context.isSelector(pendingFunctionName);
 }
 
 // Calls the pending selector
-// keys and keysOut are vectors of strings
-void ExpressionContext::evalPendingSelectorCall(const UVector& keys, UVector& keysOut, UErrorCode& status) {
+void ExpressionContext::evalPendingSelectorCall(const std::vector<UnicodeString>& keys, std::vector<UnicodeString>& keysOut, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    U_ASSERT(pendingFunctionName.isValid());
     U_ASSERT(hasSelector());
     LocalPointer<Selector> selectorImpl(getSelector(status));
     CHECK_ERROR(status);
     UErrorCode savedStatus = status;
 
-    // Convert the vectors to arrays for the call
-    int32_t numKeys = keys.size();
-    LocalArray<UnicodeString*> keysArray(new UnicodeString*[numKeys]);
-    LocalArray<UnicodeString*> keysOutArray(new UnicodeString*[numKeys]);
-    if (!keysArray.isValid() || !keysOutArray.isValid()) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-        return;
-    }
-    for (int32_t i = 0; i < keys.size(); i++) {
-        keysArray[i] = static_cast<UnicodeString*>(keys[i]);
-    }
-
-    int32_t numberMatching = 0;
-    selectorImpl->selectKey(*this, keysArray.getAlias(), numKeys, keysOutArray.getAlias(), numberMatching, status);
+    selectorImpl->selectKey(*this, keys, keysOut, status);
     // Update errors
     if (savedStatus != status) {
         if (U_FAILURE(status)) {
             setFallback();
             status = U_ZERO_ERROR;
-            setSelectorError(pendingFunctionName->toString());
+            setSelectorError(pendingFunctionName.toString());
         } else {
             // Ignore warnings
             status = savedStatus;
         }
     }
     returnFromFunction();
-
-    // Copy the keys back into the vector
-    LocalPointer<UnicodeString> tempKey;
-    for (int32_t i = 0; i < numberMatching; i++) {
-        // Because both `keys` and `keysOut` own their elements,
-        // the string has to be copied here
-        tempKey.adoptInstead(new UnicodeString(*keysOutArray[i]));
-        if (!tempKey.isValid()) {
-            status = U_MEMORY_ALLOCATION_ERROR;
-            return;
-        }
-        keysOut.adoptElement(tempKey.orphan(), status);
-    }
-    keysOut.setSize(numberMatching, status);
 }
 
 // Calls the pending formatter
 void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    LocalPointer<FunctionName> savedFunctionName(pendingFunctionName.isValid() ? pendingFunctionName.orphan() : nullptr);
-    setFunctionName(functionName, status);
+    FunctionName savedFunctionName;
+    bool hadFunctionName = hasFunctionName();
+    if (hadFunctionName) {
+      savedFunctionName = pendingFunctionName;
+      clearFunctionName();
+    }
+    setFunctionName(functionName);
     CHECK_ERROR(status);
     if (hasFormatter()) {
         const Formatter* formatterImpl = getFormatter(status);
@@ -695,8 +540,8 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
             clearOutput();
         }
         returnFromFunction();
-        if (savedFunctionName.isValid()) {
-            setFunctionName(*savedFunctionName, status);
+        if (hadFunctionName) {
+            setFunctionName(savedFunctionName);
         }
         return;
     }

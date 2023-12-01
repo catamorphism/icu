@@ -499,9 +499,29 @@ public:
      void resolveVariables(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode &) const;
 
      // Selection methods
-     void resolveSelectors(MessageContext&, const Environment& env, const data_model::ExpressionList&, UErrorCode&, UVector&) const;
-     void matchSelectorKeys(const UVector&, ExpressionContext&, UErrorCode&, UVector&) const;
-     void resolvePreferences(const UVector&, const data_model::VariantMap&, UErrorCode&, UVector&) const;
+
+     // For how this class is used, see the references to (integer, variant) tuples
+     // in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
+     class PrioritizedVariant : public UObject {
+     public:
+       PrioritizedVariant() = default;
+       PrioritizedVariant(PrioritizedVariant&&) = default;
+       PrioritizedVariant& operator=(PrioritizedVariant&&) noexcept = default;
+       UBool operator<(const PrioritizedVariant&) const;
+       int32_t priority;
+       /* const */ SelectorKeys keys;
+       /* const */ Pattern pat;
+       PrioritizedVariant(uint32_t p,
+			  const SelectorKeys& k,
+			  const Pattern& pattern) : priority(p), keys(k), pat(pattern) {}
+       virtual ~PrioritizedVariant();
+     }; // class PrioritizedVariant
+
+     void resolveSelectors(MessageContext&, const Environment& env, const data_model::ExpressionList&, UErrorCode&, std::vector<ExpressionContext>&) const;
+     void filterVariants(const VariantMap&, const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&, UErrorCode&) const;
+     void sortVariants(const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&) const;
+     void matchSelectorKeys(const std::vector<UnicodeString>&, ExpressionContext&, std::vector<UnicodeString>&, UErrorCode&) const;
+     void resolvePreferences(std::vector<ExpressionContext>&, const data_model::VariantMap&, std::vector<std::vector<UnicodeString>>&, UErrorCode&) const;
 
      // Formatting methods
      void formatLiteral(const data_model::Literal&, ExpressionContext&) const;

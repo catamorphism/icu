@@ -174,21 +174,6 @@ private:
     DynamicErrors errors;
 }; // class MessageContext
 
-// For how this class is used, see the references to (integer, variant) tuples
-// in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
-// Ideally this would have been a private class nested in MessageFormatter,
-// but sorting comparators need to reference it
-class PrioritizedVariant : public UObject {
-public:
-    int32_t priority;
-    const SelectorKeys keys;
-    const Pattern pat;
-    PrioritizedVariant(uint32_t p,
-                       const SelectorKeys& k,
-                       const Pattern& pattern) : priority(p), keys(k), pat(pattern) {}
-    virtual ~PrioritizedVariant();
-}; // class PrioritizedVariant
-
 } // namespace message2
 
 U_NAMESPACE_END
