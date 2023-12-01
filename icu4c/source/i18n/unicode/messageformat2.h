@@ -389,7 +389,6 @@ public:
        // Ignored if hasPattern
        MessageFormatDataModel dataModel;
        Locale locale;
-       LocalPointer<FunctionRegistry> standardFunctionRegistry;
        // Not owned
        const FunctionRegistry* customFunctionRegistry;
 
