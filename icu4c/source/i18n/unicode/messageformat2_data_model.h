@@ -173,6 +173,11 @@ namespace data_model {
          FunctionName& operator=(FunctionName&& other) noexcept;
          FunctionName& operator=(const FunctionName&) = default;
          FunctionName() : functionSigil(Sigil::DEFAULT) {}
+         // TODO
+         // Defined so FunctionNames can be compared and used as keys in a map by the FunctionRegistry
+         bool operator<(const FunctionName&) const;
+         bool operator==(const FunctionName&) const;
+
     private:
          friend class Operator;
          friend class icu::message2::ExpressionContext;
