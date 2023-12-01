@@ -316,7 +316,7 @@ void GrammarCasesFormatter::format(FormattingContext& context, UErrorCode& error
 
     // Argument must be     present
     if (!context.hasFormattableInput()) {
-        context.setFormattingError("grammarBB", errorCode);
+        context.setFormattingError("grammarBB");
         return;
     }
 
@@ -352,7 +352,7 @@ void GrammarCasesFormatter::format(FormattingContext& context, UErrorCode& error
     NULL_ON_ERROR(errorCode);
 
     return(frBuilder->
-            setFormatter(FunctionName("grammarBB"), new GrammarCasesFormatterFactory(), errorCode)
+	   setFormatter(FunctionName("grammarBB"), new GrammarCasesFormatterFactory(), errorCode)
             .build(errorCode));
 }
 
@@ -441,7 +441,7 @@ void message2::ListFormatter::format(FormattingContext& context, UErrorCode& err
 
     // Argument must be present
     if (!context.hasFormattableInput()) {
-        context.setFormattingError("listformat", errorCode);
+        context.setFormattingError("listformat");
         return;
     }
     // Assumes arg is not-yet-formatted
@@ -477,7 +477,7 @@ void message2::ListFormatter::format(FormattingContext& context, UErrorCode& err
             int32_t n_items;
             const Formattable* objs = toFormat.getArray(n_items);
             if (objs == nullptr) {
-                context.setFormattingError("listformatter", errorCode);
+                context.setFormattingError("listformatter");
                 return;
             }
             LocalArray<UnicodeString> parts(new UnicodeString[n_items]);
@@ -635,7 +635,7 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
 
     // Argument must be present
     if (!context.hasFormattableInput()) {
-        context.setFormattingError("msgref", errorCode);
+        context.setFormattingError("msgref");
         return;
     }
 
@@ -662,7 +662,7 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
         UnicodeString* msg = (UnicodeString*) properties.get(in);
         if (msg == nullptr) {
             // No message given for this key -- error out
-            context.setFormattingError("msgref", errorCode);
+            context.setFormattingError("msgref");
             return;
         }
 	MessageFormatter::Builder mfBuilder;
@@ -684,7 +684,7 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
        context.setOutput(result);
     } else {
         // Properties must be provided
-        context.setFormattingError("msgref", errorCode);
+        context.setFormattingError("msgref");
     }
     return;
 }

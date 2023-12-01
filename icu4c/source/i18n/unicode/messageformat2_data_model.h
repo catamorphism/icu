@@ -405,27 +405,6 @@ namespace data_model {
          * @deprecated This API is for technology preview only.
          */
         const Literal& asLiteral() const;
-        /**
-         * Creates a new wildcard key.
-         *
-         * @param status    Input/output error code.
-         * @return The new key, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-  //      static Key* create(UErrorCode& status);
-        /**
-         * Creates a new literal key.
-         *
-         * @param lit       The literal that this key matches with.
-         * @param status    Input/output error code.
-         * @return The new key, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-//        static Key* create(const Literal& lit, UErrorCode& status);
 
 // TODO
         Key(const Key& other) : wildcard(other.wildcard), contents(other.contents) {}
@@ -640,9 +619,9 @@ namespace message2 {
         class U_I18N_API Builder : public UMemory {
         private:
             friend class Reserved;
-          
+
             std::vector<Literal> parts;
-          
+
         public:
             /**
              * Adds a single literal to the reserved sequence.
@@ -660,7 +639,6 @@ namespace message2 {
              *
              * The builder object (`this`) can still be used after calling `build()`.
              *
-             * @param status    Input/output error code.
              * @return          The new Reserved object
              *
              * @internal ICU 75.0 technology preview
@@ -1683,7 +1661,7 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addSelector(const Expression& selector, UErrorCode& status);
+        Builder& addSelector(const Expression& selector);
         /**
          * Adds a single variant.
          * If a pattern was previously set using `setPattern()`, clears the pattern.

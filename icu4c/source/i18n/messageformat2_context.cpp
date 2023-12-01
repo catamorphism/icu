@@ -161,7 +161,7 @@ const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName&
         return parent.standardFunctionRegistry->getSelector(functionName);
     }
     if (isBuiltInFormatter(functionName)) {
-        errors.setSelectorError(functionName, status);
+        errors.setSelectorError(functionName);
         return nullptr;
     }
     if (parent.hasCustomFunctionRegistry()) {
@@ -171,7 +171,7 @@ const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName&
             return customSelector;
         }
         if (customFunctionRegistry.getFormatter(functionName) != nullptr) {
-            errors.setSelectorError(functionName, status);
+            errors.setSelectorError(functionName);
             return nullptr;
         }
     }
@@ -179,7 +179,7 @@ const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName&
     // isn't built-in, or the function doesn't exist in either the built-in
     // or custom registry.
     // Unknown function error
-    errors.setUnknownFunction(functionName, status);
+    errors.setUnknownFunction(functionName);
     return nullptr;
 }
 
@@ -190,7 +190,7 @@ FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& fun
         return parent.standardFunctionRegistry->getFormatter(functionName);
     }
     if (isBuiltInSelector(functionName)) {
-        errors.setFormattingError(functionName, status);
+        errors.setFormattingError(functionName);
         return nullptr;
     }
     if (parent.hasCustomFunctionRegistry()) {
@@ -200,7 +200,7 @@ FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& fun
             return customFormatter;
         }
         if (customFunctionRegistry.getSelector(functionName) != nullptr) {
-            errors.setFormattingError(functionName, status);
+            errors.setFormattingError(functionName);
             return nullptr;
         }
     }
@@ -208,7 +208,7 @@ FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& fun
     // isn't built-in, or the function doesn't exist in either the built-in
     // or custom registry.
     // Unknown function error
-    errors.setUnknownFunction(functionName, status);
+    errors.setUnknownFunction(functionName);
     return nullptr;
 }
 
@@ -277,47 +277,32 @@ void MessageContext::checkErrors(UErrorCode& status) const {
     errors.checkErrors(status);
 }
 
-void DynamicErrors::setReservedError(UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    DynamicError err(DynamicErrorType::ReservedError);
-    addError(err, status);
+void DynamicErrors::setReservedError() {
+    addError(DynamicError(DynamicErrorType::ReservedError));
 }
 
-void DynamicErrors::setFormattingError(const FunctionName& formatterName, UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    DynamicError err(DynamicErrorType::FormattingError, formatterName.toString());
-    addError(err, status);
+void DynamicErrors::setFormattingError(const FunctionName& formatterName) {
+    addError(DynamicError(DynamicErrorType::FormattingError, formatterName.toString()));
 }
 
-
-void StaticErrors::setMissingSelectorAnnotation(UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    StaticError err(StaticErrorType::MissingSelectorAnnotation);
-    addError(err, status);
+void StaticErrors::setDuplicateOptionName() {
+    addError(StaticError(StaticErrorType::DuplicateOptionName));
 }
 
-void DynamicErrors::setSelectorError(const FunctionName& selectorName, UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    DynamicError err(DynamicErrorType::SelectorError, selectorName.toString());
-    addError(err, status);
+void StaticErrors::setMissingSelectorAnnotation() {
+    addError(StaticError(StaticErrorType::MissingSelectorAnnotation));
 }
 
-void DynamicErrors::setUnknownFunction(const FunctionName& functionName, UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    DynamicError err(DynamicErrorType::UnknownFunction, functionName.toString());
-    addError(err, status);
+void DynamicErrors::setSelectorError(const FunctionName& selectorName) {
+    addError(DynamicError(DynamicErrorType::SelectorError, selectorName.toString()));
 }
 
-void DynamicErrors::setUnresolvedVariable(const VariableName& v, UErrorCode& status) {
-    CHECK_ERROR(status);
+void DynamicErrors::setUnknownFunction(const FunctionName& functionName) {
+    addError(DynamicError(DynamicErrorType::UnknownFunction, functionName.toString()));
+}
 
-    DynamicError err(DynamicErrorType::UnresolvedVariable, v.identifier());
-    addError(err, status);
+void DynamicErrors::setUnresolvedVariable(const VariableName& v) {
+    addError(DynamicError(DynamicErrorType::UnresolvedVariable, v.identifier()));
 }
 
 DynamicErrors::DynamicErrors(const StaticErrors& e) : staticErrors(e) {}
@@ -392,14 +377,11 @@ void DynamicErrors::checkErrors(UErrorCode& status) const {
     }
 }
 
-void StaticErrors::addSyntaxError(UErrorCode& status) {
-    CHECK_ERROR(status);
-    addError(StaticError(StaticErrorType::SyntaxError), status);
+void StaticErrors::addSyntaxError() {
+    addError(StaticError(StaticErrorType::SyntaxError));
 }
 
-void StaticErrors::addError(StaticError e, UErrorCode& status) {
-    CHECK_ERROR(status);
-
+void StaticErrors::addError(StaticError e) {
     switch (e.type) {
         case StaticErrorType::SyntaxError: {
             syntaxError = true;
@@ -430,9 +412,7 @@ void StaticErrors::addError(StaticError e, UErrorCode& status) {
     }
 }
 
-void DynamicErrors::addError(DynamicError e, UErrorCode& status) {
-    CHECK_ERROR(status);
-
+void DynamicErrors::addError(DynamicError e) {
     switch (e.type) {
         case DynamicErrorType::UnresolvedVariable: {
             unresolvedVariableError = true;

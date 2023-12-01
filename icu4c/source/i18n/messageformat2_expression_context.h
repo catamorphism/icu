@@ -201,8 +201,8 @@ class ExpressionContext : public FormattingContext {
     int32_t optionsCount() const override;
     const Formattable* nextOption(int32_t&, UnicodeString&) const override;
 
-    void setSelectorError(const UnicodeString&, UErrorCode&) override;
-    void setFormattingError(const UnicodeString&, UErrorCode&) override;
+    void setSelectorError(const UnicodeString&) override;
+    void setFormattingError(const UnicodeString&) override;
 
     virtual ~ExpressionContext();
 };
