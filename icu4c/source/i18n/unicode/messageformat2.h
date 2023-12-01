@@ -539,7 +539,7 @@ public:
      /* const */ Locale locale;
 
      // Registry for built-in functions
-     LocalPointer<FunctionRegistry> standardFunctionRegistry;
+     FunctionRegistry standardFunctionRegistry;
      // Registry for custom functions; may be null if no custom registry supplied
      // Note: this is *not* owned by the MessageFormatter object
      // The reason for this choice is to have a non-destructive MessageFormatter::Builder,

@@ -22,8 +22,6 @@
 
 U_NAMESPACE_BEGIN
 
-class Hashtable;
-
 namespace message2 {
 
 class Formatter;
@@ -79,6 +77,14 @@ public:
     virtual ~SelectorFactory();
 }; // class SelectorFactory
 
+  // TODO
+  /*
+    Note: since FormatterFactory and SelectorFactory are interfaces,
+    they are not copyable or movable and thus we have to use (owned) pointers here.
+   */
+  using FormatterMap = std::map<FunctionName, FormatterFactory*>;
+  using SelectorMap = std::map<FunctionName, SelectorFactory*>;
+
 /**
  * Defines mappings from names of formatters and selectors to functions implementing them.
  * The required set of formatter and selector functions is defined in the spec. Users can
@@ -127,14 +133,8 @@ public:
      */
     class U_I18N_API Builder : public UObject {
     private:
-        friend class FunctionRegistry;
-
-        Builder(UErrorCode& status);
-        // For why these two fields aren't LocalPointers, see the comments on
-        // the CachedFormatters field in messageformat2.h
-
-        Hashtable* formatters;
-        Hashtable* selectors;
+	FormatterMap formatters;
+	SelectorMap selectors;
     public:
         /**
          * Registers a formatter factory to a given formatter name. Adopts `formatterFactory`.
@@ -142,37 +142,34 @@ public:
          * @param formatterName Name of the formatter being registered.
          * @param formatterFactory A FormatterFactory object to use for creating `formatterName`
          *        formatters.
-         * @param status Input/output error code.
          * @return A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& setFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& status);
+        Builder& setFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory);
         /**
          * Registers a selector factory to a given selector name. Adopts `selectorFactory`.
          *
          * @param selectorName Name of the selector being registered.
          * @param selectorFactory A SelectorFactory object to use for creating `selectorName`
          *        selectors.
-         * @param status Input/output error code.
          * @return A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& setSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& status);
+        Builder& setSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory);
         /**
          * Creates an immutable `FunctionRegistry` object with the selectors and formatters
          * that were previously registered. The builder cannot be used after this call.
          *
-         * @param status  Input/output error code.
-         * @return A reference to the new FunctionRegistry, which is non-null if U_SUCCESS(status).
+         * @return The new FunctionRegistry
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FunctionRegistry* build(UErrorCode& status);
+        FunctionRegistry build();
         /**
          * Destructor.
          *
@@ -180,17 +177,9 @@ public:
          * @deprecated This API is for technology preview only.
          */
          virtual ~Builder();
+	 // TODO
+	 Builder() = default;
     }; // class FunctionRegistry::Builder
-   /**
-     * Returns a new `FunctionRegistry::Builder` object.
-     *
-     * @param status  Input/output error code.
-     * @return A reference to the new Builder, which is non-null if U_SUCCESS(status).
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    static Builder* builder(UErrorCode& status);
     /**
      * Destructor.
      *
@@ -200,12 +189,11 @@ public:
     virtual ~FunctionRegistry();
 
 private:
-    friend class Builder;
     friend class MessageContext;
     friend class MessageFormatter;
 
-    // Adopts `f` and `s`
-    FunctionRegistry(Hashtable* f, Hashtable* s);
+    FunctionRegistry() = default; // TODO
+    FunctionRegistry(FormatterMap&& f, SelectorMap&& s);
 
     // Debugging; should only be called on a function registry with
     // all the standard functions registered
@@ -216,10 +204,8 @@ private:
     bool hasFormatter(const data_model::FunctionName& f) const;
     bool hasSelector(const data_model::FunctionName& s) const;
 
-    // For why these two fields aren't LocalPointers, see the comments on
-    // the CachedFormatters field in messageformat2.h
-    Hashtable* formatters;
-    Hashtable* selectors;
+    FormatterMap formatters;
+    SelectorMap selectors;
  }; // class FunctionRegistry
 
 /**

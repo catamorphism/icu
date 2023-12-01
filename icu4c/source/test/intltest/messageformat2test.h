@@ -34,7 +34,7 @@ class TestMessageFormat2: public IntlTest {
 public:
     void runIndexedTest( int32_t index, UBool exec, const char* &name, char* par = NULL ) override;
 
-    /** 
+    /**
      * test MessageFormat2 with various given patterns
      **/
     void testVariousPatterns(void);
@@ -64,7 +64,7 @@ private:
     void testResolutionErrors(IcuTestErrorCode&);
     void testNoSyntaxErrors(const UnicodeString*, int32_t, IcuTestErrorCode&);
     void jsonTests(IcuTestErrorCode&);
- 
+
     // Built-in function testing
     void testDateTime(IcuTestErrorCode&);
     void testNumbers(IcuTestErrorCode&);
@@ -113,7 +113,7 @@ U_NAMESPACE_BEGIN namespace message2 {
 
 // Custom function classes
 class PersonNameFormatterFactory : public FormatterFactory {
-    
+
     public:
     Formatter* createFormatter(const Locale&, UErrorCode&) override;
 };
@@ -140,7 +140,7 @@ class GrammarCasesFormatterFactory : public FormatterFactory {
 class GrammarCasesFormatter : public Formatter {
     public:
     void format(FormattingContext&, UErrorCode& errorCode) const override;
-    static FunctionRegistry* customRegistry(UErrorCode&);
+    static FunctionRegistry customRegistry();
     private:
     void getDativeAndGenitive(const UnicodeString&, UnicodeString& result) const;
 };
@@ -153,7 +153,7 @@ class ListFormatterFactory : public FormatterFactory {
 class ListFormatter : public Formatter {
     public:
     void format(FormattingContext&, UErrorCode& errorCode) const override;
-    static FunctionRegistry* customRegistry(UErrorCode&);
+    static FunctionRegistry customRegistry();
     private:
     friend class ListFormatterFactory;
     const Locale& locale;
@@ -168,7 +168,7 @@ class ResourceManagerFactory : public FormatterFactory {
 class ResourceManager : public Formatter {
     public:
     void format(FormattingContext&, UErrorCode& errorCode) const override;
-    static FunctionRegistry* customRegistry(UErrorCode&);
+    static FunctionRegistry customRegistry();
     static Hashtable* properties(UErrorCode&);
     static UnicodeString propertiesAsString(const Hashtable&);
     static Hashtable* parseProperties(const UnicodeString&, UErrorCode&);
@@ -193,7 +193,7 @@ class TemperatureFormatterFactory : public FormatterFactory {
 class TemperatureFormatter : public Formatter {
     public:
     void format(FormattingContext&, UErrorCode& errorCode) const override;
-    static FunctionRegistry* customRegistry(UErrorCode&);
+    static FunctionRegistry customRegistry();
     ~TemperatureFormatter();
     private:
     friend class TemperatureFormatterFactory;

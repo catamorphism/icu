@@ -13,15 +13,11 @@
 #include "messageformat2_context.h"
 #include "messageformat2_function_registry_internal.h"
 #include "messageformat2_macros.h"
-#include "hash.h"
 #include "uvector.h" // U_ASSERT
 
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(disable: 4661)
-#endif
+U_NAMESPACE_BEGIN
 
-U_NAMESPACE_BEGIN namespace message2 {
+namespace message2 {
 
 // Function registry implementation
 
@@ -30,60 +26,17 @@ Selector::~Selector() {}
 FormatterFactory::~FormatterFactory() {}
 SelectorFactory::~SelectorFactory() {}
 
-FunctionRegistry* FunctionRegistry::Builder::build(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-    U_ASSERT(formatters != nullptr && selectors != nullptr);
-    LocalPointer<FunctionRegistry> result(new FunctionRegistry(formatters, selectors));
-    if (!result.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-    return result.orphan();
+FunctionRegistry FunctionRegistry::Builder::build() {
+    return FunctionRegistry(std::move(formatters), std::move(selectors));
 }
 
-/* static */ FunctionRegistry::Builder* FunctionRegistry::builder(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-    LocalPointer<FunctionRegistry::Builder> result(new FunctionRegistry::Builder(errorCode));
-    NULL_ON_ERROR(errorCode);
-    return result.orphan();
-}
-
-FunctionRegistry::Builder::Builder(UErrorCode& errorCode)  {
-    CHECK_ERROR(errorCode);
-
-    formatters = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
-    selectors = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
-    if (U_FAILURE(errorCode)) {
-        formatters = nullptr;
-        selectors = nullptr;
-        return;
-    }
-    if (formatters == nullptr || selectors == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return;
-    }
-    // The hashtables own the values, but not the keys
-    formatters->setValueDeleter(uprv_deleteUObject);
-    selectors->setValueDeleter(uprv_deleteUObject);
-}
-
-FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-    if (selectorFactory == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return *this;
-    }
-    selectors->put(selectorName.toString(), selectorFactory, errorCode);
+FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory) {
+    selectors[selectorName] = selectorFactory;
     return *this;
 }
 
-FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode) {
-    THIS_ON_ERROR(errorCode);
-    if (formatterFactory == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return *this;
-    }
-    formatters->put(formatterName.toString(), formatterFactory, errorCode);
+FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory) {
+    formatters[formatterName] = formatterFactory;
     return *this;
 }
 
@@ -91,28 +44,26 @@ FunctionRegistry::Builder::~Builder() {}
 
 FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterName) const {
     // Caller must check for null
-    return ((FormatterFactory*) formatters->get(formatterName.toString()));
+    if (!hasFormatter(formatterName)) {
+	return nullptr;
+    }
+    return formatters.at(formatterName);
 }
 
 const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selectorName) const {
     // Caller must check for null
-    return ((SelectorFactory*) selectors->get(selectorName.toString()));
+    if (!hasSelector(selectorName)) {
+	return nullptr;
+    }
+    return selectors.at(selectorName);
 }
 
 bool FunctionRegistry::hasFormatter(const FunctionName& f) const {
-    if (!formatters->containsKey(f.toString())) {
-        return false;
-    }
-    U_ASSERT(getFormatter(f) != nullptr);
-    return true;
+    return formatters.count(f) > 0;
 }
 
 bool FunctionRegistry::hasSelector(const FunctionName& s) const {
-    if (!selectors->containsKey(s.toString())) {
-        return false;
-    }
-    U_ASSERT(getSelector(s) != nullptr);
-    return true;
+    return selectors.count(s) > 0;
 }
 
 void FunctionRegistry::checkFormatter(const char* s) const {
@@ -195,15 +146,15 @@ bool tryFormattableAsNumber(const Formattable& optionValue, int64_t& result) {
     return false;
 }
 
-// Adopts `f` and `s`
-FunctionRegistry::FunctionRegistry(Hashtable* f, Hashtable* s) : formatters(f), selectors(s) {}
+FunctionRegistry::FunctionRegistry(FormatterMap&& f, SelectorMap&& s) : formatters(f), selectors(s) {}
 
 FunctionRegistry::~FunctionRegistry() {
-    if (formatters != nullptr) {
-        delete formatters;
+    // Since the maps own the values, each one has to be destructed
+    for (auto iter = formatters.begin(); iter != formatters.end(); ++iter) {
+	iter->second->~FormatterFactory();
     }
-    if (selectors != nullptr) {
-        delete selectors;
+    for (auto iter = selectors.begin(); iter != selectors.end(); ++iter) {
+	iter->second->~SelectorFactory();
     }
 }
 

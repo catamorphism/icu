@@ -327,11 +327,11 @@ void TestMessageFormat2::testAPICustomFunctions() {
     Locale locale = "en_US";
 
     // Set up custom function registry
-    FunctionRegistry::Builder* builder = FunctionRegistry::builder(errorCode);
+    FunctionRegistry::Builder builder;
     // Note that this doesn't use `setDefaultFormatterNameForType()`; not implemented yet
-    FunctionRegistry* functionRegistry =
-        builder->setFormatter(data_model::FunctionName("person"), new PersonNameFormatterFactory(), errorCode)
-               .build(errorCode);
+    FunctionRegistry functionRegistry =
+        builder.setFormatter(data_model::FunctionName("person"), new PersonNameFormatterFactory())
+               .build();
 
     Person* person = new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe"));
 
@@ -349,8 +349,7 @@ void TestMessageFormat2::testAPICustomFunctions() {
     assertEquals("testAPICustomFunctions", U_UNKNOWN_FUNCTION_ERROR, errorCode);
 
     errorCode = U_ZERO_ERROR;
-    mfBuilder.setFunctionRegistry(functionRegistry)
-              .setLocale(locale);
+    mfBuilder.setFunctionRegistry(&functionRegistry).setLocale(locale);
 
     mf = mfBuilder.setPattern("{Hello {$name :person formality=informal}}")
                     .build(parseError, errorCode);
@@ -367,8 +366,6 @@ void TestMessageFormat2::testAPICustomFunctions() {
     result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello Mr. John Doe", result);
 
-    delete builder;
-    delete functionRegistry;
     delete person;
 }
 

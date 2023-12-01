@@ -143,11 +143,11 @@ CachedFormatters::CachedFormatters(UErrorCode& errorCode) {
 
 
 bool MessageContext::isBuiltInSelector(const FunctionName& functionName) const {
-    return parent.standardFunctionRegistry->hasSelector(functionName);
+    return parent.standardFunctionRegistry.hasSelector(functionName);
 }
 
 bool MessageContext::isBuiltInFormatter(const FunctionName& functionName) const {
-    return parent.standardFunctionRegistry->hasFormatter(functionName);
+    return parent.standardFunctionRegistry.hasFormatter(functionName);
 }
 
 // https://github.com/unicode-org/message-format-wg/issues/409
@@ -158,7 +158,7 @@ const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName&
     NULL_ON_ERROR(status);
 
     if (isBuiltInSelector(functionName)) {
-        return parent.standardFunctionRegistry->getSelector(functionName);
+        return parent.standardFunctionRegistry.getSelector(functionName);
     }
     if (isBuiltInFormatter(functionName)) {
         errors.setSelectorError(functionName);
@@ -187,7 +187,7 @@ FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& fun
     NULL_ON_ERROR(status);
 
     if (isBuiltInFormatter(functionName)) {
-        return parent.standardFunctionRegistry->getFormatter(functionName);
+        return parent.standardFunctionRegistry.getFormatter(functionName);
     }
     if (isBuiltInSelector(functionName)) {
         errors.setFormattingError(functionName);

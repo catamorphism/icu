@@ -563,9 +563,9 @@ void putFormattableArg(Hashtable& arguments, const UnicodeString& k, double arg,
 }
 
 void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode) {
-    LocalPointer<FunctionRegistry::Builder> frBuilder(FunctionRegistry::builder(errorCode));
     CHECK_ERROR(errorCode);
 
+    FunctionRegistry::Builder frBuilder;
     // Counter will be adopted by function registry
     TemperatureFormatterFactory* counter = new TemperatureFormatterFactory();
     if (counter == nullptr) {
@@ -573,13 +573,12 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
         return;
     }
 
-    LocalPointer<FunctionRegistry> reg(frBuilder->setFormatter(FunctionName("temp"),
-                                                               counter, errorCode)
-                                       .build(errorCode));
+    FunctionRegistry reg = frBuilder.setFormatter(FunctionName("temp"),
+						  counter).build();
     UnicodeString message = "{Testing {$count :temp unit=$unit skeleton=|.00/w|}.}";
 
     MessageFormatter::Builder mfBuilder;
-    mfBuilder.setPattern(message).setFunctionRegistry(reg.getAlias());
+    mfBuilder.setPattern(message).setFunctionRegistry(&reg);
     UParseError parseError;
     MessageFormatter mf = mfBuilder.build(parseError, errorCode);
     UnicodeString result;
