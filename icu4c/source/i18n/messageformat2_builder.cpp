@@ -107,7 +107,12 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     MessageFormatDataModel::Builder tree;
 
     // Initialize formatter cache
-    cachedFormatters = new CachedFormatters(success);
+    CachedFormatters* cachedFormattersPtr = new CachedFormatters(success);
+    if (cachedFormattersPtr == nullptr) {
+      success = U_MEMORY_ALLOCATION_ERROR;
+      return;
+    }
+    cachedFormatters = std::unique_ptr<CachedFormatters>(cachedFormattersPtr);
 
     // Parse the pattern
     Parser(builder.pattern, tree, errors, normalizedInput).parse(parseError);
@@ -134,8 +139,7 @@ MessageFormatter& MessageFormatter::operator=(MessageFormatter&& other) noexcept
   customFunctionRegistry = other.customFunctionRegistry;
   dataModel = std::move(other.dataModel);
   normalizedInput = std::move(other.normalizedInput);
-  cachedFormatters = other.cachedFormatters;
-  other.cachedFormatters = nullptr;
+  cachedFormatters = std::move(other.cachedFormatters);
   errors = std::move(other.errors);
 
   return *this;
@@ -148,19 +152,14 @@ MessageFormatter::MessageFormatter(MessageFormatter&& other) {
     customFunctionRegistry = other.customFunctionRegistry;
     dataModel = std::move(other.dataModel);
     normalizedInput = std::move(other.normalizedInput);
-    cachedFormatters = other.cachedFormatters;
-    other.cachedFormatters = nullptr;
+    cachedFormatters = std::move(other.cachedFormatters);
     errors = std::move(other.errors);
   }
 }
 
 const MessageFormatDataModel& MessageFormatter::getDataModel() const { return dataModel; }
 
-MessageFormatter::~MessageFormatter() {
-    if (cachedFormatters != nullptr) {
-        delete cachedFormatters;
-    }
-}
+MessageFormatter::~MessageFormatter() {}
 MessageFormatter::Builder::~Builder() {}
 
 } // namespace message2

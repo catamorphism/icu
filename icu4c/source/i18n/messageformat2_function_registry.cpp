@@ -31,12 +31,12 @@ FunctionRegistry FunctionRegistry::Builder::build() {
 }
 
 FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory) {
-    selectors[selectorName] = selectorFactory;
+    selectors[selectorName] = std::unique_ptr<SelectorFactory>(selectorFactory);
     return *this;
 }
 
 FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory) {
-    formatters[formatterName] = formatterFactory;
+    formatters[formatterName] = std::unique_ptr<FormatterFactory>(formatterFactory);
     return *this;
 }
 
@@ -47,7 +47,7 @@ FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterNa
     if (!hasFormatter(formatterName)) {
 	return nullptr;
     }
-    return formatters.at(formatterName);
+    return formatters.at(formatterName).get();
 }
 
 const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selectorName) const {
@@ -55,7 +55,7 @@ const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selecto
     if (!hasSelector(selectorName)) {
 	return nullptr;
     }
-    return selectors.at(selectorName);
+    return selectors.at(selectorName).get();
 }
 
 bool FunctionRegistry::hasFormatter(const FunctionName& f) const {
@@ -146,17 +146,18 @@ bool tryFormattableAsNumber(const Formattable& optionValue, int64_t& result) {
     return false;
 }
 
-FunctionRegistry::FunctionRegistry(FormatterMap&& f, SelectorMap&& s) : formatters(f), selectors(s) {}
+FunctionRegistry::FunctionRegistry(FormatterMap&& f, SelectorMap&& s) : formatters(std::move(f)), selectors(std::move(s)) {}
 
-FunctionRegistry::~FunctionRegistry() {
-    // Since the maps own the values, each one has to be destructed
-    for (auto iter = formatters.begin(); iter != formatters.end(); ++iter) {
-	iter->second->~FormatterFactory();
-    }
-    for (auto iter = selectors.begin(); iter != selectors.end(); ++iter) {
-	iter->second->~SelectorFactory();
-    }
+FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept {
+    formatters = std::move(other.formatters);
+    selectors = std::move(other.selectors);
+
+    return *this;
 }
+
+FunctionRegistry::FunctionRegistry(FunctionRegistry&& other) : formatters(std::move(other.formatters)), selectors(std::move(other.selectors)) {}
+
+FunctionRegistry::~FunctionRegistry() {}
 
 // Specific formatter implementations
 

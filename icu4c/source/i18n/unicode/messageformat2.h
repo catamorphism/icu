@@ -567,7 +567,7 @@ public:
      // as a member of a public class where T is an internal class.
      // (See the comment on the CurrencyPluralInfoWrapper class in
      // number_decimfmtprops.h for a description of a similar problem.)
-     CachedFormatters* cachedFormatters;
+     std::unique_ptr<CachedFormatters> cachedFormatters;
 
      // Errors -- only used while parsing and checking for data model errors; then
      // the MessageContext keeps track of errors
