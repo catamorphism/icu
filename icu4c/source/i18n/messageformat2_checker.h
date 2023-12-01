@@ -13,7 +13,6 @@
 #include "unicode/messageformat2_data_model.h"
 #include "unicode/unistr.h"
 #include "unicode/utypes.h"
-#include "hash.h"
 #include "uvector.h"
 
 U_NAMESPACE_BEGIN  namespace message2 {
