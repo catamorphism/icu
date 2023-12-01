@@ -16,7 +16,9 @@
 #pragma warning(disable: 4661)
 #endif
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 /*
 Checks data model errors
@@ -33,44 +35,26 @@ Missing Selector Annotation
 // Type environments
 // -----------------
 
-TypeEnvironment::TypeEnvironment(UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-
-    // initialize `contents`
-    annotated.adoptInstead(new UVector(errorCode));
-    CHECK_ERROR(errorCode);
-    if (U_FAILURE(errorCode)) {
-        return;
-    }
-    annotated->setDeleter(uprv_deleteUObject);
-}
+TypeEnvironment::TypeEnvironment() {}
 
 TypeEnvironment::Type TypeEnvironment::get(const VariableName& var) const {
-    for (int32_t i = 0; ((int32_t) i) < annotated->size(); i++) {
-        VariableName* lhs = (VariableName*) (*annotated)[i];
-        U_ASSERT(lhs != nullptr);
-        if (*lhs == var) {
+  for (int32_t i = 0; ((int32_t) i) < (int32_t) annotated.size(); i++) {
+	const VariableName& lhs = annotated.at(i);
+        if (lhs == var) {
             return Annotated;
         }
     }
     return Unannotated;
 }
 
-void TypeEnvironment::extend(const VariableName& var, TypeEnvironment::Type t, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-
+void TypeEnvironment::extend(const VariableName& var, TypeEnvironment::Type t) {
     if (t == Unannotated) {
         // Nothing to do, as variables are considered
         // unannotated by default
         return;
     }
 
-    LocalPointer<VariableName> v(new VariableName(var));
-    if (!v.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return;
-    }
-    annotated->adoptElement(v.orphan(), errorCode);
+    annotated.push_back(var);
 }
 
 TypeEnvironment::~TypeEnvironment() {}
@@ -87,8 +71,7 @@ static bool areDefaultKeys(const KeyList& keys) {
     return true;
 }
 
-void Checker::checkVariants(UErrorCode& error) {
-    CHECK_ERROR(error);
+void Checker::checkVariants() {
     U_ASSERT(dataModel.hasSelectors());
 
     // Determine the number of selectors
@@ -116,9 +99,7 @@ void Checker::checkVariants(UErrorCode& error) {
     }
 }
 
-void Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selectorExpr, UErrorCode& error) {
-    CHECK_ERROR(error);
-
+void Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selectorExpr) {
     if (selectorExpr.isFunctionCall()) {
         return; // No error
     }
@@ -134,15 +115,14 @@ void Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selec
     errors.addError(StaticErrorType::MissingSelectorAnnotation);
 }
 
-void Checker::checkSelectors(const TypeEnvironment& t, UErrorCode& error) {
-    CHECK_ERROR(error);
+void Checker::checkSelectors(const TypeEnvironment& t) {
     U_ASSERT(dataModel.hasSelectors());
 
     // Check each selector; if it's not annotated, emit a
     // "missing selector annotation" error
     const ExpressionList& selectors = dataModel.getSelectors();
     for (int32_t i = 0; i < (int32_t) selectors.size(); i++) {
-        requireAnnotated(t, selectors[i], error);
+        requireAnnotated(t, selectors[i]);
     }
 }
 
@@ -162,9 +142,7 @@ TypeEnvironment::Type typeOf(TypeEnvironment& t, const Expression& expr) {
     return t.get(rand.asVariable());
 }
 
-void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& error) {
-    CHECK_ERROR(error);
-
+void Checker::checkDeclarations(TypeEnvironment& t) {
     // For each declaration, extend the type environment with its type
     // Only a very simple type system is necessary: local variables
     // have the type "annotated" or "unannotated".
@@ -172,22 +150,20 @@ void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& error) {
     const Bindings& env = dataModel.getLocalVariables();
     for (int32_t i = 0; i < (int32_t) env.size(); i++) {
         const Binding& b = env[i];
-        t.extend(b.getVariable(), typeOf(t, b.getValue()), error);
+        t.extend(b.getVariable(), typeOf(t, b.getValue()));
     }
 }
 
-void Checker::check(UErrorCode& error) {
-    CHECK_ERROR(error);
-
-    TypeEnvironment typeEnv(error);
-    checkDeclarations(typeEnv, error);
+void Checker::check() {
+    TypeEnvironment typeEnv;
+    checkDeclarations(typeEnv);
     // Pattern message
     if (!dataModel.hasSelectors()) {
         return;
     } else {
       // Selectors message
-      checkSelectors(typeEnv, error);
-      checkVariants(error);
+      checkSelectors(typeEnv);
+      checkVariants();
     }
 }
 
