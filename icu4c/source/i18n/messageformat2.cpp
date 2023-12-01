@@ -11,7 +11,6 @@
 #include "messageformat2_expression_context.h"
 #include "messageformat2_macros.h"
 #include "messageformat2_serializer.h"
-#include "hash.h"
 #include "uvector.h" // U_ASSERT
 
 U_NAMESPACE_BEGIN
