@@ -16,7 +16,9 @@
 #include "unicode/messageformat2_utils.h"
 #include "unicode/unistr.h"
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 class ExpressionContext;
 class MessageFormatDataModel;
@@ -434,41 +436,6 @@ namespace data_model {
 
         using KeyList = std::vector<Key>;
 
-} // namespace data_model
-} // namespace message2
-
-/// @cond DOXYGEN_IGNORE
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
-// for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Key>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Literal>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::data_model::KeyList>;
-template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Operand>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::data_model::FunctionName>;
-template class U_I18N_API LocalPointerBase<message2::data_model::Operand>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Key>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Literal>::Builder>;
-template class U_I18N_API LocalPointer<message2::data_model::KeyList>;
-template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model::Operand>::Builder>;
-template class U_I18N_API LocalPointer<message2::data_model::FunctionName>;
-template class U_I18N_API LocalPointer<message2::data_model::Operand>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-/// @endcond
-
-namespace message2 {
-  namespace data_model {
     /**
      * The `SelectorKeys` class represents the key list for a single variant.
      * It corresponds to the `keys` array in the `Variant` interface
@@ -675,42 +642,15 @@ namespace message2 {
      * @deprecated This API is for technology preview only.
      */
     using OptionMap = OrderedMap<UnicodeString, Operand>;
-  } // namespace data_model
-} // namespace message2
 
-/// @cond DOXYGEN_IGNORE
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
-// for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointerBase<message2::data_model::OptionMap>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::OptionMap>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::OptionMap>>;
-template class U_I18N_API LocalPointerBase<message2::data_model::Reserved>;
-template class U_I18N_API LocalPointer<message2::data_model::OptionMap>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::OptionMap>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::OptionMap>>;
-template class U_I18N_API LocalPointer<message2::data_model::Reserved>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-/// @endcond
+} // namespace data_model
 
-namespace message2 {
     template<>
     OrderedMap<UnicodeString, data_model::Operand>::Builder::~Builder();
     template<>
     OrderedMap<UnicodeString, data_model::Operand>::~OrderedMap();
 
-  namespace data_model {
+namespace data_model {
     /**
      * The `Operator` class corresponds to the `FunctionRef | Reserved` type in the
      * `Expression` interface defined in
@@ -874,31 +814,7 @@ namespace message2 {
         /* const */ OptionMap options;
         /* const */ Reserved reserved;
     }; // class Operator
-  } // namespace data_model
-} // namespace message2
 
-/// @cond DOXYGEN_IGNORE
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
-// for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointerBase<message2::data_model::Operator>;
-template class U_I18N_API LocalPointer<message2::data_model::Operator>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-/// @endcond
-
-namespace message2 {
-  namespace data_model {
     /**
      * The `Expression` class corresponds to the `expression` nonterminal in the MessageFormat 2
      * grammar and the `Expression` interface defined in
@@ -1077,35 +993,7 @@ namespace message2 {
         /* const */ Operator rator; // Ignored if !hasOperator
         /* const */ Operand rand;
     }; // class Expression
-  } // namespace data_model
-} // namespace message2
 
-/// @cond DOXYGEN_IGNORE
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
-// for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Expression>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Expression>>;
-template class U_I18N_API LocalPointerBase<message2::data_model::Expression>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Expression>>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Expression>::Builder>;
-template class U_I18N_API LocalPointer<message2::data_model::Expression>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-/// @endcond
-
-namespace message2 {
-  namespace data_model {
     /**
      *  A `PatternPart` is a single element (text or expression) in a `Pattern`.
      * It corresponds to the `body` field of the `Pattern` interface
@@ -1168,33 +1056,6 @@ namespace message2 {
         /* const */ Expression expression;
     }; // class PatternPart
 
-  } // namespace data_model
-} // namespace message2
-
-/// @cond DOXYGEN_IGNORE
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
-// for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::PatternPart>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::PatternPart>>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::PatternPart>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::PatternPart>>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-/// @endcond
-
-namespace message2 {
-  namespace data_model {
     /**
      *  A `Pattern` is a sequence of formattable parts.
      * It corresponds to the `Pattern` interface
@@ -1300,39 +1161,6 @@ namespace message2 {
         // Should only be called by Builder
         Pattern(const std::vector<PatternPart>& ps);
     }; // class Pattern
-  } // namespace data_model
-} // namespace message
-
-/// @cond DOXYGEN_IGNORE
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
-// for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::SelectorKeys>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::SelectorKeys>>;
-template class U_I18N_API LocalPointerBase<message2::data_model::Pattern>;
-template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Pattern>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::OrderedMap<message2::data_model::Pattern>>;
-template class U_I18N_API LocalPointer<message2::data_model::Pattern>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::SelectorKeys>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::SelectorKeys>>;
-template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model::Pattern>::Builder>;
-template class U_I18N_API LocalPointer<message2::OrderedMap<message2::data_model::Pattern>>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-/// @endcond
-
-namespace message2 {
-  namespace data_model {
 
       using VariantMap = OrderedMap<SelectorKeys, Pattern>;
 
@@ -1412,33 +1240,7 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         using ExpressionList = std::vector<Expression>;
-
-} // namespace data_model
-} // namespace message2
-
-
-/// @cond DOXYGEN_IGNORE
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See messageformat2_data_model_forward_decls.h for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointerBase<message2::data_model::VariantMap::Builder>;
-template class U_I18N_API LocalPointerBase<message2::data_model::VariantMap>;
-template class U_I18N_API LocalPointer<message2::data_model::VariantMap::Builder>;
-template class U_I18N_API LocalPointer<message2::data_model::VariantMap>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-/// @endcond
-
-namespace message2 {
+    } // namespace data_model
 
 // These explicit instantiations have to come before the
 // destructor definitions
@@ -1447,41 +1249,16 @@ OrderedMap<data_model::SelectorKeys, data_model::Pattern>::Builder::~Builder();
 template<>
 OrderedMap<data_model::SelectorKeys, data_model::Pattern>::~OrderedMap();
 
+} // namespace message2
+
 // Explicit instantiations in source/i18n/messageformat2_utils.cpp
 // See numberformatter.h for another example
 
 // (MSVC treats imports/exports of explicit instantiations differently.)
 #ifndef _MSC_VER
-extern template class OrderedMap<UnicodeString, data_model::Operand>;
-extern template class OrderedMap<data_model::SelectorKeys, data_model::Pattern>;
+extern template class message2::OrderedMap<UnicodeString, message2::data_model::Operand>;
+extern template class message2::OrderedMap<message2::data_model::SelectorKeys, message2::data_model::Pattern>;
 #endif
-
-
-} // namespace message2
-
-/// @cond DOXYGEN_IGNORE
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
-// for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Binding>::Builder>;
-template class U_I18N_API LocalPointerBase<message2::ImmutableVector<message2::data_model::Binding>>;
-template class U_I18N_API LocalPointerBase<message2::MessageFormatDataModel>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Binding>::Builder>;
-template class U_I18N_API LocalPointer<message2::ImmutableVector<message2::data_model::Binding>>;
-template class U_I18N_API LocalPointer<message2::MessageFormatDataModel>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-/// @endcond
 
 namespace message2 {
 
@@ -1634,7 +1411,7 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
         ExpressionList selectors;
         VariantMap::Builder variants;
         Bindings locals;
-      
+
     public:
 // TODO
         Builder();
