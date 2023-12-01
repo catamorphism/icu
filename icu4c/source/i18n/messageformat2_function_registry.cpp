@@ -337,7 +337,10 @@ static void tryWithFormattable(const Locale& locale, const Formattable& value, d
     noMatch = false;
 }
 
-void StandardFunctions::Plural::selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys,  UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& errorCode) const {
+void StandardFunctions::Plural::selectKey(FormattingContext& context,
+					  const std::vector<UnicodeString>& keys,
+					  std::vector<UnicodeString>& prefs,
+					  UErrorCode& errorCode) const {
     CHECK_ERROR(errorCode);
 
     // No argument => return "NaN"
@@ -364,32 +367,32 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context, UnicodeStr
         tryWithFormattable(locale, context.getFormattableInput(), valToCheck, noMatch);
     }
 
+    prefs.clear();
+
     if (noMatch) {
         // Non-number => selector error
         context.setSelectorError(UnicodeString("plural"));
-        numMatching = 0;
         return;
     }
 
     // Generate the matches
     // -----------------------
 
-    U_ASSERT(keys != nullptr);
     // First, check for an exact match
-    numMatching = 0;
+    int32_t numKeys = keys.size();
     double keyAsDouble = 0;
     for (int32_t i = 0; i < numKeys; i++) {
         // Try parsing the key as a double
         UErrorCode localErrorCode = U_ZERO_ERROR;
-        strToDouble(*keys[i], locale, keyAsDouble, localErrorCode);
+        strToDouble(keys.at(i), locale, keyAsDouble, localErrorCode);
         if (U_SUCCESS(localErrorCode)) {
             if (valToCheck == keyAsDouble) {
-                prefs[numMatching++] = keys[i];
+		prefs.push_back(keys.at(i));
                 break;
             }
         }
     }
-    if (numMatching > 0) {
+    if (prefs.size() > 0) {
         return;
     }
 
@@ -403,8 +406,8 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context, UnicodeStr
     CHECK_ERROR(errorCode);
 
     for (int32_t i = 0; i < numKeys; i ++) {
-        if (match == *keys[i]) {
-            prefs[numMatching++] = keys[i];
+        if (match == keys.at(i)) {
+            prefs.push_back(keys.at(i));
             break;
         }
     }
@@ -514,7 +517,10 @@ Selector* StandardFunctions::TextFactory::createSelector(const Locale& locale, U
     return result;
 }
 
-void StandardFunctions::TextSelector::selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& errorCode) const {
+void StandardFunctions::TextSelector::selectKey(FormattingContext& context,
+						const std::vector<UnicodeString>& keys,
+						std::vector<UnicodeString>& prefs,
+						UErrorCode& errorCode) const {
     CHECK_ERROR(errorCode);
 
     // Just compares the key and value as strings
@@ -525,23 +531,19 @@ void StandardFunctions::TextSelector::selectKey(FormattingContext& context, Unic
         return;
     }
 
-    U_ASSERT(prefs != nullptr);
-    numMatching = 0;
-
+    prefs.clear();
     // Convert to string
     context.formatToString(locale, errorCode);
     CHECK_ERROR(errorCode);
     if (!context.hasStringOutput()) {
-        numMatching = 0;
         return;
     }
 
     const UnicodeString& formattedValue = context.getStringOutput();
 
-    for (int32_t i = 0; i < numKeys; i++) {
-        if (*keys[i] == formattedValue) {
-            numMatching++;
-            prefs[0] = keys[i];
+    for (int32_t i = 0; i < (int32_t) keys.size(); i++) {
+        if (keys.at(i) == formattedValue) {
+	    prefs.push_back(keys.at(i));
             break;
         }
     }

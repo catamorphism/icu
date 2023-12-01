@@ -46,7 +46,7 @@ class StandardFunctions {
         Formatter* createFormatter(const Locale& locale, UErrorCode& status) override;
         virtual ~NumberFactory();
     };
-        
+
     class Number : public Formatter {
     public:
         void format(FormattingContext& context, UErrorCode& status) const override;
@@ -71,7 +71,7 @@ class StandardFunctions {
     public:
         void format(FormattingContext& context, UErrorCode& status) const override;
         virtual ~Identity();
-        
+
     private:
         friend class IdentityFactory;
 
@@ -93,7 +93,10 @@ class StandardFunctions {
 
     class Plural : public Selector {
     public:
-        void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const override;
+        void selectKey(FormattingContext& context,
+		       const std::vector<UnicodeString>&,
+		       std::vector<UnicodeString>& prefs,
+		       UErrorCode& status) const override;
         virtual ~Plural();
 
     private:
@@ -114,13 +117,16 @@ class StandardFunctions {
 
     class TextSelector : public Selector {
     public:
-        void selectKey(FormattingContext& context, UnicodeString** keys/*[]*/, int32_t numKeys, UnicodeString** prefs/*[]*/, int32_t& numMatching, UErrorCode& status) const override;
+        void selectKey(FormattingContext& context,
+		       const std::vector<UnicodeString>&,
+		       std::vector<UnicodeString>& prefs,
+		       UErrorCode& status) const override;
         virtual ~TextSelector();
 
     private:
         friend class TextFactory;
 
-        // Formatting `value` to a string might require the locale 
+        // Formatting `value` to a string might require the locale
         const Locale& locale;
 
         TextSelector(const Locale& l) : locale(l) {}
