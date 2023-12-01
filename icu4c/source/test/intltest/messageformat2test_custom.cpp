@@ -26,23 +26,15 @@ as of the following commit from 2023-05-09:
 
 using namespace data_model;
 
-static FunctionRegistry* personFunctionRegistry(UErrorCode& errorCode) {
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-
-    LocalPointer<FunctionRegistry::Builder> builder(FunctionRegistry::builder(errorCode));
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-    return builder->setFormatter(FunctionName("person"), new PersonNameFormatterFactory(), errorCode)
-        .build(errorCode);
+static FunctionRegistry personFunctionRegistry() {
+    return FunctionRegistry::Builder().setFormatter(FunctionName("person"), new PersonNameFormatterFactory())
+        .build();
 }
 
 void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    LocalPointer<FunctionRegistry> customRegistry(personFunctionRegistry(errorCode));
+    FunctionRegistry customRegistry(personFunctionRegistry());
     UnicodeString name = "name";
     LocalPointer<Person> person(new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe")));
     TestCase::Builder testBuilder;
@@ -63,7 +55,7 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    testBuilder.setFunctionRegistry(customRegistry.orphan());
+    testBuilder.setFunctionRegistry(&customRegistry);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=formal}}")
                                 .setArgument(name, person.getAlias())
@@ -104,7 +96,7 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
 void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    LocalPointer<FunctionRegistry> customRegistry(personFunctionRegistry(errorCode));
+    FunctionRegistry customRegistry = personFunctionRegistry();
     UnicodeString host = "host";
     UnicodeString hostGender = "hostGender";
     UnicodeString guest = "guest";
@@ -140,7 +132,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
     testBuilder.setName("testCustomFunctionsComplexMessage");
     testBuilder.setLocale(Locale("en"));
     testBuilder.setPattern(message);
-    testBuilder.setFunctionRegistry(customRegistry.orphan());
+    testBuilder.setFunctionRegistry(&customRegistry);
 
     TestCase test = testBuilder.setArgument(host, jane.getAlias())
         .setArgument(hostGender, "female")
@@ -314,7 +306,7 @@ Formatter* GrammarCasesFormatterFactory::createFormatter(const Locale& locale, U
 void GrammarCasesFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
     CHECK_ERROR(errorCode);
 
-    // Argument must be     present
+    // Argument must be present
     if (!context.hasFormattableInput()) {
         context.setFormattingError("grammarBB");
         return;
@@ -345,25 +337,19 @@ void GrammarCasesFormatter::format(FormattingContext& context, UErrorCode& error
     context.setOutput(result);
 }
 
-/* static */ FunctionRegistry* GrammarCasesFormatter::customRegistry(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    LocalPointer<FunctionRegistry::Builder> frBuilder(FunctionRegistry::builder(errorCode));
-    NULL_ON_ERROR(errorCode);
-
-    return(frBuilder->
-	   setFormatter(FunctionName("grammarBB"), new GrammarCasesFormatterFactory(), errorCode)
-            .build(errorCode));
+/* static */ FunctionRegistry GrammarCasesFormatter::customRegistry() {
+    return FunctionRegistry::Builder()
+      .setFormatter(FunctionName("grammarBB"), new GrammarCasesFormatterFactory())
+      .build();
 }
 
 void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    LocalPointer<FunctionRegistry> customRegistry(GrammarCasesFormatter::customRegistry(errorCode));
+    FunctionRegistry customRegistry = GrammarCasesFormatter::customRegistry();
     TestCase::Builder testBuilder;
-    CHECK_ERROR(errorCode);
     testBuilder.setName("testGrammarCasesFormatter - genitive");
-    testBuilder.setFunctionRegistry(customRegistry.orphan());
+    testBuilder.setFunctionRegistry(&customRegistry);
     testBuilder.setLocale(Locale("ro"));
     testBuilder.setPattern("{Cartea {$owner :grammarBB case=genitive}}");
     TestCase test = testBuilder.setArgument("owner", "Maria")
@@ -410,15 +396,10 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
-/* static */ FunctionRegistry* message2::ListFormatter::customRegistry(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    LocalPointer<FunctionRegistry::Builder> frBuilder(FunctionRegistry::builder(errorCode));
-    NULL_ON_ERROR(errorCode);
-
-    return(frBuilder->
-            setFormatter(FunctionName("listformat"), new ListFormatterFactory(), errorCode)
-            .build(errorCode));
+/* static */ FunctionRegistry message2::ListFormatter::customRegistry() {
+    return FunctionRegistry::Builder()
+      .setFormatter(FunctionName("listformat"), new ListFormatterFactory())
+      .build();
 }
 
 /*
@@ -509,12 +490,10 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
         Formattable("Java"),
         Formattable("Python")
     };
+
     TestCase::Builder testBuilder;
-
-    LocalPointer<FunctionRegistry> reg(message2::ListFormatter::customRegistry(errorCode));
-    CHECK_ERROR(errorCode);
-
-    testBuilder.setFunctionRegistry(reg.orphan());
+    FunctionRegistry reg = message2::ListFormatter::customRegistry();
+    testBuilder.setFunctionRegistry(&reg);
     testBuilder.setArgument("languages", progLanguages, 3);
 
     TestCase test = testBuilder.setName("testListFormatter")
@@ -534,15 +513,10 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
   See ICU4J: CustomFormatterMessageRefTest.java
 */
 
-/* static */ FunctionRegistry* message2::ResourceManager::customRegistry(UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    LocalPointer<FunctionRegistry::Builder> frBuilder(FunctionRegistry::builder(errorCode));
-    NULL_ON_ERROR(errorCode);
-
-    return(frBuilder->
-            setFormatter(FunctionName("msgRef"), new ResourceManagerFactory(), errorCode)
-            .build(errorCode));
+/* static */ FunctionRegistry message2::ResourceManager::customRegistry() {
+    return FunctionRegistry::Builder()
+      .setFormatter(FunctionName("msgRef"), new ResourceManagerFactory())
+      .build();
 }
 
 /* static */ Hashtable* message2::ResourceManager::properties(UErrorCode& errorCode) {
@@ -700,9 +674,10 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
         return;
     }
 
+    FunctionRegistry reg = ResourceManager::customRegistry();
     TestCase::Builder testBuilder;
     testBuilder.setLocale(Locale("ro"));
-    testBuilder.setFunctionRegistry(ResourceManager::customRegistry(errorCode));
+    testBuilder.setFunctionRegistry(&reg);
     testBuilder.setPattern(*((UnicodeString*) properties->get("firefox")));
     testBuilder.setName("message-ref");
 

@@ -16,7 +16,9 @@
 #pragma warning(disable: 4661)
 #endif
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 // Implementation
 
@@ -308,6 +310,37 @@ FunctionName& FunctionName::operator=(FunctionName&& other) noexcept {
     functionSigil = other.functionSigil;
 
     return *this;
+}
+
+bool FunctionName::operator<(const FunctionName& other) const {
+    // If sigils are different, arbitrarily order open < close < default
+    switch (other.functionSigil) {
+    case OPEN: {
+      if (functionSigil != OPEN) {
+	return false;
+      }
+      break;
+    }
+    case CLOSE: {
+      if (functionSigil == OPEN) {
+	return true;
+      }
+      if (functionSigil == DEFAULT) {
+	return false;
+	break;
+      }
+      break;
+    }
+    case DEFAULT: {
+      if (functionSigil != DEFAULT) {
+	return true;
+      }
+      break;
+    }
+    }
+
+    // Sigils are equal; compare names
+    return (functionName < other.functionName);
 }
 
 const Reserved& Operator::asReserved() const {

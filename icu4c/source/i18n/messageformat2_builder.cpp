@@ -77,19 +77,17 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
     CHECK_ERROR(success);
 
     // Set up the standard function registry
-    LocalPointer<FunctionRegistry::Builder> standardFunctionsBuilder(FunctionRegistry::builder(success));
-    CHECK_ERROR(success);
+    FunctionRegistry::Builder standardFunctionsBuilder;
 
-    standardFunctionsBuilder->setFormatter(UnicodeString("datetime"), new StandardFunctions::DateTimeFactory(), success)
-        .setFormatter(UnicodeString("number"), new StandardFunctions::NumberFactory(), success)
-        .setFormatter(UnicodeString("identity"), new StandardFunctions::IdentityFactory(), success)
-        .setSelector(UnicodeString("plural"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
-        .setSelector(UnicodeString("selectordinal"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL), success)
-        .setSelector(UnicodeString("select"), new StandardFunctions::TextFactory(), success)
-        .setSelector(UnicodeString("gender"), new StandardFunctions::TextFactory(), success);
-    standardFunctionRegistry.adoptInstead(standardFunctionsBuilder->build(success));
-    CHECK_ERROR(success);
-    standardFunctionRegistry->checkStandard();
+    standardFunctionsBuilder.setFormatter(UnicodeString("datetime"), new StandardFunctions::DateTimeFactory())
+        .setFormatter(UnicodeString("number"), new StandardFunctions::NumberFactory())
+        .setFormatter(UnicodeString("identity"), new StandardFunctions::IdentityFactory())
+        .setSelector(UnicodeString("plural"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL))
+        .setSelector(UnicodeString("selectordinal"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL))
+        .setSelector(UnicodeString("select"), new StandardFunctions::TextFactory())
+        .setSelector(UnicodeString("gender"), new StandardFunctions::TextFactory());
+    standardFunctionRegistry = standardFunctionsBuilder.build();
+    standardFunctionRegistry.checkStandard();
 
     // Validate pattern and build data model
     // First, check that exactly one of the pattern and data model are set, but not both
@@ -128,14 +126,11 @@ MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UPa
 }
 
 MessageFormatter& MessageFormatter::operator=(MessageFormatter&& other) noexcept {
-// TODO: this doesn't set `standardFunctionRegistry` to null,
-// causing a double-free below when it's re-assigned
-//  this->~MessageFormatter();
+  // TODO: leaving this in causes a Pattern double-free. not sure why
+  // this->~MessageFormatter();
 
   locale = std::move(other.locale);
-  if (other.standardFunctionRegistry.isValid()) {
-    standardFunctionRegistry = LocalPointer<FunctionRegistry>(other.standardFunctionRegistry.orphan());
-  }
+  standardFunctionRegistry = std::move(other.standardFunctionRegistry);
   customFunctionRegistry = other.customFunctionRegistry;
   dataModel = std::move(other.dataModel);
   normalizedInput = std::move(other.normalizedInput);
@@ -149,9 +144,7 @@ MessageFormatter& MessageFormatter::operator=(MessageFormatter&& other) noexcept
 MessageFormatter::MessageFormatter(MessageFormatter&& other) {
   if (this != &other) {
     locale = std::move(other.locale);
-    if (other.standardFunctionRegistry.isValid()) {
-      standardFunctionRegistry = LocalPointer<FunctionRegistry>(other.standardFunctionRegistry.orphan());
-    }
+    standardFunctionRegistry = std::move(other.standardFunctionRegistry);
     customFunctionRegistry = other.customFunctionRegistry;
     dataModel = std::move(other.dataModel);
     normalizedInput = std::move(other.normalizedInput);
