@@ -457,7 +457,6 @@ namespace data_model {
         SelectorKeys();
 // TODO
         virtual ~SelectorKeys();
-// Note: these are public in order to make vector addition work
         // Copy constructor
         SelectorKeys(const SelectorKeys& other);
 // TODO
@@ -574,10 +573,9 @@ namespace data_model {
 // TODO
         // Reserved needs a copy constructor in order to make Expression deeply copyable
         Reserved(const Reserved& other);
-        Reserved(Reserved&& other);
         Reserved& operator=(Reserved&& other) noexcept;
         Reserved& operator=(const Reserved& other);
-        Reserved() : parts(std::vector<Literal>()) { }
+        Reserved() = default;
 
         /**
          * The mutable `Reserved::Builder` class allows the reserved sequence to be
@@ -590,8 +588,6 @@ namespace data_model {
          */
         class U_I18N_API Builder : public UMemory {
         private:
-            friend class Reserved;
-
             std::vector<Literal> parts;
 
         public:
@@ -955,16 +951,6 @@ namespace data_model {
               */
              virtual ~Builder();
         }; // class Expression::Builder
-        /**
-         * Returns a new `Expression::Builder` object.
-         *
-         * @param status  Input/output error code.
-         * @return        The new Builder, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-//        static Builder* builder(UErrorCode& status);
 
 // TODO
 
@@ -1181,18 +1167,6 @@ namespace data_model {
      */
     class U_I18N_API Binding : public UObject {
     public:
-        /**
-         * Creates a new binding.  Adopts `e`, which must be non-null.
-         *
-         * @param var       The variable name of the declaration.
-         * @param e         The expression (right-hand side) of the declaration.
-         * @param status    Input/output error code.
-         * @return          The new binding, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-//        static Binding* create(const VariableName& var, Expression* e, UErrorCode& status);
         /**
           * Accesses the right-hand side of the binding.
           *
