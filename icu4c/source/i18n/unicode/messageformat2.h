@@ -49,7 +49,7 @@ public:
      * The mutable Builder class allows each message argument to be initialized
      * separately; calling its `build()` method yields an immutable MessageArguments.
      *
-     * Builder is movable and not copyable.
+     * Builder is not movable or copyable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -158,8 +158,6 @@ public:
         virtual ~Builder();
 // TODO
         Builder();
-        Builder(Builder&&);
-        Builder& operator=(Builder&&) noexcept = default;
     private:
         friend class MessageArguments;
         Builder& addFormattable(const UnicodeString&, Formattable&&);

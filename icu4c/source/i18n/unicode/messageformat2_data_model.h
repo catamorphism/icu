@@ -56,7 +56,7 @@ namespace data_model {
         VariableName(const UnicodeString& s) : variableName(s) {}
         /**
          * Default constructor. (Needed for representing null operands)
-         *
+         * Puts the VariableName into a valid but undefined state.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
@@ -88,10 +88,27 @@ namespace data_model {
           * @deprecated This API is for technology preview only.
           */
          virtual ~VariableName();
-
-         // TODO
-         VariableName& operator=(VariableName&&) = default;
+         /**
+          * Move assignment operator:
+          * The source VariableName will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         VariableName& operator=(VariableName&&) noexcept = default;
+         /**
+          * Copy assignment operator
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
          VariableName& operator=(const VariableName&) = default;
+         /**
+          * Copy constructor
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
          VariableName(const VariableName&) = default;
     private:
         /* const */ UnicodeString variableName;
@@ -159,33 +176,68 @@ namespace data_model {
           * @deprecated This API is for technology preview only.
           */
          virtual ~FunctionName();
-
-// TODO
          /**
           * Copy constructor.
-          *
-          * @param other   The function name to copy.
           *
           * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
          FunctionName(const FunctionName& other) : functionName(other.functionName), functionSigil(other.functionSigil) {}
-         FunctionName& operator=(FunctionName&& other) noexcept;
+         /**
+          * Copy assignment operator.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
          FunctionName& operator=(const FunctionName&) = default;
+         /**
+          * Move assignment operator:
+          * The source FunctionName will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         FunctionName& operator=(FunctionName&& other) noexcept;
+        /**
+         * Default constructor.
+         * Puts the FunctionName into a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
          FunctionName() : functionSigil(Sigil::DEFAULT) {}
-         // TODO
-         // Defined so FunctionNames can be compared and used as keys in a map by the FunctionRegistry
-         bool operator<(const FunctionName&) const;
-         bool operator==(const FunctionName&) const;
+         /**
+          * Less than operator. Compares `this.toString()` with
+          * `other.toString()`. This method is used in the implementation of
+          * the `FunctionRegistry` class and is not expected to be useful otherwise.
+          *
+          * @param other The FunctionName to compare to this one.
+          * @return true if the two `FunctionName`s have the same sigil
+          * and the name string in `this` is less than the name string in
+          * `other` (according to `UnicodeString`'s less-than operator).
+          * Returns false otherwise.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         bool operator<(const FunctionName& other) const;
+         /**
+          * Equality operator. Compares `this.toString()` with
+          * `other.toString()`. This method is used in the implementation of
+          * the `FunctionRegistry` class and is not expected to be useful otherwise.
+          *
+          * @param other The FunctionName to compare to this one.
+          * @return true if and only if `this.toString()` == `other.toString()`
+          * Returns false otherwise.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         bool operator==(const FunctionName& other) const;
 
     private:
-         friend class Operator;
-         friend class icu::message2::ExpressionContext;
-
          /* const */ UnicodeString functionName;
          /* const */ Sigil functionSigil;
-
-         bool isEmpty() { return functionName.length() == 0; }
 
          UChar sigilChar() const;
     }; // class FunctionName
@@ -253,19 +305,76 @@ namespace data_model {
           * @deprecated This API is for technology preview only.
           */
          Literal(UBool q, const UnicodeString& s) : isQuoted(q), contents(s) {}
-// TODO
-        Literal(const Literal& other) : isQuoted(other.isQuoted), contents(other.contents) {}
-        Literal(Literal&& other) noexcept;
-        Literal& operator=(Literal&&) noexcept;
-        Literal& operator=(const Literal&);
-        // Because Key uses `Literal` as its underlying representation,
-        // this provides a default constructor for wildcard keys
-        Literal() : isQuoted(false), contents(Formattable("")) {}
-        // TODO
-        // Defined so Keys can be compared
-        bool operator<(const Literal& rhs) const;
-        bool operator==(const Literal& rhs) const;
-
+         /**
+          * Copy constructor.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         Literal(const Literal& other) : isQuoted(other.isQuoted), contents(other.contents) {}
+         /**
+          * Copy assignment operator.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         Literal& operator=(const Literal&);
+         /**
+          * Move constructor.
+          * The source Literal will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         Literal(Literal&& other) noexcept;
+         /**
+          * Move assignment operator.
+          * The source Literal will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         Literal& operator=(Literal&&) noexcept;
+         /**
+         * Default constructor.
+         * Puts the Literal into a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+         Literal() : isQuoted(false), contents(Formattable("")) {}
+         /**
+          * Less than operator. Compares `this.stringContents()` with
+          * `other.stringContents()`. This method is used in representing
+          * the mapping from key lists to patterns in a message with variants,
+          * and is not expected to be useful otherwise.
+          *
+          * @param other The Literal to compare to this one.
+          * @return true if the parsed string corresponding to this `Literal`
+          * is less than the parsed string corresponding to the other `Literal`
+          * (according to `UnicodeString`'s less-than operator).
+          * Returns false otherwise.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         bool operator<(const Literal& other) const;
+         /**
+          * Equality operator. Compares `this.stringContents()` with
+          * `other.stringContents()`. This method is used in representing
+          * the mapping from key lists to patterns in a message with variants,
+          * and is not expected to be useful otherwise.
+          *
+          * @param other The Literal to compare to this one.
+          * @return true if the parsed string corresponding to this `Literal`
+          * equals the parsed string corresponding to the other `Literal`
+          * (according to `UnicodeString`'s equality operator).
+          * Returns false otherwise.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+         bool operator==(const Literal& other) const;
          /**
           * Destructor.
           *
@@ -1374,7 +1483,7 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
 
     /**
      * The mutable `MessageFormatDataModel::Builder` class allows the data model to be
-     * constructed incrementally.
+     * constructed incrementally. Builder is not copyable or movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
