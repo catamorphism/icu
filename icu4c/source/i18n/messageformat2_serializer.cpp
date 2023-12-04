@@ -53,9 +53,9 @@ void Serializer::emit(const VariableName& v) {
 }
 
 void Serializer::emit(const Literal& l) {
-    if (l.quoted()) {
+    if (l.isQuoted()) {
       emit(PIPE);
-      const UnicodeString& contents = l.stringContents();
+      const UnicodeString& contents = l.unquoted();
       for (int32_t i = 0; ((int32_t) i) < contents.length(); i++) {
         // Re-escape any PIPE or BACKSLASH characters
         switch(contents[i]) {
@@ -72,7 +72,7 @@ void Serializer::emit(const Literal& l) {
       }
       emit(PIPE);
     } else {
-      emit(l.stringContents());
+      emit(l.unquoted());
     }
 }
 
@@ -138,10 +138,10 @@ void Serializer::emit(const Expression& expr) {
           // Re-escape '\' / '{' / '|' / '}'
           for (int32_t i = 0; i < reserved.numParts(); i++) {
             const Literal& l = reserved.getPart(i);
-            if (l.quoted()) {
+            if (l.isQuoted()) {
               emit(l);
             } else {
-              const UnicodeString& s = l.stringContents();
+              const UnicodeString& s = l.unquoted();
               for (int32_t j = 0; ((int32_t) j) < s.length(); j++) {
                 switch(s[j]) {
                 case LEFT_CURLY_BRACE:
@@ -166,7 +166,7 @@ void Serializer::emit(const Expression& expr) {
             emit(rator.getOptions());
         }
     }
-    
+
     emit(RIGHT_CURLY_BRACE);
 }
 
