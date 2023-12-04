@@ -92,7 +92,7 @@ public:
  * The required set of formatter and selector functions is defined in the spec. Users can
  * also define custom formatter and selector functions.
  *
- * `FunctionRegistry` is immutable and is not copyable or movable.
+ * `FunctionRegistry` is immutable and movable. It is not copyable.
  *
  * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
