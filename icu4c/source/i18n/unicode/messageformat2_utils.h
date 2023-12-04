@@ -91,7 +91,7 @@ public:
 
     /**
      * The mutable `OrderedMap::Builder` class allows the map to be constructed
-     * one key/value pair at a time.
+     * one key/value pair at a time. Builder is not copyable or movable.
      *
      * @internal ICU 74.0 technology preview
      * @deprecated This API is for technology preview only.
