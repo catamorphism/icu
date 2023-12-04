@@ -96,7 +96,7 @@ void ExpressionContext::setFallbackTo(const VariableName& v) {
 
 void ExpressionContext::setFallbackTo(const Literal& l) {
     fallback.remove();
-    fallbackToString(l.quotedString(), fallback);
+    fallbackToString(l.quoted(), fallback);
 }
 
 // Add the fallback string as the input string, and

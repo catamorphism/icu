@@ -36,8 +36,8 @@ using namespace data_model;
 // Formatting
 
 // The result of formatting a literal is just itself.
-static const Formattable& evalLiteral(const Literal& lit) {
-    return lit.getContents();
+static Formattable evalLiteral(const Literal& lit) {
+    return Formattable(lit.unquoted());
 }
 
 // Assumes that `var` is a message argument; sets the input in the context
@@ -312,7 +312,7 @@ void MessageFormatter::resolvePreferences(std::vector<ExpressionContext>& res,
                 // 2ii(b)(a) Assert that key is a literal.
                 // (Not needed)
                 // 2ii(b)(b) Let `ks` be the resolved value of `key`.
-                ks = key.asLiteral().stringContents();
+                ks = key.asLiteral().unquoted();
                 // 2ii(b)(c) Append `ks` as the last element of the list `keys`.
                 keys.push_back(ks);
             }
@@ -358,7 +358,7 @@ void MessageFormatter::filterVariants(const VariantMap& variants,
             // 2i(c). Assert that `key` is a literal.
             // (Not needed)
             // 2i(d). Let `ks` be the resolved value of `key`.
-            UnicodeString ks = key.asLiteral().stringContents();
+            UnicodeString ks = key.asLiteral().unquoted();
             // 2i(e). Let `matches` be the list of strings at index `i` of `pref`.
 	    const std::vector<UnicodeString>& matches = pref.at(i);
             // 2i(f). If `matches` includes `ks`
@@ -415,7 +415,7 @@ void MessageFormatter::sortVariants(const std::vector<std::vector<UnicodeString>
                 // 5iii(c)(a). Assert that `key` is a literal.
                 // (Not needed)
                 // 5iii(c)(b). Let `ks` be the resolved value of `key`.
-                UnicodeString ks = key.asLiteral().stringContents();
+                UnicodeString ks = key.asLiteral().unquoted();
                 // 5iii(c)(c) Let matchpref be the integer position of ks in `matches`.
                 auto match = std::find(matches.cbegin(), matches.cend(), ks);
                 U_ASSERT(match != std::end(matches));
