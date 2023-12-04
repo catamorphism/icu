@@ -675,8 +675,9 @@ void MessageFormatDataModel::Builder::buildSelectorsMessage() {
     hasSelectors = true;
 }
 
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariable(const VariableName&variableName, const Expression& expression) {
-    locals.push_back(Binding(variableName, expression));
+MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariable(VariableName&& variableName,
+                                                                                   Expression&& expression) {
+    locals.push_back(Binding(std::move(variableName), std::move(expression)));
 
     return *this;
 }
@@ -684,9 +685,9 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariab
 /*
   selector must be non-null
 */
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(const Expression& selector) {
+MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(Expression&& selector) {
     buildSelectorsMessage();
-    selectors.push_back(selector);
+    selectors.push_back(std::move(selector));
 
     return *this;
 }

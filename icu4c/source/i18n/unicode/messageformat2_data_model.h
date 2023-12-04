@@ -1425,25 +1425,26 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
          * Adds a local variable declaration.
          *
          * @param variableName The variable name of the declaration.
+         *                     Passed by move.
          * @param expression The expression to which `variableName` should be bound.
+	 *                   Passed by move.
          * @return A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addLocalVariable(const VariableName& variableName, const Expression& expression);
+        Builder& addLocalVariable(VariableName&& variableName, Expression&& expression);
         /**
          * Adds a selector expression. Copies `expression`.
          * If a pattern was previously set, clears the pattern.
          *
-         * @param selector Expression to add as a selector.
-         * @param status Input/output error code.
+         * @param selector Expression to add as a selector. Passed by move.
          * @return A reference to the builder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addSelector(const Expression& selector);
+        Builder& addSelector(Expression&& selector);
         /**
          * Adds a single variant.
          * If a pattern was previously set using `setPattern()`, clears the pattern.

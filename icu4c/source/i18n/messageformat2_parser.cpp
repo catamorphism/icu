@@ -1140,7 +1140,7 @@ void Parser::parseDeclarations() {
 
         // Add binding from lhs to rhs, unless there was an error
         if (lhs.identifier().length() > 0) {
-            dataModel.addLocalVariable(lhs, rhs);
+            dataModel.addLocalVariable(std::move(lhs), std::move(rhs));
         }
     }
 }
@@ -1380,7 +1380,7 @@ void Parser::parseSelectors() {
         }
         empty = false;
 
-        dataModel.addSelector(expression);
+        dataModel.addSelector(std::move(expression));
     }
 
     // At least one selector is required
