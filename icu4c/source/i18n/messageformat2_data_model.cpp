@@ -81,35 +81,27 @@ VariableName::~VariableName() {}
 
 bool Literal::operator<(const Literal& other) const {
     // Ignore quoting for the purposes of ordering
-    U_ASSERT(contents.getType() == Formattable::kString && other.contents.getType() == Formattable::kString);
-
-    return contents.getString() < other.contents.getString();
+    return contents < other.contents;
 }
 
 bool Literal::operator==(const Literal& other) const {
     // Ignore quoting for the purposes of ordering
-    U_ASSERT(contents.getType() == Formattable::kString && other.contents.getType() == Formattable::kString);
-
-    return contents.getString() == other.contents.getString();
+    return contents == other.contents;
 }
 
-UnicodeString Literal::quotedString() const {
+UnicodeString Literal::quoted() const {
     UnicodeString result(PIPE);
-    result += stringContents();
+    result += unquoted();
     result += PIPE;
     return result;
 }
 
-const UnicodeString& Literal::stringContents() const {
-    U_ASSERT(contents.getType() == Formattable::Type::kString);
-    return contents.getString();
-}
+const UnicodeString& Literal::unquoted() const { return contents; }
 
 Literal& Literal::operator=(Literal&& other) noexcept {
     this->~Literal();
 
-    isQuoted = other.isQuoted;
-    U_ASSERT(other.contents.getType() == Formattable::Type::kString);
+    thisIsQuoted = other.thisIsQuoted;
     contents = std::move(other.contents);
 
     return *this;
@@ -117,16 +109,14 @@ Literal& Literal::operator=(Literal&& other) noexcept {
 
 Literal& Literal::operator=(const Literal& other) {
     if (this != &other) {
-        isQuoted = other.isQuoted;
-        U_ASSERT(other.contents.getType() == Formattable::Type::kString);
+        thisIsQuoted = other.thisIsQuoted;
         contents = other.contents;
     }
     return *this;
 }
 
 Literal::Literal(Literal&& other) noexcept {
-    isQuoted = other.isQuoted;
-    U_ASSERT(other.contents.getType() == Formattable::Type::kString);
+    thisIsQuoted = other.thisIsQuoted;
     contents = std::move(other.contents);
 }
 
@@ -226,7 +216,7 @@ UnicodeString Key::toString() const {
     if (isWildcard()) {
         return UnicodeString(ASTERISK);
     }
-    return contents.stringContents();
+    return contents.unquoted();
 }
 
 const Literal& Key::asLiteral() const {

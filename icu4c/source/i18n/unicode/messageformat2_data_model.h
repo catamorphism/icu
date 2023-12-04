@@ -263,17 +263,7 @@ namespace data_model {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-         UnicodeString quotedString() const;
-         /**
-          * Returns the parsed string contents of this literal.
-          *
-          * @return A reference to a Formattable whose string contents are
-          *         the parsed string contents of this literal.
-          *
-          * @internal ICU 75.0 technology preview
-          * @deprecated This API is for technology preview only.
-          */
-         const Formattable& getContents() const { return contents; }
+         UnicodeString quoted() const;
          /**
           * Returns the parsed string contents of this literal.
           *
@@ -282,7 +272,7 @@ namespace data_model {
           * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
-         const UnicodeString& stringContents() const;
+         const UnicodeString& unquoted() const;
          /**
           * Determines if this literal appeared as a quoted literal in the message.
           *
@@ -292,7 +282,7 @@ namespace data_model {
           * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
-         UBool quoted() const { return isQuoted; }
+         UBool isQuoted() const { return thisIsQuoted; }
          /**
           * Literal constructor.
           *
@@ -304,14 +294,14 @@ namespace data_model {
           * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
-         Literal(UBool q, const UnicodeString& s) : isQuoted(q), contents(s) {}
+         Literal(UBool q, const UnicodeString& s) : thisIsQuoted(q), contents(s) {}
          /**
           * Copy constructor.
           *
           * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
           */
-         Literal(const Literal& other) : isQuoted(other.isQuoted), contents(other.contents) {}
+         Literal(const Literal& other) : thisIsQuoted(other.thisIsQuoted), contents(other.contents) {}
          /**
           * Copy assignment operator.
           *
@@ -342,7 +332,7 @@ namespace data_model {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-         Literal() : isQuoted(false), contents(Formattable("")) {}
+         Literal() = default;
          /**
           * Less than operator. Compares `this.stringContents()` with
           * `other.stringContents()`. This method is used in representing
@@ -384,11 +374,8 @@ namespace data_model {
          virtual ~Literal();
 
     private:
-        /* const */ bool isQuoted = false;
-        // Contents is stored as a Formattable to avoid allocating
-        // new Formattables during formatting, but it's guaranteed
-        // to be a string
-        /* const */ Formattable contents;
+         /* const */ bool thisIsQuoted = false;
+         /* const */ UnicodeString contents;
     };
 
     /**
