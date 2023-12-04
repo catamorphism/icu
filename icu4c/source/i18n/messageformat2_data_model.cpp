@@ -315,26 +315,26 @@ bool FunctionName::operator<(const FunctionName& other) const {
     // If sigils are different, arbitrarily order open < close < default
     switch (other.functionSigil) {
     case OPEN: {
-      if (functionSigil != OPEN) {
-	return false;
-      }
-      break;
+        if (functionSigil != OPEN) {
+            return false;
+        }
+        break;
     }
     case CLOSE: {
-      if (functionSigil == OPEN) {
-	return true;
-      }
-      if (functionSigil == DEFAULT) {
-	return false;
-	break;
-      }
-      break;
+        if (functionSigil == OPEN) {
+            return true;
+        }
+        if (functionSigil == DEFAULT) {
+            return false;
+            break;
+        }
+        break;
     }
     case DEFAULT: {
-      if (functionSigil != DEFAULT) {
-	return true;
-      }
-      break;
+        if (functionSigil != DEFAULT) {
+            return true;
+        }
+        break;
     }
     }
 

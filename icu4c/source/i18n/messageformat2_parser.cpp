@@ -1297,7 +1297,7 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
             U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
             break;
         }
-	keysBuilder.add(parseKey());
+        keysBuilder.add(parseKey());
     }
 
     return keysBuilder.build();
