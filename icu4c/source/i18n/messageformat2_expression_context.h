@@ -18,9 +18,9 @@
 #include "unicode/messageformat2_data_model.h"
 #include <iterator>
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
 
-class FunctionRegistry;
+namespace message2 {
 
 using namespace data_model;
 
@@ -127,8 +127,6 @@ class ExpressionContext : public FormattingContext {
     void promoteFallbackToInput();
 
     void setFunctionName(const FunctionName&);
-    // Function name must be set; clears it
-    void resolveSelector(Selector*);
 
     void setStringOption(const UnicodeString&, const UnicodeString&);
     void setDateOption(const UnicodeString&, UDate);
@@ -151,14 +149,6 @@ class ExpressionContext : public FormattingContext {
     // call the function, setting the input and/or output appropriately
     // Precondition: hasSelector()
     void evalPendingSelectorCall(const std::vector<UnicodeString>&, std::vector<UnicodeString>&, UErrorCode&);
-
-    static Formattable* createFormattable(const UnicodeString&, UErrorCode&);
-    static Formattable* createFormattable(double, UErrorCode&);
-    static Formattable* createFormattable(int64_t, UErrorCode&);
-    static Formattable* createFormattableDate(UDate, UErrorCode&);
-    static Formattable* createFormattableDecimal(StringPiece, UErrorCode&);
-    static Formattable* createFormattable(const UnicodeString*, int32_t, UErrorCode&);
-    static Formattable* createFormattable(const UObject*, UErrorCode&);
 
     public:
 
