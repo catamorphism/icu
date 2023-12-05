@@ -26,590 +26,591 @@ U_NAMESPACE_BEGIN
 
 namespace message2 {
 
-class CachedFormatters;
-class Environment;
-class ExpressionContext;
-class MessageContext;
+    class CachedFormatters;
+    class Environment;
+    class ExpressionContext;
+    class MessageContext;
 
-// Arguments
-// ----------
+    // Arguments
+    // ----------
 
-/**
- *
- * The `MessageArguments` class represents the named arguments to a message.
- * It is immutable and is not copyable or movable.
- *
- * @internal ICU 75.0 technology preview
- * @deprecated This API is for technology preview only.
- */
-class U_I18N_API MessageArguments : public UObject {
-public:
     /**
-     * The mutable Builder class allows each message argument to be initialized
-     * separately; calling its `build()` method yields an immutable MessageArguments.
      *
-     * Builder is not movable or copyable.
+     * The `MessageArguments` class represents the named arguments to a message.
+     * It is immutable and is not copyable or movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API Builder {
+    class U_I18N_API MessageArguments : public UObject {
     public:
         /**
-         * Adds an argument of type `UnicodeString`.
+         * The mutable Builder class allows each message argument to be initialized
+         * separately; calling its `build()` method yields an immutable MessageArguments.
          *
-         * @param key The name of the argument.
-         * @param value The value of the argument.
-         * @return          A reference to the builder.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        Builder& add(const UnicodeString& key, const UnicodeString& value);
-        /**
-         * Adds an argument of type `double`.
-         *
-         * @param key The name of the argument.
-         * @param value The value of the argument.
-         * @return          A reference to the builder.
+         * Builder is not movable or copyable.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder& addDouble(const UnicodeString& key, double value);
-        /**
-         * Adds an argument of type `int64_t`.
-         *
-         * @param key The name of the argument.
-         * @param value The value of the argument.
-         * @return          A reference to the builder.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        Builder& addInt64(const UnicodeString& key, int64_t value);
-        /**
-         * Adds an argument of type `UDate`.
-         *
-         * @param key The name of the argument.
-         * @param value The value of the argument.
-         * @return          A reference to the builder.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        Builder& addDate(const UnicodeString& key, UDate value);
-        /**
-         * Adds an argument of type `StringPiece`, representing a
-         * decimal number.
-         *
-         * @param key The name of the argument.
-         * @param value The value of the argument.
-         * @param status    Input/output error code.
-         * @return          A reference to the builder.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        Builder& addDecimal(const UnicodeString& key, StringPiece value, UErrorCode& status);
-        /**
-         * Adds an argument of type UnicodeString[]. Adopts `value`.
-         *
-         * @param key The name of the argument.
-         * @param value The value of the argument, interpreted as an array of Formattables
-         *                (which must have string values)
-         * @param length The length of the array.
-         * @return        A reference to the builder.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        Builder& adoptArray(const UnicodeString& key, const Formattable* value, int32_t length);
-        /**
-         * Adds an argument of type UObject*, which must be non-null. Does not
-         * adopt this argument.
-         *
-         * @param key The name of the argument.
-         * @param value The value of the argument.
-         * @return        A reference to the builder.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        Builder& addObject(const UnicodeString& key, const UObject* value);
-        /**
-         * Creates an immutable `MessageArguments` object with the argument names
-         * and values that were added by previous calls. The builder can still be used
-         * after this call.
-         *
-         * @return        The new MessageArguments object
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        MessageArguments build() const;
-        /**
-         * Default constructor.
-         * Returns a Builder with no arguments set.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        Builder();
+        class U_I18N_API Builder {
+        public:
+            /**
+             * Adds an argument of type `UnicodeString`.
+             *
+             * @param key The name of the argument.
+             * @param value The value of the argument.
+             * @return          A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& add(const UnicodeString& key, const UnicodeString& value);
+            /**
+             * Adds an argument of type `double`.
+             *
+             * @param key The name of the argument.
+             * @param value The value of the argument.
+             * @return          A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& addDouble(const UnicodeString& key, double value);
+            /**
+             * Adds an argument of type `int64_t`.
+             *
+             * @param key The name of the argument.
+             * @param value The value of the argument.
+             * @return          A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& addInt64(const UnicodeString& key, int64_t value);
+            /**
+             * Adds an argument of type `UDate`.
+             *
+             * @param key The name of the argument.
+             * @param value The value of the argument.
+             * @return          A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& addDate(const UnicodeString& key, UDate value);
+            /**
+             * Adds an argument of type `StringPiece`, representing a
+             * decimal number.
+             *
+             * @param key The name of the argument.
+             * @param value The value of the argument.
+             * @param status    Input/output error code.
+             * @return          A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& addDecimal(const UnicodeString& key, StringPiece value, UErrorCode& status);
+            /**
+             * Adds an argument of type UnicodeString[]. Adopts `value`.
+             *
+             * @param key The name of the argument.
+             * @param value The value of the argument, interpreted as an array of Formattables
+             *                (which must have string values)
+             * @param length The length of the array.
+             * @return        A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& adoptArray(const UnicodeString& key, const Formattable* value, int32_t length);
+            /**
+             * Adds an argument of type UObject*, which must be non-null. Does not
+             * adopt this argument.
+             *
+             * @param key The name of the argument.
+             * @param value The value of the argument.
+             * @return        A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& addObject(const UnicodeString& key, const UObject* value);
+            /**
+             * Creates an immutable `MessageArguments` object with the argument names
+             * and values that were added by previous calls. The builder can still be used
+             * after this call.
+             *
+             * @return        The new MessageArguments object
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            MessageArguments build() const;
+            /**
+             * Default constructor.
+             * Returns a Builder with no arguments set.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder();
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Builder();
+        private:
+            friend class MessageArguments;
+            Builder& addFormattable(const UnicodeString&, Formattable&&);
+            std::map<UnicodeString, Formattable> contents;
+            // Keep a separate map for objects, which does not
+            // own the values
+            // This is because a Formattable that wraps an object can't
+            // be copied
+            std::map<UnicodeString, const UObject*> objectContents;
+        }; // class MessageArguments::Builder
         /**
          * Destructor.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual ~Builder();
+        virtual ~MessageArguments();
     private:
-        friend class MessageArguments;
-        Builder& addFormattable(const UnicodeString&, Formattable&&);
+        friend class MessageContext;
+
+        bool hasFormattable(const data_model::VariableName&) const;
+        bool hasObject(const data_model::VariableName&) const;
+        const Formattable& getFormattable(const data_model::VariableName&) const;
+        const UObject* getObject(const data_model::VariableName&) const;
+
+        MessageArguments& add(const UnicodeString&, Formattable*, UErrorCode&);
+        MessageArguments(const std::map<UnicodeString, Formattable>&, const std::map<UnicodeString, const UObject*>&);
+
         std::map<UnicodeString, Formattable> contents;
         // Keep a separate map for objects, which does not
         // own the values
         // This is because a Formattable that wraps an object can't
         // be copied
         std::map<UnicodeString, const UObject*> objectContents;
-    }; // class MessageArguments::Builder
-    /**
-     * Destructor.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual ~MessageArguments();
-private:
-    friend class MessageContext;
+    }; // class MessageArguments
 
-    bool hasFormattable(const data_model::VariableName&) const;
-    bool hasObject(const data_model::VariableName&) const;
-    const Formattable& getFormattable(const data_model::VariableName&) const;
-    const UObject* getObject(const data_model::VariableName&) const;
+    // Errors
+    // ----------
 
-    MessageArguments& add(const UnicodeString&, Formattable*, UErrorCode&);
-    MessageArguments(const std::map<UnicodeString, Formattable>&, const std::map<UnicodeString, const UObject*>&);
+    class DynamicErrors;
+    class StaticErrors;
 
-    std::map<UnicodeString, Formattable> contents;
-    // Keep a separate map for objects, which does not
-    // own the values
-    // This is because a Formattable that wraps an object can't
-    // be copied
-    std::map<UnicodeString, const UObject*> objectContents;
-}; // class MessageArguments
-
-// Errors
-// ----------
-
-class DynamicErrors;
-class StaticErrors;
-
-// Internal class -- used as a private field in MessageFormatter
-template <typename ErrorType>
-class Error : public UObject {
+    // Internal class -- used as a private field in MessageFormatter
+    template <typename ErrorType>
+    class Error : public UObject {
     public:
-    Error(ErrorType ty) : type(ty) {}
-    Error(ErrorType ty, const UnicodeString& s) : type(ty), contents(s) {}
-    virtual ~Error();
+        Error(ErrorType ty) : type(ty) {}
+        Error(ErrorType ty, const UnicodeString& s) : type(ty), contents(s) {}
+        virtual ~Error();
     private:
-    friend class DynamicErrors;
-    friend class StaticErrors;
+        friend class DynamicErrors;
+        friend class StaticErrors;
 
-    ErrorType type;
-    UnicodeString contents;
-}; // class Error
+        ErrorType type;
+        UnicodeString contents;
+    }; // class Error
 
-enum StaticErrorType {
-    DuplicateOptionName,
-    MissingSelectorAnnotation,
-    NonexhaustivePattern,
-    SyntaxError,
-    VariantKeyMismatchError
-};
+    enum StaticErrorType {
+        DuplicateOptionName,
+        MissingSelectorAnnotation,
+        NonexhaustivePattern,
+        SyntaxError,
+        VariantKeyMismatchError
+    };
 
-enum DynamicErrorType {
-    UnresolvedVariable,
-    FormattingError,
-    ReservedError,
-    SelectorError,
-    UnknownFunction,
-};
+    enum DynamicErrorType {
+        UnresolvedVariable,
+        FormattingError,
+        ReservedError,
+        SelectorError,
+        UnknownFunction,
+    };
 
-using StaticError = Error<StaticErrorType>;
-using DynamicError = Error<DynamicErrorType>;
+    using StaticError = Error<StaticErrorType>;
+    using DynamicError = Error<DynamicErrorType>;
 
-// These explicit instantiations have to come before the
-// destructor definitions
-template<>
-Error<StaticErrorType>::~Error();
-template<>
-Error<DynamicErrorType>::~Error();
+    // These explicit instantiations have to come before the
+    // destructor definitions
+    template<>
+    Error<StaticErrorType>::~Error();
+    template<>
+    Error<DynamicErrorType>::~Error();
 
-class StaticErrors : public UObject {
+    class StaticErrors : public UObject {
     private:
-    friend class DynamicErrors;
+        friend class DynamicErrors;
 
-    std::vector<StaticError> syntaxAndDataModelErrors;
-    bool dataModelError = false;
-    bool missingSelectorAnnotationError = false;
-    bool syntaxError = false;
+        std::vector<StaticError> syntaxAndDataModelErrors;
+        bool dataModelError = false;
+        bool missingSelectorAnnotationError = false;
+        bool syntaxError = false;
 
     public:
-    StaticErrors();
+        StaticErrors();
 
-    void setMissingSelectorAnnotation();
-    void setDuplicateOptionName();
-    void addSyntaxError();
-    bool hasDataModelError() const { return dataModelError; }
-    bool hasSyntaxError() const { return syntaxError; }
-    bool hasMissingSelectorAnnotationError() const { return missingSelectorAnnotationError; }
-    void addError(StaticError);
-    void checkErrors(UErrorCode&);
+        void setMissingSelectorAnnotation();
+        void setDuplicateOptionName();
+        void addSyntaxError();
+        bool hasDataModelError() const { return dataModelError; }
+        bool hasSyntaxError() const { return syntaxError; }
+        bool hasMissingSelectorAnnotationError() const { return missingSelectorAnnotationError; }
+        void addError(StaticError);
+        void checkErrors(UErrorCode&);
 
-    virtual ~StaticErrors();
-}; // class StaticErrors
+        virtual ~StaticErrors();
+    }; // class StaticErrors
 
-class DynamicErrors : public UObject {
+    class DynamicErrors : public UObject {
     private:
-    const StaticErrors& staticErrors;
-    std::vector<DynamicError> resolutionAndFormattingErrors;
-    bool formattingError = false;
-    bool selectorError = false;
-    bool unknownFunctionError = false;
-    bool unresolvedVariableError = false;
+        const StaticErrors& staticErrors;
+        std::vector<DynamicError> resolutionAndFormattingErrors;
+        bool formattingError = false;
+        bool selectorError = false;
+        bool unknownFunctionError = false;
+        bool unresolvedVariableError = false;
 
     public:
-    DynamicErrors(const StaticErrors&);
+        DynamicErrors(const StaticErrors&);
 
-    int32_t count() const;
-    void setSelectorError(const FunctionName&);
-    void setReservedError();
-    void setUnresolvedVariable(const VariableName&);
-    void setUnknownFunction(const FunctionName&);
-    void setFormattingError(const FunctionName&);
-    bool hasDataModelError() const { return staticErrors.hasDataModelError(); }
-    bool hasFormattingError() const { return formattingError; }
-    bool hasSelectorError() const { return selectorError; }
-    bool hasSyntaxError() const { return staticErrors.hasSyntaxError(); }
-    bool hasUnknownFunctionError() const { return unknownFunctionError; }
-    bool hasMissingSelectorAnnotationError() const { return staticErrors.hasMissingSelectorAnnotationError(); }
-    bool hasUnresolvedVariableError() const { return unresolvedVariableError; }
-    void addError(DynamicError);
-    void checkErrors(UErrorCode&) const;
-    bool hasError() const;
+        int32_t count() const;
+        void setSelectorError(const FunctionName&);
+        void setReservedError();
+        void setUnresolvedVariable(const VariableName&);
+        void setUnknownFunction(const FunctionName&);
+        void setFormattingError(const FunctionName&);
+        bool hasDataModelError() const { return staticErrors.hasDataModelError(); }
+        bool hasFormattingError() const { return formattingError; }
+        bool hasSelectorError() const { return selectorError; }
+        bool hasSyntaxError() const { return staticErrors.hasSyntaxError(); }
+        bool hasUnknownFunctionError() const { return unknownFunctionError; }
+        bool hasMissingSelectorAnnotationError() const { return staticErrors.hasMissingSelectorAnnotationError(); }
+        bool hasUnresolvedVariableError() const { return unresolvedVariableError; }
+        void addError(DynamicError);
+        void checkErrors(UErrorCode&) const;
+        bool hasError() const;
 
-    virtual ~DynamicErrors();
-}; // class DynamicErrors
-
-/**
- * <p>MessageFormatter is a Technical Preview API implementing MessageFormat 2.0.
- *
- * <p>See <a target="github" href="https://github.com/unicode-org/message-format-wg/blob/main/spec/syntax.md">the
- * description of the syntax with examples and use cases</a> and the corresponding
- * <a target="github" href="https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf">ABNF</a> grammar.</p>
- *
- * The MessageFormatter class is immutable and movable. It is not copyable.
- *
- * @internal ICU 75.0 technology preview
- * @deprecated This API is for technology preview only.
- */
-class U_I18N_API MessageFormatter : public UObject {
-// Note: This class does not currently inherit from the existing
-// `Format` class.
-public:
-  /**
-   * Move assignment operator:
-   * The source MessageFormatter will be left in a valid but undefined state.
-   *
-   * @internal ICU 75.0 technology preview
-   * @deprecated This API is for technology preview only.
-   */
-  MessageFormatter& operator=(MessageFormatter&&) noexcept;
-  /**
-   * Move constructor.
-   * The source MessageFormatter will be left in a valid but undefined state.
-   *
-   * @internal ICU 75.0 technology preview
-   * @deprecated This API is for technology preview only.
-   */
-  MessageFormatter(MessageFormatter&&);
+        virtual ~DynamicErrors();
+    }; // class DynamicErrors
 
     /**
-     * Destructor.
+     * <p>MessageFormatter is a Technical Preview API implementing MessageFormat 2.0.
+     *
+     * <p>See <a target="github" href="https://github.com/unicode-org/message-format-wg/blob/main/spec/syntax.md">the
+     * description of the syntax with examples and use cases</a> and the corresponding
+     * <a target="github" href="https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf">ABNF</a> grammar.</p>
+     *
+     * The MessageFormatter class is immutable and movable. It is not copyable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    virtual ~MessageFormatter();
-
-    /**
-     * Formats the message to a string, using the data model that was previously set or parsed,
-     * and the given `arguments` object.
-     *
-     * @param arguments Reference to message arguments
-     * @param status    Input/output error code used to indicate syntax errors, data model
-     *                  errors, resolution errors, formatting errors, selection errors, as well
-     *                  as other errors (such as memory allocation failures). Partial output
-     *                  is still provided in the presence of most error types.
-     * @return          The string result of formatting the message with the given arguments.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    UnicodeString formatToString(const MessageArguments& arguments, UErrorCode &status) const;
-
-    /**
-     * Accesses the locale that this `MessageFormatter` object was created with.
-     *
-     * @return A reference to the locale.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    const Locale& getLocale() const { return locale; }
-
-    /**
-     * Serializes the data model as a string in MessageFormat 2.0 syntax.
-     *
-     * @return result    A string representation of the data model.
-     *                   The string is a valid MessageFormat 2.0 message.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    UnicodeString getPattern() const;
-
-    /**
-     * Accesses the data model referred to by this
-     * `MessageFormatter` object.
-     *
-     * @return A reference to the data model.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    const MessageFormatDataModel& getDataModel() const;
-
-    /**
-     * The mutable Builder class allows each part of the MessageFormatter to be initialized
-     * separately; calling its `build()` method yields an immutable MessageFormatter.
-     *
-     * Not copyable or movable.
-     */
-    class U_I18N_API Builder : public UObject {
-    private:
-       friend class MessageFormatter;
-
-       // The pattern to be parsed to generate the formatted message
-       UnicodeString pattern;
-       bool hasPattern = false;
-       bool hasDataModel = false;
-       // The data model to be used to generate the formatted message
-       // Ignored if hasPattern
-       MessageFormatDataModel dataModel;
-       Locale locale;
-       // Not owned
-       const FunctionRegistry* customFunctionRegistry;
-
+    class U_I18N_API MessageFormatter : public UObject {
+        // Note: This class does not currently inherit from the existing
+        // `Format` class.
     public:
-       /**
-        * Sets the locale to use for formatting.
-        *
-        * @param locale The desired locale.
-        * @return       A reference to the builder.
-        *
-        * @internal ICU 75.0 technology preview
-        * @deprecated This API is for technology preview only.
-        */
-        Builder& setLocale(const Locale& locale);
-       /**
-        * Sets the pattern to be parsed into a data model. (Parsing is
-        * delayed until `build()` is called.) If a data model was
-        * previously set, the reference to it held by this builder
-        * is removed.
-        *
-        * @param pattern A string in MessageFormat 2.0 syntax.
-        * @return       A reference to the builder.
-        *
-        * @internal ICU 75.0 technology preview
-        * @deprecated This API is for technology preview only.
-        */
-        Builder& setPattern(const UnicodeString& pattern);
-       /**
-        * Sets a custom function registry.
-        *
-        * @param functionRegistry Function registry to use; this argument is
-        *        not adopted, and the caller must ensure its lifetime contains
-        *        the lifetime of the `MessageFormatter` object built by this
-        *        builder.
-        * @return       A reference to the builder.
-        *
-        * @internal ICU 75.0 technology preview
-        * @deprecated This API is for technology preview only.
-        */
-        Builder& setFunctionRegistry(const FunctionRegistry* functionRegistry);
-       /**
-        * Sets a data model. If a pattern was previously set, it is removed.
-        *
-        * @param dataModel Data model to format. Passed by move.
-        * @return       A reference to the builder.
-        *
-        * @internal ICU 75.0 technology preview
-        * @deprecated This API is for technology preview only.
-        */
-        Builder& setDataModel(MessageFormatDataModel&& dataModel);
         /**
-         * Constructs a new immutable MessageFormatter using the pattern or data model
-         * that was previously set, and the locale (if it was previously set)
-         * or default locale (otherwise).
-         *
-         * The builder object (`this`) can still be used after calling `build()`.
-         *
-         * @param parseError Struct to receive information on the position
-         *                   of an error within the pattern (not used if
-         *                   the data model is set).
-         * @param status    Input/output error code.  If the
-         *                  pattern cannot be parsed, or if neither the pattern
-         *                  nor the data model is set, set to failure code.
-         * @return          The new MessageFormatter object
+         * Move assignment operator:
+         * The source MessageFormatter will be left in a valid but undefined state.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatter build(UParseError& parseError, UErrorCode& status) const;
+        MessageFormatter& operator=(MessageFormatter&&) noexcept;
         /**
-         * Default constructor.
-         * Returns a Builder with the default locale and with no
-         * data model or pattern set. Either `setPattern()`
-         * or `setDataModel()` has to be called before calling `build()`.
+         * Move constructor.
+         * The source MessageFormatter will be left in a valid but undefined state.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Builder() : locale(Locale::getDefault()), customFunctionRegistry(nullptr) {}
-	/**
-	 * Destructor.
-	 *
-	 * @internal ICU 75.0 technology preview
-	 * @deprecated This API is for technology preview only.
-	 */
-	virtual ~Builder();
-    }; // class MessageFormatter::Builder
+        MessageFormatter(MessageFormatter&&);
 
-    // TODO: Shouldn't be public; only used for testing
-   /**
-     * Returns a string consisting of the input with optional spaces removed.
-     *
-     * @return        A normalized string representation of the input
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    const UnicodeString& getNormalizedPattern() const { return normalizedInput; }
+        /**
+         * Destructor.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        virtual ~MessageFormatter();
 
-  private:
-      friend class Builder;
-      friend class MessageContext;
+        /**
+         * Formats the message to a string, using the data model that was previously set or parsed,
+         * and the given `arguments` object.
+         *
+         * @param arguments Reference to message arguments
+         * @param status    Input/output error code used to indicate syntax errors, data model
+         *                  errors, resolution errors, formatting errors, selection errors, as well
+         *                  as other errors (such as memory allocation failures). Partial output
+         *                  is still provided in the presence of most error types.
+         * @return          The string result of formatting the message with the given arguments.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        UnicodeString formatToString(const MessageArguments& arguments, UErrorCode &status) const;
 
-      MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError, UErrorCode &status);
+        /**
+         * Accesses the locale that this `MessageFormatter` object was created with.
+         *
+         * @return A reference to the locale.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        const Locale& getLocale() const { return locale; }
 
-      MessageFormatter() = delete; // default constructor not implemented
+        /**
+         * Serializes the data model as a string in MessageFormat 2.0 syntax.
+         *
+         * @return result    A string representation of the data model.
+         *                   The string is a valid MessageFormat 2.0 message.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        UnicodeString getPattern() const;
 
-      // Do not define default assignment operator
-      const MessageFormatter &operator=(const MessageFormatter &) = delete;
+        /**
+         * Accesses the data model referred to by this
+         * `MessageFormatter` object.
+         *
+         * @return A reference to the data model.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        const MessageFormatDataModel& getDataModel() const;
 
-     void resolveVariables(const Environment& env, const data_model::Operand&, ExpressionContext&, UErrorCode &) const;
-     void resolveVariables(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode &) const;
+        /**
+         * The mutable Builder class allows each part of the MessageFormatter to be initialized
+         * separately; calling its `build()` method yields an immutable MessageFormatter.
+         *
+         * Not copyable or movable.
+         */
+        class U_I18N_API Builder : public UObject {
+        private:
+            friend class MessageFormatter;
 
-     // Selection methods
+            // The pattern to be parsed to generate the formatted message
+            UnicodeString pattern;
+            bool hasPattern = false;
+            bool hasDataModel = false;
+            // The data model to be used to generate the formatted message
+            // Ignored if hasPattern
+            MessageFormatDataModel dataModel;
+            Locale locale;
+            // Not owned
+            const FunctionRegistry* customFunctionRegistry;
 
-     // For how this class is used, see the references to (integer, variant) tuples
-     // in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
-     class PrioritizedVariant : public UObject {
-     public:
-       PrioritizedVariant() = default;
-       PrioritizedVariant(PrioritizedVariant&&) = default;
-       PrioritizedVariant& operator=(PrioritizedVariant&&) noexcept = default;
-       UBool operator<(const PrioritizedVariant&) const;
-       int32_t priority;
-       /* const */ SelectorKeys keys;
-       /* const */ Pattern pat;
-       PrioritizedVariant(uint32_t p,
-			  const SelectorKeys& k,
-			  const Pattern& pattern) : priority(p), keys(k), pat(pattern) {}
-       virtual ~PrioritizedVariant();
-     }; // class PrioritizedVariant
+        public:
+            /**
+             * Sets the locale to use for formatting.
+             *
+             * @param locale The desired locale.
+             * @return       A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& setLocale(const Locale& locale);
+            /**
+             * Sets the pattern to be parsed into a data model. (Parsing is
+             * delayed until `build()` is called.) If a data model was
+             * previously set, the reference to it held by this builder
+             * is removed.
+             *
+             * @param pattern A string in MessageFormat 2.0 syntax.
+             * @return       A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& setPattern(const UnicodeString& pattern);
+            /**
+             * Sets a custom function registry.
+             *
+             * @param functionRegistry Function registry to use; this argument is
+             *        not adopted, and the caller must ensure its lifetime contains
+             *        the lifetime of the `MessageFormatter` object built by this
+             *        builder.
+             * @return       A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& setFunctionRegistry(const FunctionRegistry* functionRegistry);
+            /**
+             * Sets a data model. If a pattern was previously set, it is removed.
+             *
+             * @param dataModel Data model to format. Passed by move.
+             * @return       A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& setDataModel(MessageFormatDataModel&& dataModel);
+            /**
+             * Constructs a new immutable MessageFormatter using the pattern or data model
+             * that was previously set, and the locale (if it was previously set)
+             * or default locale (otherwise).
+             *
+             * The builder object (`this`) can still be used after calling `build()`.
+             *
+             * @param parseError Struct to receive information on the position
+             *                   of an error within the pattern (not used if
+             *                   the data model is set).
+             * @param status    Input/output error code.  If the
+             *                  pattern cannot be parsed, or if neither the pattern
+             *                  nor the data model is set, set to failure code.
+             * @return          The new MessageFormatter object
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            MessageFormatter build(UParseError& parseError, UErrorCode& status) const;
+            /**
+             * Default constructor.
+             * Returns a Builder with the default locale and with no
+             * data model or pattern set. Either `setPattern()`
+             * or `setDataModel()` has to be called before calling `build()`.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder() : locale(Locale::getDefault()), customFunctionRegistry(nullptr) {}
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Builder();
+        }; // class MessageFormatter::Builder
 
-     void resolveSelectors(MessageContext&, const Environment& env, const data_model::ExpressionList&, UErrorCode&, std::vector<ExpressionContext>&) const;
-     void filterVariants(const VariantMap&, const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&, UErrorCode&) const;
-     void sortVariants(const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&) const;
-     void matchSelectorKeys(const std::vector<UnicodeString>&, ExpressionContext&, std::vector<UnicodeString>&, UErrorCode&) const;
-     void resolvePreferences(std::vector<ExpressionContext>&, const data_model::VariantMap&, std::vector<std::vector<UnicodeString>>&, UErrorCode&) const;
+        // TODO: Shouldn't be public; only used for testing
+        /**
+         * Returns a string consisting of the input with optional spaces removed.
+         *
+         * @return        A normalized string representation of the input
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        const UnicodeString& getNormalizedPattern() const { return normalizedInput; }
 
-     // Formatting methods
-     void formatLiteral(const data_model::Literal&, ExpressionContext&) const;
-     void formatPattern(MessageContext&, const Environment&, const data_model::Pattern&, UErrorCode&, UnicodeString&) const;
-     // Formats an expression that appears as a selector
-     void formatSelectorExpression(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
-     // Formats an expression that appears in a pattern or as the definition of a local variable
-     void formatExpression(const Environment&, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
-     void resolveOptions(const Environment& env, const data_model::OptionMap&, ExpressionContext&, UErrorCode&) const;
-     void formatOperand(const Environment&, const data_model::Operand&, ExpressionContext&, UErrorCode&) const;
-     void evalArgument(const data_model::VariableName&, ExpressionContext&) const;
-     void formatSelectors(MessageContext& context, const Environment& env, const data_model::ExpressionList& selectors, const data_model::VariantMap& variants, UErrorCode &status, UnicodeString& result) const;
+    private:
+        friend class Builder;
+        friend class MessageContext;
 
-     // Function registry methods
-     const Formatter* maybeCachedFormatter(MessageContext&, const data_model::FunctionName&, UErrorCode& errorCode) const;
+        MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError, UErrorCode &status);
 
-     bool hasCustomFunctionRegistry() const {
-         return (customFunctionRegistry != nullptr);
-     }
+        MessageFormatter() = delete; // default constructor not implemented
 
-     // Precondition: custom function registry exists
-     const FunctionRegistry& getCustomFunctionRegistry() const;
+        // Do not define default assignment operator
+        const MessageFormatter &operator=(const MessageFormatter &) = delete;
 
-     // Checking for resolution errors
-     void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;
-     void check(MessageContext&, const Environment&, const data_model::Expression&, UErrorCode&) const;
-     void check(MessageContext&, const Environment&, const data_model::Operand&, UErrorCode&) const;
-     void check(MessageContext&, const Environment&, const data_model::OptionMap&, UErrorCode&) const;
+        void resolveVariables(const Environment& env, const data_model::Operand&, ExpressionContext&, UErrorCode &) const;
+        void resolveVariables(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode &) const;
 
-     void initErrors(UErrorCode&);
-     void clearErrors() const;
+        // Selection methods
 
-     // The locale this MessageFormatter was created with
-     /* const */ Locale locale;
+        // For how this class is used, see the references to (integer, variant) tuples
+        // in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
+        class PrioritizedVariant : public UObject {
+        public:
+            PrioritizedVariant() = default;
+            PrioritizedVariant(PrioritizedVariant&&) = default;
+            PrioritizedVariant& operator=(PrioritizedVariant&&) noexcept = default;
+            UBool operator<(const PrioritizedVariant&) const;
+            int32_t priority;
+            /* const */ SelectorKeys keys;
+            /* const */ Pattern pat;
+            PrioritizedVariant(uint32_t p,
+                               const SelectorKeys& k,
+                               const Pattern& pattern) : priority(p), keys(k), pat(pattern) {}
+            virtual ~PrioritizedVariant();
+        }; // class PrioritizedVariant
 
-     // Registry for built-in functions
-     FunctionRegistry standardFunctionRegistry;
-     // Registry for custom functions; may be null if no custom registry supplied
-     // Note: this is *not* owned by the MessageFormatter object
-     // The reason for this choice is to have a non-destructive MessageFormatter::Builder,
-     // while also not requiring the function registry to be deeply-copyable. Making the
-     // function registry copyable would impose a requirement on any implementations
-     // of the FormatterFactory and SelectorFactory interfaces to implement a custom
-     // clone() method, which is necessary to avoid sharing between copies of the
-     // function registry (and thus double-frees)
-     const FunctionRegistry* customFunctionRegistry;
+        void resolveSelectors(MessageContext&, const Environment& env, const data_model::ExpressionList&, UErrorCode&, std::vector<ExpressionContext>&) const;
+        void filterVariants(const VariantMap&, const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&, UErrorCode&) const;
+        void sortVariants(const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&) const;
+        void matchSelectorKeys(const std::vector<UnicodeString>&, ExpressionContext&, std::vector<UnicodeString>&, UErrorCode&) const;
+        void resolvePreferences(std::vector<ExpressionContext>&, const data_model::VariantMap&, std::vector<std::vector<UnicodeString>>&, UErrorCode&) const;
 
-     // Data model, representing the parsed message
-     MessageFormatDataModel dataModel;
+        // Formatting methods
+        void formatLiteral(const data_model::Literal&, ExpressionContext&) const;
+        void formatPattern(MessageContext&, const Environment&, const data_model::Pattern&, UErrorCode&, UnicodeString&) const;
+        // Formats an expression that appears as a selector
+        void formatSelectorExpression(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
+        // Formats an expression that appears in a pattern or as the definition of a local variable
+        void formatExpression(const Environment&, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
+        void resolveOptions(const Environment& env, const data_model::OptionMap&, ExpressionContext&, UErrorCode&) const;
+        void formatOperand(const Environment&, const data_model::Operand&, ExpressionContext&, UErrorCode&) const;
+        void evalArgument(const data_model::VariableName&, ExpressionContext&) const;
+        void formatSelectors(MessageContext& context, const Environment& env, const data_model::ExpressionList& selectors, const data_model::VariantMap& variants, UErrorCode &status, UnicodeString& result) const;
 
-     // Normalized version of the input string (optional whitespace removed)
-     UnicodeString normalizedInput;
+        // Function registry methods
+        const Formatter* maybeCachedFormatter(MessageContext&, const data_model::FunctionName&, UErrorCode& errorCode) const;
 
-     // Formatter cache
-     // Must be a pointer to avoid including the internal header file
-     // defining CachedFormatters
-     std::unique_ptr<CachedFormatters> cachedFormatters;
+        bool hasCustomFunctionRegistry() const {
+            return (customFunctionRegistry != nullptr);
+        }
 
-     // Errors -- only used while parsing and checking for data model errors; then
-     // the MessageContext keeps track of errors
-     StaticErrors errors;
-}; // class MessageFormatter
+        // Precondition: custom function registry exists
+        const FunctionRegistry& getCustomFunctionRegistry() const;
+
+        // Checking for resolution errors
+        void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;
+        void check(MessageContext&, const Environment&, const data_model::Expression&, UErrorCode&) const;
+        void check(MessageContext&, const Environment&, const data_model::Operand&, UErrorCode&) const;
+        void check(MessageContext&, const Environment&, const data_model::OptionMap&, UErrorCode&) const;
+
+        void initErrors(UErrorCode&);
+        void clearErrors() const;
+
+        // The locale this MessageFormatter was created with
+        /* const */ Locale locale;
+
+        // Registry for built-in functions
+        FunctionRegistry standardFunctionRegistry;
+        // Registry for custom functions; may be null if no custom registry supplied
+        // Note: this is *not* owned by the MessageFormatter object
+        // The reason for this choice is to have a non-destructive MessageFormatter::Builder,
+        // while also not requiring the function registry to be deeply-copyable. Making the
+        // function registry copyable would impose a requirement on any implementations
+        // of the FormatterFactory and SelectorFactory interfaces to implement a custom
+        // clone() method, which is necessary to avoid sharing between copies of the
+        // function registry (and thus double-frees)
+        const FunctionRegistry* customFunctionRegistry;
+
+        // Data model, representing the parsed message
+        MessageFormatDataModel dataModel;
+
+        // Normalized version of the input string (optional whitespace removed)
+        UnicodeString normalizedInput;
+
+        // Formatter cache
+        // Must be a pointer to avoid including the internal header file
+        // defining CachedFormatters
+        std::unique_ptr<CachedFormatters> cachedFormatters;
+
+        // Errors -- only used while parsing and checking for data model errors; then
+        // the MessageContext keeps track of errors
+        StaticErrors errors;
+    }; // class MessageFormatter
 
 } // namespace message2
+
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
