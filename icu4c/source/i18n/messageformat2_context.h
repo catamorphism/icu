@@ -21,7 +21,9 @@
 #include "unicode/numberformatter.h"
 #include "unicode/utypes.h"
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 class Formatter;
 class FormatterFactory;
@@ -48,17 +50,17 @@ class Environment;
 // to its free variables
 class Closure : public UMemory {
 public:
-
-    static Closure* create(const Expression&, const Environment&, UErrorCode&);
     const Expression& getExpr() const {
         return expr;
     }
     const Environment& getEnv() const {
         return env;
     }
+    Closure(const Expression& expression, const Environment& environment) : expr(expression), env(environment) {}
+    Closure(Closure&&) = default;
+
     virtual ~Closure();
 private:
-    Closure(const Expression& expression, const Environment& environment) : expr(expression), env(environment) {}
 
     // An unevaluated expression
     const Expression& expr;
@@ -72,42 +74,45 @@ private:
 // It's searched using linear search.
 class Environment : public UMemory {
 public:
-    virtual const Closure* lookup(const VariableName&) const = 0;
+    virtual bool has(const VariableName&) const = 0;
+    virtual const Closure& lookup(const VariableName&) const = 0;
     static Environment* create(UErrorCode&);
-    static Environment* create(const VariableName&, Closure*, Environment*, UErrorCode&);
+    static Environment* create(const VariableName&, Closure&&, Environment*, UErrorCode&);
     virtual ~Environment();
 };
 
 class NonEmptyEnvironment;
 class EmptyEnvironment : public Environment {
+public:
+    EmptyEnvironment() = default;
+    virtual ~EmptyEnvironment();
+
 private:
     friend class Environment;
 
-    const Closure* lookup(const VariableName&) const override;
+    bool has(const VariableName&) const override;
+    const Closure& lookup(const VariableName&) const override;
     static EmptyEnvironment* create(UErrorCode&);
-    virtual ~EmptyEnvironment();
-    // Adopts its closure argument
-    static NonEmptyEnvironment* create(const VariableName&, Closure*, Environment*, UErrorCode&);
-
-    EmptyEnvironment() {}
+    static NonEmptyEnvironment* create(const VariableName&, Closure&&, Environment*, UErrorCode&);
 };
 
 class NonEmptyEnvironment : public Environment {
 private:
     friend class Environment;
-    const Closure* lookup(const VariableName&) const override;
-    // Adopts its closure argument
-    static NonEmptyEnvironment* create(const VariableName&, Closure*, const Environment*, UErrorCode&);
+
+    bool has(const VariableName&) const override;
+    const Closure& lookup(const VariableName&) const override;
+    static NonEmptyEnvironment* create(const VariableName&, Closure&&, const Environment*, UErrorCode&);
     virtual ~NonEmptyEnvironment();
 private:
     friend class Environment;
 
-    NonEmptyEnvironment(const VariableName& v, Closure* c, Environment* e) : var(v), rhs(c), parent(e) {}
+    NonEmptyEnvironment(const VariableName& v, Closure&& c, Environment* e) : var(v), rhs(std::move(c)), parent(e) {}
 
     // Maps VariableName onto Closure*
     // Chain of linked environments
     VariableName var;
-    const LocalPointer<Closure> rhs; // should be valid
+    Closure rhs;
     const LocalPointer<Environment> parent;
 };
 

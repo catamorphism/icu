@@ -454,9 +454,9 @@ MessageContext::~MessageContext() {}
 
 // ---------------- Environments and closures
 
-Environment* Environment::create(const VariableName& var, Closure* c, Environment* parent, UErrorCode& errorCode) {
+Environment* Environment::create(const VariableName& var, Closure&& c, Environment* parent, UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
-    Environment* result = new NonEmptyEnvironment(var, c, parent);
+    Environment* result = new NonEmptyEnvironment(var, std::move(c), parent);
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
@@ -474,27 +474,29 @@ Environment* Environment::create(UErrorCode& errorCode) {
     return result;
 }
 
-Closure* Closure::create(const Expression& expr, const Environment& env, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-    Closure* result = new Closure(expr, env);
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-    return result;
-}
-
-const Closure* EmptyEnvironment::lookup(const VariableName& v) const {
+const Closure& EmptyEnvironment::lookup(const VariableName& v) const {
     (void) v;
-    return nullptr;
+    U_ASSERT(false);
+    UPRV_UNREACHABLE_EXIT;
 }
 
-const Closure* NonEmptyEnvironment::lookup(const VariableName& v) const {
+const Closure& NonEmptyEnvironment::lookup(const VariableName& v) const {
     if (v == var) {
-        U_ASSERT(rhs.isValid());
-        return rhs.getAlias();
+        return rhs;
     }
     return parent->lookup(v);
+}
+
+bool EmptyEnvironment::has(const VariableName& v) const {
+    (void) v;
+    return false;
+}
+
+bool NonEmptyEnvironment::has(const VariableName& v) const {
+    if (v == var) {
+        return true;
+    }
+    return parent->has(v);
 }
 
 Environment::~Environment() {}
