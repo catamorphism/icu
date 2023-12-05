@@ -163,25 +163,19 @@ FunctionRegistry::~FunctionRegistry() {}
 
 // --------- Number
 
-number::LocalizedNumberFormatter* formatterForOptions(Locale locale, const FormattingContext& context, UErrorCode& status) {
-    NULL_ON_ERROR(status);
-
+number::LocalizedNumberFormatter formatterForOptions(Locale locale, const FormattingContext& context, UErrorCode& status) {
     number::UnlocalizedNumberFormatter nf;
-    UnicodeString skeleton;
-    if (context.getStringOption(UnicodeString("skeleton"), skeleton)) {
-        nf = number::NumberFormatter::forSkeleton(skeleton, status);
-    } else {
-        int64_t minFractionDigits = 0;
-        context.getInt64Option(UnicodeString("minimumFractionDigits"), minFractionDigits);
-        nf = number::NumberFormatter::with().precision(number::Precision::minFraction((int32_t) minFractionDigits));
+    if (U_SUCCESS(status)) {
+        UnicodeString skeleton;
+        if (context.getStringOption(UnicodeString("skeleton"), skeleton)) {
+            nf = number::NumberFormatter::forSkeleton(skeleton, status);
+        } else {
+            int64_t minFractionDigits = 0;
+            context.getInt64Option(UnicodeString("minimumFractionDigits"), minFractionDigits);
+            nf = number::NumberFormatter::with().precision(number::Precision::minFraction((int32_t) minFractionDigits));
+        }
     }
-    NULL_ON_ERROR(status);
-    LocalPointer<number::LocalizedNumberFormatter> result(new number::LocalizedNumberFormatter(nf.locale(locale)));
-    if (!result.isValid()) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-    return result.orphan();
+    return number::LocalizedNumberFormatter(nf.locale(locale));
 }
 
 Formatter* StandardFunctions::NumberFactory::createFormatter(const Locale& locale, UErrorCode& errorCode) {
@@ -199,7 +193,7 @@ static void notANumber(FormattingContext& context) {
     context.setOutput(UnicodeString("NaN"));
 }
 
-static void stringAsNumber(Locale locale, const number::LocalizedNumberFormatter nf, FormattingContext& context, UnicodeString s, int64_t offset, UErrorCode& errorCode) {
+static void stringAsNumber(Locale locale, const number::LocalizedNumberFormatter& nf, FormattingContext& context, UnicodeString s, int64_t offset, UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
     double numberValue;
@@ -229,19 +223,15 @@ void StandardFunctions::Number::format(FormattingContext& context, UErrorCode& e
     int64_t offset = 0;
     context.getInt64Option(UnicodeString("offset"), offset);
 
-    LocalPointer<number::LocalizedNumberFormatter> realFormatter;
+    number::LocalizedNumberFormatter realFormatter;
     if (context.optionsCount() == 0) {
-        realFormatter.adoptInstead(new number::LocalizedNumberFormatter(icuFormatter));
-        if (!realFormatter.isValid()) {
-            errorCode = U_MEMORY_ALLOCATION_ERROR;
-        }
+        realFormatter = number::LocalizedNumberFormatter(icuFormatter);
     } else {
-        realFormatter.adoptInstead(formatterForOptions(locale, context, errorCode));
+        realFormatter = formatterForOptions(locale, context, errorCode);
     }
-    CHECK_ERROR(errorCode);
 
     if (context.hasStringOutput()) {
-        stringAsNumber(locale, *realFormatter, context, context.getStringOutput(), offset, errorCode);
+        stringAsNumber(locale, realFormatter, context, context.getStringOutput(), offset, errorCode);
         return;
     } else if (context.hasNumberOutput()) {
         // Nothing to do
@@ -250,23 +240,23 @@ void StandardFunctions::Number::format(FormattingContext& context, UErrorCode& e
 
     number::FormattedNumber numberResult;
     // Already checked that input is present
-    const Formattable& toFormat = context.getFormattableInput(); 
+    const Formattable& toFormat = context.getFormattableInput();
     switch (toFormat.getType()) {
     case Formattable::Type::kDouble: {
-        numberResult = realFormatter->formatDouble(toFormat.getDouble() - offset, errorCode);
+        numberResult = realFormatter.formatDouble(toFormat.getDouble() - offset, errorCode);
         break;
     }
     case Formattable::Type::kLong: {
-        numberResult = realFormatter->formatInt(toFormat.getLong() - offset, errorCode);
+        numberResult = realFormatter.formatInt(toFormat.getLong() - offset, errorCode);
         break;
     }
     case Formattable::Type::kInt64: {
-        numberResult = realFormatter->formatInt(toFormat.getInt64() - offset, errorCode);
+        numberResult = realFormatter.formatInt(toFormat.getInt64() - offset, errorCode);
         break;
     }
     case Formattable::Type::kString: {
         // Try to parse the string as a number
-        stringAsNumber(locale, *realFormatter, context, toFormat.getString(), offset, errorCode);
+        stringAsNumber(locale, realFormatter, context, toFormat.getString(), offset, errorCode);
         return;
     }
     default: {
@@ -275,8 +265,7 @@ void StandardFunctions::Number::format(FormattingContext& context, UErrorCode& e
         return;
     }
     }
-    
-    CHECK_ERROR(errorCode);
+
     context.setOutput(std::move(numberResult));
 }
 
