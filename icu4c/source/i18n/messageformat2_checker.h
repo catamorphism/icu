@@ -10,56 +10,59 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2_data_model.h"
 #include "unicode/unistr.h"
 #include "unicode/utypes.h"
+#include "unicode/messageformat2_data_model.h"
 
-U_NAMESPACE_BEGIN  namespace message2 {
+U_NAMESPACE_BEGIN
 
-using namespace data_model;
+namespace message2 {
 
-// Used for checking missing selector annotation errors
-class TypeEnvironment : public UMemory {
+    using namespace data_model;
+
+    // Used for checking missing selector annotation errors
+    class TypeEnvironment : public UMemory {
     public:
-    // MessageFormat has a simple type system;
-    // variables are either annotated or unannotated
-    enum Type {
-        Annotated,
-        Unannotated
-    };
-    void extend(const VariableName&, Type);
-    Type get(const VariableName&) const;
-    TypeEnvironment();
+        // MessageFormat has a simple type system;
+        // variables are either annotated or unannotated
+        enum Type {
+            Annotated,
+            Unannotated
+        };
+        void extend(const VariableName&, Type);
+        Type get(const VariableName&) const;
+        TypeEnvironment();
 
-    virtual ~TypeEnvironment();
+        virtual ~TypeEnvironment();
 
     private:
-    // Stores variables known to be annotated.
-    // All others are assumed to be unannotated
-    std::vector<VariableName> annotated;
-}; // class TypeEnvironment
+        // Stores variables known to be annotated.
+        // All others are assumed to be unannotated
+        std::vector<VariableName> annotated;
+    }; // class TypeEnvironment
 
-// Checks a data model for semantic errors
-// (Errors are defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md       )
-class Checker {
-public:
-    void check();
-    Checker(const MessageFormatDataModel& m, StaticErrors& e) : dataModel(m), errors(e) {}
-private:
+    // Checks a data model for semantic errors
+    // (Errors are defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md       )
+    class Checker {
+    public:
+        void check();
+        Checker(const MessageFormatDataModel& m, StaticErrors& e) : dataModel(m), errors(e) {}
+    private:
 
-    void requireAnnotated(const TypeEnvironment&, const Expression&);
-    void checkDeclarations(TypeEnvironment&);
-    void checkSelectors(const TypeEnvironment&);
-    void checkVariants();
-    void check(const OptionMap&);
-    void check(const Operand&);
-    void check(const Expression&);
-    void check(const Pattern&);
-    const MessageFormatDataModel& dataModel;
-    StaticErrors& errors;
-}; // class Checker
+        void requireAnnotated(const TypeEnvironment&, const Expression&);
+        void checkDeclarations(TypeEnvironment&);
+        void checkSelectors(const TypeEnvironment&);
+        void checkVariants();
+        void check(const OptionMap&);
+        void check(const Operand&);
+        void check(const Expression&);
+        void check(const Pattern&);
+        const MessageFormatDataModel& dataModel;
+        StaticErrors& errors;
+    }; // class Checker
 
 } // namespace message2
+
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
