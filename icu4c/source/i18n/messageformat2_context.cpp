@@ -70,17 +70,17 @@ namespace message2 {
     }
 
     // Does not adopt the object
-    Arguments::Builder& Arguments::Builder::addObject(const UnicodeString& name, const UObject* obj) {
+    Arguments::Builder& Arguments::Builder::addObject(const UnicodeString& name, const UObject* obj) noexcept {
         objectContents[name] = obj;
         return *this;
     }
 
-    Arguments::Builder& Arguments::Builder::addFormattable(const UnicodeString& name, Formattable&& value) {
+    Arguments::Builder& Arguments::Builder::addFormattable(const UnicodeString& name, Formattable&& value) noexcept {
         contents[name] = std::move(value);
         return *this;
     }
 
-    MessageArguments MessageArguments::Builder::build() const {
+    MessageArguments MessageArguments::Builder::build() const noexcept {
         return MessageArguments(contents, objectContents);
     }
 
@@ -119,7 +119,7 @@ namespace message2 {
         return cache[f].get();
     }
 
-    void CachedFormatters::setFormatter(const FunctionName& f, Formatter* val) {
+    void CachedFormatters::setFormatter(const FunctionName& f, Formatter* val) noexcept {
         cache[f] = std::unique_ptr<Formatter>(val);
     }
 
@@ -237,7 +237,7 @@ namespace message2 {
         }
     }
 
-    MessageArguments::MessageArguments(const std::map<UnicodeString, Formattable>& vals, const std::map<UnicodeString, const UObject*>& objs) : contents(vals), objectContents(objs) {}
+    MessageArguments::MessageArguments(const std::map<UnicodeString, Formattable>& vals, const std::map<UnicodeString, const UObject*>& objs) noexcept : contents(vals), objectContents(objs) {}
 
     // -------------------------------------------------------
     // MessageContext accessors and constructors
@@ -356,7 +356,7 @@ namespace message2 {
         addError(StaticError(StaticErrorType::SyntaxError));
     }
 
-    void StaticErrors::addError(StaticError e) {
+    void StaticErrors::addError(StaticError e) noexcept {
         switch (e.type) {
         case StaticErrorType::SyntaxError: {
             syntaxError = true;
@@ -387,7 +387,7 @@ namespace message2 {
         }
     }
 
-    void DynamicErrors::addError(DynamicError e) {
+    void DynamicErrors::addError(DynamicError e) noexcept {
         switch (e.type) {
         case DynamicErrorType::UnresolvedVariable: {
             unresolvedVariableError = true;

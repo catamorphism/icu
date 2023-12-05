@@ -156,7 +156,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory);
+            Builder& setFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory) noexcept;
             /**
              * Registers a selector factory to a given selector name. Adopts `selectorFactory`.
              *
@@ -168,7 +168,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory);
+            Builder& setSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory) noexcept;
             /**
              * Creates an immutable `FunctionRegistry` object with the selectors and formatters
              * that were previously registered. The builder cannot be used after this call.
@@ -212,7 +212,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FunctionRegistry(FunctionRegistry&&);
+        FunctionRegistry(FunctionRegistry&&) noexcept;
         /**
          * Destructor.
          *

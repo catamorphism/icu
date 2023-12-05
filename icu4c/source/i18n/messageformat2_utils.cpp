@@ -20,7 +20,7 @@ int32_t OrderedMap<K, V>::size() const {
 
 // Copy constructor
 template<class K, class V>
-OrderedMap<K, V>::OrderedMap(const OrderedMap<K, V>& other) : contents(other.contents), keys(other.keys) {}
+OrderedMap<K, V>::OrderedMap(const OrderedMap<K, V>& other) noexcept : contents(other.contents), keys(other.keys) {}
 
 // Default constructor
 template<class K, class V>
@@ -29,7 +29,7 @@ OrderedMap<K, V>::OrderedMap() {}
 // Precondition: `key` is not already in the map. (The caller must
 // check this)
 template<class K, class V>
-typename OrderedMap<K, V>::Builder& OrderedMap<K, V>::Builder::add(const K& key, V&& value) {
+typename OrderedMap<K, V>::Builder& OrderedMap<K, V>::Builder::add(const K& key, V&& value) noexcept {
     // Check that the key is not already in the map.
     // (If not for this check, the invariant that keys->size()
     // == contents->count() could be violated.)
@@ -42,7 +42,7 @@ typename OrderedMap<K, V>::Builder& OrderedMap<K, V>::Builder::add(const K& key,
 // Precondition: `key` is not already in the map. (The caller must
 // check this)
 template<class K, class V>
-typename OrderedMap<K, V>::Builder& OrderedMap<K, V>::Builder::add(K&& key, V&& value) {
+typename OrderedMap<K, V>::Builder& OrderedMap<K, V>::Builder::add(K&& key, V&& value) noexcept {
     // Check that the key is not already in the map.
     // (If not for this check, the invariant that keys->size()
     // == contents->count() could be violated.)
@@ -62,7 +62,7 @@ UBool OrderedMap<K, V>::Builder::has(const K& key) const {
 
 // Copying `build()` (leaves `this` valid)
 template<class K, class V>
-OrderedMap<K, V> OrderedMap<K, V>::Builder::build() const {
+OrderedMap<K, V> OrderedMap<K, V>::Builder::build() const noexcept {
     return OrderedMap(contents, keys);
 }
 
@@ -71,7 +71,7 @@ template<class K, class V>
 OrderedMap<K, V>::Builder::Builder() {}
 
 template<class K, class V>
-OrderedMap<K, V>::OrderedMap(const std::map<K, V>& cs, const std::vector<K>& ks) : contents(cs), keys(ks) {
+OrderedMap<K, V>::OrderedMap(const std::map<K, V>& cs, const std::vector<K>& ks) noexcept : contents(cs), keys(ks) {
     // It would be an error if `cs` and `ks` had different sizes
     U_ASSERT(cs.size() == ks.size());
 }
@@ -130,7 +130,7 @@ OrderedMap<K, V>& OrderedMap<K, V>::operator=(OrderedMap<K, V>&& other) noexcept
 }
 
 template<class K, class V>
-OrderedMap<K, V>& OrderedMap<K, V>::operator=(const OrderedMap<K, V>& other) {
+OrderedMap<K, V>& OrderedMap<K, V>::operator=(const OrderedMap<K, V>& other) noexcept {
     if (this != &other) {
         this->~OrderedMap();
 
