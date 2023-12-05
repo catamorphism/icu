@@ -1213,7 +1213,7 @@ Key Parser::parseKey() {
     return k;
 }
 
-SelectorKeys SelectorKeys::Builder::build() const {
+SelectorKeys SelectorKeys::Builder::build() const noexcept {
     // Key list must be non-empty (this should be checked earlier on)
     U_ASSERT(keys.size() >= 1);
     return SelectorKeys(keys);

@@ -23,7 +23,7 @@ namespace message2 {
 
 //------------------ SelectorKeys
 
-SelectorKeys::Builder& SelectorKeys::Builder::add(const Key& key) {
+SelectorKeys::Builder& SelectorKeys::Builder::add(const Key& key) noexcept {
     keys.push_back(key);
     return *this;
 }
@@ -32,14 +32,14 @@ const KeyList& SelectorKeys::getKeys() const {
     return keys;
 }
 
-SelectorKeys& SelectorKeys::operator=(const SelectorKeys& other) {
+SelectorKeys& SelectorKeys::operator=(const SelectorKeys& other) noexcept {
   keys = KeyList(other.keys);
   return *this;
 }
 
 SelectorKeys::SelectorKeys() : keys(KeyList()) {}
 
-SelectorKeys::SelectorKeys(const SelectorKeys& other) : keys(KeyList(other.keys)) {}
+SelectorKeys::SelectorKeys(const SelectorKeys& other) noexcept : keys(KeyList(other.keys)) {}
 
 // Lexically order key lists
 bool SelectorKeys::operator<(const SelectorKeys& other) const {
@@ -230,9 +230,9 @@ const Literal& Key::asLiteral() const {
 // ------------ Reserved
 
 // Copy constructor
-Reserved::Reserved(const Reserved& other) : parts(other.parts) {}
+Reserved::Reserved(const Reserved& other) noexcept : parts(other.parts) {}
 
-Reserved::Reserved(const std::vector<Literal>& ps) :  parts(ps) {}
+Reserved::Reserved(const std::vector<Literal>& ps) noexcept : parts(ps) {}
 
 int32_t Reserved::numParts() const {
     return parts.size();
@@ -245,11 +245,11 @@ const Literal& Reserved::getPart(int32_t i) const {
 
 Reserved::Builder::Builder() : parts(std::vector<Literal>()) {}
 
-Reserved Reserved::Builder::build() const {
+Reserved Reserved::Builder::build() const noexcept {
     return Reserved(parts);
 }
 
-Reserved::Builder& Reserved::Builder::add(const Literal& part) {
+Reserved::Builder& Reserved::Builder::add(const Literal& part) noexcept {
     parts.push_back(part);
     return *this;
 }
@@ -262,7 +262,7 @@ Reserved& Reserved::operator=(Reserved&& other) noexcept {
     return *this;
 }
 
-Reserved& Reserved::operator=(const Reserved& other) {
+Reserved& Reserved::operator=(const Reserved& other) noexcept {
     if (this != &other) {
         parts = other.parts;
     }
@@ -359,7 +359,7 @@ Operator::Builder& Operator::Builder::setFunctionName(FunctionName&& func) {
     return *this;
 }
 
-Operator::Builder& Operator::Builder::addOption(const UnicodeString &key, Operand&& value, UErrorCode& errorCode) {
+Operator::Builder& Operator::Builder::addOption(const UnicodeString &key, Operand&& value, UErrorCode& errorCode) noexcept {
     THIS_ON_ERROR(errorCode);
 
     isReservedSequence = false;
@@ -373,7 +373,7 @@ Operator::Builder& Operator::Builder::addOption(const UnicodeString &key, Operan
     return *this;
 }
 
-Operator Operator::Builder::build(UErrorCode& errorCode) const {
+Operator Operator::Builder::build(UErrorCode& errorCode) const noexcept {
     Operator result;
     if (U_FAILURE(errorCode)) {
         return result;
@@ -399,7 +399,7 @@ Operator Operator::Builder::build(UErrorCode& errorCode) const {
     return result;
 }
 
-Operator::Operator(const Operator& other) : isReservedSequence(other.isReservedSequence),
+Operator::Operator(const Operator& other) noexcept : isReservedSequence(other.isReservedSequence),
                                             functionName(other.functionName),
                                             options(isReservedSequence ? OptionMap()
                                                     : OptionMap(other.options)),
@@ -419,7 +419,7 @@ Operator& Operator::operator=(Operator&& other) noexcept {
     return *this;
 }
 
-Operator& Operator::operator=(const Operator& other) {
+Operator& Operator::operator=(const Operator& other) noexcept {
     if (this != &other) {
         isReservedSequence = other.isReservedSequence;
         if (!other.isReservedSequence) {
@@ -580,18 +580,18 @@ Pattern::Pattern(const std::vector<PatternPart>& ps) : parts(ps) {}
 // Copy constructor
 // If the copy of the other list fails,
 // then isBogus() will be true for this Pattern
-Pattern::Pattern(const Pattern& other) : parts(other.parts) {}
+Pattern::Pattern(const Pattern& other) noexcept : parts(other.parts) {}
 
 const PatternPart& Pattern::getPart(int32_t i) const {
     U_ASSERT(i < numParts());
     return parts[i];
 }
 
-Pattern Pattern::Builder::build() const {
+Pattern Pattern::Builder::build() const noexcept {
     return Pattern(parts);
 }
 
-Pattern::Builder& Pattern::Builder::add(const PatternPart& part) {
+Pattern::Builder& Pattern::Builder::add(const PatternPart& part) noexcept {
     parts.push_back(part);
     return *this;
 }
@@ -602,7 +602,7 @@ Pattern& Pattern::operator=(Pattern&& other) noexcept {
     return *this;
 }
 
-Pattern& Pattern::operator=(const Pattern& other) {
+Pattern& Pattern::operator=(const Pattern& other) noexcept {
     if (this != &other) {
         parts = other.parts;
     }
@@ -669,7 +669,7 @@ void MessageFormatDataModel::Builder::buildSelectorsMessage() {
 }
 
 MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariable(VariableName&& variableName,
-                                                                                   Expression&& expression) {
+                                                                                   Expression&& expression) noexcept {
     locals.push_back(Binding(std::move(variableName), std::move(expression)));
 
     return *this;
@@ -678,7 +678,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariab
 /*
   selector must be non-null
 */
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(Expression&& selector) {
+MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(Expression&& selector) noexcept {
     buildSelectorsMessage();
     selectors.push_back(std::move(selector));
 
@@ -688,7 +688,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(Ex
 /*
   `pattern` must be non-null
 */
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addVariant(SelectorKeys&& keys, Pattern&& pattern) {
+MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addVariant(SelectorKeys&& keys, Pattern&& pattern) noexcept {
     buildSelectorsMessage();
     variants.add(std::move(keys), std::move(pattern));
 
@@ -704,7 +704,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::setPattern(Pat
     return *this;
 }
 
-MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder)
+MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder) noexcept
     : hasPattern(builder.hasPattern),
       selectors(hasPattern ? ExpressionList() : ExpressionList(builder.selectors)),
       variants(hasPattern ? VariantMap() : builder.variants.build()),
@@ -732,7 +732,7 @@ MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel
     return *this;
 }
 
-MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDataModel& other) {
+MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDataModel& other) noexcept {
     if (this != &other) {
         this->~MessageFormatDataModel();
 
@@ -749,7 +749,7 @@ MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDat
     return *this;
 }
 
-MessageFormatDataModel MessageFormatDataModel::Builder::build(UErrorCode& errorCode) const {
+MessageFormatDataModel MessageFormatDataModel::Builder::build(UErrorCode& errorCode) const noexcept {
     MessageFormatDataModel result;
     if (U_FAILURE(errorCode)) {
         return result;

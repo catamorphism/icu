@@ -30,12 +30,12 @@ FunctionRegistry FunctionRegistry::Builder::build() {
     return FunctionRegistry(std::move(formatters), std::move(selectors));
 }
 
-FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory) {
+FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory) noexcept {
     selectors[selectorName] = std::unique_ptr<SelectorFactory>(selectorFactory);
     return *this;
 }
 
-FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory) {
+FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory) noexcept {
     formatters[formatterName] = std::unique_ptr<FormatterFactory>(formatterFactory);
     return *this;
 }
@@ -155,7 +155,7 @@ FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept
     return *this;
 }
 
-FunctionRegistry::FunctionRegistry(FunctionRegistry&& other) : formatters(std::move(other.formatters)), selectors(std::move(other.selectors)) {}
+FunctionRegistry::FunctionRegistry(FunctionRegistry&& other) noexcept : formatters(std::move(other.formatters)), selectors(std::move(other.selectors)) {}
 
 FunctionRegistry::~FunctionRegistry() {}
 

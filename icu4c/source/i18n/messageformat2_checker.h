@@ -29,7 +29,7 @@ namespace message2 {
             Annotated,
             Unannotated
         };
-        void extend(const VariableName&, Type);
+        void extend(const VariableName&, Type) noexcept;
         Type get(const VariableName&) const;
         TypeEnvironment();
 
