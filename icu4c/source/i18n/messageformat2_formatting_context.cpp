@@ -451,8 +451,7 @@ Selector* ExpressionContext::getSelector(UErrorCode& status) const {
     NULL_ON_ERROR(status);
 
     U_ASSERT(hasFunctionName());
-    const SelectorFactory* selectorFactory = context.lookupSelectorFactory(pendingFunctionName, status);
-    NULL_ON_ERROR(status);
+    const SelectorFactory* selectorFactory = context.lookupSelectorFactory(pendingFunctionName);
     // Create a specific instance of the selector
     LocalPointer<Selector> result(selectorFactory->createSelector(context.messageFormatter().getLocale(), status));
     NULL_ON_ERROR(status);
