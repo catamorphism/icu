@@ -79,14 +79,6 @@ public:
     SelectorFactory& operator=(const SelectorFactory&) = delete;
 }; // class SelectorFactory
 
-  // TODO
-  /*
-    Note: since FormatterFactory and SelectorFactory are interfaces,
-    they are not copyable or movable and thus we have to use (owned) pointers here.
-   */
-  using FormatterMap = std::map<FunctionName, std::unique_ptr<FormatterFactory>>;
-  using SelectorMap = std::map<FunctionName, std::unique_ptr<SelectorFactory>>;
-
 /**
  * Defines mappings from names of formatters and selectors to functions implementing them.
  * The required set of formatter and selector functions is defined in the spec. Users can
@@ -98,6 +90,16 @@ public:
  * @deprecated This API is for technology preview only.
  */
 class U_I18N_API FunctionRegistry : public UObject {
+ private:
+
+  /*
+    Note: since FormatterFactory and SelectorFactory are interfaces,
+    they are not copyable or movable and thus we have to use (owned) pointers here.
+   */
+  using FormatterMap = std::map<FunctionName, std::unique_ptr<FormatterFactory>>;
+  using SelectorMap = std::map<FunctionName, std::unique_ptr<SelectorFactory>>;
+
+
 public:
     /**
      * Looks up a formatter factory by the name of the formatter. The result is non-const,
@@ -137,6 +139,11 @@ public:
     private:
 	FormatterMap formatters;
 	SelectorMap selectors;
+
+        // Do not define copy constructor/assignment operator
+        Builder& operator=(const Builder&) = delete;
+        Builder(const Builder&) = delete;
+
     public:
         /**
          * Registers a formatter factory to a given formatter name. Adopts `formatterFactory`.
@@ -173,17 +180,39 @@ public:
          */
         FunctionRegistry build();
         /**
+         * Default constructor.
+         * Returns a Builder with no functions registered.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+	 Builder() = default;
+
+        /**
          * Destructor.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
          virtual ~Builder();
-	 // TODO
-	 Builder() = default;
-	 Builder& operator=(const Builder&) = delete;
-	 Builder(const Builder&) = delete;
     }; // class FunctionRegistry::Builder
+
+    /**
+     * Move assignment operator:
+     * The source FunctionRegistry will be left in a valid but undefined state.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    FunctionRegistry& operator=(FunctionRegistry&&) noexcept;
+    /**
+     * Move constructor.
+     * The source FunctionRegistry will be left in a valid but undefined state.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    FunctionRegistry(FunctionRegistry&&);
     /**
      * Destructor.
      *
@@ -192,15 +221,13 @@ public:
      */
     virtual ~FunctionRegistry();
 
-    // TODO
-    FunctionRegistry& operator=(const FunctionRegistry&) = delete;
-    FunctionRegistry(const FunctionRegistry&) = delete;
-    FunctionRegistry& operator=(FunctionRegistry&&) noexcept;
-    FunctionRegistry(FunctionRegistry&&);
-
 private:
     friend class MessageContext;
     friend class MessageFormatter;
+
+    // Do not define copy constructor or copy assignment operator
+    FunctionRegistry& operator=(const FunctionRegistry&) = delete;
+    FunctionRegistry(const FunctionRegistry&) = delete;
 
     FunctionRegistry() = default; // TODO
     FunctionRegistry(FormatterMap&& f, SelectorMap&& s);
