@@ -81,12 +81,12 @@ void MessageFormatter::formatOperand(const Environment& env, const Operand& rand
         // see https://github.com/unicode-org/message-format-wg/issues/299
 
         // Look up the variable in the environment
-        const Closure* rhs = env.lookup(var);
-        // If rhs is null, the variable must not be a local
-        if (rhs != nullptr) {
-            // Format the expression using the environment from the closure
-            formatExpression(rhs->getEnv(), rhs->getExpr(), context, status);
-            return;
+        if (env.has(var)) {
+          // `var` is a local -- look it up
+          const Closure& rhs = env.lookup(var);
+          // Format the expression using the environment from the closure
+          formatExpression(rhs.getEnv(), rhs.getExpr(), context, status);
+          return;
         }
         // Use fallback per
         // https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fallback-resolution
@@ -450,10 +450,10 @@ void MessageFormatter::resolveVariables(const Environment& env, const Operand& r
         // Must be variable
         const VariableName& var = rand.asVariable();
         // Resolve the variable
-        const Closure* referent = env.lookup(var);
-        if (referent != nullptr) {
+        if (env.has(var)) {
+            const Closure& referent = env.lookup(var);
             // Resolve the referent
-            resolveVariables(referent->getEnv(), referent->getExpr(), context, status);
+            resolveVariables(referent.getEnv(), referent.getExpr(), context, status);
             return;
         }
         // Either this is a global var or an unbound var --
@@ -652,7 +652,7 @@ void MessageFormatter::check(MessageContext& context, const Environment& localEn
     // Check that variable is in scope
     const VariableName& var = rand.asVariable();
     // Check local scope
-    if (localEnv.lookup(var) != nullptr) {
+    if (localEnv.has(var)) {
         return;
     }
     // Check global scope
@@ -688,11 +688,9 @@ void MessageFormatter::checkDeclarations(MessageContext& context, Environment*& 
 
         // Add a closure to the global environment,
         // memoizing the value of localEnv up to this point
-        Closure* closure = Closure::create(rhs, *env, status);
-        CHECK_ERROR(status);
 
         // Add the LHS to the environment for checking the next declaration
-        env = Environment::create(decl.getVariable(), closure, env, status);
+        env = Environment::create(decl.getVariable(), Closure(rhs, *env), env, status);
         CHECK_ERROR(status);
     }
 }
