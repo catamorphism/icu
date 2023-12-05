@@ -5,15 +5,10 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2.h"
+#include "unicode/messageformat2_data_model.h"
 #include "messageformat2_macros.h"
 #include "messageformat2_serializer.h"
 #include "uvector.h" // U_ASSERT
-
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(disable: 4661)
-#endif
 
 U_NAMESPACE_BEGIN namespace message2 {
 
@@ -203,10 +198,10 @@ void Serializer::emit(const Pattern& pat) {
     }
     emit(RIGHT_CURLY_BRACE);
 }
-                    
+
 void Serializer::serializeDeclarations() {
     const Bindings& locals = dataModel.getLocalVariables();
-    
+
     for (int32_t i = 0; i < (int32_t) locals.size(); i++) {
         const Binding& b = locals[i];
         // No whitespace needed here -- see `message` in the grammar
@@ -242,7 +237,7 @@ void Serializer::serializeVariants() {
       emit(iter.first());
       // No whitespace needed here -- see `variant` in the grammar
       emit(iter.second());
-    }    
+    }
 }
 
 
