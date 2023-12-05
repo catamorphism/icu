@@ -15,152 +15,135 @@
 
 U_NAMESPACE_BEGIN
 
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See messageformat2_data_model_forward_decls.h for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointer<message2::FunctionRegistry::Builder>;
-template class U_I18N_API LocalPointer<message2::MessageFormatDataModel::Builder>;
-template class U_I18N_API LocalPointer<message2::Parser>;
-#endif
-
 namespace message2 {
 
-// -------------------------------------
-// Creates a MessageFormat instance based on the pattern.
+    // -------------------------------------
+    // Creates a MessageFormat instance based on the pattern.
 
-MessageFormatter::Builder& MessageFormatter::Builder::setPattern(const UnicodeString& pat) {
-    hasPattern = true;
-    hasDataModel = false;
-    pattern = pat;
+    MessageFormatter::Builder& MessageFormatter::Builder::setPattern(const UnicodeString& pat) {
+        hasPattern = true;
+        hasDataModel = false;
+        pattern = pat;
 
-    return *this;
-}
-
-// Precondition: `reg` is non-null
-// Does not adopt `reg`
-MessageFormatter::Builder& MessageFormatter::Builder::setFunctionRegistry(const FunctionRegistry* reg) {
-    U_ASSERT(reg != nullptr);
-    customFunctionRegistry = reg;
-    return *this;
-}
-
-MessageFormatter::Builder& MessageFormatter::Builder::setLocale(const Locale& loc) {
-    locale = loc;
-    return *this;
-}
-
-MessageFormatter::Builder& MessageFormatter::Builder::setDataModel(MessageFormatDataModel&& newDataModel) {
-    hasPattern = false;
-    hasDataModel = true;
-    dataModel = std::move(newDataModel);
-
-    return *this;
-}
-
-/*
-  This build() method is non-destructive, which entails the risk that
-  its borrowed FunctionRegistry and (if the setDataModel() method was called)
-  MessageFormatDataModel pointers could become invalidated.
-*/
-MessageFormatter MessageFormatter::Builder::build(UParseError& parseError, UErrorCode& errorCode) const {
-    return MessageFormatter(*this, parseError, errorCode);
-}
-
-MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError,
-                                   UErrorCode &success) : locale(builder.locale), customFunctionRegistry(builder.customFunctionRegistry) {
-    CHECK_ERROR(success);
-
-    // Set up the standard function registry
-    FunctionRegistry::Builder standardFunctionsBuilder;
-
-    standardFunctionsBuilder.setFormatter(UnicodeString("datetime"), new StandardFunctions::DateTimeFactory())
-        .setFormatter(UnicodeString("number"), new StandardFunctions::NumberFactory())
-        .setFormatter(UnicodeString("identity"), new StandardFunctions::IdentityFactory())
-        .setSelector(UnicodeString("plural"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL))
-        .setSelector(UnicodeString("selectordinal"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL))
-        .setSelector(UnicodeString("select"), new StandardFunctions::TextFactory())
-        .setSelector(UnicodeString("gender"), new StandardFunctions::TextFactory());
-    standardFunctionRegistry = standardFunctionsBuilder.build();
-    standardFunctionRegistry.checkStandard();
-
-    // Validate pattern and build data model
-    // First, check that exactly one of the pattern and data model are set, but not both
-
-    if ((!builder.hasPattern && !builder.hasDataModel)
-        || (builder.hasPattern && builder.hasDataModel)) {
-      success = U_INVALID_STATE_ERROR;
-      return;
+        return *this;
     }
 
-    // If data model was set, just assign it
-    if (builder.hasDataModel) {
-        dataModel = builder.dataModel;
-        return;
+    // Precondition: `reg` is non-null
+    // Does not adopt `reg`
+    MessageFormatter::Builder& MessageFormatter::Builder::setFunctionRegistry(const FunctionRegistry* reg) {
+        U_ASSERT(reg != nullptr);
+        customFunctionRegistry = reg;
+        return *this;
     }
 
-    MessageFormatDataModel::Builder tree;
-
-    // Initialize formatter cache
-    CachedFormatters* cachedFormattersPtr = new CachedFormatters();
-    if (cachedFormattersPtr == nullptr) {
-      success = U_MEMORY_ALLOCATION_ERROR;
-      return;
+    MessageFormatter::Builder& MessageFormatter::Builder::setLocale(const Locale& loc) {
+        locale = loc;
+        return *this;
     }
-    cachedFormatters = std::unique_ptr<CachedFormatters>(cachedFormattersPtr);
 
-    // Parse the pattern
-    Parser(builder.pattern, tree, errors, normalizedInput).parse(parseError);
+    MessageFormatter::Builder& MessageFormatter::Builder::setDataModel(MessageFormatDataModel&& newDataModel) {
+        hasPattern = false;
+        hasDataModel = true;
+        dataModel = std::move(newDataModel);
 
-    // Build the data model based on what was parsed
-    dataModel = tree.build(success);
+        return *this;
+    }
 
-    // Note: we currently evaluate variables lazily,
-    // without memoization. This call is still necessary
-    // to check out-of-scope uses of local variables in
-    // right-hand sides (unresolved variable errors can
-    // only be checked when arguments are known)
+    /*
+      This build() method is non-destructive, which entails the risk that
+      its borrowed FunctionRegistry and (if the setDataModel() method was called)
+      MessageFormatDataModel pointers could become invalidated.
+    */
+    MessageFormatter MessageFormatter::Builder::build(UParseError& parseError, UErrorCode& errorCode) const {
+        return MessageFormatter(*this, parseError, errorCode);
+    }
 
-    // Check for resolution errors
-    Checker(dataModel, errors).check();
-}
+    MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError,
+                                       UErrorCode &success) : locale(builder.locale), customFunctionRegistry(builder.customFunctionRegistry) {
+        CHECK_ERROR(success);
 
-MessageFormatter& MessageFormatter::operator=(MessageFormatter&& other) noexcept {
-  // TODO: leaving this in causes a Pattern double-free. not sure why
-  // this->~MessageFormatter();
+        // Set up the standard function registry
+        FunctionRegistry::Builder standardFunctionsBuilder;
 
-  locale = std::move(other.locale);
-  standardFunctionRegistry = std::move(other.standardFunctionRegistry);
-  customFunctionRegistry = other.customFunctionRegistry;
-  dataModel = std::move(other.dataModel);
-  normalizedInput = std::move(other.normalizedInput);
-  cachedFormatters = std::move(other.cachedFormatters);
-  errors = std::move(other.errors);
+        standardFunctionsBuilder.setFormatter(UnicodeString("datetime"), new StandardFunctions::DateTimeFactory())
+            .setFormatter(UnicodeString("number"), new StandardFunctions::NumberFactory())
+            .setFormatter(UnicodeString("identity"), new StandardFunctions::IdentityFactory())
+            .setSelector(UnicodeString("plural"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL))
+            .setSelector(UnicodeString("selectordinal"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL))
+            .setSelector(UnicodeString("select"), new StandardFunctions::TextFactory())
+            .setSelector(UnicodeString("gender"), new StandardFunctions::TextFactory());
+        standardFunctionRegistry = standardFunctionsBuilder.build();
+        standardFunctionRegistry.checkStandard();
 
-  return *this;
-}
+        // Validate pattern and build data model
+        // First, check that exactly one of the pattern and data model are set, but not both
 
-MessageFormatter::MessageFormatter(MessageFormatter&& other) {
-  if (this != &other) {
-    locale = std::move(other.locale);
-    standardFunctionRegistry = std::move(other.standardFunctionRegistry);
-    customFunctionRegistry = other.customFunctionRegistry;
-    dataModel = std::move(other.dataModel);
-    normalizedInput = std::move(other.normalizedInput);
-    cachedFormatters = std::move(other.cachedFormatters);
-    errors = std::move(other.errors);
-  }
-}
+        if ((!builder.hasPattern && !builder.hasDataModel)
+            || (builder.hasPattern && builder.hasDataModel)) {
+            success = U_INVALID_STATE_ERROR;
+            return;
+        }
 
-const MessageFormatDataModel& MessageFormatter::getDataModel() const { return dataModel; }
+        // If data model was set, just assign it
+        if (builder.hasDataModel) {
+            dataModel = builder.dataModel;
+            return;
+        }
 
-MessageFormatter::~MessageFormatter() {}
-MessageFormatter::Builder::~Builder() {}
+        MessageFormatDataModel::Builder tree;
+
+        // Initialize formatter cache
+        CachedFormatters* cachedFormattersPtr = new CachedFormatters();
+        if (cachedFormattersPtr == nullptr) {
+            success = U_MEMORY_ALLOCATION_ERROR;
+            return;
+        }
+        cachedFormatters = std::unique_ptr<CachedFormatters>(cachedFormattersPtr);
+
+        // Parse the pattern
+        Parser(builder.pattern, tree, errors, normalizedInput).parse(parseError);
+
+        // Build the data model based on what was parsed
+        dataModel = tree.build(success);
+
+        // Note: we currently evaluate variables lazily,
+        // without memoization. This call is still necessary
+        // to check out-of-scope uses of local variables in
+        // right-hand sides (unresolved variable errors can
+        // only be checked when arguments are known)
+
+        // Check for resolution errors
+        Checker(dataModel, errors).check();
+    }
+
+    MessageFormatter& MessageFormatter::operator=(MessageFormatter&& other) noexcept {
+        locale = std::move(other.locale);
+        standardFunctionRegistry = std::move(other.standardFunctionRegistry);
+        customFunctionRegistry = other.customFunctionRegistry;
+        dataModel = std::move(other.dataModel);
+        normalizedInput = std::move(other.normalizedInput);
+        cachedFormatters = std::move(other.cachedFormatters);
+        errors = std::move(other.errors);
+
+        return *this;
+    }
+
+    MessageFormatter::MessageFormatter(MessageFormatter&& other) {
+        if (this != &other) {
+            locale = std::move(other.locale);
+            standardFunctionRegistry = std::move(other.standardFunctionRegistry);
+            customFunctionRegistry = other.customFunctionRegistry;
+            dataModel = std::move(other.dataModel);
+            normalizedInput = std::move(other.normalizedInput);
+            cachedFormatters = std::move(other.cachedFormatters);
+            errors = std::move(other.errors);
+        }
+    }
+
+    const MessageFormatDataModel& MessageFormatter::getDataModel() const { return dataModel; }
+
+    MessageFormatter::~MessageFormatter() {}
+    MessageFormatter::Builder::~Builder() {}
 
 } // namespace message2
 
