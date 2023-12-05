@@ -10,7 +10,9 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-U_NAMESPACE_BEGIN  namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
     using namespace data_model;
 
@@ -48,6 +50,7 @@ U_NAMESPACE_BEGIN  namespace message2 {
     }; // class Serializer
 
 } // namespace message2
+
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
