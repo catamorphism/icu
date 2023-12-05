@@ -257,14 +257,6 @@ MessageArguments::MessageArguments(const std::map<UnicodeString, Formattable>& v
 
 MessageContext::MessageContext(const MessageFormatter& mf, const MessageArguments& args, const StaticErrors& e) : parent(mf), arguments(args), errors(e) {}
 
-/* static */ MessageContext* MessageContext::create(const MessageFormatter& mf, const MessageArguments& args, const StaticErrors& e, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-
-    LocalPointer<MessageContext> result(new MessageContext(mf, args, e));
-    NULL_ON_ERROR(errorCode);
-    return result.orphan();
-}
-
 // Errors
 // -----------
 

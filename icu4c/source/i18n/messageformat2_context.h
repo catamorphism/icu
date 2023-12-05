@@ -119,7 +119,7 @@ private:
 // Formatter cache
 // --------------
 
-// Map from expression pointers to Formatters
+// Map from function names to Formatters
 class CachedFormatters : public UObject {
 private:
     friend class MessageFormatter;
@@ -128,10 +128,10 @@ private:
     CachedFormatters();
 
 public:
+    // Since Formatter is an interface, it's easiest to return a pointer here
     const Formatter* getFormatter(const FunctionName&);
     void setFormatter(const FunctionName&, Formatter*);
 
-    // TODO
     CachedFormatters& operator=(const CachedFormatters&) = delete;
     virtual ~CachedFormatters();
 };
@@ -143,7 +143,7 @@ class MessageFormatter;
 
 class MessageContext : public UMemory {
 public:
-    static MessageContext* create(const MessageFormatter& mf, const MessageArguments& args, const StaticErrors& e, UErrorCode& errorCode);
+    MessageContext(const MessageFormatter&, const MessageArguments&, const StaticErrors&);
 
     bool isCustomFormatter(const FunctionName&) const;
     const Formatter* maybeCachedFormatter(const FunctionName&, UErrorCode&);
@@ -166,7 +166,6 @@ public:
     virtual ~MessageContext();
 
 private:
-    MessageContext(const MessageFormatter&, const MessageArguments&, const StaticErrors&);
 
     FormatterFactory* lookupFormatterFactory(const FunctionName&, UErrorCode&);
     bool isBuiltInSelector(const FunctionName&) const;
