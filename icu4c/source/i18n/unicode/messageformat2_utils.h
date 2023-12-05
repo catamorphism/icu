@@ -12,13 +12,10 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include <map>
-#include <vector>
-
-#include "unicode/localpointer.h"
 #include "unicode/unistr.h"
 
-union UElement;
+#include <map>
+#include <vector>
 
 U_NAMESPACE_BEGIN
 
