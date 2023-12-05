@@ -18,9 +18,9 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/formattedvalue.h"
-#include "unicode/messageformat2_data_model.h"
 #include "unicode/numberformatter.h"
 #include "unicode/smpdtfmt.h"
+#include <map>
 
 U_NAMESPACE_BEGIN namespace message2 {
 
