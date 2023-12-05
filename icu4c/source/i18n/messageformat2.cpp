@@ -17,15 +17,6 @@
 
 U_NAMESPACE_BEGIN
 
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See messageformat2_data_model_forward_decls.h for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(disable: 4661)
-#endif
-
 namespace message2 {
 
 using namespace data_model;
@@ -330,10 +321,7 @@ void MessageFormatter::resolvePreferences(std::vector<ExpressionContext>& res,
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#filter-variants
 void MessageFormatter::filterVariants(const VariantMap& variants,
 				      const std::vector<std::vector<UnicodeString>>& pref,
-				      std::vector<MessageFormatter::PrioritizedVariant>& vars,
-				      UErrorCode &status) const {
-    CHECK_ERROR(status);
-
+				      std::vector<MessageFormatter::PrioritizedVariant>& vars) const {
     // 1. Let `vars` be a new empty list of variants.
     // (Not needed since `vars` is an out-parameter)
     // 2. For each variant `var` of the message:
@@ -558,7 +546,7 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
     // Filter Variants
     // vars is a vector of PrioritizedVariants
     std::vector<PrioritizedVariant> vars;
-    filterVariants(variants, pref, vars, status);
+    filterVariants(variants, pref, vars);
 
     // Sort Variants and select the final pattern
     // Note: `sortable` in the spec is just `vars` here,
@@ -631,18 +619,14 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
 // ----------------------------------------
 // Checking for resolution errors
 
-void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const OptionMap& options, UErrorCode &status) const {
-    CHECK_ERROR(status);
-
+void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const OptionMap& options) const {
     // Check the RHS of each option
     for (auto iter = options.begin(); iter != options.end(); ++iter) {
-        check(context, localEnv, iter.second(), status);
+        check(context, localEnv, iter.second());
     }
 }
 
-void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const Operand& rand, UErrorCode &status) const {
-    CHECK_ERROR(status);
-
+void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const Operand& rand) const {
     // Nothing to check for literals
     if (rand.isLiteral() || rand.isNull()) {
         return;
@@ -661,15 +645,13 @@ void MessageFormatter::check(MessageContext& context, const Environment& localEn
     context.getErrors().setUnresolvedVariable(var);
 }
 
-void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const Expression& expr, UErrorCode &status) const {
-    CHECK_ERROR(status);
-
+void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const Expression& expr) const {
     // Check for unresolved variable errors
     if (expr.isFunctionCall()) {
         const Operator& rator = expr.getOperator();
         const Operand& rand = expr.getOperand();
-        check(context, localEnv, rand, status);
-        check(context, localEnv, rator.getOptions(), status);
+        check(context, localEnv, rand);
+        check(context, localEnv, rator.getOptions());
     }
 }
 
@@ -683,7 +665,7 @@ void MessageFormatter::checkDeclarations(MessageContext& context, Environment*& 
     for (int32_t i = 0; i < (int32_t) decls.size(); i++) {
         const Binding& decl = decls[i];
         const Expression& rhs = decl.getValue();
-        check(context, *env, rhs, status);
+        check(context, *env, rhs);
 
         // Add a closure to the global environment,
         // memoizing the value of localEnv up to this point
