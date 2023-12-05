@@ -35,7 +35,7 @@ class SelectorFactory;
  * the function's (unnamed) argument and its named options, as well as providing
  * methods for the function to record its output.
  *
- * @internal ICU 74.0 technology preview
+ * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
 class U_I18N_API FormattingContext : public UObject {
@@ -46,7 +46,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @param output The value of the output.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual void setOutput(const UnicodeString& output) = 0;
@@ -55,7 +55,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @param output The value of the output, which is passed by move.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual void setOutput(number::FormattedNumber&& output) = 0;
@@ -69,7 +69,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @param name Any informative string (usually the name of the selector function).
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual void setSelectorError(const UnicodeString& name) = 0;
@@ -79,7 +79,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @param name Any informative string (usually the name of the formatter function).
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual void setFormattingError(const UnicodeString& name) = 0;
@@ -90,7 +90,7 @@ class U_I18N_API FormattingContext : public UObject {
      * at most one argument, so if `hasFormattableInput()` is true,
      * `hasObjectInput()` is false, and vice versa.
      *     *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual UBool hasFormattableInput() const = 0;
@@ -102,7 +102,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @return A reference to the argument to this function.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */ 
     virtual const Formattable& getFormattableInput() const = 0;
@@ -112,7 +112,7 @@ class U_I18N_API FormattingContext : public UObject {
      * @return True if and only if a `UObject*` argument was supplied to this
      *         function.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual UBool hasObjectInput() const = 0;
@@ -122,7 +122,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @return A reference to the argument to this function.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual const UObject& getObjectInput() const = 0;
@@ -134,7 +134,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @return True if and only if formatted string output is present.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual UBool hasStringOutput() const = 0;
@@ -146,7 +146,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @return True if and only if formatted number output is present.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual UBool hasNumberOutput() const = 0;
@@ -156,7 +156,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @return A reference to the existing formatted string output.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual const UnicodeString& getStringOutput() const = 0;
@@ -166,7 +166,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @return A reference to the existing formatted number output.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual const number::FormattedNumber& getNumberOutput() const = 0;
@@ -178,7 +178,7 @@ class U_I18N_API FormattingContext : public UObject {
      *        the option if the named option exists.
      * @return True if and only if a string-typed option named `optionName` exists.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual UBool getStringOption(const UnicodeString& optionName, UnicodeString& optionValue) const = 0;
@@ -192,7 +192,7 @@ class U_I18N_API FormattingContext : public UObject {
      *        the option if the named option exists.
      * @return True if and only if a double-typed option named `optionName` exists.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual UBool getDoubleOption(const UnicodeString& optionName, double& optionValue) const = 0;
@@ -206,7 +206,7 @@ class U_I18N_API FormattingContext : public UObject {
      *        the option if the named option exists.
      * @return True if and only if a int64-typed option named `optionName` exists.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual UBool getInt64Option(const UnicodeString& optionName, int64_t& optionValue) const = 0;
@@ -216,7 +216,7 @@ class U_I18N_API FormattingContext : public UObject {
      * @param optionName The name of the option.
      * @return True if and only if an object-typed option named `optionName` exists.
      **
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual UBool hasObjectOption(const UnicodeString& optionName) const = 0;
@@ -227,7 +227,7 @@ class U_I18N_API FormattingContext : public UObject {
      * @param optionName The name of the option.
      * @return           A reference to the object value of the option.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual const UObject& getObjectOption(const UnicodeString& optionName) const = 0;
@@ -240,7 +240,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @return The number of named options.
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual int32_t optionsCount() const = 0;
@@ -257,7 +257,7 @@ class U_I18N_API FormattingContext : public UObject {
      *        the formatting of a pre-formatted number, if a number output is already present)
      * @param status Input/output error code
      *
-     * @internal ICU 74.0 technology preview
+     * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     virtual void formatToString(const Locale& locale, UErrorCode& status) = 0;
