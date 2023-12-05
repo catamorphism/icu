@@ -6,16 +6,9 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/messageformat2_function_registry.h"
-#include "unicode/messageformat2.h"
 #include "messageformat2_context.h"
-#include "messageformat2_expression_context.h"
 #include "messageformat2_macros.h"
 #include "uvector.h" // U_ASSERT
-
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(disable: 4661)
-#endif
 
 U_NAMESPACE_BEGIN
 
