@@ -604,28 +604,27 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
     // Create a new environment that will store closures for all local variables
     Environment* env = Environment::create(status);
     // Create a new context with the given arguments and the `errors` structure
-    LocalPointer<MessageContext> context(MessageContext::create(*this, arguments, errors, status));
-    EMPTY_ON_ERROR(status);
+    MessageContext context(*this, arguments, errors);
 
     // Check for unresolved variable errors
-    checkDeclarations(*context, env, status);
+    checkDeclarations(context, env, status);
     LocalPointer<Environment> globalEnv(env);
 
     UnicodeString result;
     if (!dataModel.hasSelectors()) {
-        formatPattern(*context, *globalEnv, dataModel.getPattern(), status, result);
+        formatPattern(context, *globalEnv, dataModel.getPattern(), status, result);
     } else {
         // Check for errors/warnings -- if so, then the result of pattern selection is the fallback value
         // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
-        const DynamicErrors& err = context->getErrors();
+        const DynamicErrors& err = context.getErrors();
         if (err.hasSyntaxError() || err.hasDataModelError()) {
             result += REPLACEMENT;
         } else {
-            formatSelectors(*context, *globalEnv, dataModel.getSelectors(), dataModel.getVariants(), status, result);
+            formatSelectors(context, *globalEnv, dataModel.getSelectors(), dataModel.getVariants(), status, result);
         }
     }
     // Update status according to all errors seen while formatting
-    context->checkErrors(status);
+    context.checkErrors(status);
     return result;
 }
 
