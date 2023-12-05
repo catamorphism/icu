@@ -21,7 +21,7 @@ U_NAMESPACE_BEGIN namespace message2 {
 using namespace pluralimpl;
 
 // Tokens for parser and serializer
- 
+
 // Syntactically significant characters
 #define LEFT_CURLY_BRACE ((UChar32)0x007B)
 #define RIGHT_CURLY_BRACE ((UChar32)0x007D)
@@ -67,7 +67,7 @@ static constexpr UChar32 ID_WHEN[] = {
 static constexpr UChar32 ID_MATCH[] = {
     0x6D, 0x61, 0x74, 0x63, 0x68, 0 /* "match" */
 };
- 
+
 // Returns immediately if `errorCode` indicates failure
 #define CHECK_ERROR(errorCode)                                                                          \
     if (U_FAILURE(errorCode)) {                                                                         \
@@ -79,7 +79,7 @@ static constexpr UChar32 ID_MATCH[] = {
     if (U_FAILURE(errorCode)) {                                                                         \
         return nullptr;                                                                                         \
     }
- 
+
 // Returns immediately if `errorCode` indicates failure
 #define THIS_ON_ERROR(errorCode)                                                                          \
     if (U_FAILURE(errorCode)) {                                                                         \
@@ -87,23 +87,10 @@ static constexpr UChar32 ID_MATCH[] = {
     }
 
 // Returns immediately if `errorCode` indicates failure
-#define FALSE_ON_ERROR(errorCode)                                                                          \
-    if (U_FAILURE(errorCode)) {                                                                         \
-        return false; \
-    }
-
-// Returns immediately if `errorCode` indicates failure
 #define EMPTY_ON_ERROR(errorCode)                                                                          \
     if (U_FAILURE(errorCode)) {                                                                         \
         return {}; \
     }
-
-inline void setError(UErrorCode newError, UErrorCode& existingError) {
-    // Don't overwrite an existing warning
-    if (existingError == U_ZERO_ERROR) {
-        existingError = newError;
-    }
-}
 
 } // namespace message2
 U_NAMESPACE_END
