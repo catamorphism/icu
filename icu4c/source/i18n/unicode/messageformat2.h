@@ -19,7 +19,6 @@
 
 #include "unicode/format.h"
 #include "unicode/messageformat2_data_model.h"
-#include "unicode/messageformat2_formatting_context.h"
 #include "unicode/messageformat2_function_registry.h"
 #include "unicode/unistr.h"
 
@@ -150,14 +149,20 @@ public:
          */
         MessageArguments build() const;
         /**
+         * Default constructor.
+         * Returns a Builder with no arguments set.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder();
+        /**
          * Destructor.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         virtual ~Builder();
-// TODO
-        Builder();
     private:
         friend class MessageArguments;
         Builder& addFormattable(const UnicodeString&, Formattable&&);
@@ -313,6 +318,23 @@ class U_I18N_API MessageFormatter : public UObject {
 // Note: This class does not currently inherit from the existing
 // `Format` class.
 public:
+  /**
+   * Move assignment operator:
+   * The source MessageFormatter will be left in a valid but undefined state.
+   *
+   * @internal ICU 75.0 technology preview
+   * @deprecated This API is for technology preview only.
+   */
+  MessageFormatter& operator=(MessageFormatter&&) noexcept;
+  /**
+   * Move constructor.
+   * The source MessageFormatter will be left in a valid but undefined state.
+   *
+   * @internal ICU 75.0 technology preview
+   * @deprecated This API is for technology preview only.
+   */
+  MessageFormatter(MessageFormatter&&);
+
     /**
      * Destructor.
      *
@@ -456,6 +478,16 @@ public:
          * @deprecated This API is for technology preview only.
          */
         MessageFormatter build(UParseError& parseError, UErrorCode& status) const;
+        /**
+         * Default constructor.
+         * Returns a Builder with the default locale and with no
+         * data model or pattern set. Either `setPattern()`
+         * or `setDataModel()` has to be called before calling `build()`.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder() : locale(Locale::getDefault()), customFunctionRegistry(nullptr) {}
 	/**
 	 * Destructor.
 	 *
@@ -463,8 +495,6 @@ public:
 	 * @deprecated This API is for technology preview only.
 	 */
 	virtual ~Builder();
-// TODO
-       Builder() : locale(Locale::getDefault()), customFunctionRegistry(nullptr) {}
     }; // class MessageFormatter::Builder
 
     // TODO: Shouldn't be public; only used for testing
@@ -477,10 +507,6 @@ public:
      * @deprecated This API is for technology preview only.
      */
     const UnicodeString& getNormalizedPattern() const { return normalizedInput; }
-
-// TODO
-    MessageFormatter& operator=(MessageFormatter&&) noexcept;
-    MessageFormatter(MessageFormatter&&);
 
   private:
       friend class Builder;
