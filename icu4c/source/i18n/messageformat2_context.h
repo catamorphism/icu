@@ -147,7 +147,7 @@ public:
 
     bool isCustomFormatter(const FunctionName&) const;
     const Formatter* maybeCachedFormatter(const FunctionName&, UErrorCode&);
-    const SelectorFactory* lookupSelectorFactory(const FunctionName&, UErrorCode& status);
+    const SelectorFactory* lookupSelectorFactory(const FunctionName&);
     bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
     bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
 
@@ -167,7 +167,7 @@ public:
 
 private:
 
-    FormatterFactory* lookupFormatterFactory(const FunctionName&, UErrorCode&);
+    FormatterFactory* lookupFormatterFactory(const FunctionName&);
     bool isBuiltInSelector(const FunctionName&) const;
     bool isBuiltInFormatter(const FunctionName&) const;
     bool isCustomSelector(const FunctionName&) const;

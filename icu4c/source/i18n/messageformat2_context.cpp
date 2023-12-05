@@ -150,9 +150,7 @@ bool MessageContext::isBuiltInFormatter(const FunctionName& functionName) const 
 // Unknown function = unknown function error
 // Formatter used as selector  = selector error
 // Selector used as formatter = formatting error
-const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName& functionName, UErrorCode& status) {
-    NULL_ON_ERROR(status);
-
+const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName& functionName) {
     if (isBuiltInSelector(functionName)) {
         return parent.standardFunctionRegistry.getSelector(functionName);
     }
@@ -179,9 +177,7 @@ const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName&
     return nullptr;
 }
 
-FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& functionName, UErrorCode& status) {
-    NULL_ON_ERROR(status);
-
+FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& functionName) {
     if (isBuiltInFormatter(functionName)) {
         return parent.standardFunctionRegistry.getFormatter(functionName);
     }
@@ -226,15 +222,13 @@ const Formatter* MessageContext::maybeCachedFormatter(const FunctionName& f, UEr
         // Create the formatter
 
         // First, look up the formatter factory for this function
-        FormatterFactory* formatterFactory = lookupFormatterFactory(f, errorCode);
-        NULL_ON_ERROR(errorCode);
+        FormatterFactory* formatterFactory = lookupFormatterFactory(f);
         // If the formatter factory was null, there must have been
         // an earlier error/warning
         if (formatterFactory == nullptr) {
             U_ASSERT(errors.hasUnknownFunctionError() || errors.hasFormattingError());
             return nullptr;
         }
-        NULL_ON_ERROR(errorCode);
 
         // Create a specific instance of the formatter
         Formatter* formatter = formatterFactory->createFormatter(parent.locale, errorCode);
