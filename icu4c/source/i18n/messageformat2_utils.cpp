@@ -13,12 +13,6 @@ U_NAMESPACE_BEGIN namespace message2 {
 
 using namespace data_model;
 
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-
 template<class K, class V>
 int32_t OrderedMap<K, V>::size() const {
     return keys.size();
@@ -111,9 +105,8 @@ typename OrderedMap<K, V>::Iterator OrderedMap<K, V>::end() const noexcept {
     return Iterator(keys.size(), contents, keys);
 }
 
-
 template<class K, class V>
-OrderedMap<K, V>::Iterator::Iterator(int32_t p, const std::map<K, V>& c, const std::vector<K>& k) : pos(p), contents(c), keys(k) {} 
+OrderedMap<K, V>::Iterator::Iterator(int32_t p, const std::map<K, V>& c, const std::vector<K>& k) : pos(p), contents(c), keys(k) {}
 
 template<class K, class V>
 bool OrderedMap<K, V>::Iterator::operator==(const OrderedMap<K, V>::Iterator& rhs) const {
@@ -153,10 +146,6 @@ OrderedMap<K, V>& OrderedMap<K, V>::operator=(const OrderedMap<K, V>& other) {
 // (and see number_fluent.cpp for another example)
 template class OrderedMap<UnicodeString, Operand>;
 template class OrderedMap<SelectorKeys, Pattern>;
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
 
 } // namespace message2
 
