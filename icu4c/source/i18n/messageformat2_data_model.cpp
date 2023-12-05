@@ -32,7 +32,10 @@ const KeyList& SelectorKeys::getKeys() const {
     return keys;
 }
 
-SelectorKeys::Builder::Builder() : keys(std::vector<Key>()) {}
+SelectorKeys& SelectorKeys::operator=(const SelectorKeys& other) {
+  keys = KeyList(other.keys);
+  return *this;
+}
 
 SelectorKeys::SelectorKeys() : keys(KeyList()) {}
 
