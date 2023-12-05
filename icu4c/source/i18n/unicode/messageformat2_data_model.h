@@ -104,7 +104,7 @@ namespace data_model {
           */
          VariableName& operator=(const VariableName&) = default;
          /**
-          * Copy constructor
+          * Copy constructor.
           *
           * @internal ICU 75.0 technology preview
           * @deprecated This API is for technology preview only.
@@ -326,12 +326,12 @@ namespace data_model {
           */
          Literal& operator=(Literal&&) noexcept;
          /**
-         * Default constructor.
-         * Puts the Literal into a valid but undefined state.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
+          * Default constructor.
+          * Puts the Literal into a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
          Literal() = default;
          /**
           * Less than operator. Compares `this.stringContents()` with
@@ -441,14 +441,56 @@ namespace data_model {
          * @deprecated This API is for technology preview only.
          */
         const Literal& asLiteral() const;
-        // TODO
+        /**
+         * Default constructor.
+         * Creates a null Operand.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         Operand() : type(Type::NULL_OPERAND) {}
+        /**
+         * Variable operand constructor.
+         *
+         * @param v The variable name.
+         * @return A variable operand with variable `v`.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         Operand(const VariableName& v) : var(v), type(Type::VARIABLE) {}
+        /**
+         * Literal operand constructor.
+         *
+         * @param l The variable name.
+         * @return A literal operand with literal `l`.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         Operand(const Literal& l) : lit(l), type(Type::LITERAL) {}
-        Operand(const Operand&);
-        Operand& operator=(Operand&&) noexcept;
+        /**
+          * Copy assignment operator.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
         Operand& operator=(const Operand&);
-
+        /**
+          * Copy constructor.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        Operand(const Operand&);
+        /**
+         * Move assignment operator:
+         * The source Operand will be left in a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Operand& operator=(Operand&&) noexcept;
         /**
          * Destructor.
          *
@@ -457,7 +499,6 @@ namespace data_model {
          */
         virtual ~Operand();
     private:
-
         enum Type {
             VARIABLE,
             LITERAL,
@@ -469,7 +510,6 @@ namespace data_model {
         VariableName var;
         Literal lit;
         Type type;
-
     }; // class Operand
 
     /**
@@ -508,17 +548,67 @@ namespace data_model {
          * @deprecated This API is for technology preview only.
          */
         const Literal& asLiteral() const;
-
-// TODO
+        /**
+          * Copy constructor.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
         Key(const Key& other) : wildcard(other.wildcard), contents(other.contents) {}
-        // Wildcard constructor
+        /**
+          * Wildcard constructor.
+          *
+          * @return A Key representing the catchall or wildcard key, '*'.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
         Key() : wildcard(true) {}
-        // Concrete key constructor
+        /**
+         * Literal key constructor.
+         *
+         * @param lit A Literal to use for this key.
+         * @return A Key that matches the literal `lit`.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         Key(const Literal& lit) : wildcard(false), contents(lit) {}
+        /**
+          * Move assignment operator:
+          * The source Key will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
         Key& operator=(Key&& other) noexcept;
-        // TODO
-        // Defined so SelectorKeys can be compared
+        /**
+         * Less than operator. Compares the literal of `this` with the literal of `other`.
+         * This method is used in representing the mapping from key lists to patterns
+         * in a message with variants, and is not expected to be useful otherwise.
+         *
+         * @param other The Key to compare to this one.
+         * @return true if the two `Key`s are not wildcards and if `this.asLiteral()`
+         * < `other.asLiteral()`.
+         * Returns false otherwise.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         bool operator<(const Key& rhs) const;
+        /**
+         * Equality operator. Compares the literal of `this` with the literal of `other`.
+         * This method is used in representing the mapping from key lists to patterns
+         * in a message with variants, and is not expected to be useful otherwise.
+         *
+         * @param other The Key to compare to this one.
+         * @return true if either both `Key`s are wildcards, or `this.asLiteral()`
+         * == `other.asLiteral()`.
+         * Returns false otherwise.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         bool operator==(const Key& rhs) const;
 
     private:
@@ -528,14 +618,13 @@ namespace data_model {
         /* const */ Literal contents;
     }; // class Key
 
-        /**
-         * An immutable list of keys
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-
-        using KeyList = std::vector<Key>;
+  /**
+   * A list of keys (should only be used in immutable contexts)
+   *
+   * @internal ICU 75.0 technology preview
+   * @deprecated This API is for technology preview only.
+   */
+  using KeyList = std::vector<Key>;
 
     /**
      * The `SelectorKeys` class represents the key list for a single variant.
@@ -549,21 +638,6 @@ namespace data_model {
      */
     class U_I18N_API SelectorKeys : public UObject {
     public:
-// TODO
-        SelectorKeys();
-// TODO
-        virtual ~SelectorKeys();
-        // Copy constructor
-        SelectorKeys(const SelectorKeys& other);
-// TODO
-        // Move assignment operator
-        SelectorKeys& operator=(SelectorKeys&&) noexcept = default;
-        // Copy assignment operator
-        SelectorKeys& operator=(const SelectorKeys& other) {
-            keys = KeyList(other.keys);
-            return *this;
-        }
-
         /**
          * Returns the underlying list of keys.
          *
@@ -616,20 +690,73 @@ namespace data_model {
               * @deprecated This API is for technology preview only.
               */
              virtual ~Builder();
-             // TODO
-            Builder();
+              /**
+               * Default constructor.
+               * Returns a Builder with an empty list of keys.
+               *
+               * @internal ICU 75.0 technology preview
+               * @deprecated This API is for technology preview only.
+               */
+             Builder() = default;
         }; // class SelectorKeys::Builder
 
-        // TODO
-        // Defined for use by VariantMap
-        bool operator<(const SelectorKeys& rhs) const;
+        /**
+          * Less than operator. Compares the two key lists lexicographically.
+          * This method makes it possible for a `SelectorKeys` to be used as a map
+          * key, which allows variants to be represented as a map. It is not expected
+          * to be useful otherwise.
+          *
+          * @param other The SelectorKeys to compare to this one.
+          * @return true if `this` is less than `other`, comparing the two key lists
+          * lexicographically.
+          * Returns false otherwise.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        bool operator<(const SelectorKeys& other) const;
+        /**
+         * Default constructor.
+         * Puts the SelectorKeys into a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        SelectorKeys();
+        /**
+         * Copy constructor.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        SelectorKeys(const SelectorKeys& other);
+        /**
+          * Move assignment operator:
+          * The source SelectorKeys will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        SelectorKeys& operator=(SelectorKeys&&) noexcept = default;
+        /**
+          * Copy assignment operator.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        SelectorKeys& operator=(const SelectorKeys& other);
+        /**
+          * Destructor.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        virtual ~SelectorKeys();
 
     private:
         friend class Builder;
 
-
-        // Non-const so copy assignment operator works, but actually const
-        KeyList keys;
+        /* const */ KeyList keys;
         SelectorKeys(const KeyList& ks) : keys(ks) {}
     }; // class SelectorKeys
 
@@ -666,12 +793,6 @@ namespace data_model {
          * @deprecated This API is for technology preview only.
          */
         const Literal& getPart(int32_t i) const;
-// TODO
-        // Reserved needs a copy constructor in order to make Expression deeply copyable
-        Reserved(const Reserved& other);
-        Reserved& operator=(Reserved&& other) noexcept;
-        Reserved& operator=(const Reserved& other);
-        Reserved() = default;
 
         /**
          * The mutable `Reserved::Builder` class allows the reserved sequence to be
@@ -709,10 +830,14 @@ namespace data_model {
              * @deprecated This API is for technology preview only.
              */
             Reserved build() const;
-
-            // TODO comment
+            /**
+             * Default constructor.
+             * Returns a builder with an empty Reserved sequence.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
             Builder();
-
              /**
               * Destructor.
               *
@@ -721,6 +846,37 @@ namespace data_model {
               */
              virtual ~Builder();
         }; // class Reserved::Builder
+        /**
+          * Copy constructor.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        Reserved(const Reserved& other);
+        /**
+          * Copy assignment operator
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        Reserved& operator=(const Reserved& other);
+         /**
+          * Move assignment operator:
+          * The source Reserved will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        Reserved& operator=(Reserved&& other) noexcept;
+        /**
+         * Default constructor.
+         * Puts the Reserved into a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Reserved() = default;
+
     private:
         friend class Operator;
 
@@ -878,20 +1034,52 @@ namespace data_model {
              * @deprecated This API is for technology preview only.
              */
             Operator build(UErrorCode& status) const;
+            /**
+             * Default constructor.
+             * Returns a Builder with no function name or reserved sequence set.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder() = default;
              /**
               * Destructor.
               *
               * @internal ICU 75.0 technology preview
               * @deprecated This API is for technology preview only.
               */
-             virtual ~Builder();
+            virtual ~Builder();
         }; // class Operator::Builder
-        // TODO
-        Operator& operator=(Operator&& other) noexcept;
-        Operator& operator=(const Operator&);
-        Operator() : isReservedSequence(true) {}
-        // Copy constructor
+        /**
+         * Copy constructor.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         Operator(const Operator& other);
+        /**
+         * Copy assignment operator.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Operator& operator=(const Operator&);
+        /**
+          * Move assignment operator:
+          * The source Operator will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        Operator& operator=(Operator&& other) noexcept;
+        /**
+         * Default constructor.
+         * Puts the Operator into a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Operator() : isReservedSequence(true) {}
         /**
          * Destructor.
          *
@@ -903,7 +1091,6 @@ namespace data_model {
         // Function call constructor
         Operator(const FunctionName& f, OptionMap&& l);
         // Reserved sequence constructor
-        // Result is bogus if copy of `r` fails
         Operator(const Reserved& r) : isReservedSequence(true), functionName(FunctionName(UnicodeString(""))), reserved(Reserved(r)) {}
 
         /* const */ bool isReservedSequence;
@@ -1000,9 +1187,6 @@ namespace data_model {
             Operand rand;
             Operator rator;
         public:
-// TODO
-          Builder() {}
-
             /**
              * Sets the operand of this expression.
              *
@@ -1040,6 +1224,14 @@ namespace data_model {
               */
              Expression build(UErrorCode& status) const;
              /**
+               * Default constructor.
+               * Returns a Builder with no operator or operand set.
+               *
+               * @internal ICU 75.0 technology preview
+               * @deprecated This API is for technology preview only.
+               */
+             Builder() = default;
+             /**
               * Destructor.
               *
               * @internal ICU 75.0 technology preview
@@ -1048,14 +1240,36 @@ namespace data_model {
              virtual ~Builder();
         }; // class Expression::Builder
 
-// TODO
-
-        // Expression needs a copy constructor in order to make Pattern deeply copyable
-        // (and for closures)
+        /**
+         * Copy constructor.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         Expression(const Expression& other);
-        Expression();
-        Expression& operator=(Expression&&) noexcept;
+        /**
+         * Copy assignment operator.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         Expression& operator=(const Expression&);
+        /**
+          * Move assignment operator:
+          * The source Expression will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        Expression& operator=(Expression&&) noexcept;
+        /**
+         * Default constructor.
+         * Puts the Expression into a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Expression();
 
     private:
         /*
@@ -1122,17 +1336,54 @@ namespace data_model {
          * @deprecated This API is for technology preview only.
          */
         const UnicodeString& asText() const;
-// TODO
-        // PatternPart needs a copy constructor in order to make Pattern deeply copyable
+        /**
+          * Copy constructor.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
         PatternPart(const PatternPart& other);
-        PatternPart& operator=(PatternPart&&) noexcept;
+        /**
+          * Copy assignment operator.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
         PatternPart& operator=(const PatternPart& other);
+         /**
+          * Move assignment operator:
+          * The source PatternPart will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        PatternPart& operator=(PatternPart&&) noexcept;
+        /**
+         * Destructor.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         virtual ~PatternPart();
-        PatternPart() : isRawText(true) {}
-
-        // Text
+        /**
+         * Text part constructor.
+         *
+         * @param t A text string.
+         * @return A text pattern part with text `t`.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         PatternPart(const UnicodeString& t) : isRawText(true), text(t) {}
-        // Expression
+        /**
+         * Expression part constructor.
+         *
+         * @param e An Expression.
+         * @return An Expression pattern part with expression `e`.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         PatternPart(Expression&& e) : isRawText(false), expression(e) {}
 
     private:
@@ -1155,10 +1406,6 @@ namespace data_model {
      */
     class U_I18N_API Pattern : public UObject {
     public:
-        // TODO: should only be for initializing
-        // MessageFormatDataModel::Builder
-        Pattern() : parts(std::vector<PatternPart>()) {}
-
         /**
          * Returns the size.
          *
@@ -1180,13 +1427,6 @@ namespace data_model {
          */
         const PatternPart& getPart(int32_t i) const;
 
-// TODO
-        // Pattern needs a copy constructor in order to make MessageFormatDataModel::build() be a copying rather than
-        // moving build
-        Pattern(const Pattern& other);
-        Pattern& operator=(const Pattern& other);
-        Pattern& operator=(Pattern&& other) noexcept;
-
         /**
          * The mutable `Pattern::Builder` class allows the pattern to be
          * constructed one part at a time.
@@ -1200,9 +1440,6 @@ namespace data_model {
         private:
             friend class Pattern;
 
-            // Note this is why PatternPart and all its enclosed classes need
-            // copy constructors: when the build() method is called on `parts`,
-            // it should copy `parts` rather than moving it
             std::vector<PatternPart> parts;
 
         public:
@@ -1229,7 +1466,13 @@ namespace data_model {
              * @deprecated This API is for technology preview only.
              */
             Pattern build() const;
-            // TODO
+            /**
+             * Default constructor.
+             * Returns a Builder with an empty sequence of PatternParts.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
             Builder() = default;
              /**
               * Destructor.
@@ -1240,16 +1483,55 @@ namespace data_model {
              virtual ~Builder();
         }; // class Pattern::Builder
 
+        /**
+         * Default constructor.
+         * Puts the Pattern into a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Pattern() : parts(std::vector<PatternPart>()) {}
+        /**
+         * Copy constructor.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Pattern(const Pattern& other);
+        /**
+          * Copy assignment operator
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        Pattern& operator=(const Pattern& other);
+        /**
+          * Move assignment operator:
+          * The source Pattern will be left in a valid but undefined state.
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
+        Pattern& operator=(Pattern&& other) noexcept;
 
     private:
+        friend class Builder;
+
         // Possibly-empty list of parts
         /* const */ std::vector<PatternPart> parts;
 
-        // Should only be called by Builder
         Pattern(const std::vector<PatternPart>& ps);
     }; // class Pattern
 
-      using VariantMap = OrderedMap<SelectorKeys, Pattern>;
+  /**
+   * An immutable mapping from lists of keys to patterns.
+   * In a message with selectors and variants, there is one entry in the
+   * map for each variant.
+   *
+   * @internal ICU 75.0 technology preview
+   * @deprecated This API is for technology preview only.
+   */
+  using VariantMap = OrderedMap<SelectorKeys, Pattern>;
 
     /**
      *  A `Binding` pairs a variable name with an expression.
@@ -1281,14 +1563,32 @@ namespace data_model {
           * @deprecated This API is for technology preview only.
           */
         const VariableName& getVariable() const { return var; }
-// TODO
+        /**
+         * Constructor.
+         * Precondition: i < numParts()
+         *
+         * @param v A variable name.
+         * @param e An expression.
+         * @return A Binding, representing the pair of `v` and `e`.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         Binding(const VariableName& v, const Expression& e) : var(v), value(e){}
-        // This needs a copy constructor so that `Bindings` is deeply-copyable,
-        // which is in turn so that MessageFormatDataModel::build() can be copying
-        // (it has to copy the builder's locals)
+        /**
+         * Copy constructor.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         Binding(const Binding& other);
+        /**
+          * Copy assignment operator
+          *
+          * @internal ICU 75.0 technology preview
+          * @deprecated This API is for technology preview only.
+          */
         Binding& operator=(const Binding& other);
-
         /**
           * Destructor.
           *
@@ -1302,14 +1602,16 @@ namespace data_model {
     }; // class Binding
 
         /**
-         * An immutable list of variable bindings
+         * A list of variable bindings (should only be used in
+         * immutable contexts)
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
         using Bindings = std::vector<Binding>;
         /**
-         * An immutable list of expressions
+         * A list of expressions (should only be used in
+         * immutable contexts)
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
@@ -1394,12 +1696,6 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
   provided as well, if this proved useful.
 */
       public:
-// TODO
-    MessageFormatDataModel();
-    MessageFormatDataModel(MessageFormatDataModel&&) noexcept;
-    MessageFormatDataModel& operator=(MessageFormatDataModel&&) noexcept;
-    MessageFormatDataModel &operator=(const MessageFormatDataModel &);
-
     /**
      * Accesses the local variable declarations for this data model.
      *
@@ -1461,6 +1757,38 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
     class U_I18N_API Builder;
 
     /**
+     * Default constructor.
+     * Puts the MessageFormatDataModel into a valid but undefined state.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    MessageFormatDataModel();
+    /**
+     * Move constructor.
+     * The source MessageFormatDataModel will be left in a valid but undefined state.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    MessageFormatDataModel(MessageFormatDataModel&&) noexcept;
+    /**
+     * Move assignment operator:
+     * The source MessageFormatDataModel will be left in a valid but undefined state.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    MessageFormatDataModel& operator=(MessageFormatDataModel&&) noexcept;
+    /**
+     * Copy assignment operator:
+     * The source MessageFormatDataModel will be left in a valid but undefined state.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    MessageFormatDataModel &operator=(const MessageFormatDataModel &);
+    /**
      * Destructor.
      *
      * @internal ICU 75.0 technology preview
@@ -1488,9 +1816,6 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
         Bindings locals;
 
     public:
-// TODO
-        Builder();
-
         /**
          * Adds a local variable declaration.
          *
@@ -1559,6 +1884,16 @@ class U_I18N_API MessageFormatDataModel : public UMemory {
          * @deprecated This API is for technology preview only.
          */
         MessageFormatDataModel build(UErrorCode& status) const;
+        /**
+         * Default constructor.
+         * Returns a Builder with no pattern or selectors set.
+         * Either `setPattern()` or both `addSelector()` and
+         * `addVariant()` must be called before calling `build()`.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        Builder();
     }; // class Builder
 
 private:
