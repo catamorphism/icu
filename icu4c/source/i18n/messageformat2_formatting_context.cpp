@@ -314,7 +314,7 @@ int32_t ExpressionContext::optionsCount() const {
 // Function options
 // ----------------
 
-void ExpressionContext::addFunctionOption(const UnicodeString& k, Formattable&& val) {
+void ExpressionContext::addFunctionOption(const UnicodeString& k, Formattable&& val) noexcept {
     functionOptions[k] = val;
 }
 
@@ -330,7 +330,7 @@ void ExpressionContext::setNumericOption(const UnicodeString& key, double value)
     addFunctionOption(key, Formattable(value));
 }
 
-void ExpressionContext::setObjectOption(const UnicodeString& key, const UObject* value) {
+void ExpressionContext::setObjectOption(const UnicodeString& key, const UObject* value) noexcept {
     // The const_cast is safe because no methods that allow
     // writing to `value` are exposed
     functionObjectOptions[key] = const_cast<UObject*>(value);

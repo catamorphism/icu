@@ -130,7 +130,7 @@ namespace message2 {
     public:
         // Since Formatter is an interface, it's easiest to return a pointer here
         const Formatter* getFormatter(const FunctionName&);
-        void setFormatter(const FunctionName&, Formatter*);
+        void setFormatter(const FunctionName&, Formatter*) noexcept;
 
         CachedFormatters& operator=(const CachedFormatters&) = delete;
         virtual ~CachedFormatters();

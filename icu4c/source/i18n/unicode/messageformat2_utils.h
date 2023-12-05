@@ -162,7 +162,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        OrderedMap(const OrderedMap& other);
+        OrderedMap(const OrderedMap& other) noexcept;
         /**
          * Copy assignment operator. Performs a deep copy (`V` must have
          * a copy constructor.)
@@ -173,7 +173,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        OrderedMap& operator=(const OrderedMap&);
+        OrderedMap& operator=(const OrderedMap&) noexcept;
         /**
          * Move assignment operator. `V` must have a move constructor.
          * `other` is left in a valid but undefined state.
@@ -207,7 +207,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& add(const K& key, V&& value);
+            Builder& add(const K& key, V&& value) noexcept;
             /**
              * Adds to the map.
              * Precondition: !has(key)
@@ -220,7 +220,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& add(K&& key, V&& value);
+            Builder& add(K&& key, V&& value) noexcept;
             /**
              * Checks if a key is in the map.
              *
@@ -243,7 +243,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            OrderedMap<K, V> build() const;
+            OrderedMap<K, V> build() const noexcept;
             /**
              * Default constructor.
              * Returns a Builder with no keys or values.
@@ -284,7 +284,7 @@ namespace message2 {
         // List of keys in insertion order
         std::vector<K> keys;
 
-        OrderedMap(const std::map<K, V>& cs, const std::vector<K>& ks);
+        OrderedMap(const std::map<K, V>& cs, const std::vector<K>& ks) noexcept;
     }; // class OrderedMap<V>
 
 } // namespace message2

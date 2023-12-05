@@ -136,7 +136,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& addObject(const UnicodeString& key, const UObject* value);
+            Builder& addObject(const UnicodeString& key, const UObject* value) noexcept;
             /**
              * Creates an immutable `MessageArguments` object with the argument names
              * and values that were added by previous calls. The builder can still be used
@@ -147,7 +147,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            MessageArguments build() const;
+            MessageArguments build() const noexcept;
             /**
              * Default constructor.
              * Returns a Builder with no arguments set.
@@ -165,7 +165,7 @@ namespace message2 {
             virtual ~Builder();
         private:
             friend class MessageArguments;
-            Builder& addFormattable(const UnicodeString&, Formattable&&);
+            Builder& addFormattable(const UnicodeString&, Formattable&&) noexcept;
             std::map<UnicodeString, Formattable> contents;
             // Keep a separate map for objects, which does not
             // own the values
@@ -188,8 +188,8 @@ namespace message2 {
         const Formattable& getFormattable(const data_model::VariableName&) const;
         const UObject* getObject(const data_model::VariableName&) const;
 
-        MessageArguments& add(const UnicodeString&, Formattable*, UErrorCode&);
-        MessageArguments(const std::map<UnicodeString, Formattable>&, const std::map<UnicodeString, const UObject*>&);
+        MessageArguments& add(const UnicodeString&, Formattable*, UErrorCode&) noexcept;
+        MessageArguments(const std::map<UnicodeString, Formattable>&, const std::map<UnicodeString, const UObject*>&) noexcept;
 
         std::map<UnicodeString, Formattable> contents;
         // Keep a separate map for objects, which does not
@@ -264,7 +264,7 @@ namespace message2 {
         bool hasDataModelError() const { return dataModelError; }
         bool hasSyntaxError() const { return syntaxError; }
         bool hasMissingSelectorAnnotationError() const { return missingSelectorAnnotationError; }
-        void addError(StaticError);
+        void addError(StaticError) noexcept;
         void checkErrors(UErrorCode&);
 
         virtual ~StaticErrors();
@@ -295,7 +295,7 @@ namespace message2 {
         bool hasUnknownFunctionError() const { return unknownFunctionError; }
         bool hasMissingSelectorAnnotationError() const { return staticErrors.hasMissingSelectorAnnotationError(); }
         bool hasUnresolvedVariableError() const { return unresolvedVariableError; }
-        void addError(DynamicError);
+        void addError(DynamicError) noexcept;
         void checkErrors(UErrorCode&) const;
         bool hasError() const;
 
@@ -333,7 +333,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatter(MessageFormatter&&);
+        MessageFormatter(MessageFormatter&&) noexcept;
 
         /**
          * Destructor.
@@ -477,7 +477,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            MessageFormatter build(UParseError& parseError, UErrorCode& status) const;
+            MessageFormatter build(UParseError& parseError, UErrorCode& status) const noexcept;
             /**
              * Default constructor.
              * Returns a Builder with the default locale and with no
@@ -512,7 +512,7 @@ namespace message2 {
         friend class Builder;
         friend class MessageContext;
 
-        MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError, UErrorCode &status);
+        MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError, UErrorCode &status) noexcept;
 
         MessageFormatter() = delete; // default constructor not implemented
 
@@ -537,7 +537,7 @@ namespace message2 {
             /* const */ Pattern pat;
             PrioritizedVariant(uint32_t p,
                                const SelectorKeys& k,
-                               const Pattern& pattern) : priority(p), keys(k), pat(pattern) {}
+                               const Pattern& pattern) noexcept : priority(p), keys(k), pat(pattern) {}
             virtual ~PrioritizedVariant();
         }; // class PrioritizedVariant
 
@@ -557,7 +557,7 @@ namespace message2 {
         void resolveOptions(const Environment& env, const data_model::OptionMap&, ExpressionContext&, UErrorCode&) const;
         void formatOperand(const Environment&, const data_model::Operand&, ExpressionContext&, UErrorCode&) const;
         void evalArgument(const data_model::VariableName&, ExpressionContext&) const;
-        void formatSelectors(MessageContext& context, const Environment& env, const data_model::ExpressionList& selectors, const data_model::VariantMap& variants, UErrorCode &status, UnicodeString& result) const;
+        void formatSelectors(MessageContext& context, const Environment& env, const data_model::ExpressionList& selectors, const data_model::VariantMap& variants, UErrorCode &status, UnicodeString& result) const noexcept;
 
         // Function registry methods
         const Formatter* maybeCachedFormatter(MessageContext&, const data_model::FunctionName&, UErrorCode& errorCode) const;

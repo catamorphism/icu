@@ -57,7 +57,7 @@ namespace message2 {
         // Precondition: hasFormatter()
         const Formatter* getFormatter(UErrorCode&);
 
-        void addFunctionOption(const UnicodeString&, Formattable&&);
+        void addFunctionOption(const UnicodeString&, Formattable&&) noexcept;
         void clearFunctionOptions();
         Formattable* getOption(const UnicodeString&, Formattable::Type) const;
         bool tryStringAsNumberOption(const UnicodeString&, double&) const;
@@ -131,7 +131,7 @@ namespace message2 {
         void setStringOption(const UnicodeString&, const UnicodeString&);
         void setDateOption(const UnicodeString&, UDate);
         void setNumericOption(const UnicodeString&, double);
-        void setObjectOption(const UnicodeString&, const UObject*);
+        void setObjectOption(const UnicodeString&, const UObject*) noexcept;
 
         void setNoOperand();
         void setInput(const UObject*);

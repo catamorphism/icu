@@ -54,12 +54,12 @@ namespace message2 {
       its borrowed FunctionRegistry and (if the setDataModel() method was called)
       MessageFormatDataModel pointers could become invalidated.
     */
-    MessageFormatter MessageFormatter::Builder::build(UParseError& parseError, UErrorCode& errorCode) const {
+    MessageFormatter MessageFormatter::Builder::build(UParseError& parseError, UErrorCode& errorCode) const noexcept {
         return MessageFormatter(*this, parseError, errorCode);
     }
 
     MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError,
-                                       UErrorCode &success) : locale(builder.locale), customFunctionRegistry(builder.customFunctionRegistry) {
+                                       UErrorCode &success) noexcept : locale(builder.locale), customFunctionRegistry(builder.customFunctionRegistry) {
         CHECK_ERROR(success);
 
         // Set up the standard function registry
@@ -128,7 +128,7 @@ namespace message2 {
         return *this;
     }
 
-    MessageFormatter::MessageFormatter(MessageFormatter&& other) {
+    MessageFormatter::MessageFormatter(MessageFormatter&& other) noexcept {
         if (this != &other) {
             locale = std::move(other.locale);
             standardFunctionRegistry = std::move(other.standardFunctionRegistry);

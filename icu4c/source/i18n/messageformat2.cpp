@@ -348,7 +348,7 @@ void MessageFormatter::filterVariants(const VariantMap& variants,
             // 2i(d). Let `ks` be the resolved value of `key`.
             UnicodeString ks = key.asLiteral().unquoted();
             // 2i(e). Let `matches` be the list of strings at index `i` of `pref`.
-	    const std::vector<UnicodeString>& matches = pref.at(i);
+            const std::vector<UnicodeString>& matches = pref.at(i);
             // 2i(f). If `matches` includes `ks`
 	    if (std::find(matches.cbegin(), matches.cend(), ks) != std::end(matches)) {
                 // 2i(f)(a). Continue the inner loop on `pref`.
@@ -525,7 +525,8 @@ void MessageFormatter::formatSelectorExpression(const Environment& globalEnv, co
     }
 }
 
-void MessageFormatter::formatSelectors(MessageContext& context, const Environment& env, const ExpressionList& selectors, const VariantMap& variants, UErrorCode &status, UnicodeString& result) const {
+// This method is marked `noexcept` because it uses mutable vector operations, which could fail
+void MessageFormatter::formatSelectors(MessageContext& context, const Environment& env, const ExpressionList& selectors, const VariantMap& variants, UErrorCode &status, UnicodeString& result) const noexcept {
     CHECK_ERROR(status);
 
     // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection

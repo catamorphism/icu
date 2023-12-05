@@ -670,7 +670,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Builder& add(const Key& key);
+                Builder& add(const Key& key) noexcept;
                 /**
                  * Constructs a new immutable `SelectorKeys` using the list of keys
                  * set with previous `add()` calls.
@@ -682,7 +682,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                SelectorKeys build() const;
+                SelectorKeys build() const noexcept;
                 /**
                  * Destructor.
                  *
@@ -729,7 +729,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            SelectorKeys(const SelectorKeys& other);
+            SelectorKeys(const SelectorKeys& other) noexcept;
             /**
              * Move assignment operator:
              * The source SelectorKeys will be left in a valid but undefined state.
@@ -744,7 +744,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            SelectorKeys& operator=(const SelectorKeys& other);
+            SelectorKeys& operator=(const SelectorKeys& other) noexcept;
             /**
              * Destructor.
              *
@@ -817,7 +817,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Builder& add(const Literal& part);
+                Builder& add(const Literal& part) noexcept;
                 /**
                  * Constructs a new immutable `Reserved` using the list of parts
                  * set with previous `add()` calls.
@@ -829,7 +829,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Reserved build() const;
+                Reserved build() const noexcept;
                 /**
                  * Default constructor.
                  * Returns a builder with an empty Reserved sequence.
@@ -852,14 +852,14 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Reserved(const Reserved& other);
+            Reserved(const Reserved& other) noexcept;
             /**
              * Copy assignment operator
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Reserved& operator=(const Reserved& other);
+            Reserved& operator=(const Reserved& other) noexcept;
             /**
              * Move assignment operator:
              * The source Reserved will be left in a valid but undefined state.
@@ -885,7 +885,7 @@ namespace message2 {
             // strings represented as unquoted literals
             /* const */ std::vector<Literal> parts;
 
-            Reserved(const std::vector<Literal>&);
+            Reserved(const std::vector<Literal>&) noexcept;
         };
 
         /**
@@ -1018,7 +1018,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Builder& addOption(const UnicodeString &key, Operand&& value, UErrorCode& status);
+                Builder& addOption(const UnicodeString &key, Operand&& value, UErrorCode& status) noexcept;
                 /**
                  * Constructs a new immutable `Operator` using the `reserved` annotation
                  * or the function name and options that were previously set.
@@ -1033,7 +1033,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Operator build(UErrorCode& status) const;
+                Operator build(UErrorCode& status) const noexcept;
                 /**
                  * Default constructor.
                  * Returns a Builder with no function name or reserved sequence set.
@@ -1056,14 +1056,14 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operator(const Operator& other);
+            Operator(const Operator& other) noexcept;
             /**
              * Copy assignment operator.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operator& operator=(const Operator&);
+            Operator& operator=(const Operator&) noexcept;
             /**
              * Move assignment operator:
              * The source Operator will be left in a valid but undefined state.
@@ -1452,7 +1452,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Builder& add(const PatternPart& part);
+                Builder& add(const PatternPart& part) noexcept;
                 /**
                  * Constructs a new immutable `Pattern` using the list of parts
                  * set with previous `add()` calls.
@@ -1465,7 +1465,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Pattern build() const;
+                Pattern build() const noexcept;
                 /**
                  * Default constructor.
                  * Returns a Builder with an empty sequence of PatternParts.
@@ -1497,14 +1497,14 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Pattern(const Pattern& other);
+            Pattern(const Pattern& other) noexcept;
             /**
              * Copy assignment operator
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Pattern& operator=(const Pattern& other);
+            Pattern& operator=(const Pattern& other) noexcept;
             /**
              * Move assignment operator:
              * The source Pattern will be left in a valid but undefined state.
@@ -1787,7 +1787,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatDataModel &operator=(const MessageFormatDataModel &);
+        MessageFormatDataModel &operator=(const MessageFormatDataModel &) noexcept;
         /**
          * Destructor.
          *
@@ -1828,7 +1828,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& addLocalVariable(VariableName&& variableName, Expression&& expression);
+            Builder& addLocalVariable(VariableName&& variableName, Expression&& expression) noexcept;
             /**
              * Adds a selector expression. Copies `expression`.
              * If a pattern was previously set, clears the pattern.
@@ -1839,7 +1839,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& addSelector(Expression&& selector);
+            Builder& addSelector(Expression&& selector) noexcept;
             /**
              * Adds a single variant.
              * If a pattern was previously set using `setPattern()`, clears the pattern.
@@ -1851,7 +1851,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& addVariant(SelectorKeys&& keys, Pattern&& pattern);
+            Builder& addVariant(SelectorKeys&& keys, Pattern&& pattern) noexcept;
             /**
              * Sets the body of the message as a pattern.
              * If selectors and/or variants were previously set, clears them.
@@ -1883,7 +1883,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            MessageFormatDataModel build(UErrorCode& status) const;
+            MessageFormatDataModel build(UErrorCode& status) const noexcept;
             /**
              * Default constructor.
              * Returns a Builder with no pattern or selectors set.
@@ -1914,7 +1914,7 @@ namespace message2 {
         // Bindings for local variables
         /* const */ Bindings bindings;
 
-        MessageFormatDataModel(const Builder& builder);
+        MessageFormatDataModel(const Builder& builder) noexcept;
     }; // class MessageFormatDataModel
 
 } // namespace message2
