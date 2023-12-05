@@ -18,16 +18,8 @@ using namespace pluralimpl;
 using namespace data_model;
 
 /*
-    The `ERROR()` macro sets `errorCode` to `U_SYNTAX_WARNING
+    The `ERROR()` macro sets a syntax error in the context
     and sets the offset in `parseError` to `index`. It does not alter control flow.
-
-    For now, all parse errors are denoted by U_SYNTAX_WARNING.
-    common/unicode/utypes.h defines a broader set of formatting errors,
-    but it doesn't capture all possible MessageFormat2 errors and until the
-    spec is finalized, we'll just use the same error code for all parse errors.
-
-    This is a warning rather than an error due to the need to continue execution
-    with a fallback string.
 */
 #define ERROR(parseError, index)                                                                        \
     if (!errors.hasSyntaxError()) {                                                                     \
