@@ -542,7 +542,7 @@ namespace message2 {
         }; // class PrioritizedVariant
 
         void resolveSelectors(MessageContext&, const Environment& env, const data_model::ExpressionList&, UErrorCode&, std::vector<ExpressionContext>&) const;
-        void filterVariants(const VariantMap&, const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&, UErrorCode&) const;
+        void filterVariants(const VariantMap&, const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&) const;
         void sortVariants(const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&) const;
         void matchSelectorKeys(const std::vector<UnicodeString>&, ExpressionContext&, std::vector<UnicodeString>&, UErrorCode&) const;
         void resolvePreferences(std::vector<ExpressionContext>&, const data_model::VariantMap&, std::vector<std::vector<UnicodeString>>&, UErrorCode&) const;
@@ -571,9 +571,9 @@ namespace message2 {
 
         // Checking for resolution errors
         void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;
-        void check(MessageContext&, const Environment&, const data_model::Expression&, UErrorCode&) const;
-        void check(MessageContext&, const Environment&, const data_model::Operand&, UErrorCode&) const;
-        void check(MessageContext&, const Environment&, const data_model::OptionMap&, UErrorCode&) const;
+        void check(MessageContext&, const Environment&, const data_model::Expression&) const;
+        void check(MessageContext&, const Environment&, const data_model::Operand&) const;
+        void check(MessageContext&, const Environment&, const data_model::OptionMap&) const;
 
         void initErrors(UErrorCode&);
         void clearErrors() const;
