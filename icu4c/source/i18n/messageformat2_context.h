@@ -124,13 +124,13 @@ namespace message2 {
     private:
         friend class MessageFormatter;
 
-        std::map<FunctionName, std::unique_ptr<Formatter>> cache;
+        std::map<FunctionName, std::shared_ptr<Formatter>> cache;
         CachedFormatters();
 
     public:
         // Since Formatter is an interface, it's easiest to return a pointer here
-        const Formatter* getFormatter(const FunctionName&);
-        void setFormatter(const FunctionName&, Formatter*) noexcept;
+        const std::shared_ptr<Formatter> getFormatter(const FunctionName&);
+        void setFormatter(const FunctionName&, std::shared_ptr<Formatter>) noexcept;
 
         CachedFormatters& operator=(const CachedFormatters&) = delete;
         virtual ~CachedFormatters();
@@ -146,7 +146,7 @@ namespace message2 {
         MessageContext(MessageFormatter&, const MessageArguments&, const StaticErrors&);
 
         bool isCustomFormatter(const FunctionName&) const;
-        const Formatter* maybeCachedFormatter(const FunctionName&, UErrorCode&);
+        const std::shared_ptr<Formatter> maybeCachedFormatter(const FunctionName&, UErrorCode&);
         const std::shared_ptr<SelectorFactory> lookupSelectorFactory(const FunctionName&);
         bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
         bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
