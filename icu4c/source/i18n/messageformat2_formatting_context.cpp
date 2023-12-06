@@ -447,7 +447,7 @@ void ExpressionContext::clearFunctionOptions() {
 
 // Precondition: pending function name is set and selector is defined
 // Postcondition: selector != nullptr
-Selector* ExpressionContext::getSelector(UErrorCode& status) const {
+std::unique_ptr<Selector> ExpressionContext::getSelector(UErrorCode& status) const {
     NULL_ON_ERROR(status);
 
     U_ASSERT(hasFunctionName());
@@ -457,14 +457,14 @@ Selector* ExpressionContext::getSelector(UErrorCode& status) const {
         return nullptr;
     }
     // Create a specific instance of the selector
-    LocalPointer<Selector> result(selectorFactory->createSelector(context.messageFormatter().getLocale(), status));
+    std::unique_ptr<Selector> result(selectorFactory->createSelector(context.messageFormatter().getLocale(), status));
     NULL_ON_ERROR(status);
-    return result.orphan();
+    return result;
 }
 
 // Precondition: pending function name is set and formatter is defined
 // Postcondition: formatter != nullptr
-const Formatter* ExpressionContext::getFormatter(UErrorCode& status) {
+const std::shared_ptr<Formatter> ExpressionContext::getFormatter(UErrorCode& status) {
     NULL_ON_ERROR(status);
 
     U_ASSERT(hasFunctionName());
@@ -521,7 +521,7 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
     setFunctionName(functionName);
     CHECK_ERROR(status);
     if (hasFormatter()) {
-        const Formatter* formatterImpl = getFormatter(status);
+        const std::shared_ptr<Formatter> formatterImpl = getFormatter(status);
         CHECK_ERROR(status);
         UErrorCode savedStatus = status;
         formatterImpl->format(*this, status);
