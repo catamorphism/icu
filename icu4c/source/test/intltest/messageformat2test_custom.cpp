@@ -55,7 +55,7 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    testBuilder.setFunctionRegistry(&customRegistry);
+    testBuilder.setFunctionRegistry(std::make_shared<FunctionRegistry>(std::move(customRegistry)));
 
     test = testBuilder.setPattern("{Hello {$name :person formality=formal}}")
                                 .setArgument(name, person.getAlias())
@@ -132,7 +132,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
     testBuilder.setName("testCustomFunctionsComplexMessage");
     testBuilder.setLocale(Locale("en"));
     testBuilder.setPattern(message);
-    testBuilder.setFunctionRegistry(&customRegistry);
+    testBuilder.setFunctionRegistry(std::make_shared<FunctionRegistry>(std::move(customRegistry)));
 
     TestCase test = testBuilder.setArgument(host, jane.getAlias())
         .setArgument(hostGender, "female")
@@ -349,7 +349,7 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
     FunctionRegistry customRegistry = GrammarCasesFormatter::customRegistry();
     TestCase::Builder testBuilder;
     testBuilder.setName("testGrammarCasesFormatter - genitive");
-    testBuilder.setFunctionRegistry(&customRegistry);
+    testBuilder.setFunctionRegistry(std::make_shared<FunctionRegistry>(std::move(customRegistry)));
     testBuilder.setLocale(Locale("ro"));
     testBuilder.setPattern("{Cartea {$owner :grammarBB case=genitive}}");
     TestCase test = testBuilder.setArgument("owner", "Maria")
@@ -492,8 +492,7 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     };
 
     TestCase::Builder testBuilder;
-    FunctionRegistry reg = message2::ListFormatter::customRegistry();
-    testBuilder.setFunctionRegistry(&reg);
+    testBuilder.setFunctionRegistry(std::make_shared<FunctionRegistry>(message2::ListFormatter::customRegistry()));
     testBuilder.setArgument("languages", progLanguages, 3);
 
     TestCase test = testBuilder.setName("testListFormatter")
@@ -670,10 +669,9 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
         return;
     }
 
-    FunctionRegistry reg = ResourceManager::customRegistry();
     TestCase::Builder testBuilder;
     testBuilder.setLocale(Locale("ro"));
-    testBuilder.setFunctionRegistry(&reg);
+    testBuilder.setFunctionRegistry(std::make_shared<FunctionRegistry>(ResourceManager::customRegistry()));
     testBuilder.setPattern(*((UnicodeString*) properties->get("firefox")));
     testBuilder.setName("message-ref");
 

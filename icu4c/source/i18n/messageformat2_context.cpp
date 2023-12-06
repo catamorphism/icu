@@ -143,7 +143,7 @@ namespace message2 {
     // Unknown function = unknown function error
     // Formatter used as selector  = selector error
     // Selector used as formatter = formatting error
-    const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName& functionName) {
+    const std::shared_ptr<SelectorFactory> MessageContext::lookupSelectorFactory(const FunctionName& functionName) {
         if (isBuiltInSelector(functionName)) {
             return parent.standardFunctionRegistry.getSelector(functionName);
         }
@@ -152,8 +152,8 @@ namespace message2 {
             return nullptr;
         }
         if (parent.hasCustomFunctionRegistry()) {
-            const FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
-            const SelectorFactory* customSelector = customFunctionRegistry.getSelector(functionName);
+            FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
+            const std::shared_ptr<SelectorFactory> customSelector = customFunctionRegistry.getSelector(functionName);
             if (customSelector != nullptr) {
                 return customSelector;
             }
@@ -170,7 +170,7 @@ namespace message2 {
         return nullptr;
     }
 
-    FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& functionName) {
+    std::shared_ptr<FormatterFactory> MessageContext::lookupFormatterFactory(const FunctionName& functionName) {
         if (isBuiltInFormatter(functionName)) {
             return parent.standardFunctionRegistry.getFormatter(functionName);
         }
@@ -179,8 +179,8 @@ namespace message2 {
             return nullptr;
         }
         if (parent.hasCustomFunctionRegistry()) {
-            const FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
-            FormatterFactory* customFormatter = customFunctionRegistry.getFormatter(functionName);
+            FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
+            std::shared_ptr<FormatterFactory> customFormatter = customFunctionRegistry.getFormatter(functionName);
             if (customFormatter != nullptr) {
                 return customFormatter;
             }
@@ -215,7 +215,7 @@ namespace message2 {
             // Create the formatter
 
             // First, look up the formatter factory for this function
-            FormatterFactory* formatterFactory = lookupFormatterFactory(f);
+            std::shared_ptr<FormatterFactory> formatterFactory = lookupFormatterFactory(f);
             // If the formatter factory was null, there must have been
             // an earlier error/warning
             if (formatterFactory == nullptr) {
@@ -242,7 +242,7 @@ namespace message2 {
     // -------------------------------------------------------
     // MessageContext accessors and constructors
 
-    MessageContext::MessageContext(const MessageFormatter& mf, const MessageArguments& args, const StaticErrors& e) : parent(mf), arguments(args), errors(e) {}
+    MessageContext::MessageContext(MessageFormatter& mf, const MessageArguments& args, const StaticErrors& e) : parent(mf), arguments(args), errors(e) {}
 
     // Errors
     // -----------
