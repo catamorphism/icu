@@ -112,15 +112,15 @@ namespace message2 {
     // ------------------------------------------------------
     // Formatter cache
 
-    const Formatter* CachedFormatters::getFormatter(const FunctionName& f) {
+    const std::shared_ptr<Formatter> CachedFormatters::getFormatter(const FunctionName& f) {
         if (cache.count(f) <= 0) {
             return nullptr;
         }
-        return cache[f].get();
+        return cache[f];
     }
 
-    void CachedFormatters::setFormatter(const FunctionName& f, Formatter* val) noexcept {
-        cache[f] = std::unique_ptr<Formatter>(val);
+    void CachedFormatters::setFormatter(const FunctionName& f, std::shared_ptr<Formatter> val) noexcept {
+        cache[f] = val;
     }
 
     CachedFormatters::CachedFormatters() {}
@@ -206,11 +206,11 @@ namespace message2 {
         return parent.hasCustomFunctionRegistry() && parent.getCustomFunctionRegistry().getSelector(fn) != nullptr;
     }
 
-    const Formatter* MessageContext::maybeCachedFormatter(const FunctionName& f, UErrorCode& errorCode) {
+    const std::shared_ptr<Formatter> MessageContext::maybeCachedFormatter(const FunctionName& f, UErrorCode& errorCode) {
         NULL_ON_ERROR(errorCode);
         U_ASSERT(parent.cachedFormatters != nullptr);
 
-        const Formatter* result = parent.cachedFormatters->getFormatter(f);
+        const std::shared_ptr<Formatter> result = parent.cachedFormatters->getFormatter(f);
         if (result == nullptr) {
             // Create the formatter
 
@@ -224,7 +224,7 @@ namespace message2 {
             }
 
             // Create a specific instance of the formatter
-            Formatter* formatter = formatterFactory->createFormatter(parent.locale, errorCode);
+            std::shared_ptr<Formatter> formatter(formatterFactory->createFormatter(parent.locale, errorCode));
             NULL_ON_ERROR(errorCode);
             if (formatter == nullptr) {
                 errorCode = U_MEMORY_ALLOCATION_ERROR;

@@ -53,9 +53,9 @@ namespace message2 {
         const FunctionName& getFunctionName();
         void clearFunctionName();
         // Precondition: hasSelector()
-        Selector* getSelector(UErrorCode&) const;
+        std::unique_ptr<Selector> getSelector(UErrorCode&) const;
         // Precondition: hasFormatter()
-        const Formatter* getFormatter(UErrorCode&);
+        const std::shared_ptr<Formatter> getFormatter(UErrorCode&);
 
         void addFunctionOption(const UnicodeString&, Formattable&&) noexcept;
         void clearFunctionOptions();
