@@ -143,11 +143,11 @@ namespace message2 {
 
     class MessageContext : public UMemory {
     public:
-        MessageContext(const MessageFormatter&, const MessageArguments&, const StaticErrors&);
+        MessageContext(MessageFormatter&, const MessageArguments&, const StaticErrors&);
 
         bool isCustomFormatter(const FunctionName&) const;
         const Formatter* maybeCachedFormatter(const FunctionName&, UErrorCode&);
-        const SelectorFactory* lookupSelectorFactory(const FunctionName&);
+        const std::shared_ptr<SelectorFactory> lookupSelectorFactory(const FunctionName&);
         bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
         bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
 
@@ -167,12 +167,15 @@ namespace message2 {
 
     private:
 
-        FormatterFactory* lookupFormatterFactory(const FunctionName&);
+        std::shared_ptr<FormatterFactory> lookupFormatterFactory(const FunctionName&);
         bool isBuiltInSelector(const FunctionName&) const;
         bool isBuiltInFormatter(const FunctionName&) const;
         bool isCustomSelector(const FunctionName&) const;
 
-        const MessageFormatter& parent;
+        // Note: this is a non-const reference because the function registry is mutable
+        // (only the values -- `FormatterFactory` objects -- in the mapping, not the
+        // registry itself).
+        MessageFormatter& parent;
         const MessageArguments& arguments; // External message arguments
         // Errors accumulated during parsing/formatting
         DynamicErrors errors;
