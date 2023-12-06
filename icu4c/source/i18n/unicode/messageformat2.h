@@ -309,7 +309,10 @@ namespace message2 {
      * description of the syntax with examples and use cases</a> and the corresponding
      * <a target="github" href="https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf">ABNF</a> grammar.</p>
      *
-     * The MessageFormatter class is immutable and movable. It is not copyable.
+     * The MessageFormatter class is mutable and movable. It is not copyable.
+     * (It is mutable because if it has a custom function registry, the registry may include
+     * `FormatterFactory` objects implementing custom formatters, which are allowed to contain
+     * mutable state.)
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -357,7 +360,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        UnicodeString formatToString(const MessageArguments& arguments, UErrorCode &status) const;
+        UnicodeString formatToString(const MessageArguments& arguments, UErrorCode &status);
 
         /**
          * Accesses the locale that this `MessageFormatter` object was created with.
@@ -409,8 +412,7 @@ namespace message2 {
             // Ignored if hasPattern
             MessageFormatDataModel dataModel;
             Locale locale;
-            // Not owned
-            const FunctionRegistry* customFunctionRegistry;
+            std::shared_ptr<FunctionRegistry> customFunctionRegistry;
 
         public:
             /**
@@ -440,15 +442,16 @@ namespace message2 {
              * Sets a custom function registry.
              *
              * @param functionRegistry Function registry to use; this argument is
-             *        not adopted, and the caller must ensure its lifetime contains
+             *        a shared pointer, and the caller must ensure its lifetime contains
              *        the lifetime of the `MessageFormatter` object built by this
-             *        builder.
+             *        builder. The argument is non-const because the values in the FunctionRegistry
+             *        (specifically `FormatterFactory` arguments) may have mutable state.
              * @return       A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setFunctionRegistry(const FunctionRegistry* functionRegistry);
+            Builder& setFunctionRegistry(std::shared_ptr<FunctionRegistry> functionRegistry);
             /**
              * Sets a data model. If a pattern was previously set, it is removed.
              *
@@ -567,7 +570,9 @@ namespace message2 {
         }
 
         // Precondition: custom function registry exists
-        const FunctionRegistry& getCustomFunctionRegistry() const;
+        // Note: this is non-const because the values in the FunctionRegistry are mutable
+        // (a FormatterFactory can have mutable state)
+        FunctionRegistry& getCustomFunctionRegistry() const;
 
         // Checking for resolution errors
         void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;
@@ -591,7 +596,10 @@ namespace message2 {
         // of the FormatterFactory and SelectorFactory interfaces to implement a custom
         // clone() method, which is necessary to avoid sharing between copies of the
         // function registry (and thus double-frees)
-        const FunctionRegistry* customFunctionRegistry;
+
+        // It's also non-const, because the values in the function registry are mutable
+        // (a FormatterFactory can have mutable state)
+        std::shared_ptr<FunctionRegistry> customFunctionRegistry;
 
         // Data model, representing the parsed message
         MessageFormatDataModel dataModel;

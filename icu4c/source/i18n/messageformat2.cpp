@@ -582,12 +582,16 @@ UnicodeString MessageFormatter::getPattern() const {
 }
 
 // Precondition: custom function registry exists
-const FunctionRegistry& MessageFormatter::getCustomFunctionRegistry() const {
+FunctionRegistry& MessageFormatter::getCustomFunctionRegistry() const {
     U_ASSERT(hasCustomFunctionRegistry());
     return *customFunctionRegistry;
 }
 
-UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments, UErrorCode &status) const {
+// Note: this is non-const due to the function registry being non-const, which is in turn
+// due to the values (`FormatterFactory` objects in the map) having mutable state.
+// In other words, formatting a message can mutate the underlying `MessageFormatter` by changing
+// state within the factory objects that represent custom formatters.
+UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments, UErrorCode &status) {
     EMPTY_ON_ERROR(status);
 
     // Create a new environment that will store closures for all local variables

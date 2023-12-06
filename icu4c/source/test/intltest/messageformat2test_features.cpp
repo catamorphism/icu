@@ -573,12 +573,11 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
         return;
     }
 
-    FunctionRegistry reg = frBuilder.setFormatter(FunctionName("temp"),
-						  counter).build();
     UnicodeString message = "{Testing {$count :temp unit=$unit skeleton=|.00/w|}.}";
 
     MessageFormatter::Builder mfBuilder;
-    mfBuilder.setPattern(message).setFunctionRegistry(&reg);
+    mfBuilder.setPattern(message).setFunctionRegistry(std::make_shared<FunctionRegistry>(frBuilder.setFormatter(FunctionName("temp"),
+                                                                                                                counter).build()));
     UParseError parseError;
     MessageFormatter mf = mfBuilder.build(parseError, errorCode);
     UnicodeString result;

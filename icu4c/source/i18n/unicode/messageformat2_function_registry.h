@@ -94,10 +94,12 @@ namespace message2 {
 
         /*
           Note: since FormatterFactory and SelectorFactory are interfaces,
-          they are not copyable or movable and thus we have to use (owned) pointers here.
+          they are not copyable or movable and thus we have to use pointers here.
+          The pointers are shared so that getFormatter() and getSelector() can return
+          shared references safely.
         */
-        using FormatterMap = std::map<FunctionName, std::unique_ptr<FormatterFactory>>;
-        using SelectorMap = std::map<FunctionName, std::unique_ptr<SelectorFactory>>;
+        using FormatterMap = std::map<FunctionName, std::shared_ptr<FormatterFactory>>;
+        using SelectorMap = std::map<FunctionName, std::shared_ptr<SelectorFactory>>;
 
 
     public:
@@ -112,7 +114,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FormatterFactory* getFormatter(const data_model::FunctionName& formatterName) const;
+        std::shared_ptr<FormatterFactory> getFormatter(const data_model::FunctionName& formatterName);
         /**
          * Looks up a selector factory by the name of the selector.
          *
@@ -123,7 +125,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const SelectorFactory* getSelector(const data_model::FunctionName& selectorName) const;
+        const std::shared_ptr<SelectorFactory> getSelector(const data_model::FunctionName& selectorName) const;
 
         /**
          * The mutable Builder class allows each formatter and selector factory

@@ -451,7 +451,11 @@ Selector* ExpressionContext::getSelector(UErrorCode& status) const {
     NULL_ON_ERROR(status);
 
     U_ASSERT(hasFunctionName());
-    const SelectorFactory* selectorFactory = context.lookupSelectorFactory(pendingFunctionName);
+    const std::shared_ptr<SelectorFactory> selectorFactory = context.lookupSelectorFactory(pendingFunctionName);
+    if (selectorFactory == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+        return nullptr;
+    }
     // Create a specific instance of the selector
     LocalPointer<Selector> result(selectorFactory->createSelector(context.messageFormatter().getLocale(), status));
     NULL_ON_ERROR(status);

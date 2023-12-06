@@ -349,7 +349,7 @@ void TestMessageFormat2::testAPICustomFunctions() {
     assertEquals("testAPICustomFunctions", U_UNKNOWN_FUNCTION_ERROR, errorCode);
 
     errorCode = U_ZERO_ERROR;
-    mfBuilder.setFunctionRegistry(&functionRegistry).setLocale(locale);
+    mfBuilder.setFunctionRegistry(std::make_shared<FunctionRegistry>(std::move(functionRegistry))).setLocale(locale);
 
     mf = mfBuilder.setPattern("{Hello {$name :person formality=informal}}")
                     .build(parseError, errorCode);

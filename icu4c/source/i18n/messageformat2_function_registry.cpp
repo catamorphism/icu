@@ -31,31 +31,32 @@ FunctionRegistry FunctionRegistry::Builder::build() {
 }
 
 FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory) noexcept {
-    selectors[selectorName] = std::unique_ptr<SelectorFactory>(selectorFactory);
+    selectors[selectorName] = std::shared_ptr<SelectorFactory>(selectorFactory);
     return *this;
 }
 
 FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory) noexcept {
-    formatters[formatterName] = std::unique_ptr<FormatterFactory>(formatterFactory);
+    formatters[formatterName] = std::shared_ptr<FormatterFactory>(formatterFactory);
     return *this;
 }
 
 FunctionRegistry::Builder::~Builder() {}
 
-FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterName) const {
+// This method is not const since it returns a non-const alias to a value in the map
+std::shared_ptr<FormatterFactory> FunctionRegistry::getFormatter(const FunctionName& formatterName) {
     // Caller must check for null
     if (!hasFormatter(formatterName)) {
 	return nullptr;
     }
-    return formatters.at(formatterName).get();
+    return formatters.at(formatterName);
 }
 
-const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selectorName) const {
+const std::shared_ptr<SelectorFactory> FunctionRegistry::getSelector(const FunctionName& selectorName) const {
     // Caller must check for null
     if (!hasSelector(selectorName)) {
 	return nullptr;
     }
-    return selectors.at(selectorName).get();
+    return selectors.at(selectorName);
 }
 
 bool FunctionRegistry::hasFormatter(const FunctionName& f) const {
