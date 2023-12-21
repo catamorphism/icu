@@ -1330,7 +1330,7 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
 Pattern Parser::parsePattern(UErrorCode& status) {
     U_ASSERT(inBounds(source, index));
 
-    Pattern::Builder result;
+    Pattern::Builder result(status);
 
     if (U_SUCCESS(status)) {
         parseToken(LEFT_CURLY_BRACE);
@@ -1341,26 +1341,25 @@ Pattern Parser::parsePattern(UErrorCode& status) {
             case LEFT_CURLY_BRACE: {
                 // Must be expression
                 bool rhsError = false;
-                result.add(PatternPart(parseExpression(rhsError, status)));
+                result.add(PatternPart(parseExpression(rhsError, status)), status);
                 break;
             }
             default: {
                 // Must be text
-                result.add(PatternPart(parseText()));
+                result.add(PatternPart(parseText()), status);
                 break;
             }
             }
             // Need an explicit error check here so we don't loop infinitely
             if (!inBounds(source, index)) {
-                return result.build();
+                return result.build(status);
             }
         }
         // Consume the closing brace
         index++;
         normalizedInput += RIGHT_CURLY_BRACE;
-        return result.build();
     }
-    return {};
+    return result.build(status);
 }
 
 
@@ -1460,10 +1459,12 @@ void Parser::parseSelectors(UErrorCode& status) {
   because a message can end with a body (trailing whitespace is optional)
 */
 
-void Parser::errorPattern() {
+void Parser::errorPattern(UErrorCode& status) {
     errors.addSyntaxError();
     // Set to empty pattern
-    Pattern::Builder result = Pattern::Builder();
+    Pattern::Builder result = Pattern::Builder(status);
+    CHECK_ERROR(status);
+
     // If still in bounds, then add the remaining input as a single text part
     // to the pattern
     /*
@@ -1478,8 +1479,8 @@ void Parser::errorPattern() {
     }
     // Add curly braces around the entire output (same comment as above)
     partStr += RIGHT_CURLY_BRACE;
-    result.add(PatternPart(partStr));
-    dataModel.setPattern(result.build());
+    result.add(PatternPart(partStr), status);
+    dataModel.setPattern(result.build(status));
 }
 
 void Parser::parseBody(UErrorCode& status) {
@@ -1487,7 +1488,7 @@ void Parser::parseBody(UErrorCode& status) {
 
     // Out-of-input is a syntax warning
     if (!inBounds(source, index)) {
-        errorPattern();
+        errorPattern(status);
         return;
     }
 
@@ -1505,7 +1506,7 @@ void Parser::parseBody(UErrorCode& status) {
     }
     default: {
         ERROR(parseError, index);
-        errorPattern();
+        errorPattern(status);
         return;
     }
     }

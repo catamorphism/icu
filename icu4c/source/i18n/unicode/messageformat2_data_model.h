@@ -1350,7 +1350,145 @@ namespace message2 {
             /* const */ Operand rand;
         }; // class Expression
 
+        class PatternPart;
+
         /**
+         *  A `Pattern` is a sequence of formattable parts.
+         * It corresponds to the `Pattern` interface
+         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#patterns
+         *
+         * `Pattern` is immutable, copyable and movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class U_I18N_API Pattern : public UObject {
+        public:
+            /**
+             * Returns the size.
+             *
+             * @return The number of parts in the pattern.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            int32_t numParts() const { return len; }
+            /**
+             * Returns the `i`th part in the pattern.
+             * Precondition: i < numParts()
+             *
+             * @param i Index of the part being accessed.
+             * @return  A reference to the part at index `i`.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const PatternPart& getPart(int32_t i) const;
+
+            /**
+             * The mutable `Pattern::Builder` class allows the pattern to be
+             * constructed one part at a time.
+             *
+             * Builder is not copyable or movable.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            class U_I18N_API Builder : public UMemory {
+            private:
+                friend class Pattern;
+
+                UVector* parts;  // Not a LocalPointer for the same reason as in `SelectorKeys::Builder`
+                    //                std::vector<PatternPart> parts;
+
+            public:
+                /**
+                 * Adds a single part to the pattern. Copies `part`.
+                 *
+                 * @param part The part to be added.
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& add(PatternPart&& part, UErrorCode& status) noexcept;
+                /**
+                 * Constructs a new immutable `Pattern` using the list of parts
+                 * set with previous `add()` calls.
+                 *
+                 * The builder object (`this`) can still be used after calling `build()`.
+                 *
+                 * @param status    Input/output error code.
+                 * @return          The pattern object
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Pattern build(UErrorCode& status) const noexcept;
+                /**
+                 * Default constructor.
+                 * Returns a Builder with an empty sequence of PatternParts.
+                 *
+                 * @param status Input/output error code
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder(UErrorCode&);
+                /**
+                 * Destructor.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                virtual ~Builder();
+            }; // class Pattern::Builder
+
+            /**
+             * Default constructor.
+             * Puts the Pattern into a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Pattern() : parts(LocalArray<PatternPart>()) {}
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Pattern(const Pattern& other) noexcept;
+            /**
+             * Copy assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Pattern& operator=(const Pattern& other) noexcept;
+            /**
+             * Move assignment operator:
+             * The source Pattern will be left in a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Pattern& operator=(Pattern&& other) noexcept;
+
+        private:
+            friend class Builder;
+
+            // Possibly-empty array of parts
+            /* const */ // std::vector<PatternPart> parts;
+            int32_t len = 0;
+            LocalArray<PatternPart> parts;
+
+            Pattern(const UVector& parts, UErrorCode& status);
+            // Helper
+            static void initParts(Pattern&, const Pattern&);
+        }; // class Pattern
+
+                /**
          *  A `PatternPart` is a single element (text or expression) in a `Pattern`.
          * It corresponds to the `body` field of the `Pattern` interface
          *  defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#patterns
@@ -1440,143 +1578,25 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             PatternPart(Expression&& e) : isRawText(false), expression(e) {}
-
+            /**
+             * Default constructor.
+             * Puts the PatternPart into a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            PatternPart() = default;
         private:
-            /* const */ bool isRawText;
+            friend class Pattern::Builder;
+
+            /* const */ bool isRawText = true;
             // Not used if !isRawText
             /* const */ UnicodeString text;
             // Not used if isRawText
             /* const */ Expression expression;
+
+            static PatternPart* create(PatternPart&&, UErrorCode&);
         }; // class PatternPart
-
-        /**
-         *  A `Pattern` is a sequence of formattable parts.
-         * It corresponds to the `Pattern` interface
-         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#patterns
-         *
-         * `Pattern` is immutable, copyable and movable.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        class U_I18N_API Pattern : public UObject {
-        public:
-            /**
-             * Returns the size.
-             *
-             * @return The number of parts in the pattern.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            int32_t numParts() const { return parts.size(); }
-            /**
-             * Returns the `i`th part in the pattern.
-             * Precondition: i < numParts()
-             *
-             * @param i Index of the part being accessed.
-             * @return  A reference to the part at index `i`.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            const PatternPart& getPart(int32_t i) const;
-
-            /**
-             * The mutable `Pattern::Builder` class allows the pattern to be
-             * constructed one part at a time.
-             *
-             * Builder is not copyable or movable.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            class U_I18N_API Builder : public UMemory {
-            private:
-                friend class Pattern;
-
-                std::vector<PatternPart> parts;
-
-            public:
-                /**
-                 * Adds a single part to the pattern. Copies `part`.
-                 *
-                 * @param part The part to be added.
-                 * @return A reference to the builder.
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                Builder& add(const PatternPart& part) noexcept;
-                /**
-                 * Constructs a new immutable `Pattern` using the list of parts
-                 * set with previous `add()` calls.
-                 *
-                 * The builder object (`this`) can still be used after calling `build()`.
-                 *
-                 * @param status    Input/output error code.
-                 * @return          The pattern object
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                Pattern build() const noexcept;
-                /**
-                 * Default constructor.
-                 * Returns a Builder with an empty sequence of PatternParts.
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                Builder() = default;
-                /**
-                 * Destructor.
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                virtual ~Builder();
-            }; // class Pattern::Builder
-
-            /**
-             * Default constructor.
-             * Puts the Pattern into a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Pattern() : parts(std::vector<PatternPart>()) {}
-            /**
-             * Copy constructor.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Pattern(const Pattern& other) noexcept;
-            /**
-             * Copy assignment operator
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Pattern& operator=(const Pattern& other) noexcept;
-            /**
-             * Move assignment operator:
-             * The source Pattern will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Pattern& operator=(Pattern&& other) noexcept;
-
-        private:
-            friend class Builder;
-
-            // Possibly-empty list of parts
-            /* const */ std::vector<PatternPart> parts;
-
-            Pattern(const std::vector<PatternPart>& ps);
-        }; // class Pattern
 
         /**
          * An immutable mapping from lists of keys to patterns.

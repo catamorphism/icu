@@ -21,6 +21,19 @@ namespace message2 {
 
 // Implementation
 
+//------------------ Helper
+static UVector* createUVector(UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return nullptr;
+    }
+    LocalPointer<UVector> result(new UVector(status));
+    if (U_FAILURE(status)) {
+        return nullptr;
+    }
+    result->setDeleter(uprv_deleteUObject);
+    return result.orphan();
+}
+
 //------------------ SelectorKeys
 
 const Key* SelectorKeys::getKeysInternal() const {
@@ -53,17 +66,7 @@ bool SelectorKeys::operator<(const SelectorKeys& other) const {
 }
 
 SelectorKeys::Builder::Builder(UErrorCode& status) {
-    if (U_FAILURE(status)) {
-        keys = nullptr;
-        return;
-    }
-    LocalPointer<UVector> keysTemp(new UVector(status));
-    if (U_FAILURE(status)) {
-        keys = nullptr;
-        return;
-    }
-    keys = keysTemp.orphan();
-    keys->setDeleter(uprv_deleteUObject);
+    keys = createUVector(status);
 }
 
 SelectorKeys::Builder& SelectorKeys::Builder::add(Key&& key, UErrorCode& status) noexcept {
@@ -107,21 +110,23 @@ SelectorKeys::SelectorKeys(const UVector& ks, UErrorCode& status) : len(ks.size(
 }
 
 SelectorKeys& SelectorKeys::operator=(const SelectorKeys& other) {
-    len = other.len;
-    Key* result = new Key[len];
-    if (result == nullptr) {
-        // Set length to 0 to prevent the
-        // keys array from being accessed
-        len = 0;
-    } else {
-        for (int32_t i = 0; i < len; i++) {
-            result[i] = other.keys[i];
-        }
-        keys = LocalArray<Key>(result);
-        if (!keys.isValid()) {
-            // Set length to 0 to prevent
-            // the keys array from being accessed
+    if (this != &other) {
+        len = other.len;
+        Key* result = new Key[len];
+        if (result == nullptr) {
+            // Set length to 0 to prevent the
+            // keys array from being accessed
             len = 0;
+        } else {
+            for (int32_t i = 0; i < len; i++) {
+                result[i] = other.keys[i];
+            }
+            keys = LocalArray<Key>(result);
+            if (!keys.isValid()) {
+                // Set length to 0 to prevent
+                // the keys array from being accessed
+                len = 0;
+            }
         }
     }
     return *this;
@@ -314,9 +319,11 @@ Key& Key::operator=(Key&& other) noexcept {
 }
 
 Key& Key::operator=(const Key& other) {
-    wildcard = other.wildcard;
-    if (!other.wildcard) {
-        contents = other.contents;
+    if (this != &other) {
+        wildcard = other.wildcard;
+        if (!other.wildcard) {
+            contents = other.contents;
+        }
     }
     return *this;
 }
@@ -381,8 +388,10 @@ Reserved::Reserved(const Reserved& other) {
 }
 
 Reserved& Reserved::operator=(const Reserved& other) {
-    len = other.len;
-    initLiterals(*this, other);
+    if (this != &other) {
+        len = other.len;
+        initLiterals(*this, other);
+    }
     return *this;
 }
 
@@ -413,17 +422,7 @@ const Literal& Reserved::getPart(int32_t i) const {
 }
 
 Reserved::Builder::Builder(UErrorCode& status) {
-    if (U_FAILURE(status)) {
-        parts = nullptr;
-        return;
-    }
-    LocalPointer<UVector> partsTemp(new UVector(status));
-    if (U_FAILURE(status)) {
-        parts = nullptr;
-        return;
-    }
-    parts = partsTemp.orphan();
-    parts->setDeleter(uprv_deleteUObject);
+    parts = createUVector(status);
 }
 
 Reserved Reserved::Builder::build(UErrorCode& status) const noexcept {
@@ -747,32 +746,88 @@ PatternPart& PatternPart::operator=(const PatternPart& other) {
     return *this;
 }
 
+/* static */ PatternPart* PatternPart::create(PatternPart&& k, UErrorCode& status) {
+    NULL_ON_ERROR(status);
+    PatternPart* result = new PatternPart(std::move(k));
+    if (result == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
+
 PatternPart::~PatternPart() {}
 
 // ---------------- Pattern
 
-Pattern::Pattern(const std::vector<PatternPart>& ps) : parts(ps) {}
+Pattern::Pattern(const UVector& ps, UErrorCode& status) : len(ps.size()) {
+    if (U_FAILURE(status)) {
+        return;
+    }
+    PatternPart* result = new PatternPart[len];
+    if (result == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+        len = 0;
+        return;
+    }
+    for (int32_t i = 0; i < len; i++) {
+        U_ASSERT(ps[i] != nullptr);
+        result[i] = *(static_cast<PatternPart*>(ps[i]));
+    }
+    parts = LocalArray<PatternPart>(result);
+}
+
+void Pattern::initParts(Pattern& pattern, const Pattern& other) {
+    PatternPart* result = new PatternPart[pattern.len];
+    if (result == nullptr) {
+        // Set length to 0 to prevent the
+        // parts array from being accessed
+        pattern.len = 0;
+    } else {
+        for (int32_t i = 0; i < pattern.len; i++) {
+            result[i] = other.parts[i];
+        }
+        pattern.parts = LocalArray<PatternPart>(result);
+        if (!pattern.parts.isValid()) {
+            // Set length to 0 to prevent
+            // the parts array from being accessed
+            pattern.len = 0;
+        }
+    }
+}
 
 // Copy constructor
-// If the copy of the other list fails,
-// then isBogus() will be true for this Pattern
-Pattern::Pattern(const Pattern& other) noexcept : parts(other.parts) {}
+Pattern::Pattern(const Pattern& other) noexcept : len(other.len) {
+    initParts(*this, other);
+}
 
 const PatternPart& Pattern::getPart(int32_t i) const {
     U_ASSERT(i < numParts());
     return parts[i];
 }
 
-Pattern Pattern::Builder::build() const noexcept {
-    return Pattern(parts);
+Pattern::Builder::Builder(UErrorCode& status) {
+    parts = createUVector(status);
 }
 
-Pattern::Builder& Pattern::Builder::add(const PatternPart& part) noexcept {
-    parts.push_back(part);
+Pattern Pattern::Builder::build(UErrorCode& status) const noexcept {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+    U_ASSERT(parts != nullptr);
+    return Pattern(*parts, status);
+}
+
+Pattern::Builder& Pattern::Builder::add(PatternPart&& part, UErrorCode& status) noexcept {
+    U_ASSERT(parts != nullptr);
+    if (U_SUCCESS(status)) {
+        PatternPart* l = PatternPart::create(std::move(part), status);
+        parts->adoptElement(l, status);
+    }
     return *this;
 }
 
 Pattern& Pattern::operator=(Pattern&& other) noexcept {
+    len = other.len;
     parts = std::move(other.parts);
 
     return *this;
@@ -780,7 +835,8 @@ Pattern& Pattern::operator=(Pattern&& other) noexcept {
 
 Pattern& Pattern::operator=(const Pattern& other) noexcept {
     if (this != &other) {
-        parts = other.parts;
+        len = other.len;
+        initParts(*this, other);
     }
     return *this;
 }
@@ -860,12 +916,7 @@ void MessageFormatDataModel::Builder::buildSelectorsMessage(UErrorCode& status) 
 
     if (hasPattern) {
         selectors = ExpressionList();
-        variants = new UVector(status);
-        if (U_FAILURE(status)) {
-            variants = nullptr;
-        } else {
-            variants->setDeleter(uprv_deleteUObject);
-        }
+        variants = createUVector(status);
         hasPattern = false;
     }
     hasPattern = false;
