@@ -93,7 +93,7 @@ namespace message2 {
 	UnicodeString parseText();
 	Key parseKey();
 	SelectorKeys parseNonEmptyKeys(UErrorCode&);
-	void errorPattern();
+	void errorPattern(UErrorCode& status);
 	Pattern parsePattern(UErrorCode&);
 
 	// The input string
