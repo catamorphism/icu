@@ -201,26 +201,13 @@ namespace message2 {
              *
              * @param key    The name to be added. It is an internal error to
              *               call `add()` with a key that has already been added.
-             * @param value  The value to be associated with the name. Passed by move.
+             * @param value  The value to be associated with the name.
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& add(const K& key, V&& value) noexcept;
-            /**
-             * Adds to the map.
-             * Precondition: !has(key)
-             *
-             * @param key    The name to be added. It is an internal error to
-             *               call `add()` with a key that has already been added.
-             * @param value  The value to be associated with the name. Passed by move.
-             * @return A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& add(K&& key, V&& value) noexcept;
+            Builder& add(const K& key, const V& value) noexcept;
             /**
              * Checks if a key is in the map.
              *

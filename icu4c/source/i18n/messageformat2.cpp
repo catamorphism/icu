@@ -294,9 +294,10 @@ void MessageFormatter::resolvePreferences(std::vector<ExpressionContext>& res,
 
             // Note: Here, `var` names the key list of `var`,
             // not a Variant itself
-            const KeyList& var = selectorKeys.getKeys();
+            const Key* var = selectorKeys.getKeysInternal();
+            int32_t len = selectorKeys.len;
             // 2ii(a). Let `key` be the `var` key at position i.
-            U_ASSERT(i < (int32_t) var.size()); // established by semantic check in formatSelectors()
+            U_ASSERT(i < len); // established by semantic check in formatSelectors()
             const Key& key = var[i];
             // 2ii(b). If `key` is not the catch-all key '*'
             if (!key.isWildcard()) {
@@ -331,12 +332,12 @@ void MessageFormatter::filterVariants(const VariantMap& variants,
 
         // Note: Here, `var` names the key list of `var`,
         // not a Variant itself
-        const KeyList& var = selectorKeys.getKeys();
+        const Key* var = selectorKeys.getKeysInternal();
         // 2i. For each index `i` in `pref`:
         bool noMatch = false;
         for (int32_t i = 0; i < (int32_t) pref.size(); i++) {
             // 2i(a). Let `key` be the `var` key at position `i`.
-            U_ASSERT(i < (int32_t) var.size());
+            U_ASSERT(i < selectorKeys.len);
             const Key& key = var[i];
             // 2i(b). If key is the catch-all key '*':
             if (key.isWildcard()) {
@@ -395,8 +396,8 @@ void MessageFormatter::sortVariants(const std::vector<std::vector<UnicodeString>
             // 5iii(a). Let matchpref be an integer with the value minpref.
             int32_t matchpref = minpref;
             // 5iii(b). Let `key` be the tuple variant key at position `i`.
-            const KeyList& tupleVariantKeys = tuple.keys.getKeys();
-            U_ASSERT(i < ((int32_t) tupleVariantKeys.size())); // Given by earlier semantic checking
+            const Key* tupleVariantKeys = tuple.keys.getKeysInternal();
+            U_ASSERT(i < tuple.keys.len); // Given by earlier semantic checking
             const Key& key = tupleVariantKeys[i];
             // 5iii(c) If `key` is not the catch-all key '*':
             if (!key.isWildcard()) {

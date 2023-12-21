@@ -56,9 +56,9 @@ TypeEnvironment::~TypeEnvironment() {}
 
 // ---------------------
 
-static bool areDefaultKeys(const KeyList& keys) {
-    U_ASSERT(keys.size() > 0);
-    for (int32_t i = 0; i < (int32_t) keys.size(); i++) {
+static bool areDefaultKeys(const Key* keys, int32_t len) {
+    U_ASSERT(len > 0);
+    for (int32_t i = 0; i < len; i++) {
         if (!keys[i].isWildcard()) {
             return false;
         }
@@ -80,13 +80,14 @@ void Checker::checkVariants() {
     bool defaultExists = false;
 
     for (auto iter = variants.begin(); iter != variants.end(); ++iter) {
-        const KeyList& keys = iter.first().getKeys();
-        if ((int32_t) keys.size() != numSelectors) {
+        const Key* keys = iter.first().getKeysInternal();
+        int32_t len = iter.first().len;
+        if (len != numSelectors) {
             // Variant key mismatch
             errors.addError(StaticErrorType::VariantKeyMismatchError);
             return;
         }
-        defaultExists |= areDefaultKeys(keys);
+        defaultExists |= areDefaultKeys(keys, len);
     }
     if (!defaultExists) {
         errors.addError(StaticErrorType::NonexhaustivePattern);
