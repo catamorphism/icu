@@ -63,7 +63,7 @@ namespace message2 {
 	static void setParseError(MessageParseError&, uint32_t);
 	void maybeAdvanceLine();
 	void parseBody(UErrorCode&);
-	void parseDeclarations();
+	void parseDeclarations(UErrorCode&);
 	void parseSelectors(UErrorCode&);
 
 	void parseWhitespaceMaybeRequired(bool);
@@ -84,17 +84,17 @@ namespace message2 {
 	void parseOption(Operator::Builder&);
 	void parseOptions(Operator::Builder&);
 	void parseReservedEscape(UnicodeString&);
-	void parseReservedChunk(Reserved::Builder&);
-	Reserved parseReserved();
-	Operator parseAnnotation();
-	void parseLiteralOrVariableWithAnnotation(bool, Expression::Builder&);
-	Expression parseExpression(bool&);
+	void parseReservedChunk(Reserved::Builder&, UErrorCode&);
+	Reserved parseReserved(UErrorCode&);
+	Operator parseAnnotation(UErrorCode&);
+	void parseLiteralOrVariableWithAnnotation(bool, Expression::Builder&, UErrorCode&);
+	Expression parseExpression(bool&, UErrorCode&);
 	void parseTextEscape(UnicodeString&);
 	UnicodeString parseText();
 	Key parseKey();
 	SelectorKeys parseNonEmptyKeys(UErrorCode&);
 	void errorPattern();
-	Pattern parsePattern();
+	Pattern parsePattern(UErrorCode&);
 
 	// The input string
 	const UnicodeString &source;
