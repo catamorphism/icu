@@ -67,6 +67,7 @@ SelectorKeys::Builder::Builder(UErrorCode& status) {
 }
 
 SelectorKeys::Builder& SelectorKeys::Builder::add(Key&& key, UErrorCode& status) noexcept {
+    U_ASSERT(keys != nullptr);
     if (U_SUCCESS(status)) {
         Key* k = Key::create(std::move(key), status);
         keys->adoptElement(k, status);
@@ -217,6 +218,14 @@ Literal::Literal(Literal&& other) noexcept {
     contents = std::move(other.contents);
 }
 
+/* static */ Literal* Literal::create(Literal&& l, UErrorCode& status) {
+    NULL_ON_ERROR(status);
+    Literal* result = new Literal(std::move(l));
+    if (result == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
 
 Literal::~Literal() {
     thisIsQuoted = false;
@@ -346,13 +355,56 @@ Key::~Key() {}
 
 // ------------ Reserved
 
-// Copy constructor
-Reserved::Reserved(const Reserved& other) noexcept : parts(other.parts) {}
+void Reserved::initLiterals(Reserved& resrved, const Reserved& other) {
+    Literal* result = new Literal[resrved.len];
+    if (result == nullptr) {
+        // Set length to 0 to prevent the
+        // parts array from being accessed
+        resrved.len = 0;
+    } else {
+        for (int32_t i = 0; i < resrved.len; i++) {
+            result[i] = other.parts[i];
+        }
+        resrved.parts = LocalArray<Literal>(result);
+        if (!resrved.parts.isValid()) {
+            // Set length to 0 to prevent
+            // the parts array from being accessed
+            resrved.len = 0;
+        }
+    }
+}
 
-Reserved::Reserved(const std::vector<Literal>& ps) noexcept : parts(ps) {}
+// Copy constructor
+Reserved::Reserved(const Reserved& other) {
+    len = other.len;
+    initLiterals(*this, other);
+}
+
+Reserved& Reserved::operator=(const Reserved& other) {
+    len = other.len;
+    initLiterals(*this, other);
+    return *this;
+}
+
+Reserved::Reserved(const UVector& ps, UErrorCode& status) noexcept : len(ps.size()) {
+    if (U_FAILURE(status)) {
+        return;
+    }
+    Literal* result = new Literal[len];
+    if (result == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+        len = 0;
+        return;
+    }
+    for (int32_t i = 0; i < len; i++) {
+        U_ASSERT(ps[i] != nullptr);
+        result[i] = *(static_cast<Literal*>(ps[i]));
+    }
+    parts = LocalArray<Literal>(result);
+}
 
 int32_t Reserved::numParts() const {
-    return parts.size();
+    return len;
 }
 
 const Literal& Reserved::getPart(int32_t i) const {
@@ -360,33 +412,48 @@ const Literal& Reserved::getPart(int32_t i) const {
     return parts[i];
 }
 
-Reserved::Builder::Builder() : parts(std::vector<Literal>()) {}
-
-Reserved Reserved::Builder::build() const noexcept {
-    return Reserved(parts);
+Reserved::Builder::Builder(UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        parts = nullptr;
+        return;
+    }
+    LocalPointer<UVector> partsTemp(new UVector(status));
+    if (U_FAILURE(status)) {
+        parts = nullptr;
+        return;
+    }
+    parts = partsTemp.orphan();
+    parts->setDeleter(uprv_deleteUObject);
 }
 
-Reserved::Builder& Reserved::Builder::add(const Literal& part) noexcept {
-    parts.push_back(part);
+Reserved Reserved::Builder::build(UErrorCode& status) const noexcept {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+    U_ASSERT(parts != nullptr);
+    return Reserved(*parts, status);
+}
+
+Reserved::Builder& Reserved::Builder::add(Literal&& part, UErrorCode& status) noexcept {
+    U_ASSERT(parts != nullptr);
+    if (U_SUCCESS(status)) {
+        Literal* l = Literal::create(std::move(part), status);
+        parts->adoptElement(l, status);
+    }
     return *this;
 }
 
 Reserved& Reserved::operator=(Reserved&& other) noexcept {
-    this->~Reserved();
-
     parts = std::move(other.parts);
 
     return *this;
 }
 
-Reserved& Reserved::operator=(const Reserved& other) noexcept {
-    if (this != &other) {
-        parts = other.parts;
+Reserved::Builder::~Builder() {
+    if (parts != nullptr) {
+        delete parts;
     }
-    return *this;
 }
-
-Reserved::Builder::~Builder() {}
 
 //------------------------ Operator
 
@@ -524,8 +591,6 @@ Operator::Operator(const Operator& other) noexcept : isReservedSequence(other.is
                                                      : Reserved()) {}
 
 Operator& Operator::operator=(Operator&& other) noexcept {
-    this->~Operator();
-
     isReservedSequence = other.isReservedSequence;
     if (!other.isReservedSequence) {
         functionName = std::move(other.functionName);
@@ -622,8 +687,6 @@ Expression::Expression() : hasOperator(false) {}
 Expression::Expression(const Expression& other) : hasOperator(other.hasOperator), rator(other.rator), rand(other.rand) {}
 
 Expression& Expression::operator=(Expression&& other) noexcept {
-    this->~Expression();
-
     hasOperator = other.hasOperator;
     if (other.hasOperator) {
         rator = std::move(other.rator);
@@ -665,8 +728,6 @@ const UnicodeString& PatternPart::asText() const {
 }
 
 PatternPart& PatternPart::operator=(PatternPart&& other) noexcept {
-    this->~PatternPart();
-
     isRawText = other.isRawText;
     text = other.text;
     if (!isRawText) {
@@ -677,8 +738,6 @@ PatternPart& PatternPart::operator=(PatternPart&& other) noexcept {
 
 PatternPart& PatternPart::operator=(const PatternPart& other) {
     if (this != &other) {
-        this->~PatternPart();
-
         isRawText = other.isRawText;
         text = other.text;
         if (!isRawText) {
@@ -904,8 +963,6 @@ MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel
 MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDataModel& other) noexcept {
     if (this != &other) {
         U_ASSERT(!other.bogus);
-
-        this->~MessageFormatDataModel();
 
         numVariants = other.numVariants;
         if (hasPattern()) {

@@ -247,6 +247,142 @@ namespace message2 {
             UChar sigilChar() const;
         }; // class FunctionName
 
+        class Literal;
+
+        /**
+         * The `Reserved` class represents a `reserved` annotation, as in the `reserved` nonterminal
+         * in the MessageFormat 2 grammar or the `Reserved` interface
+         * defined in
+         * https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#expressions
+         *
+         * `Reserved` is immutable, copyable and movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class Reserved : public UMemory {
+        public:
+            /**
+             * A `Reserved` is a sequence of literals.
+             *
+             * @return The number of literals.
+             *         *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            int32_t numParts() const;
+            /**
+             * Indexes into the sequence.
+             * Precondition: i < numParts()
+             *
+             * @param i Index of the part being accessed.
+             * @return A reference to he i'th literal in the sequence
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const Literal& getPart(int32_t i) const;
+
+            /**
+             * The mutable `Reserved::Builder` class allows the reserved sequence to be
+             * constructed one part at a time.
+             *
+             * Builder is not copyable or movable.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            class U_I18N_API Builder : public UMemory {
+            private:
+                UVector* parts; // Not a LocalPointer for the same reason as in `SelectorKeys::Builder`
+
+            public:
+                /**
+                 * Adds a single literal to the reserved sequence.
+                 *
+                 * @param part The literal to be added. Passed by move.
+                 * param status Input/output error code
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& add(Literal&& part, UErrorCode& status) noexcept;
+                /**
+                 * Constructs a new immutable `Reserved` using the list of parts
+                 * set with previous `add()` calls.
+                 *
+                 * The builder object (`this`) can still be used after calling `build()`.
+                 *
+                 * param status Input/output error code
+                 * @return          The new Reserved object
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Reserved build(UErrorCode& status) const noexcept;
+                /**
+                 * Default constructor.
+                 * Returns a builder with an empty Reserved sequence.
+                 *
+                 * param status Input/output error code
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder(UErrorCode& status);
+                /**
+                 * Destructor.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                virtual ~Builder();
+            }; // class Reserved::Builder
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Reserved(const Reserved& other);
+            /**
+             * Copy assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Reserved& operator=(const Reserved& other);
+            /**
+             * Move assignment operator:
+             * The source Reserved will be left in a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Reserved& operator=(Reserved&& other) noexcept;
+            /**
+             * Default constructor.
+             * Puts the Reserved into a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Reserved() { parts = LocalArray<Literal>(); }
+        private:
+            friend class Builder;
+            friend class Operator;
+
+            // Possibly-empty list of parts
+            // `literal` reserved as a quoted literal; `reserved-char` / `reserved-escape`
+            // strings represented as unquoted literals
+            /* const */ LocalArray<Literal> parts;
+            int32_t len = 0;
+            Reserved(const UVector& parts, UErrorCode& status) noexcept;
+            // Helper
+            static void initLiterals(Reserved&, const Reserved&);
+        };
+
         /**
          * The `Literal` class corresponds to the `literal` nonterminal in the MessageFormat 2 grammar,
          * https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf and the
@@ -379,8 +515,12 @@ namespace message2 {
             virtual ~Literal();
 
         private:
+            friend class Reserved::Builder;
+
             /* const */ bool thisIsQuoted = false;
             /* const */ UnicodeString contents;
+
+            static Literal* create(Literal&& k, UErrorCode& status);
         };
 
         /**
@@ -802,135 +942,6 @@ namespace message2 {
 
             static Key* create(Key&& k, UErrorCode& status);
         }; // class Key
-
-
-        /**
-         * The `Reserved` class represents a `reserved` annotation, as in the `reserved` nonterminal
-         * in the MessageFormat 2 grammar or the `Reserved` interface
-         * defined in
-         * https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#expressions
-         *
-         * `Reserved` is immutable, copyable and movable.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        class Reserved : public UMemory {
-        public:
-            /**
-             * A `Reserved` is a sequence of literals.
-             *
-             * @return The number of literals.
-             *         *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            int32_t numParts() const;
-            /**
-             * Indexes into the sequence.
-             * Precondition: i < numParts()
-             *
-             * @param i Index of the part being accessed.
-             * @return A reference to he i'th literal in the sequence
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            const Literal& getPart(int32_t i) const;
-
-            /**
-             * The mutable `Reserved::Builder` class allows the reserved sequence to be
-             * constructed one part at a time.
-             *
-             * Builder is not copyable or movable.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            class U_I18N_API Builder : public UMemory {
-            private:
-                std::vector<Literal> parts;
-
-            public:
-                /**
-                 * Adds a single literal to the reserved sequence.
-                 *
-                 * @param part The literal to be added
-                 * @return A reference to the builder.
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                Builder& add(const Literal& part) noexcept;
-                /**
-                 * Constructs a new immutable `Reserved` using the list of parts
-                 * set with previous `add()` calls.
-                 *
-                 * The builder object (`this`) can still be used after calling `build()`.
-                 *
-                 * @return          The new Reserved object
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                Reserved build() const noexcept;
-                /**
-                 * Default constructor.
-                 * Returns a builder with an empty Reserved sequence.
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                Builder();
-                /**
-                 * Destructor.
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                virtual ~Builder();
-            }; // class Reserved::Builder
-            /**
-             * Copy constructor.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Reserved(const Reserved& other) noexcept;
-            /**
-             * Copy assignment operator
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Reserved& operator=(const Reserved& other) noexcept;
-            /**
-             * Move assignment operator:
-             * The source Reserved will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Reserved& operator=(Reserved&& other) noexcept;
-            /**
-             * Default constructor.
-             * Puts the Reserved into a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Reserved() = default;
-
-        private:
-            friend class Operator;
-
-            // Possibly-empty list of parts
-            // `literal` reserved as a quoted literal; `reserved-char` / `reserved-escape`
-            // strings represented as unquoted literals
-            /* const */ std::vector<Literal> parts;
-
-            Reserved(const std::vector<Literal>&) noexcept;
-        };
 
         /**
          * An immutable map from strings to function options

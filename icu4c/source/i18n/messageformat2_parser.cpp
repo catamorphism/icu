@@ -772,7 +772,9 @@ void Parser::parseReservedEscape(UnicodeString &str) {
 
   Appends it to `str`
 */
-void Parser::parseReservedChunk(Reserved::Builder& result) {
+void Parser::parseReservedChunk(Reserved::Builder& result, UErrorCode& status) {
+    CHECK_ERROR(status);
+
     bool empty = true;
     UnicodeString chunk;
     while(reservedChunkFollows(source[index])) {
@@ -789,27 +791,28 @@ void Parser::parseReservedChunk(Reserved::Builder& result) {
         }
 
         if (chunk.length() > 0) {
-          Literal lit(false, chunk);
-          result.add(lit);
+          result.add(Literal(false, chunk), status);
           chunk.setTo(u"", 0);
         }
 
         if (source[index] == BACKSLASH) {
             // reserved-escape
             parseReservedEscape(chunk);
-            result.add(Literal(false, chunk));
+            result.add(Literal(false, chunk), status);
             chunk.setTo(u"", 0);
         } else if (source[index] == PIPE || isUnquotedStart(source[index])) {
-            result.add(parseLiteral());
+            result.add(parseLiteral(), status);
         } else {
             // The reserved chunk ends here
             break;
         }
+
+        CHECK_ERROR(status); // Avoid looping infinitely
     }
 
     // Add the last chunk if necessary
     if (chunk.length() > 0) {
-        result.add(Literal(false, chunk));
+        result.add(Literal(false, chunk), status);
     }
 
     if (empty) {
@@ -823,10 +826,14 @@ void Parser::parseReservedChunk(Reserved::Builder& result) {
   Matches the `reserved` nonterminal in the grammar
 
 */
-Reserved Parser::parseReserved() {
-    U_ASSERT(inBounds(source, index));
+Reserved Parser::parseReserved(UErrorCode& status) {
+    Reserved::Builder builder(status);
 
-    Reserved::Builder builder;
+    if (U_FAILURE(status)) {
+        return {};
+    }
+
+    U_ASSERT(inBounds(source, index));
 
     // Require a `reservedStart` character
     if (!isReservedStart(source[index])) {
@@ -836,8 +843,10 @@ Reserved Parser::parseReserved() {
 
     // Add the start char as a separate text chunk
     UnicodeString firstCharString(source[index]);
-    Literal firstChunk(false, firstCharString);
-    builder.add(firstChunk);
+    builder.add(Literal(false, firstCharString), status);
+    if (U_FAILURE(status)) {
+        return {};
+    }
     // Consume reservedStart
     normalizedInput += source[index];
     index++;
@@ -891,10 +900,10 @@ Reserved Parser::parseReserved() {
         }
 
         if (reservedChunkFollows(source[index])) {
-            parseReservedChunk(builder);
+            parseReservedChunk(builder, status);
 
             // Avoid looping infinitely
-            if (!inBounds(source, index)) {
+            if (U_FAILURE(status) || !inBounds(source, index)) {
                 break;
             }
         } else {
@@ -915,7 +924,7 @@ Reserved Parser::parseReserved() {
         }
     }
 
-    return builder.build();
+    return builder.build(status);
 }
 
 
@@ -925,7 +934,11 @@ Reserved Parser::parseReserved() {
 
   Returns an `Operator` representing this (a reserved is a parse error)
 */
-Operator Parser::parseAnnotation() {
+Operator Parser::parseAnnotation(UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+
     U_ASSERT(inBounds(source, index));
     Operator::Builder ratorBuilder;
     if (isFunctionStart(source[index])) {
@@ -937,14 +950,14 @@ Operator Parser::parseAnnotation() {
     } else {
       // Must be reserved
       // A reserved sequence is not a parse error, but might be a formatting error
-      Reserved rator = parseReserved();
+      Reserved rator = parseReserved(status);
       ratorBuilder.setReserved(std::move(rator));
     }
-    UErrorCode status = U_ZERO_ERROR;
-    Operator result = ratorBuilder.build(status);
+    UErrorCode localStatus = U_ZERO_ERROR;
+    Operator result = ratorBuilder.build(localStatus);
     // Either `setReserved` or `setFunctionName` was called,
     // so there shouldn't be an error.
-    U_ASSERT(U_SUCCESS(status));
+    U_ASSERT(U_SUCCESS(localStatus));
     return result;
 }
 
@@ -954,7 +967,10 @@ Operator Parser::parseAnnotation() {
   or optional whitespace.
 */
 void Parser::parseLiteralOrVariableWithAnnotation(bool isVariable,
-                                                  Expression::Builder& builder) {
+                                                  Expression::Builder& builder,
+                                                  UErrorCode& status) {
+    CHECK_ERROR(status);
+
     U_ASSERT(inBounds(source, index));
 
     Operand rand;
@@ -1002,7 +1018,7 @@ the comment in `parseOptions()` for details.
       if (isAnnotationStart(source[index])) {
         normalizedInput += SPACE;
         // The previously consumed whitespace precedes an annotation
-        builder.setOperator(parseAnnotation());
+        builder.setOperator(parseAnnotation(status));
       }
     } else {
       // Either there was never whitespace, or
@@ -1038,7 +1054,11 @@ static Expression exprFallback() {
 // Sets `parseError` to true if there was an error parsing this expression
 // Uses a flag rather than just returning a fallback expression because which
 // fallback to use depends on context
-Expression Parser::parseExpression(bool& err) {
+Expression Parser::parseExpression(bool& err, UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+
     err = false;
 
     // Early return if out of input -- no more work is possible
@@ -1058,21 +1078,21 @@ Expression Parser::parseExpression(bool& err) {
         switch (source[index]) {
         case PIPE: {
             // Quoted literal
-            parseLiteralOrVariableWithAnnotation(false, exprBuilder);
+            parseLiteralOrVariableWithAnnotation(false, exprBuilder, status);
             break;
         }
         case DOLLAR: {
             // Variable
-            parseLiteralOrVariableWithAnnotation(true, exprBuilder);
+            parseLiteralOrVariableWithAnnotation(true, exprBuilder, status);
             break;
         }
         default: {
             if (isAnnotationStart(source[index])) {
-                Operator rator = parseAnnotation();
+                Operator rator = parseAnnotation(status);
                 exprBuilder.setOperator(std::move(rator));
             } else if (isUnquotedStart(source[index])) {
                 // Unquoted literal
-                parseLiteralOrVariableWithAnnotation(false, exprBuilder);
+                parseLiteralOrVariableWithAnnotation(false, exprBuilder, status);
             } else {
                 // Not a literal, variable or annotation -- error out
                 ERROR(parseError, index);
@@ -1094,9 +1114,9 @@ Expression Parser::parseExpression(bool& err) {
 
     // Either an operand or operator (or both) must have been set already,
     // so there can't be an error
-    UErrorCode status = U_ZERO_ERROR;
-    Expression result = exprBuilder.build(status);
-    U_ASSERT(U_SUCCESS(status));
+    UErrorCode localStatus = U_ZERO_ERROR;
+    Expression result = exprBuilder.build(localStatus);
+    U_ASSERT(U_SUCCESS(localStatus));
     return result;
 }
 
@@ -1106,7 +1126,7 @@ Expression Parser::parseExpression(bool& err) {
 
   Builds up an environment representing those declarations
 */
-void Parser::parseDeclarations() {
+void Parser::parseDeclarations(UErrorCode& status) {
     // End-of-input here would be an error; even empty
     // declarations must be followed by a body
     CHECK_BOUNDS(source, index, parseError);
@@ -1124,7 +1144,10 @@ void Parser::parseDeclarations() {
         CHECK_BOUNDS(source, index, parseError);
 
         bool rhsError = false;
-        Expression rhs = parseExpression(rhsError);
+        Expression rhs = parseExpression(rhsError, status);
+        // Avoid looping infinitely
+        CHECK_ERROR(status);
+
         if (rhsError) {
             rhs = exprFallback();
         }
@@ -1304,38 +1327,40 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
   No postcondition (on return, `index` might equal `source.length()` with U_SUCCESS(errorCode)),
   because a message can end with a pattern
 */
-Pattern Parser::parsePattern() {
+Pattern Parser::parsePattern(UErrorCode& status) {
     U_ASSERT(inBounds(source, index));
 
     Pattern::Builder result;
 
-    parseToken(LEFT_CURLY_BRACE);
+    if (U_SUCCESS(status)) {
+        parseToken(LEFT_CURLY_BRACE);
 
-    Expression expression;
-    while (source[index] != RIGHT_CURLY_BRACE) {
-        switch (source[index]) {
-        case LEFT_CURLY_BRACE: {
-            // Must be expression
-            bool rhsError = false;
-            result.add(PatternPart(parseExpression(rhsError)));
-            break;
+        Expression expression;
+        while (source[index] != RIGHT_CURLY_BRACE) {
+            switch (source[index]) {
+            case LEFT_CURLY_BRACE: {
+                // Must be expression
+                bool rhsError = false;
+                result.add(PatternPart(parseExpression(rhsError, status)));
+                break;
+            }
+            default: {
+                // Must be text
+                result.add(PatternPart(parseText()));
+                break;
+            }
+            }
+            // Need an explicit error check here so we don't loop infinitely
+            if (!inBounds(source, index)) {
+                return result.build();
+            }
         }
-        default: {
-            // Must be text
-            result.add(PatternPart(parseText()));
-            break;
-        }
-        }
-        // Need an explicit error check here so we don't loop infinitely
-        if (!inBounds(source, index)) {
-            return result.build();
-        }
+        // Consume the closing brace
+        index++;
+        normalizedInput += RIGHT_CURLY_BRACE;
+        return result.build();
     }
-    // Consume the closing brace
-    index++;
-    normalizedInput += RIGHT_CURLY_BRACE;
-
-    return result.build();
+    return {};
 }
 
 
@@ -1369,7 +1394,7 @@ void Parser::parseSelectors(UErrorCode& status) {
 
         bool selectorError = false;
         Expression expression;
-        expression = parseExpression(selectorError);
+        expression = parseExpression(selectorError, status);
         if (selectorError) {
             // What happens if one of the variant keys is the
             // fallback string? this should be a `nomatch` according
@@ -1415,7 +1440,7 @@ void Parser::parseSelectors(UErrorCode& status) {
         // Restore precondition before calling parsePattern()
         // (which must return a non-null value)
         CHECK_BOUNDS(source, index, parseError);
-        Pattern rhs = parsePattern();
+        Pattern rhs = parsePattern(status);
 
         dataModel.addVariant(std::move(keyList), std::move(rhs), status);
 
@@ -1470,7 +1495,7 @@ void Parser::parseBody(UErrorCode& status) {
     switch (source[index]) {
     case LEFT_CURLY_BRACE: {
         // Pattern
-        dataModel.setPattern(parsePattern());
+        dataModel.setPattern(parsePattern(status));
         break;
     }
     case ID_MATCH[0]: {
@@ -1503,7 +1528,7 @@ void Parser::parse(UParseError &parseErrorResult, UErrorCode& status) {
         ERROR(parseError, index);
     }
 
-    parseDeclarations();
+    parseDeclarations(status);
     parseBody(status);
     CHECK_ERROR(status);
 
