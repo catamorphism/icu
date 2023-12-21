@@ -9,7 +9,9 @@
 #include "unicode/messageformat2_utils.h"
 #include "messageformat2_macros.h"
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 using namespace data_model;
 
@@ -29,27 +31,13 @@ OrderedMap<K, V>::OrderedMap() {}
 // Precondition: `key` is not already in the map. (The caller must
 // check this)
 template<class K, class V>
-typename OrderedMap<K, V>::Builder& OrderedMap<K, V>::Builder::add(const K& key, V&& value) noexcept {
+typename OrderedMap<K, V>::Builder& OrderedMap<K, V>::Builder::add(const K& key, const V& value) noexcept {
     // Check that the key is not already in the map.
     // (If not for this check, the invariant that keys->size()
     // == contents->count() could be violated.)
     U_ASSERT(contents.count(key) == 0);
     keys.push_back(key);
-    contents[key] = std::move(value);
-    return *this;
-}
-
-// Precondition: `key` is not already in the map. (The caller must
-// check this)
-template<class K, class V>
-typename OrderedMap<K, V>::Builder& OrderedMap<K, V>::Builder::add(K&& key, V&& value) noexcept {
-    // Check that the key is not already in the map.
-    // (If not for this check, the invariant that keys->size()
-    // == contents->count() could be violated.)
-    U_ASSERT(contents.count(key) == 0);
-
-    keys.push_back(std::move(key));
-    contents[key] = std::move(value);
+    contents[key] = value;
     return *this;
 }
 

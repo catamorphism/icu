@@ -101,7 +101,7 @@ namespace message2 {
         cachedFormatters = std::unique_ptr<CachedFormatters>(cachedFormattersPtr);
 
         // Parse the pattern
-        Parser(builder.pattern, tree, errors, normalizedInput).parse(parseError);
+        Parser(builder.pattern, tree, errors, normalizedInput).parse(parseError, success);
 
         // Build the data model based on what was parsed
         dataModel = tree.build(success);

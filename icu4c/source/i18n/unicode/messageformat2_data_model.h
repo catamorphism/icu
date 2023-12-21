@@ -18,10 +18,15 @@
 
 U_NAMESPACE_BEGIN
 
+class UVector;
+
 namespace message2 {
 
+    class Checker;
     class ExpressionContext;
     class MessageFormatDataModel;
+    class MessageFormatter;
+    class Serializer;
 
     namespace data_model {
 
@@ -512,6 +517,169 @@ namespace message2 {
             Type type;
         }; // class Operand
 
+        class Key;
+
+        /**
+         * The `SelectorKeys` class represents the key list for a single variant.
+         * It corresponds to the `keys` array in the `Variant` interface
+         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
+         *
+         * `SelectorKeys` is immutable, copyable and movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class U_I18N_API SelectorKeys : public UObject {
+        public:
+            /**
+             * Returns the underlying list of keys.
+             *
+             * @return The list of keys for this variant.
+             *         Returns an empty list if allocating this `SelectorKeys`
+             *         object previously failed.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            std::vector<Key> getKeys() const {
+                std::vector<Key> result;
+                for (int32_t i = 0; i < len; i++) {
+                    result.push_back(keys[i]);
+                }
+                return result;
+            }
+            /**
+             * The mutable `SelectorKeys::Builder` class allows the key list to be constructed
+             * one key at a time.
+             *
+             * Builder is not copyable or movable.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            class U_I18N_API Builder : public UMemory {
+            private:
+                friend class SelectorKeys;
+                UVector* keys; // This is a raw pointer and not a LocalPointer<UVector> to avoid undefined behavior warnings,
+                               // since UVector is forward-declared
+                               // The vector owns its elements
+            public:
+                /**
+                 * Adds a single key to the list.
+                 *
+                 * @param key    The key to be added. Passed by move
+                 * @param status Input/output error code
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& add(Key&& key, UErrorCode& status) noexcept;
+                /**
+                 * Constructs a new immutable `SelectorKeys` using the list of keys
+                 * set with previous `add()` calls.
+                 *
+                 * The builder object (`this`) can still be used after calling `build()`.
+                 *
+                 * @param status    Input/output error code
+                 * @return          The new SelectorKeys object
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                SelectorKeys build(UErrorCode& status) const;
+                /**
+                 * Default constructor.
+                 * Returns a Builder with an empty list of keys.
+                 *
+                 * @param status Input/output error code
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder(UErrorCode& status);
+                /**
+                 * Destructor.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                virtual ~Builder();
+            }; // class SelectorKeys::Builder
+            /**
+             * Less than operator. Compares the two key lists lexicographically.
+             * This method makes it possible for a `SelectorKeys` to be used as a map
+             * key, which allows variants to be represented as a map. It is not expected
+             * to be useful otherwise.
+             *
+             * @param other The SelectorKeys to compare to this one.
+             * @return true if `this` is less than `other`, comparing the two key lists
+             * lexicographically.
+             * Returns false otherwise.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            bool operator<(const SelectorKeys& other) const;
+            /**
+             * Default constructor.
+             * Puts the SelectorKeys into a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            SelectorKeys() : len(0) {}
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            SelectorKeys(const SelectorKeys& other);
+            /**
+             * Move constructor.
+             * The source SelectorKeys will be left in a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            SelectorKeys(SelectorKeys&&) noexcept;
+            /**
+             * Move assignment operator:
+             * The source SelectorKeys will be left in a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            SelectorKeys& operator=(SelectorKeys&&) noexcept;
+            /**
+             * Copy assignment operator.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            SelectorKeys& operator=(const SelectorKeys& other);
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~SelectorKeys();
+
+        private:
+            friend class Builder;
+            friend class message2::Checker;
+            friend class message2::MessageFormatter;
+            friend class message2::Serializer;
+
+            /* const */ LocalArray<Key> keys;
+            /* const */ int32_t len;
+
+            const Key* getKeysInternal() const;
+            SelectorKeys(const UVector& ks, UErrorCode& status);
+        }; // class SelectorKeys
+
         /**
          * The `Key` class corresponds to the `key` nonterminal in the MessageFormat 2 grammar,
          * https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf .
@@ -563,7 +731,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Key() : wildcard(true) {}
+            Key() : wildcard(true), contents(Literal()) {}
             /**
              * Literal key constructor.
              *
@@ -582,6 +750,13 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Key& operator=(Key&& other) noexcept;
+            /**
+             * Copy assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Key& operator=(const Key& other);
             /**
              * Less than operator. Compares the literal of `this` with the literal of `other`.
              * This method is used in representing the mapping from key lists to patterns
@@ -610,155 +785,24 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             bool operator==(const Key& rhs) const;
-
-        private:
-            UnicodeString toString() const;
-
-            /* const */ bool wildcard; // True if this represents the wildcard "*"
-            /* const */ Literal contents;
-        }; // class Key
-
-        /**
-         * A list of keys (should only be used in immutable contexts)
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        using KeyList = std::vector<Key>;
-
-        /**
-         * The `SelectorKeys` class represents the key list for a single variant.
-         * It corresponds to the `keys` array in the `Variant` interface
-         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
-         *
-         * `SelectorKeys` is immutable, copyable and movable.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        class U_I18N_API SelectorKeys : public UObject {
-        public:
-            /**
-             * Returns the underlying list of keys.
-             *
-             * @return A reference to the list of keys for this variant.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            const KeyList& getKeys() const;
-            /**
-             * The mutable `SelectorKeys::Builder` class allows the key list to be constructed
-             * one key at a time.
-             *
-             * Builder is not copyable or movable.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            class U_I18N_API Builder : public UMemory {
-            private:
-                friend class SelectorKeys;
-                std::vector<Key> keys;
-            public:
-                /**
-                 * Adds a single key to the list.
-                 *
-                 * @param key A reference to the key to be added. `key` is copied.
-                 * @return A reference to the builder.
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                Builder& add(const Key& key) noexcept;
-                /**
-                 * Constructs a new immutable `SelectorKeys` using the list of keys
-                 * set with previous `add()` calls.
-                 *
-                 * The builder object (`this`) can still be used after calling `build()`.
-                 *
-                 * @return          The new SelectorKeys object
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                SelectorKeys build() const noexcept;
-                /**
-                 * Destructor.
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                virtual ~Builder();
-                /**
-                 * Default constructor.
-                 * Returns a Builder with an empty list of keys.
-                 *
-                 * @internal ICU 75.0 technology preview
-                 * @deprecated This API is for technology preview only.
-                 */
-                Builder() = default;
-            }; // class SelectorKeys::Builder
-
-            /**
-             * Less than operator. Compares the two key lists lexicographically.
-             * This method makes it possible for a `SelectorKeys` to be used as a map
-             * key, which allows variants to be represented as a map. It is not expected
-             * to be useful otherwise.
-             *
-             * @param other The SelectorKeys to compare to this one.
-             * @return true if `this` is less than `other`, comparing the two key lists
-             * lexicographically.
-             * Returns false otherwise.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            bool operator<(const SelectorKeys& other) const;
-            /**
-             * Default constructor.
-             * Puts the SelectorKeys into a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            SelectorKeys();
-            /**
-             * Copy constructor.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            SelectorKeys(const SelectorKeys& other) noexcept;
-            /**
-             * Move assignment operator:
-             * The source SelectorKeys will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            SelectorKeys& operator=(SelectorKeys&&) noexcept = default;
-            /**
-             * Copy assignment operator.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            SelectorKeys& operator=(const SelectorKeys& other) noexcept;
             /**
              * Destructor.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            virtual ~SelectorKeys();
-
+            virtual ~Key();
         private:
-            friend class Builder;
+            friend class SelectorKeys::Builder;
 
-            /* const */ KeyList keys;
-            SelectorKeys(const KeyList& ks) : keys(ks) {}
-        }; // class SelectorKeys
+            UnicodeString toString() const;
+
+            /* const */ bool wildcard; // True if this represents the wildcard "*"
+            /* const */ Literal contents;
+
+            static Key* create(Key&& k, UErrorCode& status);
+        }; // class Key
+
 
         /**
          * The `Reserved` class represents a `reserved` annotation, as in the `reserved` nonterminal
@@ -1617,6 +1661,80 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         using ExpressionList = std::vector<Expression>;
+
+            // TODO internal class only -- move to another file
+        /**
+         *  A `Variant` pairs a list of keys with a pattern
+         * It corresponds to the `Variant` interface
+         * defined in https://github.com/unicode-org/message-format-wg/tree/main/spec/data-model
+         *
+         * `Variant` is immutable and copyable. It is not movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class U_I18N_API Variant : public UObject {
+        public:
+            /**
+             * Accesses the pattern of the variant.
+             *
+             * @return A reference to the pattern.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const Pattern& getPattern() const { return p; }
+            /**
+             * Accesses the keys of the variant.
+             *
+             * @return A reference to the keys.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const SelectorKeys& getKeys() const { return k; }
+            /**
+             * Constructor.
+             *
+             * @param keys A reference to a `SelectorKeys`.
+             * @param pattern A pattern (passed by move)
+             * @return A Variant, representing the variant keyed on `keys` that represents `pattern`
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Variant(const SelectorKeys& keys, Pattern&& pattern) : k(keys), p(std::move(pattern)) {}
+            // TODO
+            //            Variant(SelectorKeys&& keys, Pattern&& pattern) : k(keys), p(pattern) {}
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Variant(const Variant& other);
+            /**
+             * Copy assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Variant& operator=(const Variant& other);
+            // TODO
+            Variant() = default;
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Variant();
+            // TODO should be private
+            static Variant* create(SelectorKeys&& keys, Pattern&& pattern, UErrorCode&);
+        private:
+            /* const */ SelectorKeys k;
+            /* const */ Pattern p;
+        }; // class Variant
     } // namespace data_model
 
     // These explicit instantiations have to come before the
@@ -1730,12 +1848,21 @@ namespace message2 {
          * Accesses the variants.
          * Precondition: hasSelectors()
          *
-         * @return A reference to the variant map.
+         * @return The variant map.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const VariantMap& getVariants() const;
+        VariantMap getVariants() const {
+            VariantMap::Builder result;
+
+            if (hasSelectors()) {
+                for (int32_t i = 0; i < numVariants; i++) {
+                    result.add(variants[i].getKeys(), variants[i].getPattern());
+                }
+            }
+            return result.build();
+        }
         /**
          * Accesses the pattern (in a message without selectors).
          * Precondition: !hasSelectors()
@@ -1807,12 +1934,13 @@ namespace message2 {
         private:
             friend class MessageFormatDataModel;
 
-            void buildSelectorsMessage();
+            void buildSelectorsMessage(UErrorCode&);
             bool hasPattern = true;
             bool hasSelectors = false;
             Pattern pattern;
             ExpressionList selectors;
-            VariantMap::Builder variants;
+            //  VariantMap::Builder variants;
+            UVector* variants = nullptr; // Not a LocalPointer for the same reason as in SelectorKeys::Builder
             Bindings locals;
 
         public:
@@ -1834,24 +1962,26 @@ namespace message2 {
              * If a pattern was previously set, clears the pattern.
              *
              * @param selector Expression to add as a selector. Passed by move.
+             * @param errorCode Input/output error code
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& addSelector(Expression&& selector) noexcept;
+            Builder& addSelector(Expression&& selector, UErrorCode& errorCode) noexcept;
             /**
              * Adds a single variant.
              * If a pattern was previously set using `setPattern()`, clears the pattern.
              *
              * @param keys Keys for the variant. Passed by move.
              * @param pattern Pattern for the variant. Passed by move.
+             * @param errorCode Input/output error code
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& addVariant(SelectorKeys&& keys, Pattern&& pattern) noexcept;
+            Builder& addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& errorCode) noexcept;
             /**
              * Sets the body of the message as a pattern.
              * If selectors and/or variants were previously set, clears them.
@@ -1894,10 +2024,21 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Builder();
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Builder();
         }; // class Builder
 
     private:
-        /* const */ bool hasPattern;
+        bool hasPattern() const { return (numVariants == 0); }
+
+        bool bogus = false; // Set if a copy constructor fails
+
+        int32_t numVariants;
 
         // The expressions that are being matched on.
         // Ignored if `hasPattern`
@@ -1905,7 +2046,7 @@ namespace message2 {
 
         // The list of `when` clauses (case arms).
         // Ignored if `hasPattern`
-        /* const */ VariantMap variants;
+        /* const */ LocalArray<Variant> variants;
 
         // The pattern forming the body of the message.
         // Ignored if !hasPattern
@@ -1914,9 +2055,8 @@ namespace message2 {
         // Bindings for local variables
         /* const */ Bindings bindings;
 
-        MessageFormatDataModel(const Builder& builder) noexcept;
+        MessageFormatDataModel(const Builder& builder, UErrorCode&) noexcept;
     }; // class MessageFormatDataModel
-
 } // namespace message2
 
 U_NAMESPACE_END

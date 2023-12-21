@@ -25,7 +25,7 @@ namespace message2 {
     private:
         friend class MessageFormatter;
 
-        void parse(UParseError &);
+        void parse(UParseError&, UErrorCode&);
 
 	/*
 	  Use an internal "parse error" structure to make it easier to translate
@@ -62,9 +62,9 @@ namespace message2 {
 	static void translateParseError(const MessageParseError&, UParseError&);
 	static void setParseError(MessageParseError&, uint32_t);
 	void maybeAdvanceLine();
-	void parseBody();
+	void parseBody(UErrorCode&);
 	void parseDeclarations();
-	void parseSelectors();
+	void parseSelectors(UErrorCode&);
 
 	void parseWhitespaceMaybeRequired(bool);
 	void parseRequiredWhitespace();
@@ -92,7 +92,7 @@ namespace message2 {
 	void parseTextEscape(UnicodeString&);
 	UnicodeString parseText();
 	Key parseKey();
-	SelectorKeys parseNonEmptyKeys();
+	SelectorKeys parseNonEmptyKeys(UErrorCode&);
 	void errorPattern();
 	Pattern parsePattern();
 

@@ -11,7 +11,9 @@
 #include "plurrule_impl.h"
 #include "uvector.h" // U_ASSERT
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 using namespace pluralimpl;
 
@@ -1213,19 +1215,17 @@ Key Parser::parseKey() {
     return k;
 }
 
-SelectorKeys SelectorKeys::Builder::build() const noexcept {
-    // Key list must be non-empty (this should be checked earlier on)
-    U_ASSERT(keys.size() >= 1);
-    return SelectorKeys(keys);
-}
-
 /*
   Consume a non-empty sequence of `key`s separated by whitespace
 
   Takes ownership of `keys`
 */
-SelectorKeys Parser::parseNonEmptyKeys() {
+SelectorKeys Parser::parseNonEmptyKeys(UErrorCode& status) {
     SelectorKeys result;
+
+    if (U_FAILURE(status)) {
+        return result;
+    }
 
     U_ASSERT(inBounds(source, index));
 
@@ -1250,7 +1250,11 @@ or the optional space in [s] pattern?
 This is addressed using "backtracking" (similarly to `parseOptions()`).
 */
 
-    SelectorKeys::Builder keysBuilder;
+    SelectorKeys::Builder keysBuilder(status);
+    if (U_FAILURE(status)) {
+        return result;
+    }
+
     // Since the first key is required, it's simplest to parse the required
     // whitespace and then the first key separately.
     parseRequiredWhitespace();
@@ -1259,7 +1263,7 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
         ERROR(parseError, index);
         return result;
     }
-    keysBuilder.add(parseKey());
+    keysBuilder.add(parseKey(), status);
 
 
     // We've seen at least one whitespace-key pair, so now we can parse
@@ -1289,10 +1293,10 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
             U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
             break;
         }
-        keysBuilder.add(parseKey());
+        keysBuilder.add(parseKey(), status);
     }
 
-    return keysBuilder.build();
+    return keysBuilder.build(status);
 }
 
 /*
@@ -1342,7 +1346,9 @@ Pattern Parser::parsePattern() {
   No postcondition (on return, `index` might equal `source.length()` with no syntax error
   because a message can end with a variant)
 */
-void Parser::parseSelectors() {
+void Parser::parseSelectors(UErrorCode& status) {
+    CHECK_ERROR(status);
+
     U_ASSERT(inBounds(source, index));
 
     parseToken(ID_MATCH);
@@ -1372,7 +1378,8 @@ void Parser::parseSelectors() {
         }
         empty = false;
 
-        dataModel.addSelector(std::move(expression));
+        dataModel.addSelector(std::move(expression), status);
+        CHECK_ERROR(status);
     }
 
     // At least one selector is required
@@ -1398,7 +1405,9 @@ void Parser::parseSelectors() {
         parseToken(ID_WHEN);
 
         // At least one key is required
-        SelectorKeys keyList(parseNonEmptyKeys());
+        SelectorKeys keyList(parseNonEmptyKeys(status));
+
+        CHECK_ERROR(status);
 
         // parseNonEmptyKeys() consumes any trailing whitespace,
         // so the pattern can be consumed next.
@@ -1408,7 +1417,7 @@ void Parser::parseSelectors() {
         CHECK_BOUNDS(source, index, parseError);
         Pattern rhs = parsePattern();
 
-        dataModel.addVariant(std::move(keyList), std::move(rhs));
+        dataModel.addVariant(std::move(keyList), std::move(rhs), status);
 
         // Restore the precondition, *without* erroring out if we've
         // reached the end of input. That's because it's valid for the
@@ -1448,7 +1457,9 @@ void Parser::errorPattern() {
     dataModel.setPattern(result.build());
 }
 
-void Parser::parseBody() {
+void Parser::parseBody(UErrorCode& status) {
+    CHECK_ERROR(status);
+
     // Out-of-input is a syntax warning
     if (!inBounds(source, index)) {
         errorPattern();
@@ -1464,7 +1475,7 @@ void Parser::parseBody() {
     }
     case ID_MATCH[0]: {
         // Selectors
-        parseSelectors();
+        parseSelectors(status);
         return;
     }
     default: {
@@ -1478,7 +1489,9 @@ void Parser::parseBody() {
 // -------------------------------------
 // Parses the source pattern.
 
-void Parser::parse(UParseError &parseErrorResult) {
+void Parser::parse(UParseError &parseErrorResult, UErrorCode& status) {
+    CHECK_ERROR(status);
+
     // parseOptionalWhitespace() succeeds on an empty string, so don't check bounds yet
     parseOptionalWhitespace();
     // parseDeclarations() requires there to be input left, so check to see if
@@ -1491,7 +1504,9 @@ void Parser::parse(UParseError &parseErrorResult) {
     }
 
     parseDeclarations();
-    parseBody();
+    parseBody(status);
+    CHECK_ERROR(status);
+
     parseOptionalWhitespace();
 
     // There are no errors; finally, check that the entire input was consumed

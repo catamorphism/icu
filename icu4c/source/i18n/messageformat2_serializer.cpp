@@ -80,8 +80,8 @@ void Serializer::emit(const Key& k) {
 }
 
 void Serializer::emit(const SelectorKeys& k) {
-  const KeyList& ks = k.getKeys();
-  int32_t len = (int32_t) ks.size();
+  const Key* ks = k.getKeysInternal();
+  int32_t len = k.len;
   // It would be an error for `keys` to be empty;
   // that would mean this is the single `pattern`
   // variant, and in that case, this method shouldn't be called
