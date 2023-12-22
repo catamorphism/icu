@@ -1157,7 +1157,7 @@ void Parser::parseDeclarations(UErrorCode& status) {
 
         // Add binding from lhs to rhs, unless there was an error
         if (lhs.identifier().length() > 0) {
-            dataModel.addLocalVariable(std::move(lhs), std::move(rhs));
+            dataModel.addLocalVariable(std::move(lhs), std::move(rhs), status);
         }
     }
 }

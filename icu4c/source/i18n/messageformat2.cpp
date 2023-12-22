@@ -665,10 +665,10 @@ void MessageFormatter::check(MessageContext& context, const Environment& localEn
 void MessageFormatter::checkDeclarations(MessageContext& context, Environment*& env, UErrorCode &status) const {
     CHECK_ERROR(status);
 
-    const Bindings& decls = getDataModel().getLocalVariables();
-    U_ASSERT(env != nullptr);
+    const Binding* decls = getDataModel().getLocalVariablesInternal();
+    U_ASSERT(env != nullptr && decls != nullptr);
 
-    for (int32_t i = 0; i < (int32_t) decls.size(); i++) {
+    for (int32_t i = 0; i < getDataModel().bindingsLen; i++) {
         const Binding& decl = decls[i];
         const Expression& rhs = decl.getValue();
         check(context, *env, rhs);

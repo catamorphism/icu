@@ -143,8 +143,8 @@ void Checker::checkDeclarations(TypeEnvironment& t) {
     // Only a very simple type system is necessary: local variables
     // have the type "annotated" or "unannotated".
     // Free variables (message arguments) are treated as unannotated.
-    const Bindings& env = dataModel.getLocalVariables();
-    for (int32_t i = 0; i < (int32_t) env.size(); i++) {
+    const Binding* env = dataModel.getLocalVariablesInternal();
+    for (int32_t i = 0; i < dataModel.bindingsLen; i++) {
         const Binding& b = env[i];
         t.extend(b.getVariable(), typeOf(t, b.getValue()));
     }

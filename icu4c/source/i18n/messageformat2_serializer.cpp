@@ -200,9 +200,10 @@ void Serializer::emit(const Pattern& pat) {
 }
 
 void Serializer::serializeDeclarations() {
-    const Bindings& locals = dataModel.getLocalVariables();
+    const Binding* locals = dataModel.getLocalVariablesInternal();
+    U_ASSERT(locals != nullptr);
 
-    for (int32_t i = 0; i < (int32_t) locals.size(); i++) {
+    for (int32_t i = 0; i < dataModel.bindingsLen; i++) {
         const Binding& b = locals[i];
         // No whitespace needed here -- see `message` in the grammar
         emit(ID_LET);

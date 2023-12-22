@@ -241,7 +241,6 @@ Literal::~Literal() {
 Operand::Operand(const Operand& other) : var(other.var), lit(other.lit), type(other.type) {}
 
 Operand& Operand::operator=(Operand&& other) noexcept {
-    this->~Operand();
     switch (other.type) {
         case Type::VARIABLE: {
             var = std::move(other.var);
@@ -479,8 +478,6 @@ UnicodeString FunctionName::toString() const {
 FunctionName::~FunctionName() {}
 
 FunctionName& FunctionName::operator=(FunctionName&& other) noexcept {
-    this->~FunctionName();
-
     functionName = other.functionName;
     functionSigil = other.functionSigil;
 
@@ -850,6 +847,15 @@ const Expression& Binding::getValue() const { return value; }
 
 Binding::Binding(const Binding& other) : var(other.var), value(other.value) {}
 
+/* static */ Binding* Binding::create(VariableName&& keys, Expression&& expr, UErrorCode& status) {
+    NULL_ON_ERROR(status);
+    Binding* result = new Binding(std::move(keys), std::move(expr));
+    if (result == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
+
 Binding& Binding::operator=(const Binding& other) {
     if (this != &other) {
         var = other.var;
@@ -884,12 +890,6 @@ Variant::~Variant() {}
 
 // --------------- MessageFormatDataModel
 
-const Bindings& MessageFormatDataModel::getLocalVariables() const {
-    U_ASSERT(!bogus);
-
-    return bindings;
-}
-
 // The `hasSelectors()` method is provided so that `getSelectors()`,
 // `getVariants()` and `getPattern()` can rely on preconditions
 // rather than taking error codes as arguments.
@@ -908,7 +908,15 @@ const Pattern& MessageFormatDataModel::getPattern() const {
     return pattern;
 }
 
-MessageFormatDataModel::Builder::Builder() {}
+const Binding* MessageFormatDataModel::getLocalVariablesInternal() const {
+    U_ASSERT(!bogus);
+    U_ASSERT(bindings.isValid());
+    return bindings.getAlias();
+}
+
+MessageFormatDataModel::Builder::Builder(UErrorCode& status) {
+    locals = createUVector(status);
+}
 
 // Invalidate pattern and create selectors/variants if necessary
 void MessageFormatDataModel::Builder::buildSelectorsMessage(UErrorCode& status) {
@@ -924,8 +932,10 @@ void MessageFormatDataModel::Builder::buildSelectorsMessage(UErrorCode& status) 
 }
 
 MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariable(VariableName&& variableName,
-                                                                                   Expression&& expression) noexcept {
-    locals.push_back(Binding(std::move(variableName), std::move(expression)));
+                                                                                   Expression&& expression,
+                                                                                   UErrorCode& status) noexcept {
+    U_ASSERT(locals != nullptr);
+    locals->adoptElement(Binding::create(std::move(variableName), std::move(expression), status), status);
 
     return *this;
 }
@@ -969,6 +979,8 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
     CHECK_ERROR(errorCode);
 
     numVariants = builder.variants == nullptr ? 0 : builder.variants->size();
+    U_ASSERT(builder.locals != nullptr);
+    bindingsLen = builder.locals->size();
     Variant* variantArray = nullptr;
     if (!hasPattern()) {
         selectors = ExpressionList(builder.selectors);
@@ -986,7 +998,16 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
         pattern = builder.pattern;
     }
     variants.adoptInstead(variantArray);
-    bindings = Bindings(builder.locals);
+
+    Binding* bindingsArray = new Binding[bindingsLen];
+    if (bindingsArray == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+        return;
+    }
+    for (int32_t i = 0; i < bindingsLen; i++) {
+        bindingsArray[i] = *(static_cast<Binding*>(builder.locals->elementAt(i)));
+    }
+    bindings.adoptInstead(bindingsArray);
 }
 
 MessageFormatDataModel::MessageFormatDataModel(MessageFormatDataModel&& other) noexcept
@@ -994,9 +1015,10 @@ MessageFormatDataModel::MessageFormatDataModel(MessageFormatDataModel&& other) n
       selectors(hasPattern() ? ExpressionList() : ExpressionList(other.selectors)),
       variants(hasPattern() ? LocalArray<Variant>() : LocalArray<Variant>(other.variants.orphan())),
       pattern(hasPattern() ? other.pattern : Pattern()),
-      bindings(other.bindings) {}
+      bindings(other.bindings.orphan()),
+      bindingsLen(other.bindingsLen) {}
 
-MessageFormatDataModel::MessageFormatDataModel() : numVariants(0) {}
+MessageFormatDataModel::MessageFormatDataModel() {}
 
 MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel&& other) noexcept {
     U_ASSERT(!other.bogus);
@@ -1007,8 +1029,30 @@ MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel
         selectors = std::move(other.selectors);
         variants = std::move(other.variants);
     }
+    bindingsLen = other.bindingsLen;
     bindings = std::move(other.bindings);
     return *this;
+}
+
+void MessageFormatDataModel::initBindings(const Binding* other) {
+    Binding* result = new Binding[bindingsLen];
+    if (result == nullptr) {
+        // Set length to 0 to prevent the
+        // bindings array from being accessed
+        bindingsLen = 0;
+        bogus = true;
+    } else {
+        for (int32_t i = 0; i < bindingsLen; i++) {
+            result[i] = other[i];
+        }
+        bindings = LocalArray<Binding>(result);
+        if (!bindings.isValid()) {
+            // Set length to 0 to prevent
+            // the bindings array from being accessed
+            bindingsLen = 0;
+            bogus = true;
+        }
+    }
 }
 
 MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDataModel& other) noexcept {
@@ -1016,6 +1060,7 @@ MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDat
         U_ASSERT(!other.bogus);
 
         numVariants = other.numVariants;
+        bindingsLen = other.bindingsLen;
         if (hasPattern()) {
             pattern = other.pattern;
         } else {
@@ -1030,7 +1075,7 @@ MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDat
             }
             variants.adoptInstead(variantArray);
         }
-        bindings = other.bindings;
+        initBindings(other.bindings.getAlias());
     }
 
     return *this;

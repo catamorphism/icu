@@ -90,7 +90,8 @@ namespace message2 {
             return;
         }
 
-        MessageFormatDataModel::Builder tree;
+        MessageFormatDataModel::Builder tree(success);
+        CHECK_ERROR(success);
 
         // Initialize formatter cache
         CachedFormatters* cachedFormattersPtr = new CachedFormatters();
