@@ -109,8 +109,6 @@ bool OrderedMap<K, V>::Iterator::operator!=(const OrderedMap<K, V>::Iterator& rh
 
 template<class K, class V>
 OrderedMap<K, V>& OrderedMap<K, V>::operator=(OrderedMap<K, V>&& other) noexcept {
-    this->~OrderedMap();
-
     contents = std::move(other.contents);
     keys = std::move(other.keys);
 
@@ -120,8 +118,6 @@ OrderedMap<K, V>& OrderedMap<K, V>::operator=(OrderedMap<K, V>&& other) noexcept
 template<class K, class V>
 OrderedMap<K, V>& OrderedMap<K, V>::operator=(const OrderedMap<K, V>& other) noexcept {
     if (this != &other) {
-        this->~OrderedMap();
-
         contents = other.contents;
         keys = other.keys;
     }

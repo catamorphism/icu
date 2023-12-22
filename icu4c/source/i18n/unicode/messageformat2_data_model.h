@@ -20,6 +20,16 @@ U_NAMESPACE_BEGIN
 
 class UVector;
 
+// Helpers
+template<typename T>
+static std::vector<T> toStdVector(const T* arr, int32_t len) {
+    std::vector<T> result;
+    for (int32_t i = 0; i < len; i++) {
+        result.push_back(arr[i]);
+    }
+    return result;
+}
+
 namespace message2 {
 
     class Checker;
@@ -682,11 +692,7 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             std::vector<Key> getKeys() const {
-                std::vector<Key> result;
-                for (int32_t i = 0; i < len; i++) {
-                    result.push_back(keys[i]);
-                }
-                return result;
+                return toStdVector<Key>(keys.getAlias(), len);
             }
             /**
              * The mutable `SelectorKeys::Builder` class allows the key list to be constructed
@@ -1399,7 +1405,6 @@ namespace message2 {
                 friend class Pattern;
 
                 UVector* parts;  // Not a LocalPointer for the same reason as in `SelectorKeys::Builder`
-                    //                std::vector<PatternPart> parts;
 
             public:
                 /**
@@ -1479,7 +1484,6 @@ namespace message2 {
             friend class Builder;
 
             // Possibly-empty array of parts
-            /* const */ // std::vector<PatternPart> parts;
             int32_t len = 0;
             LocalArray<PatternPart> parts;
 
@@ -1609,82 +1613,6 @@ namespace message2 {
         using VariantMap = OrderedMap<SelectorKeys, Pattern>;
 
         /**
-         *  A `Binding` pairs a variable name with an expression.
-         * It corresponds to the `Declaration` interface
-         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
-         *
-         * `Binding` is immutable and copyable. It is not movable.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        class U_I18N_API Binding : public UObject {
-        public:
-            /**
-             * Accesses the right-hand side of the binding.
-             *
-             * @return A reference to the expression.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            const Expression& getValue() const;
-            /**
-             * Accesses the left-hand side of the binding.
-             *
-             * @return A reference to the variable name.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            const VariableName& getVariable() const { return var; }
-            /**
-             * Constructor.
-             * Precondition: i < numParts()
-             *
-             * @param v A variable name.
-             * @param e An expression.
-             * @return A Binding, representing the pair of `v` and `e`.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Binding(const VariableName& v, const Expression& e) : var(v), value(e){}
-            /**
-             * Copy constructor.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Binding(const Binding& other);
-            /**
-             * Copy assignment operator
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Binding& operator=(const Binding& other);
-            /**
-             * Destructor.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            virtual ~Binding();
-        private:
-            /* const */ VariableName var;
-            /* const */ Expression value;
-        }; // class Binding
-
-        /**
-         * A list of variable bindings (should only be used in
-         * immutable contexts)
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        using Bindings = std::vector<Binding>;
-        /**
          * A list of expressions (should only be used in
          * immutable contexts)
          *
@@ -1766,6 +1694,8 @@ namespace message2 {
             /* const */ SelectorKeys k;
             /* const */ Pattern p;
         }; // class Variant
+
+        class Binding;
     } // namespace data_model
 
     // These explicit instantiations have to come before the
@@ -1853,7 +1783,12 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const Bindings& getLocalVariables() const;
+        std::vector<Binding> getLocalVariables() const {
+            if (bogus) {
+                return std::vector<Binding>();
+            }
+            return toStdVector<Binding>(bindings.getAlias(), bindingsLen);
+        }
         /**
          * Determines what type of message this is.
          *
@@ -1970,9 +1905,8 @@ namespace message2 {
             bool hasSelectors = false;
             Pattern pattern;
             ExpressionList selectors;
-            //  VariantMap::Builder variants;
             UVector* variants = nullptr; // Not a LocalPointer for the same reason as in SelectorKeys::Builder
-            Bindings locals;
+            UVector* locals   = nullptr;
 
         public:
             /**
@@ -1982,12 +1916,13 @@ namespace message2 {
              *                     Passed by move.
              * @param expression The expression to which `variableName` should be bound.
              *                   Passed by move.
+             * @param status     Input/output error code
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& addLocalVariable(VariableName&& variableName, Expression&& expression) noexcept;
+            Builder& addLocalVariable(VariableName&& variableName, Expression&& expression, UErrorCode& status) noexcept;
             /**
              * Adds a selector expression. Copies `expression`.
              * If a pattern was previously set, clears the pattern.
@@ -2049,12 +1984,15 @@ namespace message2 {
              * Default constructor.
              * Returns a Builder with no pattern or selectors set.
              * Either `setPattern()` or both `addSelector()` and
-             * `addVariant()` must be called before calling `build()`.
+             * `addVariant()` must be called before calling `build()`
+             * on the resulting builder.
+             *
+             * @param status Input/output error code.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder();
+            Builder(UErrorCode& status);
             /**
              * Destructor.
              *
@@ -2065,11 +2003,15 @@ namespace message2 {
         }; // class Builder
 
     private:
+        friend class Checker;
+        friend class MessageFormatter;
+        friend class Serializer;
+
         bool hasPattern() const { return (numVariants == 0); }
 
         bool bogus = false; // Set if a copy constructor fails
 
-        int32_t numVariants;
+        int32_t numVariants = 0;
 
         // The expressions that are being matched on.
         // Ignored if `hasPattern`
@@ -2084,10 +2026,97 @@ namespace message2 {
         /* const */ Pattern pattern;
 
         // Bindings for local variables
-        /* const */ Bindings bindings;
+        /* const */ LocalArray<Binding> bindings;
+        int32_t bindingsLen = 0;
+
+        const Binding* getLocalVariablesInternal() const;
+        // Helper
+        void initBindings(const Binding*);
 
         MessageFormatDataModel(const Builder& builder, UErrorCode&) noexcept;
     }; // class MessageFormatDataModel
+
+    namespace data_model {
+        /**
+         *  A `Binding` pairs a variable name with an expression.
+         * It corresponds to the `Declaration` interface
+         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
+         *
+         * `Binding` is immutable and copyable. It is not movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class U_I18N_API Binding : public UObject {
+        public:
+            /**
+             * Accesses the right-hand side of the binding.
+             *
+             * @return A reference to the expression.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const Expression& getValue() const;
+            /**
+             * Accesses the left-hand side of the binding.
+             *
+             * @return A reference to the variable name.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const VariableName& getVariable() const { return var; }
+            /**
+             * Constructor.
+             * Precondition: i < numParts()
+             *
+             * @param v A variable name.
+             * @param e An expression.
+             * @return A Binding, representing the pair of `v` and `e`.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Binding(const VariableName& v, const Expression& e) : var(v), value(e){}
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Binding(const Binding& other);
+            /**
+             * Copy assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Binding& operator=(const Binding& other);
+            /**
+             * Default constructor.
+             * Puts the Binding into a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Binding() = default;
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Binding();
+        private:
+            friend class MessageFormatDataModel::Builder;
+
+            /* const */ VariableName var;
+            /* const */ Expression value;
+
+            static Binding* create(VariableName&& keys, Expression&& pattern, UErrorCode&);
+        }; // class Binding
+    } // namespace data_model
 } // namespace message2
 
 U_NAMESPACE_END
