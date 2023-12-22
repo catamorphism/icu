@@ -544,11 +544,11 @@ namespace message2 {
             virtual ~PrioritizedVariant();
         }; // class PrioritizedVariant
 
-        void resolveSelectors(MessageContext&, const Environment& env, const data_model::ExpressionList&, UErrorCode&, std::vector<ExpressionContext>&) const;
-        void filterVariants(const VariantMap&, const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&) const;
+        void resolveSelectors(MessageContext&, const Environment& env, UErrorCode&, std::vector<ExpressionContext>&) const;
+        void filterVariants(const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&) const;
         void sortVariants(const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&) const;
         void matchSelectorKeys(const std::vector<UnicodeString>&, ExpressionContext&, std::vector<UnicodeString>&, UErrorCode&) const;
-        void resolvePreferences(std::vector<ExpressionContext>&, const data_model::VariantMap&, std::vector<std::vector<UnicodeString>>&, UErrorCode&) const;
+        void resolvePreferences(std::vector<ExpressionContext>&, std::vector<std::vector<UnicodeString>>&, UErrorCode&) const;
 
         // Formatting methods
         void formatLiteral(const data_model::Literal&, ExpressionContext&) const;
@@ -560,7 +560,7 @@ namespace message2 {
         void resolveOptions(const Environment& env, const data_model::OptionMap&, ExpressionContext&, UErrorCode&) const;
         void formatOperand(const Environment&, const data_model::Operand&, ExpressionContext&, UErrorCode&) const;
         void evalArgument(const data_model::VariableName&, ExpressionContext&) const;
-        void formatSelectors(MessageContext& context, const Environment& env, const data_model::ExpressionList& selectors, const data_model::VariantMap& variants, UErrorCode &status, UnicodeString& result) const noexcept;
+        void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const noexcept;
 
         // Function registry methods
         const Formatter* maybeCachedFormatter(MessageContext&, const data_model::FunctionName&, UErrorCode& errorCode) const;

@@ -116,9 +116,8 @@ void Checker::checkSelectors(const TypeEnvironment& t) {
 
     // Check each selector; if it's not annotated, emit a
     // "missing selector annotation" error
-    const ExpressionList& selectors = dataModel.getSelectors();
-    for (int32_t i = 0; i < (int32_t) selectors.size(); i++) {
-        requireAnnotated(t, selectors[i]);
+    for (int32_t i = 0; i < dataModel.numSelectors; i++) {
+        requireAnnotated(t, dataModel.selectors[i]);
     }
 }
 

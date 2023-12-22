@@ -218,12 +218,10 @@ void Serializer::serializeDeclarations() {
 
 void Serializer::serializeSelectors() {
     U_ASSERT(dataModel.hasSelectors());
-    const ExpressionList& selectors = dataModel.getSelectors();
-    int32_t len = (int32_t) selectors.size();
-    U_ASSERT(len > 0);
+    const Expression* selectors = dataModel.getSelectorsInternal();
 
     emit(ID_MATCH);
-    for (int32_t i = 0; i < len; i++) {
+    for (int32_t i = 0; i < dataModel.numVariants; i++) {
         // No whitespace needed here -- see `selectors` in the grammar
         emit(selectors[i]);
     }

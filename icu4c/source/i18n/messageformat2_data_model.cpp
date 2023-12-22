@@ -21,7 +21,7 @@ namespace message2 {
 
 // Implementation
 
-//------------------ Helper
+//------------------ Helpers
 static UVector* createUVector(UErrorCode& status) {
     if (U_FAILURE(status)) {
         return nullptr;
@@ -32,6 +32,47 @@ static UVector* createUVector(UErrorCode& status) {
     }
     result->setDeleter(uprv_deleteUObject);
     return result.orphan();
+}
+
+template<typename T>
+static T* create(T&& node, UErrorCode& status) {
+    NULL_ON_ERROR(status);
+    T* result = new T(std::move(node));
+    if (result == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
+
+template<typename T>
+static T* copyArray(const T* source, int32_t& len) { // `len` is an in/out param
+    T* dest = new T[len];
+    if (dest == nullptr) {
+        // Set length to 0 to prevent the
+        // array from being accessed
+        len = 0;
+    } else {
+        for (int32_t i = 0; i < len; i++) {
+            dest[i] = source[i];
+        }
+    }
+    return dest;
+}
+
+template<typename T>
+static T* copyVectorToArray(const UVector& source, int32_t& len) {
+    len = source.size();
+    T* dest = new T[len];
+    if (dest == nullptr) {
+        // Set length to 0 to prevent the
+        // array from being accessed
+        len = 0;
+    } else {
+        for (int32_t i = 0; i < len; i++) {
+            dest[i] = *(static_cast<T*>(source.elementAt(i)));
+        }
+    }
+    return dest;
 }
 
 //------------------ SelectorKeys
@@ -72,7 +113,7 @@ SelectorKeys::Builder::Builder(UErrorCode& status) {
 SelectorKeys::Builder& SelectorKeys::Builder::add(Key&& key, UErrorCode& status) noexcept {
     U_ASSERT(keys != nullptr);
     if (U_SUCCESS(status)) {
-        Key* k = Key::create(std::move(key), status);
+        Key* k = create<Key>(std::move(key), status);
         keys->adoptElement(k, status);
     }
     return *this;
@@ -112,22 +153,7 @@ SelectorKeys::SelectorKeys(const UVector& ks, UErrorCode& status) : len(ks.size(
 SelectorKeys& SelectorKeys::operator=(const SelectorKeys& other) {
     if (this != &other) {
         len = other.len;
-        Key* result = new Key[len];
-        if (result == nullptr) {
-            // Set length to 0 to prevent the
-            // keys array from being accessed
-            len = 0;
-        } else {
-            for (int32_t i = 0; i < len; i++) {
-                result[i] = other.keys[i];
-            }
-            keys = LocalArray<Key>(result);
-            if (!keys.isValid()) {
-                // Set length to 0 to prevent
-                // the keys array from being accessed
-                len = 0;
-            }
-        }
+        keys.adoptInstead(copyArray<Key>(other.keys.getAlias(), len));
     }
     return *this;
 }
@@ -223,15 +249,6 @@ Literal::Literal(Literal&& other) noexcept {
     contents = std::move(other.contents);
 }
 
-/* static */ Literal* Literal::create(Literal&& l, UErrorCode& status) {
-    NULL_ON_ERROR(status);
-    Literal* result = new Literal(std::move(l));
-    if (result == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
 Literal::~Literal() {
     thisIsQuoted = false;
 }
@@ -295,15 +312,6 @@ const VariableName& Operand::asVariable() const {
 Operand::~Operand() {}
 
 //---------------- Key
-
-/* static */ Key* Key::create(Key&& k, UErrorCode& status) {
-    NULL_ON_ERROR(status);
-    Key* result = new Key(std::move(k));
-    if (result == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
 
 Key& Key::operator=(Key&& other) noexcept {
     wildcard = other.wildcard;
@@ -435,7 +443,7 @@ Reserved Reserved::Builder::build(UErrorCode& status) const noexcept {
 Reserved::Builder& Reserved::Builder::add(Literal&& part, UErrorCode& status) noexcept {
     U_ASSERT(parts != nullptr);
     if (U_SUCCESS(status)) {
-        Literal* l = Literal::create(std::move(part), status);
+        Literal* l = create<Literal>(std::move(part), status);
         parts->adoptElement(l, status);
     }
     return *this;
@@ -743,15 +751,6 @@ PatternPart& PatternPart::operator=(const PatternPart& other) {
     return *this;
 }
 
-/* static */ PatternPart* PatternPart::create(PatternPart&& k, UErrorCode& status) {
-    NULL_ON_ERROR(status);
-    PatternPart* result = new PatternPart(std::move(k));
-    if (result == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
 PatternPart::~PatternPart() {}
 
 // ---------------- Pattern
@@ -817,7 +816,7 @@ Pattern Pattern::Builder::build(UErrorCode& status) const noexcept {
 Pattern::Builder& Pattern::Builder::add(PatternPart&& part, UErrorCode& status) noexcept {
     U_ASSERT(parts != nullptr);
     if (U_SUCCESS(status)) {
-        PatternPart* l = PatternPart::create(std::move(part), status);
+        PatternPart* l = create<PatternPart>(std::move(part), status);
         parts->adoptElement(l, status);
     }
     return *this;
@@ -847,15 +846,6 @@ const Expression& Binding::getValue() const { return value; }
 
 Binding::Binding(const Binding& other) : var(other.var), value(other.value) {}
 
-/* static */ Binding* Binding::create(VariableName&& keys, Expression&& expr, UErrorCode& status) {
-    NULL_ON_ERROR(status);
-    Binding* result = new Binding(std::move(keys), std::move(expr));
-    if (result == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
 Binding& Binding::operator=(const Binding& other) {
     if (this != &other) {
         var = other.var;
@@ -868,15 +858,6 @@ Binding& Binding::operator=(const Binding& other) {
 Binding::~Binding() {}
 
 // --------------- Variant
-
-/* static */ Variant* Variant::create(SelectorKeys&& s, Pattern&& p, UErrorCode& status) {
-    NULL_ON_ERROR(status);
-    Variant* result = new Variant(std::move(s), std::move(p));
-    if (result == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
 
 Variant& Variant::operator=(const Variant& other) {
     if (this != &other) {
@@ -895,12 +876,11 @@ Variant::~Variant() {}
 // rather than taking error codes as arguments.
 UBool MessageFormatDataModel::hasSelectors() const {
     U_ASSERT(!bogus);
-    return !hasPattern();
-}
-
-const ExpressionList& MessageFormatDataModel::getSelectors() const {
-    U_ASSERT(hasSelectors());
-    return selectors;
+    if (!hasPattern()) {
+        U_ASSERT(selectors.isValid());
+        return true;
+    }
+    return false;
 }
 
 const Pattern& MessageFormatDataModel::getPattern() const {
@@ -914,6 +894,12 @@ const Binding* MessageFormatDataModel::getLocalVariablesInternal() const {
     return bindings.getAlias();
 }
 
+const Expression* MessageFormatDataModel::getSelectorsInternal() const {
+    U_ASSERT(!bogus);
+    U_ASSERT(hasSelectors());
+    return selectors.getAlias();
+}
+
 MessageFormatDataModel::Builder::Builder(UErrorCode& status) {
     locals = createUVector(status);
 }
@@ -923,7 +909,7 @@ void MessageFormatDataModel::Builder::buildSelectorsMessage(UErrorCode& status) 
     CHECK_ERROR(status);
 
     if (hasPattern) {
-        selectors = ExpressionList();
+        selectors = createUVector(status);
         variants = createUVector(status);
         hasPattern = false;
     }
@@ -935,7 +921,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariab
                                                                                    Expression&& expression,
                                                                                    UErrorCode& status) noexcept {
     U_ASSERT(locals != nullptr);
-    locals->adoptElement(Binding::create(std::move(variableName), std::move(expression), status), status);
+    locals->adoptElement(create<Binding>(Binding(std::move(variableName), std::move(expression)), status), status);
 
     return *this;
 }
@@ -947,7 +933,8 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(Ex
     THIS_ON_ERROR(status);
 
     buildSelectorsMessage(status);
-    selectors.push_back(std::move(selector));
+    U_ASSERT(selectors != nullptr);
+    selectors->adoptElement(create<Expression>(std::move(selector), status), status);
 
     return *this;
 }
@@ -957,7 +944,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(Ex
 */
 MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& errorCode) noexcept {
     buildSelectorsMessage(errorCode);
-    Variant* v = Variant::create(std::move(keys), std::move(pattern), errorCode);
+    Variant* v = create<Variant>(Variant(std::move(keys), std::move(pattern)), errorCode);
     if (U_SUCCESS(errorCode)) {
         variants->adoptElement(v, errorCode);
     }
@@ -979,40 +966,27 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
     CHECK_ERROR(errorCode);
 
     numVariants = builder.variants == nullptr ? 0 : builder.variants->size();
+    numSelectors = builder.selectors == nullptr ? 0 : builder.selectors->size();
     U_ASSERT(builder.locals != nullptr);
     bindingsLen = builder.locals->size();
-    Variant* variantArray = nullptr;
     if (!hasPattern()) {
-        selectors = ExpressionList(builder.selectors);
-        variantArray = new Variant[numVariants];
-        if (variantArray == nullptr) {
-            errorCode = U_MEMORY_ALLOCATION_ERROR;
-            return;
-        }
-        for (int32_t i = 0; i < numVariants; i++) {
-            variantArray[i] = *(static_cast<Variant*>(builder.variants->elementAt(i)));
-        }
+        U_ASSERT(numVariants != 0 && numSelectors != 0);
+        variants.adoptInstead(copyVectorToArray<Variant>(*builder.variants, numVariants));
+        selectors.adoptInstead(copyVectorToArray<Expression>(*builder.selectors, numSelectors));
         pattern = Pattern();
+        bogus &= (variants.isValid() && selectors.isValid());
     } else {
-        selectors = ExpressionList();
+        selectors = LocalArray<Expression>();
         pattern = builder.pattern;
     }
-    variants.adoptInstead(variantArray);
-
-    Binding* bindingsArray = new Binding[bindingsLen];
-    if (bindingsArray == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return;
-    }
-    for (int32_t i = 0; i < bindingsLen; i++) {
-        bindingsArray[i] = *(static_cast<Binding*>(builder.locals->elementAt(i)));
-    }
-    bindings.adoptInstead(bindingsArray);
+    bindings.adoptInstead(copyVectorToArray<Binding>(*builder.locals, bindingsLen));
+    bogus &= bindings.isValid();
 }
 
 MessageFormatDataModel::MessageFormatDataModel(MessageFormatDataModel&& other) noexcept
     : numVariants(other.numVariants),
-      selectors(hasPattern() ? ExpressionList() : ExpressionList(other.selectors)),
+      numSelectors(other.numSelectors),
+      selectors(hasPattern() ? LocalArray<Expression>() : LocalArray<Expression>(other.selectors.orphan())),
       variants(hasPattern() ? LocalArray<Variant>() : LocalArray<Variant>(other.variants.orphan())),
       pattern(hasPattern() ? other.pattern : Pattern()),
       bindings(other.bindings.orphan()),
@@ -1023,6 +997,7 @@ MessageFormatDataModel::MessageFormatDataModel() {}
 MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel&& other) noexcept {
     U_ASSERT(!other.bogus);
     numVariants = other.numVariants;
+    numSelectors = other.numSelectors;
     if (hasPattern()) {
         pattern = std::move(other.pattern);
     } else {
@@ -1034,50 +1009,27 @@ MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel
     return *this;
 }
 
-void MessageFormatDataModel::initBindings(const Binding* other) {
-    Binding* result = new Binding[bindingsLen];
-    if (result == nullptr) {
-        // Set length to 0 to prevent the
-        // bindings array from being accessed
-        bindingsLen = 0;
-        bogus = true;
-    } else {
-        for (int32_t i = 0; i < bindingsLen; i++) {
-            result[i] = other[i];
-        }
-        bindings = LocalArray<Binding>(result);
-        if (!bindings.isValid()) {
-            // Set length to 0 to prevent
-            // the bindings array from being accessed
-            bindingsLen = 0;
-            bogus = true;
-        }
-    }
-}
-
 MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDataModel& other) noexcept {
     if (this != &other) {
         U_ASSERT(!other.bogus);
 
         numVariants = other.numVariants;
+        numSelectors = other.numSelectors;
         bindingsLen = other.bindingsLen;
         if (hasPattern()) {
             pattern = other.pattern;
         } else {
-            selectors = other.selectors;
-            Variant* variantArray = new Variant[numVariants];
-            if (variantArray == nullptr) {
+            selectors.adoptInstead(copyArray(other.selectors.getAlias(), numSelectors));
+            variants.adoptInstead(copyArray(other.variants.getAlias(), numVariants));
+            if (!(selectors.isValid() && variants.isValid())) {
                 bogus = true;
-                return *this;
             }
-            for (int32_t i = 0; i < numVariants; i++) {
-                variantArray[i] = other.variants[i];
-            }
-            variants.adoptInstead(variantArray);
         }
-        initBindings(other.bindings.getAlias());
+        bindings.adoptInstead(copyArray(other.bindings.getAlias(), bindingsLen));
+        if (!bindings.isValid()) {
+            bogus = true;
+        }
     }
-
     return *this;
 }
 
@@ -1094,8 +1046,14 @@ MessageFormatDataModel MessageFormatDataModel::Builder::build(UErrorCode& errorC
 
 MessageFormatDataModel::~MessageFormatDataModel() {}
 MessageFormatDataModel::Builder::~Builder() {
+    if (selectors != nullptr) {
+        delete selectors;
+    }
     if (variants != nullptr) {
         delete variants;
+    }
+    if (locals != nullptr) {
+        delete locals;
     }
 }
 

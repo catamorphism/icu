@@ -225,13 +225,15 @@ void MessageFormatter::formatPattern(MessageContext& globalContext, const Enviro
 // Selection
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-selectors
-void MessageFormatter::resolveSelectors(MessageContext& context, const Environment& env, const ExpressionList& selectors, UErrorCode &status, std::vector<ExpressionContext>& res) const {
+void MessageFormatter::resolveSelectors(MessageContext& context, const Environment& env, UErrorCode &status, std::vector<ExpressionContext>& res) const {
     CHECK_ERROR(status);
+    U_ASSERT(dataModel.hasSelectors());
 
+    const Expression* selectors = dataModel.selectors.getAlias();
     // 1. Let res be a new empty list of resolved values that support selection.
     // (Implicit, since `res` is an out-parameter)
     // 2. For each expression exp of the message's selectors
-    for (int32_t i = 0; i < (int32_t) selectors.size(); i++) {
+    for (int32_t i = 0; i < dataModel.numSelectors; i++) {
         ExpressionContext rv(context);
         // 2i. Let rv be the resolved value of exp.
         formatSelectorExpression(env, selectors[i], rv, status);
@@ -274,7 +276,6 @@ void MessageFormatter::matchSelectorKeys(const std::vector<UnicodeString>& keys,
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-preferences
 void MessageFormatter::resolvePreferences(std::vector<ExpressionContext>& res,
-					  const VariantMap& variants,
 					  std::vector<std::vector<UnicodeString>>& pref,
 					  UErrorCode &status) const {
     CHECK_ERROR(status);
@@ -282,15 +283,16 @@ void MessageFormatter::resolvePreferences(std::vector<ExpressionContext>& res,
     // 1. Let pref be a new empty list of lists of strings.
     // (Implicit, since `pref` is an out-parameter)
     UnicodeString ks;
-    int32_t numVariants = variants.size();
+    int32_t numVariants = dataModel.numVariants;
+    const Variant* variants = dataModel.variants.getAlias();
     std::vector<UnicodeString> matches(numVariants);
     // 2. For each index i in res
     for (int32_t i = 0; i < (int32_t) res.size(); i++) {
         // 2i. Let keys be a new empty list of strings.
 	std::vector<UnicodeString> keys;
         // 2ii. For each variant `var` of the message
-        for (auto iter = variants.begin(); iter != variants.end(); ++iter) {
-            const SelectorKeys& selectorKeys = iter.first();
+        for (int32_t variantNum = 0; variantNum < numVariants; variantNum++) {
+            const SelectorKeys& selectorKeys = variants[variantNum].getKeys();
 
             // Note: Here, `var` names the key list of `var`,
             // not a Variant itself
@@ -320,15 +322,16 @@ void MessageFormatter::resolvePreferences(std::vector<ExpressionContext>& res,
 }
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#filter-variants
-void MessageFormatter::filterVariants(const VariantMap& variants,
-				      const std::vector<std::vector<UnicodeString>>& pref,
+void MessageFormatter::filterVariants(const std::vector<std::vector<UnicodeString>>& pref,
 				      std::vector<MessageFormatter::PrioritizedVariant>& vars) const {
+    const Variant* variants = dataModel.variants.getAlias();
+
     // 1. Let `vars` be a new empty list of variants.
     // (Not needed since `vars` is an out-parameter)
     // 2. For each variant `var` of the message:
-    for (auto iter = variants.begin(); iter != variants.end(); ++iter) {
-        const SelectorKeys& selectorKeys = iter.first();
-        const Pattern& p = iter.second();
+    for (int32_t j = 0; j < dataModel.numVariants; j++) {
+        const SelectorKeys& selectorKeys = variants[j].getKeys();
+        const Pattern& p = variants[j].getPattern();
 
         // Note: Here, `var` names the key list of `var`,
         // not a Variant itself
@@ -527,28 +530,28 @@ void MessageFormatter::formatSelectorExpression(const Environment& globalEnv, co
 }
 
 // This method is marked `noexcept` because it uses mutable vector operations, which could fail
-void MessageFormatter::formatSelectors(MessageContext& context, const Environment& env, const ExpressionList& selectors, const VariantMap& variants, UErrorCode &status, UnicodeString& result) const noexcept {
+void MessageFormatter::formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const noexcept {
     CHECK_ERROR(status);
 
     // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
 
     // Resolve Selectors
     // res is a vector of ResolvedExpressions
-    int32_t numSelectors = selectors.size();
+    int32_t numSelectors = dataModel.numSelectors;
 
     // vector of ExpressionContexts
     std::vector<ExpressionContext> res;
-    resolveSelectors(context, env, selectors, status, res);
+    resolveSelectors(context, env, status, res);
 
     // Resolve Preferences
     // pref is a vector of vectors of strings
     std::vector<std::vector<UnicodeString>> pref(numSelectors);
-    resolvePreferences(res, variants, pref, status);
+    resolvePreferences(res, pref, status);
 
     // Filter Variants
     // vars is a vector of PrioritizedVariants
     std::vector<PrioritizedVariant> vars;
-    filterVariants(variants, pref, vars);
+    filterVariants(pref, vars);
 
     // Sort Variants and select the final pattern
     // Note: `sortable` in the spec is just `vars` here,
@@ -614,7 +617,7 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
         if (err.hasSyntaxError() || err.hasDataModelError()) {
             result += REPLACEMENT;
         } else {
-            formatSelectors(context, *globalEnv, dataModel.getSelectors(), dataModel.getVariants(), status, result);
+            formatSelectors(context, *globalEnv, status, result);
         }
     }
     // Update status according to all errors seen while formatting
