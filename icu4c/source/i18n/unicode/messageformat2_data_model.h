@@ -529,8 +529,6 @@ namespace message2 {
 
             /* const */ bool thisIsQuoted = false;
             /* const */ UnicodeString contents;
-
-            static Literal* create(Literal&& k, UErrorCode& status);
         };
 
         /**
@@ -945,8 +943,6 @@ namespace message2 {
 
             /* const */ bool wildcard; // True if this represents the wildcard "*"
             /* const */ Literal contents;
-
-            static Key* create(Key&& k, UErrorCode& status);
         }; // class Key
 
         /**
@@ -1331,7 +1327,6 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Expression();
-
         private:
             /*
               Internally, an expression is represented as the application of an optional operator to an operand.
@@ -1598,8 +1593,6 @@ namespace message2 {
             /* const */ UnicodeString text;
             // Not used if isRawText
             /* const */ Expression expression;
-
-            static PatternPart* create(PatternPart&&, UErrorCode&);
         }; // class PatternPart
 
         /**
@@ -1612,16 +1605,7 @@ namespace message2 {
          */
         using VariantMap = OrderedMap<SelectorKeys, Pattern>;
 
-        /**
-         * A list of expressions (should only be used in
-         * immutable contexts)
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        using ExpressionList = std::vector<Expression>;
-
-            // TODO internal class only -- move to another file
+        // TODO internal class only -- move to another file
         /**
          *  A `Variant` pairs a list of keys with a pattern
          * It corresponds to the `Variant` interface
@@ -1663,15 +1647,6 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Variant(const SelectorKeys& keys, Pattern&& pattern) : k(keys), p(std::move(pattern)) {}
-            // TODO
-            //            Variant(SelectorKeys&& keys, Pattern&& pattern) : k(keys), p(pattern) {}
-            /**
-             * Copy constructor.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Variant(const Variant& other);
             /**
              * Copy assignment operator
              *
@@ -1688,8 +1663,6 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             virtual ~Variant();
-            // TODO should be private
-            static Variant* create(SelectorKeys&& keys, Pattern&& pattern, UErrorCode&);
         private:
             /* const */ SelectorKeys k;
             /* const */ Pattern p;
@@ -1809,7 +1782,12 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const ExpressionList& getSelectors() const;
+        const std::vector<Expression> getSelectors() const {
+            if (!hasSelectors()) {
+                return {};
+            }
+            return toStdVector<Expression>(selectors.getAlias(), numSelectors);
+        }
         /**
          * Accesses the variants.
          * Precondition: hasSelectors()
@@ -1904,8 +1882,9 @@ namespace message2 {
             bool hasPattern = true;
             bool hasSelectors = false;
             Pattern pattern;
-            ExpressionList selectors;
-            UVector* variants = nullptr; // Not a LocalPointer for the same reason as in SelectorKeys::Builder
+            // The following members are not LocalPointers for the same reason as in SelectorKeys::Builder
+            UVector* selectors = nullptr;
+            UVector* variants = nullptr;
             UVector* locals   = nullptr;
 
         public:
@@ -2012,10 +1991,11 @@ namespace message2 {
         bool bogus = false; // Set if a copy constructor fails
 
         int32_t numVariants = 0;
+        int32_t numSelectors = 0;
 
         // The expressions that are being matched on.
         // Ignored if `hasPattern`
-        /* const */ ExpressionList selectors;
+        /* const */ LocalArray<Expression> selectors;
 
         // The list of `when` clauses (case arms).
         // Ignored if `hasPattern`
@@ -2030,6 +2010,8 @@ namespace message2 {
         int32_t bindingsLen = 0;
 
         const Binding* getLocalVariablesInternal() const;
+        const Expression* getSelectorsInternal() const;
+
         // Helper
         void initBindings(const Binding*);
 
@@ -2113,8 +2095,6 @@ namespace message2 {
 
             /* const */ VariableName var;
             /* const */ Expression value;
-
-            static Binding* create(VariableName&& keys, Expression&& pattern, UErrorCode&);
         }; // class Binding
     } // namespace data_model
 } // namespace message2
