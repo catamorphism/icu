@@ -7,8 +7,9 @@
 
 #include "unicode/messageformat2_data_model.h"
 #include "unicode/messageformat2.h"
+#include "messageformat2_context.h"
 #include "messageformat2_macros.h"
-#include "uvector.h" // U_ASSERT
+#include "uvector.h"
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
 // Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
@@ -22,27 +23,6 @@ namespace message2 {
 // Implementation
 
 //------------------ Helpers
-static UVector* createUVector(UErrorCode& status) {
-    if (U_FAILURE(status)) {
-        return nullptr;
-    }
-    LocalPointer<UVector> result(new UVector(status));
-    if (U_FAILURE(status)) {
-        return nullptr;
-    }
-    result->setDeleter(uprv_deleteUObject);
-    return result.orphan();
-}
-
-template<typename T>
-static T* create(T&& node, UErrorCode& status) {
-    NULL_ON_ERROR(status);
-    T* result = new T(std::move(node));
-    if (result == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
 
 template<typename T>
 static T* copyArray(const T* source, int32_t& len) { // `len` is an in/out param

@@ -30,6 +30,7 @@ namespace message2 {
     class Environment;
     class ExpressionContext;
     class MessageContext;
+    class StaticErrors;
 
     // Arguments
     // ----------
@@ -198,109 +199,6 @@ namespace message2 {
         // be copied
         std::map<UnicodeString, const UObject*> objectContents;
     }; // class MessageArguments
-
-    // Errors
-    // ----------
-
-    class DynamicErrors;
-    class StaticErrors;
-
-    // Internal class -- used as a private field in MessageFormatter
-    template <typename ErrorType>
-    class Error : public UObject {
-    public:
-        Error(ErrorType ty) : type(ty) {}
-        Error(ErrorType ty, const UnicodeString& s) : type(ty), contents(s) {}
-        virtual ~Error();
-    private:
-        friend class DynamicErrors;
-        friend class StaticErrors;
-
-        ErrorType type;
-        UnicodeString contents;
-    }; // class Error
-
-    enum StaticErrorType {
-        DuplicateOptionName,
-        MissingSelectorAnnotation,
-        NonexhaustivePattern,
-        SyntaxError,
-        VariantKeyMismatchError
-    };
-
-    enum DynamicErrorType {
-        UnresolvedVariable,
-        FormattingError,
-        ReservedError,
-        SelectorError,
-        UnknownFunction,
-    };
-
-    using StaticError = Error<StaticErrorType>;
-    using DynamicError = Error<DynamicErrorType>;
-
-    // These explicit instantiations have to come before the
-    // destructor definitions
-    template<>
-    Error<StaticErrorType>::~Error();
-    template<>
-    Error<DynamicErrorType>::~Error();
-
-    class StaticErrors : public UObject {
-    private:
-        friend class DynamicErrors;
-
-        std::vector<StaticError> syntaxAndDataModelErrors;
-        bool dataModelError = false;
-        bool missingSelectorAnnotationError = false;
-        bool syntaxError = false;
-
-    public:
-        StaticErrors();
-
-        void setMissingSelectorAnnotation();
-        void setDuplicateOptionName();
-        void addSyntaxError();
-        bool hasDataModelError() const { return dataModelError; }
-        bool hasSyntaxError() const { return syntaxError; }
-        bool hasMissingSelectorAnnotationError() const { return missingSelectorAnnotationError; }
-        void addError(StaticError) noexcept;
-        void checkErrors(UErrorCode&);
-
-        virtual ~StaticErrors();
-    }; // class StaticErrors
-
-    class DynamicErrors : public UObject {
-    private:
-        const StaticErrors& staticErrors;
-        std::vector<DynamicError> resolutionAndFormattingErrors;
-        bool formattingError = false;
-        bool selectorError = false;
-        bool unknownFunctionError = false;
-        bool unresolvedVariableError = false;
-
-    public:
-        DynamicErrors(const StaticErrors&);
-
-        int32_t count() const;
-        void setSelectorError(const FunctionName&);
-        void setReservedError();
-        void setUnresolvedVariable(const VariableName&);
-        void setUnknownFunction(const FunctionName&);
-        void setFormattingError(const FunctionName&);
-        bool hasDataModelError() const { return staticErrors.hasDataModelError(); }
-        bool hasFormattingError() const { return formattingError; }
-        bool hasSelectorError() const { return selectorError; }
-        bool hasSyntaxError() const { return staticErrors.hasSyntaxError(); }
-        bool hasUnknownFunctionError() const { return unknownFunctionError; }
-        bool hasMissingSelectorAnnotationError() const { return staticErrors.hasMissingSelectorAnnotationError(); }
-        bool hasUnresolvedVariableError() const { return unresolvedVariableError; }
-        void addError(DynamicError) noexcept;
-        void checkErrors(UErrorCode&) const;
-        bool hasError() const;
-
-        virtual ~DynamicErrors();
-    }; // class DynamicErrors
 
     /**
      * <p>MessageFormatter is a Technical Preview API implementing MessageFormat 2.0.
@@ -576,9 +474,9 @@ namespace message2 {
 
         // Checking for resolution errors
         void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;
-        void check(MessageContext&, const Environment&, const data_model::Expression&) const;
-        void check(MessageContext&, const Environment&, const data_model::Operand&) const;
-        void check(MessageContext&, const Environment&, const data_model::OptionMap&) const;
+        void check(MessageContext&, const Environment&, const data_model::Expression&, UErrorCode&) const;
+        void check(MessageContext&, const Environment&, const data_model::Operand&, UErrorCode&) const;
+        void check(MessageContext&, const Environment&, const data_model::OptionMap&, UErrorCode&) const;
 
         void initErrors(UErrorCode&);
         void clearErrors() const;
@@ -614,7 +512,7 @@ namespace message2 {
 
         // Errors -- only used while parsing and checking for data model errors; then
         // the MessageContext keeps track of errors
-        StaticErrors errors;
+        std::shared_ptr<StaticErrors> errors;
     }; // class MessageFormatter
 
 } // namespace message2

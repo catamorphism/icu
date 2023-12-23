@@ -451,7 +451,7 @@ std::unique_ptr<Selector> ExpressionContext::getSelector(UErrorCode& status) con
     NULL_ON_ERROR(status);
 
     U_ASSERT(hasFunctionName());
-    const std::shared_ptr<SelectorFactory> selectorFactory = context.lookupSelectorFactory(pendingFunctionName);
+    const std::shared_ptr<SelectorFactory> selectorFactory = context.lookupSelectorFactory(pendingFunctionName, status);
     if (selectorFactory == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
@@ -499,7 +499,7 @@ void ExpressionContext::evalPendingSelectorCall(const std::vector<UnicodeString>
         if (U_FAILURE(status)) {
             setFallback();
             status = U_ZERO_ERROR;
-            setSelectorError(pendingFunctionName.toString());
+            setSelectorError(pendingFunctionName.toString(), status);
         } else {
             // Ignore warnings
             status = savedStatus;
@@ -532,7 +532,7 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
                 // as a formatting error
                 setFallback();
                 status = U_ZERO_ERROR;
-                setFormattingError(functionName.toString());
+                setFormattingError(functionName.toString(), status);
             } else {
                 // Ignore warnings
                 status = savedStatus;
@@ -550,9 +550,9 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
     }
     // No formatter with this name -- set error
     if (context.isSelector(functionName)) {
-        setFormattingError(functionName.toString());
+        setFormattingError(functionName.toString(), status);
     } else {
-        context.getErrors().setUnknownFunction(functionName);
+        context.getErrors().setUnknownFunction(functionName, status);
     }
     setFallback();
 }
@@ -597,12 +597,12 @@ void formatDateWithDefaults(const Locale& locale, UDate date, UnicodeString& res
 // Errors
 // -------
 
-void ExpressionContext::setFormattingError(const UnicodeString& formatterName) {
-    context.getErrors().setFormattingError(formatterName);
+void ExpressionContext::setFormattingError(const UnicodeString& formatterName, UErrorCode& status) {
+    context.getErrors().setFormattingError(formatterName, status);
 }
 
-void ExpressionContext::setSelectorError(const UnicodeString& selectorName) {
-    context.getErrors().setSelectorError(selectorName);
+void ExpressionContext::setSelectorError(const UnicodeString& selectorName, UErrorCode& status) {
+    context.getErrors().setSelectorError(selectorName, status);
 }
 
 ExpressionContext::~ExpressionContext() {}

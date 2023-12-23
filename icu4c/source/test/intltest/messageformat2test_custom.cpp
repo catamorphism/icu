@@ -308,7 +308,7 @@ void GrammarCasesFormatter::format(FormattingContext& context, UErrorCode& error
 
     // Argument must be present
     if (!context.hasFormattableInput()) {
-        context.setFormattingError("grammarBB");
+        context.setFormattingError("grammarBB", errorCode);
         return;
     }
 
@@ -422,7 +422,7 @@ void message2::ListFormatter::format(FormattingContext& context, UErrorCode& err
 
     // Argument must be present
     if (!context.hasFormattableInput()) {
-        context.setFormattingError("listformat");
+        context.setFormattingError("listformat", errorCode);
         return;
     }
     // Assumes arg is not-yet-formatted
@@ -458,7 +458,7 @@ void message2::ListFormatter::format(FormattingContext& context, UErrorCode& err
             int32_t n_items;
             const Formattable* objs = toFormat.getArray(n_items);
             if (objs == nullptr) {
-                context.setFormattingError("listformatter");
+                context.setFormattingError("listformatter", errorCode);
                 return;
             }
             LocalArray<UnicodeString> parts(new UnicodeString[n_items]);
@@ -604,7 +604,7 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
 
     // Argument must be present
     if (!context.hasFormattableInput()) {
-        context.setFormattingError("msgref");
+        context.setFormattingError("msgref", errorCode);
         return;
     }
 
@@ -631,7 +631,7 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
         UnicodeString* msg = (UnicodeString*) properties.get(in);
         if (msg == nullptr) {
             // No message given for this key -- error out
-            context.setFormattingError("msgref");
+            context.setFormattingError("msgref", errorCode);
             return;
         }
 	MessageFormatter::Builder mfBuilder;
@@ -653,7 +653,7 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
        context.setOutput(result);
     } else {
         // Properties must be provided
-        context.setFormattingError("msgref");
+        context.setFormattingError("msgref", errorCode);
     }
     return;
 }

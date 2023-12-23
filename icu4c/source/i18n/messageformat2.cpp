@@ -88,7 +88,7 @@ void MessageFormatter::formatOperand(const Environment& env, const Operand& rand
             return;
         } else {
             // Unbound variable -- set a resolution error
-            context.messageContext().getErrors().setUnresolvedVariable(var);
+            context.messageContext().getErrors().setUnresolvedVariable(var, status);
             return;
         }
     } else if (rand.isLiteral()) {
@@ -157,7 +157,7 @@ void MessageFormatter::formatExpression(const Environment& globalEnv, const Expr
 
     // Formatting error
     if (expr.isReserved()) {
-        context.messageContext().getErrors().setReservedError();
+        context.messageContext().getErrors().setReservedError(status);
         U_ASSERT(context.isFallback());
         return;
     }
@@ -186,7 +186,7 @@ void MessageFormatter::formatExpression(const Environment& globalEnv, const Expr
         } else if (!(context.messageContext().getErrors().hasError())) {
             // Set formatting warning if formatting function had no output
             // but didn't set an error or warning
-            context.messageContext().getErrors().setFormattingError(functionName.toString());
+            context.messageContext().getErrors().setFormattingError(functionName.toString(), status);
         }
 
         // If we reached this point, the formatter is null --
@@ -468,7 +468,7 @@ void MessageFormatter::resolveVariables(const Environment& env, const Expression
 
     // A `reserved` is an error
     if (expr.isReserved()) {
-        context.messageContext().getErrors().setReservedError();
+        context.messageContext().getErrors().setReservedError(status);
         U_ASSERT(context.isFallback());
         return;
     }
@@ -514,15 +514,16 @@ void MessageFormatter::formatSelectorExpression(const Environment& globalEnv, co
             const FunctionName& fn = context.getFunctionName();
             // A selector used as a formatter is a selector error
             if (context.hasFormatter()) {
-                err.setSelectorError(fn);
+                err.setSelectorError(fn, status);
             } else {
                 // Otherwise, the error is an unknown function error
-                err.setUnknownFunction(fn);
+                err.setUnknownFunction(fn, status);
             }
         } else {
             // No function name -- this is a missing selector annotation error
             U_ASSERT(err.hasMissingSelectorAnnotationError());
         }
+        CHECK_ERROR(status);
         context.clearFunctionName();
         context.clearFunctionOptions();
         context.setFallback();
@@ -601,7 +602,7 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
     // Create a new environment that will store closures for all local variables
     Environment* env = Environment::create(status);
     // Create a new context with the given arguments and the `errors` structure
-    MessageContext context(*this, arguments, errors);
+    MessageContext context(*this, arguments, *errors, status);
 
     // Check for unresolved variable errors
     checkDeclarations(context, env, status);
@@ -628,14 +629,14 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
 // ----------------------------------------
 // Checking for resolution errors
 
-void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const OptionMap& options) const {
+void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const OptionMap& options, UErrorCode& status) const {
     // Check the RHS of each option
     for (auto iter = options.begin(); iter != options.end(); ++iter) {
-        check(context, localEnv, iter.second());
+        check(context, localEnv, iter.second(), status);
     }
 }
 
-void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const Operand& rand) const {
+void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const Operand& rand, UErrorCode& status) const {
     // Nothing to check for literals
     if (rand.isLiteral() || rand.isNull()) {
         return;
@@ -651,16 +652,16 @@ void MessageFormatter::check(MessageContext& context, const Environment& localEn
     if (context.hasGlobalAsFormattable(var) || context.hasGlobalAsObject(var)) {
         return;
     }
-    context.getErrors().setUnresolvedVariable(var);
+    context.getErrors().setUnresolvedVariable(var, status);
 }
 
-void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const Expression& expr) const {
+void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const Expression& expr, UErrorCode& status) const {
     // Check for unresolved variable errors
     if (expr.isFunctionCall()) {
         const Operator& rator = expr.getOperator();
         const Operand& rand = expr.getOperand();
-        check(context, localEnv, rand);
-        check(context, localEnv, rator.getOptions());
+        check(context, localEnv, rand, status);
+        check(context, localEnv, rator.getOptions(), status);
     }
 }
 
@@ -674,7 +675,7 @@ void MessageFormatter::checkDeclarations(MessageContext& context, Environment*& 
     for (int32_t i = 0; i < getDataModel().bindingsLen; i++) {
         const Binding& decl = decls[i];
         const Expression& rhs = decl.getValue();
-        check(context, *env, rhs);
+        check(context, *env, rhs, status);
 
         // Add a closure to the global environment,
         // memoizing the value of localEnv up to this point

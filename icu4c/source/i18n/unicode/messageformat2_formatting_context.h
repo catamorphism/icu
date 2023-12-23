@@ -68,21 +68,23 @@ class U_I18N_API FormattingContext : public UObject {
      * errors signaled by other ICU functions).
      *
      * @param name Any informative string (usually the name of the selector function).
+     * @param status Input/output error code
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    virtual void setSelectorError(const UnicodeString& name) = 0;
+    virtual void setSelectorError(const UnicodeString& name, UErrorCode& status) = 0;
     /**
      * Indicates that an error occurred during formatting, such as an argument
      * having a type not supported by this formatter.
      *
      * @param name Any informative string (usually the name of the formatter function).
+     * @param status Input/output error code
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    virtual void setFormattingError(const UnicodeString& name) = 0;
+    virtual void setFormattingError(const UnicodeString& name, UErrorCode& status) = 0;
     /**
      * Returns true if and only if a `Formattable` argument was supplied to this
      * function. (Object arguments must be checked for using `hasObjectinput()` and
@@ -104,7 +106,7 @@ class U_I18N_API FormattingContext : public UObject {
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
-     */ 
+     */
     virtual const Formattable& getFormattableInput() const = 0;
     /**
      * Determines the type of input to this function.

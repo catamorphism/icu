@@ -45,14 +45,14 @@ namespace message2 {
     // (Errors are defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md       )
     class Checker {
     public:
-        void check();
+        void check(UErrorCode&);
         Checker(const MessageFormatDataModel& m, StaticErrors& e) : dataModel(m), errors(e) {}
     private:
 
-        void requireAnnotated(const TypeEnvironment&, const Expression&);
+        void requireAnnotated(const TypeEnvironment&, const Expression&, UErrorCode&);
         void checkDeclarations(TypeEnvironment&);
-        void checkSelectors(const TypeEnvironment&);
-        void checkVariants();
+        void checkSelectors(const TypeEnvironment&, UErrorCode&);
+        void checkVariants(UErrorCode&);
         void check(const OptionMap&);
         void check(const Operand&);
         void check(const Expression&);

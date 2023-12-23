@@ -186,8 +186,8 @@ namespace message2 {
         FunctionOptionsMap::const_iterator end() const override;
         int32_t optionsCount() const override;
 
-        void setSelectorError(const UnicodeString&) override;
-        void setFormattingError(const UnicodeString&) override;
+        void setSelectorError(const UnicodeString&, UErrorCode&) override;
+        void setFormattingError(const UnicodeString&, UErrorCode&) override;
 
         ExpressionContext(MessageContext&);
         ExpressionContext(ExpressionContext&&);
