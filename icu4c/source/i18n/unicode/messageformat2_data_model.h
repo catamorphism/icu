@@ -945,22 +945,29 @@ namespace message2 {
             /* const */ Literal contents;
         }; // class Key
 
-        /**
-         * An immutable map from strings to function options
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        using OptionMap = OrderedMap<UnicodeString, Operand>;
-
     } // namespace data_model
 
-    template<>
-    OrderedMap<UnicodeString, data_model::Operand>::Builder::~Builder();
-    template<>
-    OrderedMap<UnicodeString, data_model::Operand>::~OrderedMap();
-
     namespace data_model {
+        class Operator;
+        class Option;
+
+        // Internal only
+        // Options
+        // This is a wrapper class around a vector of options that provides lookup operations
+        class OptionMap : public UObject {
+        public:
+            int32_t size() const;
+            const Option& getOption(int32_t) const;
+
+            OptionMap() : len(0) {}
+        private:
+            friend class Operator;
+
+            OptionMap(Option* p, int32_t l) : options(LocalArray<Option>(p)), len(l) {}
+            LocalArray<Option> options;
+            int32_t len;
+        }; // class OptionMap
+
         /**
          * The `Operator` class corresponds to the `FunctionRef | Reserved` type in the
          * `Expression` interface defined in
@@ -1011,12 +1018,12 @@ namespace message2 {
              * Accesses function options.
              * Precondition: !isReserved()
              *
-             * @return A reference to the function options for this operator.
+             * @return A vector of function options for this operator.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            const OptionMap& getOptions() const;
+            std::vector<Option> getOptions() const;
 
             /**
              * The mutable `Operator::Builder` class allows the operator to be constructed
@@ -1035,7 +1042,7 @@ namespace message2 {
                 bool hasOptions = false;
                 Reserved asReserved;
                 FunctionName functionName;
-                OptionMap::Builder options;
+                UVector* options; // Not a LocalPointer for the same reason as in `SelectorKeys::Builder`
             public:
                 /**
                  * Sets this operator to be a reserved sequence.
@@ -1095,10 +1102,16 @@ namespace message2 {
                  * Default constructor.
                  * Returns a Builder with no function name or reserved sequence set.
                  *
+                 * @param status    Input/output error code.
+                 *
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Builder() = default;
+                Builder(UErrorCode& status) {
+                    options = createUVector(status);
+                    CHECK_ERROR(status);
+                    options->setComparer(stringsEqual);
+                }
                 /**
                  * Destructor.
                  *
@@ -1145,14 +1158,19 @@ namespace message2 {
              */
             virtual ~Operator();
         private:
+            friend class message2::MessageFormatter;
+
             // Function call constructor
-            Operator(const FunctionName& f, OptionMap&& l);
+            Operator(const FunctionName& f, UVector&& options);
             // Reserved sequence constructor
             Operator(const Reserved& r) : isReservedSequence(true), functionName(FunctionName(UnicodeString(""))), reserved(Reserved(r)) {}
+
+            const OptionMap& getOptionsInternal() const;
 
             /* const */ bool isReservedSequence;
             /* const */ FunctionName functionName;
             /* const */ OptionMap options;
+            int32_t optionsLen = 0;
             /* const */ Reserved reserved;
         }; // class Operator
 
@@ -1596,17 +1614,6 @@ namespace message2 {
         }; // class PatternPart
 
         /**
-         * An immutable mapping from lists of keys to patterns.
-         * In a message with selectors and variants, there is one entry in the
-         * map for each variant.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        using VariantMap = OrderedMap<SelectorKeys, Pattern>;
-
-        // TODO internal class only -- move to another file
-        /**
          *  A `Variant` pairs a list of keys with a pattern
          * It corresponds to the `Variant` interface
          * defined in https://github.com/unicode-org/message-format-wg/tree/main/spec/data-model
@@ -1668,15 +1675,68 @@ namespace message2 {
             /* const */ Pattern p;
         }; // class Variant
 
+        /**
+         *  An `Option` pairs an option name with an Operand.
+         *
+         * `Option` is immutable and copyable. It is not movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class U_I18N_API Option : public UObject {
+        public:
+            /**
+             * Accesses the right-hand side of the option.
+             *
+             * @return A reference to the operand.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const Operand& getValue() const { return rand; }
+            /**
+             * Accesses the left-hand side of the option.
+             *
+             * @return A reference to the option name.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const UnicodeString& getName() const { return name; }
+            /**
+             * Constructor.
+             *
+             * @param name The name of the option.
+             * @param rand The value of the option.
+             * @return An Option, representing the named option "name=rand".
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Option(const UnicodeString& n, Operand&& r) : name(n), rand(std::move(r)) {}
+            /**
+             * Copy assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Option& operator=(const Option& other);
+            // TODO
+            Option() = default;
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Option();
+        private:
+            /* const */ UnicodeString name;
+            /* const */ Operand rand;
+        }; // class Option
+
         class Binding;
     } // namespace data_model
-
-    // These explicit instantiations have to come before the
-    // destructor definitions
-    template<>
-    OrderedMap<data_model::SelectorKeys, data_model::Pattern>::Builder::~Builder();
-    template<>
-    OrderedMap<data_model::SelectorKeys, data_model::Pattern>::~OrderedMap();
 
 } // namespace message2
 
@@ -1792,20 +1852,20 @@ namespace message2 {
          * Accesses the variants.
          * Precondition: hasSelectors()
          *
-         * @return The variant map.
+         * @return A vector of variants.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        VariantMap getVariants() const {
-            VariantMap::Builder result;
+        std::vector<Variant> getVariants() const {
+            std::vector<Variant> result;
 
             if (hasSelectors()) {
                 for (int32_t i = 0; i < numVariants; i++) {
-                    result.add(variants[i].getKeys(), variants[i].getPattern());
+                    result.push_back(variants[i]);
                 }
             }
-            return result.build();
+            return result;
         }
         /**
          * Accesses the pattern (in a message without selectors).
@@ -2011,6 +2071,7 @@ namespace message2 {
 
         const Binding* getLocalVariablesInternal() const;
         const Expression* getSelectorsInternal() const;
+        const Variant* getVariantsInternal() const;
 
         // Helper
         void initBindings(const Binding*);

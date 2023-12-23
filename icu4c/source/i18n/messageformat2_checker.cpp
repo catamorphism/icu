@@ -76,14 +76,15 @@ void Checker::checkVariants(UErrorCode& status) {
 
     // Check that each variant has a key list with size
     // equal to the number of selectors
-    const VariantMap& variants = dataModel.getVariants();
+    const Variant* variants = dataModel.getVariantsInternal();
 
     // Check that one variant includes only wildcards
     bool defaultExists = false;
 
-    for (auto iter = variants.begin(); iter != variants.end(); ++iter) {
-        const Key* keys = iter.first().getKeysInternal();
-        int32_t len = iter.first().len;
+    for (int32_t i = 0; i < dataModel.numVariants; i++) {
+        const SelectorKeys& k = variants[i].getKeys();
+        const Key* keys = k.getKeysInternal();
+        int32_t len = k.len;
         if (len != numSelectors) {
             // Variant key mismatch
             errors.addError(StaticErrorType::VariantKeyMismatchError, status);

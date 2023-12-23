@@ -508,7 +508,7 @@ const Reserved& Operator::asReserved() const {
     return reserved;
 }
 
-const OptionMap& Operator::getOptions() const {
+const OptionMap& Operator::getOptionsInternal() const {
     U_ASSERT(!isReserved());
     return options;
 }

@@ -101,9 +101,10 @@ void MessageFormatter::formatOperand(const Environment& env, const Operand& rand
 void MessageFormatter::resolveOptions(const Environment& env, const OptionMap& options, ExpressionContext& context, UErrorCode& status) const {
     CHECK_ERROR(status);
 
-    for (auto iter = options.begin(); iter != options.end(); ++iter) {
-        const UnicodeString& k = iter.first();
-        const Operand& v = iter.second();
+    for (int i = 0; i < options.size(); i++) {
+        const Option& opt = options.getOption(i);
+        const UnicodeString& k = opt.getName();
+        const Operand& v = opt.getValue();
 
         // Options are fully evaluated before calling the function
         // Create a new context for formatting the right-hand side of the option
@@ -169,7 +170,7 @@ void MessageFormatter::formatExpression(const Environment& globalEnv, const Expr
     if (expr.isFunctionCall()) {
         const Operator& rator = expr.getOperator();
         const FunctionName& functionName = rator.getFunctionName();
-        const OptionMap& options = rator.getOptions();
+        const OptionMap& options = rator.getOptionsInternal();
         // Resolve the options
         resolveOptions(globalEnv, options, context, status);
 
@@ -515,7 +516,7 @@ void MessageFormatter::resolveVariables(const Environment& env, const Expression
     if (expr.isFunctionCall()) {
         const Operator& rator = expr.getOperator();
         context.setFunctionName(rator.getFunctionName());
-        resolveOptions(env, rator.getOptions(), context, status);
+        resolveOptions(env, rator.getOptionsInternal(), context, status);
         // Operand may be the null argument, but resolveVariables() handles that
         formatOperand(env, expr.getOperand(), context, status);
     } else {
@@ -671,8 +672,8 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
 
 void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const OptionMap& options, UErrorCode& status) const {
     // Check the RHS of each option
-    for (auto iter = options.begin(); iter != options.end(); ++iter) {
-        check(context, localEnv, iter.second(), status);
+    for (int32_t i = 0; i < options.size(); i++) {
+        check(context, localEnv, options.getOption(i).getValue(), status);
     }
 }
 
@@ -701,7 +702,7 @@ void MessageFormatter::check(MessageContext& context, const Environment& localEn
         const Operator& rator = expr.getOperator();
         const Operand& rand = expr.getOperand();
         check(context, localEnv, rand, status);
-        check(context, localEnv, rator.getOptions(), status);
+        check(context, localEnv, rator.getOptionsInternal(), status);
     }
 }
 

@@ -42,7 +42,7 @@ namespace message2 {
         void emit(const Expression&);
         void emit(const PatternPart&);
         void emit(const Pattern&);
-        void emit(const VariantMap&);
+        void emit(const Variant*);
         void emit(const OptionMap&);
         void serializeDeclarations();
         void serializeSelectors();
