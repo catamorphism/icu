@@ -443,7 +443,7 @@ namespace message2 {
         void formatSelectorExpression(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
         // Formats an expression that appears in a pattern or as the definition of a local variable
         void formatExpression(const Environment&, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
-        void resolveOptions(const Environment& env, const data_model::OptionMap&, ExpressionContext&, UErrorCode&) const;
+        void resolveOptions(const Environment& env, const OptionMap&, ExpressionContext&, UErrorCode&) const;
         void formatOperand(const Environment&, const data_model::Operand&, ExpressionContext&, UErrorCode&) const;
         void evalArgument(const data_model::VariableName&, ExpressionContext&) const;
         void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const noexcept;
@@ -464,7 +464,7 @@ namespace message2 {
         void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;
         void check(MessageContext&, const Environment&, const data_model::Expression&, UErrorCode&) const;
         void check(MessageContext&, const Environment&, const data_model::Operand&, UErrorCode&) const;
-        void check(MessageContext&, const Environment&, const data_model::OptionMap&, UErrorCode&) const;
+        void check(MessageContext&, const Environment&, const OptionMap&, UErrorCode&) const;
 
         void initErrors(UErrorCode&);
         void clearErrors() const;
