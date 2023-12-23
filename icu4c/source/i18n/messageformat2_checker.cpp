@@ -66,7 +66,9 @@ static bool areDefaultKeys(const Key* keys, int32_t len) {
     return true;
 }
 
-void Checker::checkVariants() {
+void Checker::checkVariants(UErrorCode& status) {
+    CHECK_ERROR(status);
+
     U_ASSERT(dataModel.hasSelectors());
 
     // Determine the number of selectors
@@ -84,18 +86,20 @@ void Checker::checkVariants() {
         int32_t len = iter.first().len;
         if (len != numSelectors) {
             // Variant key mismatch
-            errors.addError(StaticErrorType::VariantKeyMismatchError);
+            errors.addError(StaticErrorType::VariantKeyMismatchError, status);
             return;
         }
         defaultExists |= areDefaultKeys(keys, len);
     }
     if (!defaultExists) {
-        errors.addError(StaticErrorType::NonexhaustivePattern);
+        errors.addError(StaticErrorType::NonexhaustivePattern, status);
         return;
     }
 }
 
-void Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selectorExpr) {
+void Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selectorExpr, UErrorCode& status) {
+    CHECK_ERROR(status);
+
     if (selectorExpr.isFunctionCall()) {
         return; // No error
     }
@@ -108,16 +112,16 @@ void Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selec
         }
     }
     // If this code is reached, an error was detected
-    errors.addError(StaticErrorType::MissingSelectorAnnotation);
+    errors.addError(StaticErrorType::MissingSelectorAnnotation, status);
 }
 
-void Checker::checkSelectors(const TypeEnvironment& t) {
+void Checker::checkSelectors(const TypeEnvironment& t, UErrorCode& status) {
     U_ASSERT(dataModel.hasSelectors());
 
     // Check each selector; if it's not annotated, emit a
     // "missing selector annotation" error
     for (int32_t i = 0; i < dataModel.numSelectors; i++) {
-        requireAnnotated(t, dataModel.selectors[i]);
+        requireAnnotated(t, dataModel.selectors[i], status);
     }
 }
 
@@ -149,7 +153,9 @@ void Checker::checkDeclarations(TypeEnvironment& t) {
     }
 }
 
-void Checker::check() {
+void Checker::check(UErrorCode& status) {
+    CHECK_ERROR(status);
+
     TypeEnvironment typeEnv;
     checkDeclarations(typeEnv);
     // Pattern message
@@ -157,8 +163,8 @@ void Checker::check() {
         return;
     } else {
       // Selectors message
-      checkSelectors(typeEnv);
-      checkVariants();
+      checkSelectors(typeEnv, status);
+      checkVariants(status);
     }
 }
 

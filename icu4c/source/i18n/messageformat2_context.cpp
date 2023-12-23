@@ -143,12 +143,12 @@ namespace message2 {
     // Unknown function = unknown function error
     // Formatter used as selector  = selector error
     // Selector used as formatter = formatting error
-    const std::shared_ptr<SelectorFactory> MessageContext::lookupSelectorFactory(const FunctionName& functionName) {
+    const std::shared_ptr<SelectorFactory> MessageContext::lookupSelectorFactory(const FunctionName& functionName, UErrorCode& status) {
         if (isBuiltInSelector(functionName)) {
             return parent.standardFunctionRegistry.getSelector(functionName);
         }
         if (isBuiltInFormatter(functionName)) {
-            errors.setSelectorError(functionName);
+            errors.setSelectorError(functionName, status);
             return nullptr;
         }
         if (parent.hasCustomFunctionRegistry()) {
@@ -158,7 +158,7 @@ namespace message2 {
                 return customSelector;
             }
             if (customFunctionRegistry.getFormatter(functionName) != nullptr) {
-                errors.setSelectorError(functionName);
+                errors.setSelectorError(functionName, status);
                 return nullptr;
             }
         }
@@ -166,16 +166,16 @@ namespace message2 {
         // isn't built-in, or the function doesn't exist in either the built-in
         // or custom registry.
         // Unknown function error
-        errors.setUnknownFunction(functionName);
+        errors.setUnknownFunction(functionName, status);
         return nullptr;
     }
 
-    std::shared_ptr<FormatterFactory> MessageContext::lookupFormatterFactory(const FunctionName& functionName) {
+    std::shared_ptr<FormatterFactory> MessageContext::lookupFormatterFactory(const FunctionName& functionName, UErrorCode& status) {
         if (isBuiltInFormatter(functionName)) {
             return parent.standardFunctionRegistry.getFormatter(functionName);
         }
         if (isBuiltInSelector(functionName)) {
-            errors.setFormattingError(functionName);
+            errors.setFormattingError(functionName, status);
             return nullptr;
         }
         if (parent.hasCustomFunctionRegistry()) {
@@ -185,7 +185,7 @@ namespace message2 {
                 return customFormatter;
             }
             if (customFunctionRegistry.getSelector(functionName) != nullptr) {
-                errors.setFormattingError(functionName);
+                errors.setFormattingError(functionName, status);
                 return nullptr;
             }
         }
@@ -193,7 +193,7 @@ namespace message2 {
         // isn't built-in, or the function doesn't exist in either the built-in
         // or custom registry.
         // Unknown function error
-        errors.setUnknownFunction(functionName);
+        errors.setUnknownFunction(functionName, status);
         return nullptr;
     }
 
@@ -215,7 +215,9 @@ namespace message2 {
             // Create the formatter
 
             // First, look up the formatter factory for this function
-            std::shared_ptr<FormatterFactory> formatterFactory = lookupFormatterFactory(f);
+            std::shared_ptr<FormatterFactory> formatterFactory = lookupFormatterFactory(f, errorCode);
+            NULL_ON_ERROR(errorCode);
+
             // If the formatter factory was null, there must have been
             // an earlier error/warning
             if (formatterFactory == nullptr) {
@@ -242,7 +244,10 @@ namespace message2 {
     // -------------------------------------------------------
     // MessageContext accessors and constructors
 
-    MessageContext::MessageContext(MessageFormatter& mf, const MessageArguments& args, const StaticErrors& e) : parent(mf), arguments(args), errors(e) {}
+    MessageContext::MessageContext(MessageFormatter& mf,
+                                   const MessageArguments& args,
+                                   const StaticErrors& e,
+                                   UErrorCode& status) : parent(mf), arguments(args), errors(e, status) {}
 
     // Errors
     // -----------
@@ -252,44 +257,67 @@ namespace message2 {
         errors.checkErrors(status);
     }
 
-    void DynamicErrors::setReservedError() {
-        addError(DynamicError(DynamicErrorType::ReservedError));
+    void DynamicErrors::setReservedError(UErrorCode& status) {
+        addError(DynamicError(DynamicErrorType::ReservedError), status);
     }
 
-    void DynamicErrors::setFormattingError(const FunctionName& formatterName) {
-        addError(DynamicError(DynamicErrorType::FormattingError, formatterName.toString()));
+    void DynamicErrors::setFormattingError(const FunctionName& formatterName, UErrorCode& status) {
+        addError(DynamicError(DynamicErrorType::FormattingError, formatterName.toString()), status);
     }
 
-    void StaticErrors::setDuplicateOptionName() {
-        addError(StaticError(StaticErrorType::DuplicateOptionName));
+    void StaticErrors::setDuplicateOptionName(UErrorCode& status) {
+        addError(StaticError(StaticErrorType::DuplicateOptionName), status);
     }
 
-    void StaticErrors::setMissingSelectorAnnotation() {
-        addError(StaticError(StaticErrorType::MissingSelectorAnnotation));
+    void StaticErrors::setMissingSelectorAnnotation(UErrorCode& status) {
+        addError(StaticError(StaticErrorType::MissingSelectorAnnotation), status);
     }
 
-    void DynamicErrors::setSelectorError(const FunctionName& selectorName) {
-        addError(DynamicError(DynamicErrorType::SelectorError, selectorName.toString()));
+    void DynamicErrors::setSelectorError(const FunctionName& selectorName, UErrorCode& status) {
+        addError(DynamicError(DynamicErrorType::SelectorError, selectorName.toString()), status);
     }
 
-    void DynamicErrors::setUnknownFunction(const FunctionName& functionName) {
-        addError(DynamicError(DynamicErrorType::UnknownFunction, functionName.toString()));
+    void DynamicErrors::setUnknownFunction(const FunctionName& functionName, UErrorCode& status) {
+        addError(DynamicError(DynamicErrorType::UnknownFunction, functionName.toString()), status);
     }
 
-    void DynamicErrors::setUnresolvedVariable(const VariableName& v) {
-        addError(DynamicError(DynamicErrorType::UnresolvedVariable, v.identifier()));
+    void DynamicErrors::setUnresolvedVariable(const VariableName& v, UErrorCode& status) {
+        addError(DynamicError(DynamicErrorType::UnresolvedVariable, v.identifier()), status);
     }
 
-    DynamicErrors::DynamicErrors(const StaticErrors& e) : staticErrors(e) {}
+    DynamicErrors::DynamicErrors(const StaticErrors& e, UErrorCode& status) : staticErrors(e) {
+        resolutionAndFormattingErrors.adoptInstead(createUVector(status));
+    }
 
-    StaticErrors::StaticErrors() {}
+    StaticErrors::StaticErrors(UErrorCode& status) {
+        syntaxAndDataModelErrors.adoptInstead(createUVector(status));
+    }
+
+    StaticErrors::StaticErrors(StaticErrors&& other) noexcept {
+        U_ASSERT(other.syntaxAndDataModelErrors.isValid());
+        syntaxAndDataModelErrors.adoptInstead(other.syntaxAndDataModelErrors.orphan());
+        dataModelError = other.dataModelError;
+        missingSelectorAnnotationError = other.missingSelectorAnnotationError;
+        syntaxError = other.syntaxError;
+    }
 
     int32_t DynamicErrors::count() const {
-        return resolutionAndFormattingErrors.size() + staticErrors.syntaxAndDataModelErrors.size();
+        U_ASSERT(resolutionAndFormattingErrors.isValid() && staticErrors.syntaxAndDataModelErrors.isValid());
+        return resolutionAndFormattingErrors->size() + staticErrors.syntaxAndDataModelErrors->size();
     }
 
     bool DynamicErrors::hasError() const {
         return count() > 0;
+    }
+
+    bool DynamicErrors::hasStaticError() const {
+        U_ASSERT(staticErrors.syntaxAndDataModelErrors.isValid());
+        return staticErrors.syntaxAndDataModelErrors->size() > 0;
+    }
+
+    const DynamicError& DynamicErrors::first() const {
+        U_ASSERT(resolutionAndFormattingErrors->size() > 0);
+        return *static_cast<DynamicError*>(resolutionAndFormattingErrors->elementAt(0));
     }
 
     void DynamicErrors::checkErrors(UErrorCode& status) const {
@@ -302,8 +330,8 @@ namespace message2 {
         if (count() == 0) {
             return;
         }
-        if (staticErrors.syntaxAndDataModelErrors.size() > 0) {
-            switch (staticErrors.syntaxAndDataModelErrors[0].type) {
+        if (staticErrors.syntaxAndDataModelErrors->size() > 0) {
+            switch (staticErrors.first().type) {
             case StaticErrorType::DuplicateOptionName: {
                 status = U_DUPLICATE_OPTION_NAME_ERROR;
                 break;
@@ -326,8 +354,8 @@ namespace message2 {
             }
             }
         } else {
-            U_ASSERT(resolutionAndFormattingErrors.size() > 0);
-            switch (resolutionAndFormattingErrors[0].type) {
+            U_ASSERT(resolutionAndFormattingErrors->size() > 0);
+            switch (first().type) {
             case DynamicErrorType::UnknownFunction: {
                 status = U_UNKNOWN_FUNCTION_ERROR;
                 break;
@@ -352,70 +380,84 @@ namespace message2 {
         }
     }
 
-    void StaticErrors::addSyntaxError() {
-        addError(StaticError(StaticErrorType::SyntaxError));
+    void StaticErrors::addSyntaxError(UErrorCode& status) {
+        addError(StaticError(StaticErrorType::SyntaxError), status);
     }
 
-    void StaticErrors::addError(StaticError e) noexcept {
+    void StaticErrors::addError(StaticError&& e, UErrorCode& status) {
+        CHECK_ERROR(status);
+
+        void* errorP = static_cast<void*>(create<StaticError>(std::move(e), status));
+        U_ASSERT(syntaxAndDataModelErrors.isValid());
+
         switch (e.type) {
         case StaticErrorType::SyntaxError: {
             syntaxError = true;
-            syntaxAndDataModelErrors.push_back(e);
+            syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }
         case StaticErrorType::DuplicateOptionName: {
             dataModelError = true;
-            syntaxAndDataModelErrors.push_back(e);
+            syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }
         case StaticErrorType::VariantKeyMismatchError: {
             dataModelError = true;
-            syntaxAndDataModelErrors.push_back(e);
+            syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }
         case StaticErrorType::NonexhaustivePattern: {
             dataModelError = true;
-            syntaxAndDataModelErrors.push_back(e);
+            syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }
         case StaticErrorType::MissingSelectorAnnotation: {
             missingSelectorAnnotationError = true;
             dataModelError = true;
-            syntaxAndDataModelErrors.push_back(e);
+            syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }
         }
     }
 
-    void DynamicErrors::addError(DynamicError e) noexcept {
+    void DynamicErrors::addError(DynamicError&& e, UErrorCode& status) {
+        CHECK_ERROR(status);
+
+        void* errorP = static_cast<void*>(create<DynamicError>(std::move(e), status));
+        U_ASSERT(resolutionAndFormattingErrors.isValid());
+
         switch (e.type) {
         case DynamicErrorType::UnresolvedVariable: {
             unresolvedVariableError = true;
-            resolutionAndFormattingErrors.push_back(e);
+            resolutionAndFormattingErrors->adoptElement(errorP, status);
             break;
         }
         case DynamicErrorType::FormattingError: {
             formattingError = true;
-            resolutionAndFormattingErrors.push_back(e);
+            resolutionAndFormattingErrors->adoptElement(errorP, status);
             break;
         }
         case DynamicErrorType::ReservedError: {
-            resolutionAndFormattingErrors.push_back(e);
+            resolutionAndFormattingErrors->adoptElement(errorP, status);
             break;
         }
         case DynamicErrorType::SelectorError: {
             selectorError = true;
-            resolutionAndFormattingErrors.push_back(e);
+            resolutionAndFormattingErrors->adoptElement(errorP, status);
             break;
         }
         case DynamicErrorType::UnknownFunction: {
             unknownFunctionError = true;
-            resolutionAndFormattingErrors.push_back(e);
+            resolutionAndFormattingErrors->adoptElement(errorP, status);
             break;
         }
         }
     }
 
+    const StaticError& StaticErrors::first() const {
+        U_ASSERT(syntaxAndDataModelErrors.isValid() && syntaxAndDataModelErrors->size() > 0);
+        return *static_cast<StaticError*>(syntaxAndDataModelErrors->elementAt(0));
+    }
 
     StaticErrors::~StaticErrors() {}
     DynamicErrors::~DynamicErrors() {}

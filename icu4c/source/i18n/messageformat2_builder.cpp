@@ -91,6 +91,8 @@ namespace message2 {
         }
 
         MessageFormatDataModel::Builder tree(success);
+        // Initialize errors
+        errors = std::make_shared<StaticErrors>(StaticErrors(success));
         CHECK_ERROR(success);
 
         // Initialize formatter cache
@@ -102,7 +104,7 @@ namespace message2 {
         cachedFormatters = std::unique_ptr<CachedFormatters>(cachedFormattersPtr);
 
         // Parse the pattern
-        Parser(builder.pattern, tree, errors, normalizedInput).parse(parseError, success);
+        Parser(builder.pattern, tree, *errors, normalizedInput).parse(parseError, success);
 
         // Build the data model based on what was parsed
         dataModel = tree.build(success);
@@ -114,7 +116,7 @@ namespace message2 {
         // only be checked when arguments are known)
 
         // Check for resolution errors
-        Checker(dataModel, errors).check();
+        Checker(dataModel, *errors).check(success);
     }
 
     MessageFormatter& MessageFormatter::operator=(MessageFormatter&& other) noexcept {

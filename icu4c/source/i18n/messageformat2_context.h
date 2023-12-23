@@ -21,9 +21,37 @@
 #include "unicode/numberformatter.h"
 #include "unicode/utypes.h"
 
+#include "uvector.h"
+
 U_NAMESPACE_BEGIN
 
 namespace message2 {
+
+    // Helpers
+
+    inline UVector* createUVector(UErrorCode& status) {
+        if (U_FAILURE(status)) {
+            return nullptr;
+        }
+        LocalPointer<UVector> result(new UVector(status));
+        if (U_FAILURE(status)) {
+            return nullptr;
+        }
+        result->setDeleter(uprv_deleteUObject);
+        return result.orphan();
+    }
+
+    template<typename T>
+    inline T* create(T&& node, UErrorCode& status) {
+        if (U_FAILURE(status)) {
+            return nullptr;
+        }
+        T* result = new T(std::move(node));
+        if (result == nullptr) {
+            status = U_MEMORY_ALLOCATION_ERROR;
+        }
+        return result;
+    }
 
     class Formatter;
     class FormatterFactory;
@@ -116,6 +144,114 @@ namespace message2 {
         const LocalPointer<Environment> parent;
     };
 
+        // Errors
+    // ----------
+
+    class DynamicErrors;
+    class StaticErrors;
+
+    // Internal class -- used as a private field in MessageFormatter
+    template <typename ErrorType>
+    class Error : public UObject {
+    public:
+        Error(ErrorType ty) : type(ty) {}
+        Error(ErrorType ty, const UnicodeString& s) : type(ty), contents(s) {}
+        virtual ~Error();
+    private:
+        friend class DynamicErrors;
+        friend class StaticErrors;
+
+        ErrorType type;
+        UnicodeString contents;
+    }; // class Error
+
+    enum StaticErrorType {
+        DuplicateOptionName,
+        MissingSelectorAnnotation,
+        NonexhaustivePattern,
+        SyntaxError,
+        VariantKeyMismatchError
+    };
+
+    enum DynamicErrorType {
+        UnresolvedVariable,
+        FormattingError,
+        ReservedError,
+        SelectorError,
+        UnknownFunction,
+    };
+
+    using StaticError = Error<StaticErrorType>;
+    using DynamicError = Error<DynamicErrorType>;
+
+    // These explicit instantiations have to come before the
+    // destructor definitions
+    template<>
+    Error<StaticErrorType>::~Error();
+    template<>
+    Error<DynamicErrorType>::~Error();
+
+    class StaticErrors : public UObject {
+    private:
+        friend class DynamicErrors;
+
+        LocalPointer<UVector> syntaxAndDataModelErrors;
+        bool dataModelError = false;
+        bool missingSelectorAnnotationError = false;
+        bool syntaxError = false;
+
+    public:
+        StaticErrors(UErrorCode&);
+
+        void setMissingSelectorAnnotation(UErrorCode&);
+        void setDuplicateOptionName(UErrorCode&);
+        void addSyntaxError(UErrorCode&);
+        bool hasDataModelError() const { return dataModelError; }
+        bool hasSyntaxError() const { return syntaxError; }
+        bool hasMissingSelectorAnnotationError() const { return missingSelectorAnnotationError; }
+        void addError(StaticError&&, UErrorCode&);
+        void checkErrors(UErrorCode&);
+
+        const StaticError& first() const;
+        StaticErrors(StaticErrors&&) noexcept;
+        virtual ~StaticErrors();
+    }; // class StaticErrors
+
+    class DynamicErrors : public UObject {
+    private:
+        const StaticErrors& staticErrors;
+        // std::vector<DynamicError> resolutionAndFormattingErrors;
+        LocalPointer<UVector> resolutionAndFormattingErrors;
+        bool formattingError = false;
+        bool selectorError = false;
+        bool unknownFunctionError = false;
+        bool unresolvedVariableError = false;
+
+    public:
+        DynamicErrors(const StaticErrors&, UErrorCode&);
+
+        int32_t count() const;
+        void setSelectorError(const FunctionName&, UErrorCode&);
+        void setReservedError(UErrorCode&);
+        void setUnresolvedVariable(const VariableName&, UErrorCode&);
+        void setUnknownFunction(const FunctionName&, UErrorCode&);
+        void setFormattingError(const FunctionName&, UErrorCode&);
+        bool hasDataModelError() const { return staticErrors.hasDataModelError(); }
+        bool hasFormattingError() const { return formattingError; }
+        bool hasSelectorError() const { return selectorError; }
+        bool hasSyntaxError() const { return staticErrors.hasSyntaxError(); }
+        bool hasUnknownFunctionError() const { return unknownFunctionError; }
+        bool hasMissingSelectorAnnotationError() const { return staticErrors.hasMissingSelectorAnnotationError(); }
+        bool hasUnresolvedVariableError() const { return unresolvedVariableError; }
+        void addError(DynamicError&&, UErrorCode&);
+        void checkErrors(UErrorCode&) const;
+        bool hasError() const;
+        bool hasStaticError() const;
+
+        const DynamicError& first() const;
+        virtual ~DynamicErrors();
+    }; // class DynamicErrors
+
     // Formatter cache
     // --------------
 
@@ -143,11 +279,11 @@ namespace message2 {
 
     class MessageContext : public UMemory {
     public:
-        MessageContext(MessageFormatter&, const MessageArguments&, const StaticErrors&);
+        MessageContext(MessageFormatter&, const MessageArguments&, const StaticErrors&, UErrorCode&);
 
         bool isCustomFormatter(const FunctionName&) const;
         const std::shared_ptr<Formatter> maybeCachedFormatter(const FunctionName&, UErrorCode&);
-        const std::shared_ptr<SelectorFactory> lookupSelectorFactory(const FunctionName&);
+        const std::shared_ptr<SelectorFactory> lookupSelectorFactory(const FunctionName&, UErrorCode&);
         bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
         bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
 
@@ -167,7 +303,7 @@ namespace message2 {
 
     private:
 
-        std::shared_ptr<FormatterFactory> lookupFormatterFactory(const FunctionName&);
+        std::shared_ptr<FormatterFactory> lookupFormatterFactory(const FunctionName&, UErrorCode& status);
         bool isBuiltInSelector(const FunctionName&) const;
         bool isBuiltInFormatter(const FunctionName&) const;
         bool isCustomSelector(const FunctionName&) const;
