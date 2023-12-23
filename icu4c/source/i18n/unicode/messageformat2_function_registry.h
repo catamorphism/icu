@@ -288,10 +288,14 @@ namespace message2 {
          *
          * @param context Formatting context; captures the unnamed function argument and named options.
          *        See the `FormattingContext` documentation for more details.
-         * @param keys A vector of strings that are compared to the input (`context.getFormattableInput()`)
-         *        in an implementation-specific way.
-         * @param prefs A vector of strings. `selectKey()` should set the contents
+         * @param keys An array of strings that are compared to the input
+         *        (`context.getFormattableInput()`) in an implementation-specific way.
+         * @param keysLen The length of `keys`.
+         * @param prefs An array of strings with length `keysLen`. The contents of
+         *        the array is undefined. `selectKey()` should set the contents
          *        of `prefs` to a subset of `keys`, with the best match placed at the lowest index.
+         * @param prefsLen A reference that `selectKey()` should set to the length of `prefs`,
+         *        which must be less than or equal to `keysLen`.
          * @param status    Input/output error code. Should not be set directly by the
          *        custom selector, which should use `FormattingContext::setSelectorError()`
          *        to signal errors. The custom selector may pass `status` to other ICU functions
@@ -301,9 +305,13 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         virtual void selectKey(FormattingContext& context,
-                               const std::vector<UnicodeString>& keys,
-                               std::vector<UnicodeString>& prefs,
+                               const UnicodeString* keys,
+                               int32_t keysLen,
+                               UnicodeString* prefs,
+                               int32_t& prefsLen,
                                UErrorCode& status) const = 0;
+        // Note: This takes array arguments because the internal MessageFormat code has to
+        // call this message, and can't include any code that constructs std::vectors.
         virtual ~Selector();
     }; // class Selector
 

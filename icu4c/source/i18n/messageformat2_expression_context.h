@@ -148,7 +148,9 @@ namespace message2 {
         // If there is a function name, clear it and
         // call the function, setting the input and/or output appropriately
         // Precondition: hasSelector()
-        void evalPendingSelectorCall(const std::vector<UnicodeString>&, std::vector<UnicodeString>&, UErrorCode&);
+        // Calls the pending selector
+        // `keys` and `keysOut` are both vectors of strings
+        void evalPendingSelectorCall(const UVector&, UVector&, UErrorCode&);
 
     public:
 
