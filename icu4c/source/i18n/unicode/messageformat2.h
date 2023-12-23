@@ -425,28 +425,16 @@ namespace message2 {
 
         // Selection methods
 
-        // For how this class is used, see the references to (integer, variant) tuples
-        // in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
-        class PrioritizedVariant : public UObject {
-        public:
-            PrioritizedVariant() = default;
-            PrioritizedVariant(PrioritizedVariant&&) = default;
-            PrioritizedVariant& operator=(PrioritizedVariant&&) noexcept = default;
-            UBool operator<(const PrioritizedVariant&) const;
-            int32_t priority;
-            /* const */ SelectorKeys keys;
-            /* const */ Pattern pat;
-            PrioritizedVariant(uint32_t p,
-                               const SelectorKeys& k,
-                               const Pattern& pattern) noexcept : priority(p), keys(k), pat(pattern) {}
-            virtual ~PrioritizedVariant();
-        }; // class PrioritizedVariant
-
-        void resolveSelectors(MessageContext&, const Environment& env, UErrorCode&, std::vector<ExpressionContext>&) const;
-        void filterVariants(const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&) const;
-        void sortVariants(const std::vector<std::vector<UnicodeString>>&, std::vector<PrioritizedVariant>&) const;
-        void matchSelectorKeys(const std::vector<UnicodeString>&, ExpressionContext&, std::vector<UnicodeString>&, UErrorCode&) const;
-        void resolvePreferences(std::vector<ExpressionContext>&, std::vector<std::vector<UnicodeString>>&, UErrorCode&) const;
+        // Takes a vector of ExpressionContexts
+        void resolveSelectors(MessageContext&, const Environment& env, UErrorCode&, UVector&) const;
+        // Takes a vector of vectors of strings (input) and a vector of PrioritizedVariants (output)
+        void filterVariants(const UVector&, UVector&, UErrorCode&) const;
+        // Takes a vector of vectors of strings (input) and a vector of PrioritizedVariants (input/output)
+        void sortVariants(const UVector&, UVector&, UErrorCode&) const;
+        // Takes a vector of strings (input) and a vector of strings (output)
+        void matchSelectorKeys(const UVector&, ExpressionContext&, UVector&, UErrorCode&) const;
+        // Takes a vector of ExpressionContexts (input/output) and a vector of vectors of strings (output)
+        void resolvePreferences(UVector&, UVector&, UErrorCode&) const;
 
         // Formatting methods
         void formatLiteral(const data_model::Literal&, ExpressionContext&) const;

@@ -484,16 +484,38 @@ bool ExpressionContext::hasSelector() const {
     return context.isSelector(pendingFunctionName);
 }
 
-// Calls the pending selector
-void ExpressionContext::evalPendingSelectorCall(const std::vector<UnicodeString>& keys, std::vector<UnicodeString>& keysOut, UErrorCode& status) {
-    CHECK_ERROR(status);
-
+void ExpressionContext::evalPendingSelectorCall(const UVector& keys, UVector& keysOut, UErrorCode& status) {
     U_ASSERT(hasSelector());
     LocalPointer<Selector> selectorImpl(getSelector(status));
     CHECK_ERROR(status);
     UErrorCode savedStatus = status;
 
-    selectorImpl->selectKey(*this, keys, keysOut, status);
+    // Convert `keys` to an array
+    int32_t keysLen = keys.size();
+    UnicodeString* keysArr = new UnicodeString[keysLen];
+    if (keysArr == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+        return;
+    }
+    for (int32_t i = 0; i < keysLen; i++) {
+        const UnicodeString* k = static_cast<UnicodeString*>(keys[i]);
+        U_ASSERT(k != nullptr);
+        keysArr[i] = *k;
+    }
+    LocalArray<UnicodeString> adoptedKeys(keysArr);
+
+    // Create an array to hold the output
+    UnicodeString* prefsArr = new UnicodeString[keysLen];
+    if (prefsArr == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+        return;
+    }
+    LocalArray<UnicodeString> adoptedPrefs(prefsArr);
+    int32_t prefsLen = 0;
+
+    // Call the selector
+    selectorImpl->selectKey(*this, adoptedKeys.getAlias(), keysLen, adoptedPrefs.getAlias(), prefsLen, status);
+
     // Update errors
     if (savedStatus != status) {
         if (U_FAILURE(status)) {
@@ -505,6 +527,22 @@ void ExpressionContext::evalPendingSelectorCall(const std::vector<UnicodeString>
             status = savedStatus;
         }
     }
+
+    CHECK_ERROR(status);
+
+    // Copy the resulting keys (if there was no error)
+    keysOut.removeAllElements();
+    for (int32_t i = 0; i < prefsLen; i++) {
+        UnicodeString* k = message2::create<UnicodeString>(std::move(prefsArr[i]), status);
+        if (k == nullptr) {
+            status = U_MEMORY_ALLOCATION_ERROR;
+            return;
+        }
+        keysOut.adoptElement(k, status);
+        CHECK_ERROR(status);
+    }
+
+    // Clean up state
     returnFromFunction();
 }
 

@@ -96,8 +96,10 @@ namespace message2 {
         class Plural : public Selector {
         public:
             void selectKey(FormattingContext& context,
-                           const std::vector<UnicodeString>&,
-                           std::vector<UnicodeString>& prefs,
+                           const UnicodeString* keys,
+                           int32_t keysLen,
+                           UnicodeString* prefs,
+                           int32_t& prefsLen,
                            UErrorCode& status) const override;
             virtual ~Plural();
 
@@ -120,8 +122,10 @@ namespace message2 {
         class TextSelector : public Selector {
         public:
             void selectKey(FormattingContext& context,
-                           const std::vector<UnicodeString>&,
-                           std::vector<UnicodeString>& prefs,
+                           const UnicodeString* keys,
+                           int32_t keysLen,
+                           UnicodeString* prefs,
+                           int32_t& prefsLen,
                            UErrorCode& status) const override;
             virtual ~TextSelector();
 

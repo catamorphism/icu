@@ -225,7 +225,8 @@ void MessageFormatter::formatPattern(MessageContext& globalContext, const Enviro
 // Selection
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-selectors
-void MessageFormatter::resolveSelectors(MessageContext& context, const Environment& env, UErrorCode &status, std::vector<ExpressionContext>& res) const {
+// `res` is a vector of ExpressionContexts
+void MessageFormatter::resolveSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UVector& res) const {
     CHECK_ERROR(status);
     U_ASSERT(dataModel.hasSelectors());
 
@@ -254,14 +255,17 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
         }
         // 2ii(a). Append rv as the last element of the list res.
         // (Also fulfills 2iii)
-        res.push_back(std::move(rv));
+        ExpressionContext* ctx = create<ExpressionContext>(std::move(rv), status);
+        CHECK_ERROR(status);
+        res.adoptElement(ctx, status);
     }
 }
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-preferences
-void MessageFormatter::matchSelectorKeys(const std::vector<UnicodeString>& keys,
+// `keys` and `matches` are vectors of strings
+void MessageFormatter::matchSelectorKeys(const UVector& keys,
 					 ExpressionContext& rv,
-					 std::vector<UnicodeString>& matches,
+					 UVector& matches,
 					 UErrorCode& status) const {
     CHECK_ERROR(status);
 
@@ -275,21 +279,21 @@ void MessageFormatter::matchSelectorKeys(const std::vector<UnicodeString>& keys,
 }
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-preferences
-void MessageFormatter::resolvePreferences(std::vector<ExpressionContext>& res,
-					  std::vector<std::vector<UnicodeString>>& pref,
-					  UErrorCode &status) const {
+// `res` is a vector of ExpressionContexts; `pref` is a vector of vectors of strings
+void MessageFormatter::resolvePreferences(UVector& res, UVector& pref, UErrorCode &status) const {
     CHECK_ERROR(status);
 
     // 1. Let pref be a new empty list of lists of strings.
     // (Implicit, since `pref` is an out-parameter)
     UnicodeString ks;
+    LocalPointer<UnicodeString> ksP;
     int32_t numVariants = dataModel.numVariants;
     const Variant* variants = dataModel.variants.getAlias();
-    std::vector<UnicodeString> matches(numVariants);
     // 2. For each index i in res
     for (int32_t i = 0; i < (int32_t) res.size(); i++) {
         // 2i. Let keys be a new empty list of strings.
-	std::vector<UnicodeString> keys;
+        LocalPointer<UVector> keys(createUVector(status));
+        CHECK_ERROR(status);
         // 2ii. For each variant `var` of the message
         for (int32_t variantNum = 0; variantNum < numVariants; variantNum++) {
             const SelectorKeys& selectorKeys = variants[variantNum].getKeys();
@@ -308,22 +312,39 @@ void MessageFormatter::resolvePreferences(std::vector<ExpressionContext>& res,
                 // 2ii(b)(b) Let `ks` be the resolved value of `key`.
                 ks = key.asLiteral().unquoted();
                 // 2ii(b)(c) Append `ks` as the last element of the list `keys`.
-                keys.push_back(ks);
+                ksP.adoptInstead(create<UnicodeString>(std::move(ks), status));
+                CHECK_ERROR(status);
+                keys->adoptElement(ksP.orphan(), status);
             }
         }
         // 2iii. Let `rv` be the resolved value at index `i` of `res`.
-        U_ASSERT(i < (int32_t) res.size());
-        ExpressionContext& rv = res[i];
+        U_ASSERT(i < res.size());
+        ExpressionContext& rv = *(static_cast<ExpressionContext*>(res[i]));
         // 2iv. Let matches be the result of calling the method MatchSelectorKeys(rv, keys)
-        matchSelectorKeys(keys, rv, matches, status);
+        LocalPointer<UVector> matches(createUVector(status));
+        matchSelectorKeys(*keys, rv, *matches, status);
         // 2v. Append `matches` as the last element of the list `pref`
-	pref[i] = std::move(matches);
+        pref.adoptElement(matches.orphan(), status);
     }
 }
 
+// `v` is assumed to be a vector of strings
+static int32_t vectorFind(const UVector& v, const UnicodeString& k) {
+    for (int32_t i = 0; i < v.size(); i++) {
+        if (*static_cast<UnicodeString*>(v[i]) == k) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static UBool vectorContains(const UVector& v, const UnicodeString& k) {
+    return (vectorFind(v, k) != -1);
+}
+
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#filter-variants
-void MessageFormatter::filterVariants(const std::vector<std::vector<UnicodeString>>& pref,
-				      std::vector<MessageFormatter::PrioritizedVariant>& vars) const {
+// `pref` is a vector of vectors of strings. `vars` is a vector of PrioritizedVariants
+void MessageFormatter::filterVariants(const UVector& pref, UVector& vars, UErrorCode& status) const {
     const Variant* variants = dataModel.variants.getAlias();
 
     // 1. Let `vars` be a new empty list of variants.
@@ -352,9 +373,9 @@ void MessageFormatter::filterVariants(const std::vector<std::vector<UnicodeStrin
             // 2i(d). Let `ks` be the resolved value of `key`.
             UnicodeString ks = key.asLiteral().unquoted();
             // 2i(e). Let `matches` be the list of strings at index `i` of `pref`.
-            const std::vector<UnicodeString>& matches = pref.at(i);
+            const UVector& matches = *(static_cast<UVector*>(pref[i])); // `matches` is a vector of strings
             // 2i(f). If `matches` includes `ks`
-	    if (std::find(matches.cbegin(), matches.cend(), ks) != std::end(matches)) {
+            if (vectorContains(matches, ks)) {
                 // 2i(f)(a). Continue the inner loop on `pref`.
                 continue;
             }
@@ -365,17 +386,32 @@ void MessageFormatter::filterVariants(const std::vector<std::vector<UnicodeStrin
         }
         if (!noMatch) {
             // Append `var` as the last element of the list `vars`.
-	    PrioritizedVariant tuple(-1, selectorKeys, p);
-	    vars.push_back(std::move(tuple));
+	    PrioritizedVariant* tuple = create<PrioritizedVariant>(PrioritizedVariant(-1, selectorKeys, p), status);
+            CHECK_ERROR(status);
+            vars.adoptElement(tuple, status);
         }
     }
+}
+
+static int32_t comparePrioritizedVariants(UElement left, UElement right) {
+    const PrioritizedVariant& tuple1 = *(static_cast<const PrioritizedVariant*>(left.pointer));
+    const PrioritizedVariant& tuple2 = *(static_cast<const PrioritizedVariant*>(right.pointer));
+    if (tuple1 < tuple2) {
+        return -1;
+    }
+    if (tuple1.priority == tuple2.priority) {
+        return 0;
+    }
+    return 1;
 }
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#sort-variants
 // Leaves the preferred variant as element 0 in `sortable`
 // Note: this sorts in-place, so `sortable` is just `vars`
-void MessageFormatter::sortVariants(const std::vector<std::vector<UnicodeString>>& pref,
-				    std::vector<MessageFormatter::PrioritizedVariant>& vars) const {
+// `pref` is a vector of vectors of strings; `vars` is a vector of PrioritizedVariants
+void MessageFormatter::sortVariants(const UVector& pref, UVector& vars, UErrorCode& status) const {
+    CHECK_ERROR(status);
+
 // Note: steps 1 and 2 are omitted since we use `vars` as `sortable` (we sort in-place)
     // 1. Let `sortable` be a new empty list of (integer, variant) tuples.
     // (Not needed since `sortable` is an out-parameter)
@@ -390,12 +426,14 @@ void MessageFormatter::sortVariants(const std::vector<std::vector<UnicodeString>
     // 5. While i >= 0:
     while (i >= 0) {
         // 5i. Let `matches` be the list of strings at index `i` of `pref`.
-	const std::vector<UnicodeString>& matches = pref.at(i);
+        U_ASSERT(pref[i] != nullptr);
+	const UVector& matches = *(static_cast<UVector*>(pref[i])); // `matches` is a vector of strings
         // 5ii. Let `minpref` be the integer count of items in `matches`.
         int32_t minpref = matches.size();
         // 5iii. For each tuple `tuple` of `sortable`:
-        for (int32_t j = 0; j < (int32_t) vars.size(); j++) {
-            PrioritizedVariant& tuple = vars[j];
+        for (int32_t j = 0; j < vars.size(); j++) {
+            U_ASSERT(vars[j] != nullptr);
+            PrioritizedVariant& tuple = *(static_cast<PrioritizedVariant*>(vars[j]));
             // 5iii(a). Let matchpref be an integer with the value minpref.
             int32_t matchpref = minpref;
             // 5iii(b). Let `key` be the tuple variant key at position `i`.
@@ -409,15 +447,15 @@ void MessageFormatter::sortVariants(const std::vector<std::vector<UnicodeString>
                 // 5iii(c)(b). Let `ks` be the resolved value of `key`.
                 UnicodeString ks = key.asLiteral().unquoted();
                 // 5iii(c)(c) Let matchpref be the integer position of ks in `matches`.
-                auto match = std::find(matches.cbegin(), matches.cend(), ks);
-                U_ASSERT(match != std::end(matches));
-		matchpref = match - matches.cbegin();
+                int32_t matchpref = vectorFind(matches, ks);
+                U_ASSERT(matchpref >= 0);
             }
             // 5iii(d) Set the `tuple` integer value as matchpref.
             tuple.priority = matchpref;
         }
         // 5iv. Set `sortable` to be the result of calling the method SortVariants(`sortable`)
-	std::sort(vars.begin(), vars.end());
+        vars.sort(comparePrioritizedVariants, status);
+        CHECK_ERROR(status);
         // 5v. Set `i` to be `i` - 1.
         i--;
     }
@@ -537,31 +575,33 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
     // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
 
     // Resolve Selectors
-    // res is a vector of ResolvedExpressions
-    int32_t numSelectors = dataModel.numSelectors;
-
-    // vector of ExpressionContexts
-    std::vector<ExpressionContext> res;
-    resolveSelectors(context, env, status, res);
+    // res is a vector of ExpressionContexts
+    LocalPointer<UVector> res(createUVector(status));
+    CHECK_ERROR(status);
+    resolveSelectors(context, env, status, *res);
 
     // Resolve Preferences
     // pref is a vector of vectors of strings
-    std::vector<std::vector<UnicodeString>> pref(numSelectors);
-    resolvePreferences(res, pref, status);
+    LocalPointer<UVector> pref(createUVector(status));
+    CHECK_ERROR(status);
+    resolvePreferences(*res, *pref, status);
 
     // Filter Variants
     // vars is a vector of PrioritizedVariants
-    std::vector<PrioritizedVariant> vars;
-    filterVariants(pref, vars);
+    LocalPointer<UVector> vars(createUVector(status));
+    CHECK_ERROR(status);
+    filterVariants(*pref, *vars, status);
 
     // Sort Variants and select the final pattern
     // Note: `sortable` in the spec is just `vars` here,
     // which is sorted in-place
-    sortVariants(pref, vars);
+    sortVariants(*pref, *vars, status);
+
+    CHECK_ERROR(status);
 
     // 6. Let `var` be the `variant` element of the first element of `sortable`.
-    U_ASSERT(vars.size() > 0); // This should have been checked earlier (having 0 variants would be a data model error)
-    const PrioritizedVariant& var = vars.at(0);
+    U_ASSERT(vars->size() > 0); // This should have been checked earlier (having 0 variants would be a data model error)
+    const PrioritizedVariant& var = *(static_cast<PrioritizedVariant*>(vars->elementAt(0)));
     // 7. Select the pattern of `var`
     const Pattern& pat = var.pat;
 
@@ -569,14 +609,14 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
     formatPattern(context, env, pat, status, result);
 }
 
-UBool MessageFormatter::PrioritizedVariant::operator<(const MessageFormatter::PrioritizedVariant& other) const {
+UBool PrioritizedVariant::operator<(const PrioritizedVariant& other) const {
   if (priority < other.priority) {
       return true;
   }
   return false;
 }
 
-MessageFormatter::PrioritizedVariant::~PrioritizedVariant() {}
+PrioritizedVariant::~PrioritizedVariant() {}
 
 UnicodeString MessageFormatter::getPattern() const {
     // Converts the current data model back to a string

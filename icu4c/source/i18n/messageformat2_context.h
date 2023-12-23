@@ -144,7 +144,26 @@ namespace message2 {
         const LocalPointer<Environment> parent;
     };
 
-        // Errors
+    // PrioritizedVariant
+
+    // For how this class is used, see the references to (integer, variant) tuples
+    // in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
+    class PrioritizedVariant : public UObject {
+    public:
+        PrioritizedVariant() = default;
+        PrioritizedVariant(PrioritizedVariant&&) = default;
+        PrioritizedVariant& operator=(PrioritizedVariant&&) noexcept = default;
+        UBool operator<(const PrioritizedVariant&) const;
+        int32_t priority;
+        /* const */ SelectorKeys keys;
+        /* const */ Pattern pat;
+        PrioritizedVariant(uint32_t p,
+                           const SelectorKeys& k,
+                           const Pattern& pattern) noexcept : priority(p), keys(k), pat(pattern) {}
+        virtual ~PrioritizedVariant();
+    }; // class PrioritizedVariant
+
+    // Errors
     // ----------
 
     class DynamicErrors;
