@@ -936,12 +936,11 @@ Reserved Parser::parseReserved(UErrorCode& status) {
   Returns an `Operator` representing this (a reserved is a parse error)
 */
 Operator Parser::parseAnnotation(UErrorCode& status) {
+    U_ASSERT(inBounds(source, index));
+    Operator::Builder ratorBuilder(status);
     if (U_FAILURE(status)) {
         return {};
     }
-
-    U_ASSERT(inBounds(source, index));
-    Operator::Builder ratorBuilder;
     if (isFunctionStart(source[index])) {
         // Consume the function name
         FunctionName func = parseFunction(status);
