@@ -29,16 +29,16 @@ namespace message2 {
             Annotated,
             Unannotated
         };
-        void extend(const VariableName&, Type) noexcept;
+        void extend(const VariableName&, Type, UErrorCode& status);
         Type get(const VariableName&) const;
-        TypeEnvironment();
+        TypeEnvironment(UErrorCode& status);
 
         virtual ~TypeEnvironment();
 
     private:
         // Stores variables known to be annotated.
         // All others are assumed to be unannotated
-        std::vector<VariableName> annotated;
+        LocalPointer<UVector> annotated; // Vector of `VariableName`s
     }; // class TypeEnvironment
 
     // Checks a data model for semantic errors
@@ -50,7 +50,7 @@ namespace message2 {
     private:
 
         void requireAnnotated(const TypeEnvironment&, const Expression&, UErrorCode&);
-        void checkDeclarations(TypeEnvironment&);
+        void checkDeclarations(TypeEnvironment&, UErrorCode&);
         void checkSelectors(const TypeEnvironment&, UErrorCode&);
         void checkVariants(UErrorCode&);
         void check(const OptionMap&);
