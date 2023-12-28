@@ -30,11 +30,19 @@ Missing Selector Annotation
 // Type environments
 // -----------------
 
-TypeEnvironment::TypeEnvironment() {}
+TypeEnvironment::TypeEnvironment(UErrorCode& status) {
+    CHECK_ERROR(status);
+
+    UVector* result = new UVector(status);
+    CHECK_ERROR(status);
+    annotated.adoptInstead(result);
+    // `annotated` does not adopt its elements
+}
 
 TypeEnvironment::Type TypeEnvironment::get(const VariableName& var) const {
-  for (int32_t i = 0; ((int32_t) i) < (int32_t) annotated.size(); i++) {
-	const VariableName& lhs = annotated.at(i);
+    U_ASSERT(annotated.isValid());
+    for (int32_t i = 0; i < annotated->size(); i++) {
+        const VariableName& lhs = *(static_cast<VariableName*>(annotated->elementAt(i)));
         if (lhs == var) {
             return Annotated;
         }
@@ -42,14 +50,18 @@ TypeEnvironment::Type TypeEnvironment::get(const VariableName& var) const {
     return Unannotated;
 }
 
-void TypeEnvironment::extend(const VariableName& var, TypeEnvironment::Type t) noexcept {
+void TypeEnvironment::extend(const VariableName& var, TypeEnvironment::Type t, UErrorCode& status) {
     if (t == Unannotated) {
         // Nothing to do, as variables are considered
         // unannotated by default
         return;
     }
 
-    annotated.push_back(var);
+    U_ASSERT(annotated.isValid());
+    // This is safe because elements of `annotated` are never written
+    // and the lifetime of `var` is guaranteed to include the lifetime of
+    // `annotated`
+    annotated->addElement(const_cast<void*>(static_cast<const void*>(&var)), status);
 }
 
 TypeEnvironment::~TypeEnvironment() {}
@@ -142,7 +154,9 @@ TypeEnvironment::Type typeOf(TypeEnvironment& t, const Expression& expr) {
     return t.get(rand.asVariable());
 }
 
-void Checker::checkDeclarations(TypeEnvironment& t) {
+void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& status) {
+    CHECK_ERROR(status);
+
     // For each declaration, extend the type environment with its type
     // Only a very simple type system is necessary: local variables
     // have the type "annotated" or "unannotated".
@@ -150,15 +164,15 @@ void Checker::checkDeclarations(TypeEnvironment& t) {
     const Binding* env = dataModel.getLocalVariablesInternal();
     for (int32_t i = 0; i < dataModel.bindingsLen; i++) {
         const Binding& b = env[i];
-        t.extend(b.getVariable(), typeOf(t, b.getValue()));
+        t.extend(b.getVariable(), typeOf(t, b.getValue()), status);
     }
 }
 
 void Checker::check(UErrorCode& status) {
     CHECK_ERROR(status);
 
-    TypeEnvironment typeEnv;
-    checkDeclarations(typeEnv);
+    TypeEnvironment typeEnv(status);
+    checkDeclarations(typeEnv, status);
     // Pattern message
     if (!dataModel.hasSelectors()) {
         return;

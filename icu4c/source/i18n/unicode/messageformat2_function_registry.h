@@ -311,7 +311,7 @@ namespace message2 {
                                int32_t& prefsLen,
                                UErrorCode& status) const = 0;
         // Note: This takes array arguments because the internal MessageFormat code has to
-        // call this message, and can't include any code that constructs std::vectors.
+        // call this method, and can't include any code that constructs std::vectors.
         virtual ~Selector();
     }; // class Selector
 
