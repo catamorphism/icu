@@ -443,6 +443,72 @@ Reserved::Builder::~Builder() {
 
 //------------------------ Operator
 
+OptionMap::OptionMap(const UVector& opts, UErrorCode& status) {
+    CHECK_ERROR(status);
+
+    len = opts.size();
+    Option* result = copyVectorToArray<Option>(opts, len);
+    if (result == nullptr) {
+        bogus = true;
+        status = U_MEMORY_ALLOCATION_ERROR;
+        return;
+    }
+    options.adoptInstead(result);
+    bogus = false;
+}
+
+OptionMap::OptionMap(const OptionMap& other) {
+    U_ASSERT(!other.bogus);
+    len = other.len;
+    Option* result = copyArray(other.options.getAlias(), len);
+    if (result == nullptr) {
+        bogus = true;
+        return;
+    }
+    bogus = false;
+    options.adoptInstead(result);
+}
+
+OptionMap& OptionMap::operator=(const OptionMap& other) {
+    if (this != &other) {
+        U_ASSERT(!other.bogus);
+        len = other.len;
+        Option* result = copyArray(other.options.getAlias(), len);
+        if (result == nullptr) {
+            bogus = true;
+        } else {
+            bogus = false;
+            options.adoptInstead(result);
+        }
+    }
+    return *this;
+}
+
+OptionMap& OptionMap::operator=(OptionMap&& other) {
+    U_ASSERT(!other.bogus);
+    len = other.len;
+    U_ASSERT(other.options.isValid());
+    options.adoptInstead(other.options.orphan());
+    return *this;
+}
+
+Option OptionMap::getOption(int32_t i, UErrorCode& status) const {
+    if (U_FAILURE(status) || bogus) {
+        if (bogus) {
+            status = U_MEMORY_ALLOCATION_ERROR;
+        }
+        return {};
+    }
+    U_ASSERT(options.isValid());
+    U_ASSERT(i < len);
+    return options[i];
+}
+
+int32_t OptionMap::size() const {
+    U_ASSERT(options.isValid());
+    return len;
+}
+
 const FunctionName& Operator::getFunctionName() const {
     U_ASSERT(!isReserved());
     return functionName;
@@ -513,6 +579,26 @@ const OptionMap& Operator::getOptionsInternal() const {
     return options;
 }
 
+Option& Option::operator=(const Option& other) {
+    if (this != &other) {
+        name = other.name;
+        rand = other.rand;
+    }
+    return *this;
+}
+
+Option::~Option() {}
+
+static UBool stringsEqual(const UElement s1, const UElement s2) {
+    return (*static_cast<UnicodeString*>(s1.pointer) == *static_cast<UnicodeString*>(s2.pointer));
+}
+
+Operator::Builder::Builder(UErrorCode& status) {
+    options = createUVector(status);
+    CHECK_ERROR(status);
+    options->setComparer(stringsEqual);
+}
+
 Operator::Builder& Operator::Builder::setReserved(Reserved&& reserved) {
     isReservedSequence = true;
     hasFunctionName = false;
@@ -527,16 +613,30 @@ Operator::Builder& Operator::Builder::setFunctionName(FunctionName&& func) {
     return *this;
 }
 
+static UBool hasOptionNamed(const UVector& v, const UnicodeString& s) {
+    for (int32_t i = 0; i < v.size(); i++) {
+        const Option* opt = static_cast<Option*>(v[i]);
+        U_ASSERT(opt != nullptr);
+        if (opt->getName() == s) {
+            return true;
+        }
+    }
+    return false;
+}
+
 Operator::Builder& Operator::Builder::addOption(const UnicodeString &key, Operand&& value, UErrorCode& errorCode) noexcept {
     THIS_ON_ERROR(errorCode);
 
     isReservedSequence = false;
     hasOptions = true;
+    U_ASSERT(options != nullptr);
     // If the option name is already in the map, emit a data model error
-    if (options.has(key)) {
+    if (hasOptionNamed(*options, key)) {
         errorCode = U_DUPLICATE_OPTION_NAME_ERROR;
     } else {
-        options.add(key, std::move(value));
+        Option* newOption = create<Option>(Option(key, std::move(value)), errorCode);
+        THIS_ON_ERROR(errorCode);
+        options->adoptElement(newOption, errorCode);
     }
     return *this;
 }
@@ -562,7 +662,8 @@ Operator Operator::Builder::build(UErrorCode& errorCode) const noexcept {
             errorCode = U_INVALID_STATE_ERROR;
             return result;
         }
-        result = Operator(functionName, options.build());
+        U_ASSERT(options != nullptr);
+        result = Operator(functionName, *options, errorCode);
     }
     return result;
 }
@@ -599,7 +700,9 @@ Operator& Operator::operator=(const Operator& other) noexcept {
 }
 
 // Function call constructor
-Operator::Operator(const FunctionName& f, OptionMap&& l) : isReservedSequence(false), functionName(f), options(l) {}
+Operator::Operator(const FunctionName& f, const UVector& optsVector, UErrorCode& status) : isReservedSequence(false), functionName(f) {
+    options = OptionMap(optsVector, status);
+}
 
 Operator::Builder::~Builder() {}
 
@@ -880,6 +983,13 @@ const Expression* MessageFormatDataModel::getSelectorsInternal() const {
     return selectors.getAlias();
 }
 
+const Variant* MessageFormatDataModel::getVariantsInternal() const {
+    U_ASSERT(!bogus);
+    U_ASSERT(hasSelectors());
+    return variants.getAlias();
+}
+
+
 MessageFormatDataModel::Builder::Builder(UErrorCode& status) {
     locals = createUVector(status);
 }
@@ -1045,7 +1155,6 @@ template<>
 OrderedMap<UnicodeString, Operand>::Builder::~Builder() {}
 template<>
 OrderedMap<UnicodeString, Operand>::~OrderedMap() {}
-
 } // namespace message2
 
 U_NAMESPACE_END

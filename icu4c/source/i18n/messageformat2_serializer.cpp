@@ -106,11 +106,17 @@ void Serializer::emit(const Operand& rand) {
 }
 
 void Serializer::emit(const OptionMap& options) {
-    for (auto iter = options.begin(); iter != options.end(); ++iter) {
-      whitespace();
-      emit(iter.first());
-      emit(EQUALS);
-      emit(iter.second());
+    // Errors should have been checked before this point
+    UErrorCode localStatus = U_ZERO_ERROR;
+    U_ASSERT(!options.bogus);
+    for (int32_t i = 0; i < options.size(); i++) {
+        const Option& opt = options.getOption(i, localStatus);
+        // No need to check error code, since we already checked
+        // that !bogus
+        whitespace();
+        emit(opt.getName());
+        emit(EQUALS);
+        emit(opt.getValue());
     }
 }
 
@@ -158,7 +164,7 @@ void Serializer::emit(const Expression& expr) {
             // No whitespace after function name, in case it has
             // no options. (when there are options, emit(OptionMap) will
             // emit the leading whitespace)
-            emit(rator.getOptions());
+            emit(rator.getOptionsInternal());
         }
     }
 
@@ -229,13 +235,14 @@ void Serializer::serializeSelectors() {
 
 void Serializer::serializeVariants() {
     U_ASSERT(dataModel.hasSelectors());
-    const VariantMap& variants = dataModel.getVariants();
-    for (auto iter = variants.begin(); iter != variants.end(); ++iter) {
-      emit(ID_WHEN);
-      whitespace();
-      emit(iter.first());
-      // No whitespace needed here -- see `variant` in the grammar
-      emit(iter.second());
+    const Variant* variants = dataModel.getVariantsInternal();
+    for (int32_t i = 0; i < dataModel.numVariants; i++) {
+        const Variant& v = variants[i];
+        emit(ID_WHEN);
+        whitespace();
+        emit(v.getKeys());
+        // No whitespace needed here -- see `variant` in the grammar
+        emit(v.getPattern());
     }
 }
 

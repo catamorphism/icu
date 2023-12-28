@@ -957,13 +957,20 @@ namespace message2 {
         class OptionMap : public UObject {
         public:
             int32_t size() const;
-            const Option& getOption(int32_t) const;
+            // Needs to take an error code b/c an earlier copy might have failed
+            Option getOption(int32_t, UErrorCode&) const;
 
             OptionMap() : len(0) {}
+            OptionMap(const OptionMap&);
+            OptionMap& operator=(OptionMap&&);
+            OptionMap& operator=(const OptionMap&);
         private:
+            friend class message2::Serializer;
             friend class Operator;
 
+            bool bogus = false;
             OptionMap(Option* p, int32_t l) : options(LocalArray<Option>(p)), len(l) {}
+            OptionMap(const UVector&, UErrorCode&);
             LocalArray<Option> options;
             int32_t len;
         }; // class OptionMap
@@ -1107,11 +1114,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Builder(UErrorCode& status) {
-                    options = createUVector(status);
-                    CHECK_ERROR(status);
-                    options->setComparer(stringsEqual);
-                }
+                Builder(UErrorCode& status);
                 /**
                  * Destructor.
                  *
@@ -1159,9 +1162,10 @@ namespace message2 {
             virtual ~Operator();
         private:
             friend class message2::MessageFormatter;
+            friend class message2::Serializer;
 
             // Function call constructor
-            Operator(const FunctionName& f, UVector&& options);
+            Operator(const FunctionName& f, const UVector& options, UErrorCode&);
             // Reserved sequence constructor
             Operator(const Reserved& r) : isReservedSequence(true), functionName(FunctionName(UnicodeString(""))), reserved(Reserved(r)) {}
 
@@ -1170,7 +1174,6 @@ namespace message2 {
             /* const */ bool isReservedSequence;
             /* const */ FunctionName functionName;
             /* const */ OptionMap options;
-            int32_t optionsLen = 0;
             /* const */ Reserved reserved;
         }; // class Operator
 
@@ -1745,8 +1748,11 @@ namespace message2 {
 
 // (MSVC treats imports/exports of explicit instantiations differently.)
 #ifndef _MSC_VER
+// TODO: Unsure if this is still necessary
+/*
 extern template class message2::OrderedMap<UnicodeString, message2::data_model::Operand>;
 extern template class message2::OrderedMap<message2::data_model::SelectorKeys, message2::data_model::Pattern>;
+*/
 #endif
 
 namespace message2 {

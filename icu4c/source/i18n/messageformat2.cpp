@@ -102,7 +102,8 @@ void MessageFormatter::resolveOptions(const Environment& env, const OptionMap& o
     CHECK_ERROR(status);
 
     for (int i = 0; i < options.size(); i++) {
-        const Option& opt = options.getOption(i);
+        const Option& opt = options.getOption(i, status);
+        CHECK_ERROR(status);
         const UnicodeString& k = opt.getName();
         const Operand& v = opt.getValue();
 
@@ -673,7 +674,9 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
 void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const OptionMap& options, UErrorCode& status) const {
     // Check the RHS of each option
     for (int32_t i = 0; i < options.size(); i++) {
-        check(context, localEnv, options.getOption(i).getValue(), status);
+        const Option& opt = options.getOption(i, status);
+        CHECK_ERROR(status);
+        check(context, localEnv, opt.getValue(), status);
     }
 }
 
