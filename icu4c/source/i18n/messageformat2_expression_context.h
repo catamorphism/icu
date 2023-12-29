@@ -57,7 +57,7 @@ namespace message2 {
         // Precondition: hasFormatter()
         const std::shared_ptr<Formatter> getFormatter(UErrorCode&);
 
-        void addFunctionOption(const UnicodeString&, Formattable&&) noexcept;
+        void adoptFunctionOptions(UVector*, UErrorCode&);
         void clearFunctionOptions();
         Formattable* getOption(const UnicodeString&, Formattable::Type) const;
         bool tryStringAsNumberOption(const UnicodeString&, double&) const;
@@ -108,12 +108,16 @@ namespace message2 {
         number::FormattedNumber numberOutput;
 
         // Named options passed to functions
-        FunctionOptionsMap functionOptions;
+        // This is not a Hashtable in order to make it possible for code in a public header file
+        // to construct a std::map from it, on-the-fly. Otherwise, it would be impossible to put
+        // that code in the header because it would have to call internal Hashtable methods.
+        LocalArray<ResolvedFunctionOption> functionOptions;
+        int32_t functionOptionsLen = 0;
         // Named options passed to functions that have type UObject
         // This must be a separate map because objects wrapped in
         // a Formattable will be deleted by the destructor of the Formattable,
         // and object values passed as arguments are not owned
-        std::map<UnicodeString, const UObject*> functionObjectOptions;
+        LocalPointer<Hashtable> functionObjectOptions; // Map from UnicodeString to UObject*
 
         MessageContext& messageContext() const { return context; }
 
@@ -128,10 +132,7 @@ namespace message2 {
 
         void setFunctionName(const FunctionName&);
 
-        void setStringOption(const UnicodeString&, const UnicodeString&);
-        void setDateOption(const UnicodeString&, UDate);
-        void setNumericOption(const UnicodeString&, double);
-        void setObjectOption(const UnicodeString&, const UObject*) noexcept;
+        void setObjectOption(const UnicodeString&, const UObject*, UErrorCode&);
 
         void setNoOperand();
         void setInput(const UObject*);
@@ -152,9 +153,11 @@ namespace message2 {
         // `keys` and `keysOut` are both vectors of strings
         void evalPendingSelectorCall(const UVector&, UVector&, UErrorCode&);
 
+        const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const override;
+        UBool getFunctionOption(const UnicodeString&, Formattable&) const;
     public:
 
-        ExpressionContext create() const;
+        ExpressionContext create(UErrorCode&) const;
 
         // Precondition: pending function name is set
         bool hasSelector() const;
@@ -183,15 +186,15 @@ namespace message2 {
         UBool getInt64Option(const UnicodeString&, int64_t&) const override;
         UBool hasObjectOption(const UnicodeString&) const override;
         const UObject& getObjectOption(const UnicodeString&) const override;
-        // Function options iterator
-        FunctionOptionsMap::const_iterator begin() const override;
-        FunctionOptionsMap::const_iterator end() const override;
+
+        // Note: this is provided separately from getOptions() so that internal
+        // code, which can't call getOptions(), can query the number of options
         int32_t optionsCount() const override;
 
         void setSelectorError(const UnicodeString&, UErrorCode&) override;
         void setFormattingError(const UnicodeString&, UErrorCode&) override;
 
-        ExpressionContext(MessageContext&);
+        ExpressionContext(MessageContext&, UErrorCode&);
         ExpressionContext(ExpressionContext&&);
         virtual ~ExpressionContext();
     };

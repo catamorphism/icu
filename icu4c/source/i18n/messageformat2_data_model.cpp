@@ -22,39 +22,6 @@ namespace message2 {
 
 // Implementation
 
-//------------------ Helpers
-
-template<typename T>
-static T* copyArray(const T* source, int32_t& len) { // `len` is an in/out param
-    T* dest = new T[len];
-    if (dest == nullptr) {
-        // Set length to 0 to prevent the
-        // array from being accessed
-        len = 0;
-    } else {
-        for (int32_t i = 0; i < len; i++) {
-            dest[i] = source[i];
-        }
-    }
-    return dest;
-}
-
-template<typename T>
-static T* copyVectorToArray(const UVector& source, int32_t& len) {
-    len = source.size();
-    T* dest = new T[len];
-    if (dest == nullptr) {
-        // Set length to 0 to prevent the
-        // array from being accessed
-        len = 0;
-    } else {
-        for (int32_t i = 0; i < len; i++) {
-            dest[i] = *(static_cast<T*>(source.elementAt(i)));
-        }
-    }
-    return dest;
-}
-
 //------------------ SelectorKeys
 
 const Key* SelectorKeys::getKeysInternal() const {
@@ -1146,15 +1113,6 @@ MessageFormatDataModel::Builder::~Builder() {
         delete locals;
     }
 }
-
-template<>
-OrderedMap<SelectorKeys, Pattern>::Builder::~Builder() {}
-template<>
-OrderedMap<SelectorKeys, Pattern>::~OrderedMap() {}
-template<>
-OrderedMap<UnicodeString, Operand>::Builder::~Builder() {}
-template<>
-OrderedMap<UnicodeString, Operand>::~OrderedMap() {}
 } // namespace message2
 
 U_NAMESPACE_END

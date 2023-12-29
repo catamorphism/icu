@@ -13,8 +13,9 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/fmtable.h"
-#include "unicode/messageformat2_utils.h"
 #include "unicode/unistr.h"
+
+#include <vector>
 
 U_NAMESPACE_BEGIN
 
@@ -1740,22 +1741,6 @@ namespace message2 {
 
         class Binding;
     } // namespace data_model
-
-} // namespace message2
-
-// Explicit instantiations in source/i18n/messageformat2_utils.cpp
-// See numberformatter.h for another example
-
-// (MSVC treats imports/exports of explicit instantiations differently.)
-#ifndef _MSC_VER
-// TODO: Unsure if this is still necessary
-/*
-extern template class message2::OrderedMap<UnicodeString, message2::data_model::Operand>;
-extern template class message2::OrderedMap<message2::data_model::SelectorKeys, message2::data_model::Pattern>;
-*/
-#endif
-
-namespace message2 {
 
     using namespace data_model;
 
