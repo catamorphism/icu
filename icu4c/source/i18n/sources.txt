@@ -103,7 +103,6 @@ messageformat2_formatting_context.cpp
 messageformat2_function_registry.cpp
 messageformat2_parser.cpp
 messageformat2_serializer.cpp
-messageformat2_utils.cpp
 name2uni.cpp
 nfrs.cpp
 nfrule.cpp

@@ -99,8 +99,9 @@ void MessageFormatter::formatOperand(const Environment& env, const Operand& rand
 
 // Resolves a function's options, recording the value of each option in the context
 void MessageFormatter::resolveOptions(const Environment& env, const OptionMap& options, ExpressionContext& context, UErrorCode& status) const {
+    LocalPointer<UVector> optionsVector(createUVector(status));
     CHECK_ERROR(status);
-
+    LocalPointer<ResolvedFunctionOption> resolvedOpt;
     for (int i = 0; i < options.size(); i++) {
         const Option& opt = options.getOption(i, status);
         CHECK_ERROR(status);
@@ -109,48 +110,38 @@ void MessageFormatter::resolveOptions(const Environment& env, const OptionMap& o
 
         // Options are fully evaluated before calling the function
         // Create a new context for formatting the right-hand side of the option
-        ExpressionContext rhsContext = context.create();
+        ExpressionContext rhsContext = context.create(status);
         // Format the operand in its own context
         formatOperand(env, v, rhsContext, status);
         // If formatting succeeded, pass the string
         if (rhsContext.hasStringOutput()) {
-            context.setStringOption(k, rhsContext.getStringOutput());
+            resolvedOpt.adoptInstead(create<ResolvedFunctionOption>(ResolvedFunctionOption(k, Formattable(rhsContext.getStringOutput())), status));
+            CHECK_ERROR(status);
+            optionsVector->adoptElement(resolvedOpt.orphan(), status);
         } else if (rhsContext.hasFormattableInput()) {
             // (Fall back to the input if the result was a formatted number)
             const Formattable& f = rhsContext.getFormattableInput();
             switch (f.getType()) {
-                case Formattable::Type::kDate: {
-                    context.setDateOption(k, f.getDate());
-                    break;
-                }
-                case Formattable::Type::kDouble: {
-                    context.setNumericOption(k, f.getDouble());
-                    break;
-                }
-                case Formattable::Type::kLong: {
-                    context.setNumericOption(k, f.getLong());
-                    break;
-                }
-                case Formattable::Type::kInt64: {
-                    context.setNumericOption(k, (double) f.getInt64());
-                    break;
-                }
-                case Formattable::Type::kString: {
-                    context.setStringOption(k, f.getString());
-                    break;
-                }
-                default: {
+                case Formattable::Type::kArray:
+                case Formattable::Type::kObject: {
                     // Options with array or object types are ignored
                     continue;
                 }
+                default: {
+                    resolvedOpt.adoptInstead(create<ResolvedFunctionOption>(ResolvedFunctionOption(k, f), status));
+                    CHECK_ERROR(status);
+                    optionsVector->adoptElement(resolvedOpt.orphan(), status);
+                }
             }
         } else if (rhsContext.hasObjectInput()) {
-	    context.setObjectOption(k, rhsContext.getObjectInputPointer());
+	    context.setObjectOption(k, rhsContext.getObjectInputPointer(), status);
         } else {
             // Ignore fallbacks
             U_ASSERT(rhsContext.isFallback());
         }
     }
+
+    context.adoptFunctionOptions(optionsVector.orphan(), status);
 }
 
 // Formats an expression using `globalEnv` for the values of variables
@@ -211,7 +202,7 @@ void MessageFormatter::formatPattern(MessageContext& globalContext, const Enviro
             result += part.asText();
         } else {
               // Create a new context to evaluate the expression part
-	      ExpressionContext context(globalContext);
+              ExpressionContext context(globalContext, status);
 	      // Format the expression
 	      formatExpression(globalEnv, part.contents(), context, status);
 	      // Force full evaluation, e.g. applying default formatters to
@@ -237,7 +228,7 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
     // (Implicit, since `res` is an out-parameter)
     // 2. For each expression exp of the message's selectors
     for (int32_t i = 0; i < dataModel.numSelectors; i++) {
-        ExpressionContext rv(context);
+        ExpressionContext rv(context, status);
         // 2i. Let rv be the resolved value of exp.
         formatSelectorExpression(env, selectors[i], rv, status);
         if (rv.hasSelector()) {

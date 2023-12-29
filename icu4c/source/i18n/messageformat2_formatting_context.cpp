@@ -29,10 +29,12 @@ using namespace data_model;
 // Constructors
 // ------------
 
-ExpressionContext::ExpressionContext(MessageContext& c) : context(c), inState(FALLBACK), outState(NONE) {}
+ExpressionContext::ExpressionContext(MessageContext& c, UErrorCode& status) : context(c), inState(FALLBACK), outState(NONE) {
+    functionObjectOptions.adoptInstead(new Hashtable(status));
+}
 
-ExpressionContext ExpressionContext::create() const {
-    return ExpressionContext(context);
+ExpressionContext ExpressionContext::create(UErrorCode& status) const {
+    return ExpressionContext(context, status);
 }
 
 ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.context), inState(other.inState), outState(other.outState) {
@@ -46,6 +48,7 @@ ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.
     stringOutput = std::move(other.stringOutput);
     numberOutput = std::move(other.numberOutput);
     functionOptions = std::move(other.functionOptions);
+    functionOptionsLen = other.functionOptionsLen;
     functionObjectOptions = std::move(other.functionObjectOptions);
 }
 
@@ -302,67 +305,82 @@ const FunctionName& ExpressionContext::getFunctionName() {
     return pendingFunctionName;
 }
 
-// Function options iterator
-// TODO: this only iterates over non-object options
-FormattingContext::FunctionOptionsMap::const_iterator ExpressionContext::begin() const { return functionOptions.cbegin(); }
-FormattingContext::FunctionOptionsMap::const_iterator ExpressionContext::end() const { return functionOptions.cend(); }
-
-int32_t ExpressionContext::optionsCount() const {
-    return functionOptions.size();
-}
-
 // Function options
 // ----------------
 
-void ExpressionContext::addFunctionOption(const UnicodeString& k, Formattable&& val) noexcept {
-    functionOptions[k] = val;
-}
+void ExpressionContext::setObjectOption(const UnicodeString& key, const UObject* value, UErrorCode& status) {
+    CHECK_ERROR(status);
 
-void ExpressionContext::setStringOption(const UnicodeString& key, const UnicodeString& value) {
-    addFunctionOption(key, Formattable(value));
-}
-
-void ExpressionContext::setDateOption(const UnicodeString& key, UDate date) {
-    addFunctionOption(key, Formattable(date, Formattable::kIsDate));
-}
-
-void ExpressionContext::setNumericOption(const UnicodeString& key, double value) {
-    addFunctionOption(key, Formattable(value));
-}
-
-void ExpressionContext::setObjectOption(const UnicodeString& key, const UObject* value) noexcept {
     // The const_cast is safe because no methods that allow
     // writing to `value` are exposed
-    functionObjectOptions[key] = const_cast<UObject*>(value);
+    U_ASSERT(functionObjectOptions.isValid());
+    functionObjectOptions->put(key, const_cast<UObject*>(value), status);
+}
+
+
+int32_t ExpressionContext::optionsCount() const { return functionOptionsLen; }
+
+// Takes a vector of ResolvedFunctionOptions
+void ExpressionContext::adoptFunctionOptions(UVector* opt, UErrorCode& status) {
+    CHECK_ERROR(status);
+    U_ASSERT(opt != nullptr);
+
+    functionOptions.adoptInstead(copyVectorToArray<ResolvedFunctionOption>(*opt, functionOptionsLen));
+    if (!functionOptions.isValid()) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+    }
+    delete opt;
 }
 
 UBool ExpressionContext::getNumericOption(const UnicodeString& key, Formattable& result) const {
-    if (functionOptions.count(key) <= 0) {
-	return false;
-    }
-    const Formattable& val = functionOptions.at(key);
-    if (!val.isNumeric()) {
+    if (!getFunctionOption(key, result)) {
         return false;
     }
-    result = val;
+    if (!result.isNumeric()) {
+        return false;
+    }
     return true;
 }
 
 UBool ExpressionContext::getStringOption(const UnicodeString& key, UnicodeString& value) const {
-    if (functionOptions.count(key) <= 0) {
+    Formattable result;
+    if (!getFunctionOption(key, result) || result.getType() != Formattable::kString) {
       return false;
     }
-    value = functionOptions.at(key).getString();
+    value = result.getString();
     return true;
 }
 
 const UObject& ExpressionContext::getObjectOption(const UnicodeString& key) const {
-    U_ASSERT(functionObjectOptions.count(key) > 0);
-    return *(functionObjectOptions.at(key));
+    U_ASSERT(functionObjectOptions.isValid());
+    const UObject* result = static_cast<const UObject*>(functionObjectOptions->get(key));
+    U_ASSERT(result != nullptr);
+    return *result;
+}
+
+const ResolvedFunctionOption* ExpressionContext::getResolvedFunctionOptions(int32_t& len) const {
+    len = functionOptionsLen;
+    U_ASSERT(functionOptions.isValid());
+    return functionOptions.getAlias();
+}
+
+UBool ExpressionContext::getFunctionOption(const UnicodeString& key, Formattable& value) const {
+    if (!functionOptions.isValid()) {
+        U_ASSERT(functionOptionsLen == 0);
+    }
+    for (int32_t i = 0; i < functionOptionsLen; i++) {
+        const ResolvedFunctionOption& opt = functionOptions[i];
+        if (opt.getName() == key) {
+            U_ASSERT(opt.getValue().getType() != Formattable::kObject);
+            value = opt.getValue();
+            return true;
+        }
+    }
+    return false;
 }
 
 UBool ExpressionContext::hasObjectOption(const UnicodeString& key) const {
-    return (functionObjectOptions.count(key) > 0);
+    return (functionObjectOptions->get(key) != nullptr);
 }
 
 bool ExpressionContext::tryStringAsNumberOption(const UnicodeString& key, double& value) const {
@@ -442,8 +460,12 @@ void ExpressionContext::returnFromFunction() {
 }
 
 void ExpressionContext::clearFunctionOptions() {
-    functionOptions.clear();
+    U_ASSERT(functionOptions.isValid() || functionOptionsLen == 0);
+    functionOptions.adoptInstead(nullptr);
+    functionOptionsLen = 0;
 }
+
+ResolvedFunctionOption::~ResolvedFunctionOption() {}
 
 // Precondition: pending function name is set and selector is defined
 // Postcondition: selector != nullptr

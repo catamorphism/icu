@@ -20,12 +20,48 @@
 #include "unicode/formattedvalue.h"
 #include "unicode/numberformatter.h"
 #include "unicode/smpdtfmt.h"
+
 #include <map>
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 class Selector;
 class SelectorFactory;
+
+/**
+ *  A `ResolvedFunctionOption` represents the result of evaluating
+ * a single named function option. It pairs the given name with the `Formattable`
+ * value resulting from evaluating the option's value.
+ *
+ * `ResolvedFunctionOption` is immutable and is not copyable or movable.
+ *
+ * @internal ICU 75.0 technology preview
+ * @deprecated This API is for technology preview only.
+ */
+class U_I18N_API ResolvedFunctionOption : public UObject {
+  private:
+
+    // TODO
+    /* const */ UnicodeString name;
+    /* const */ Formattable value;
+
+  public:
+      const UnicodeString& getName() const { return name; }
+      const Formattable& getValue() const { return value; }
+      ResolvedFunctionOption(const UnicodeString& n, Formattable&& f) : name(n), value(std::move(f)) {}
+      ResolvedFunctionOption(const UnicodeString& n, const Formattable& f) : name(n), value(f) {}
+      ResolvedFunctionOption() {}
+      ResolvedFunctionOption& operator=(const ResolvedFunctionOption& other) {
+          if (this != &other) {
+              name = other.name;
+              value = other.value;
+          }
+        return *this;
+    }
+    virtual ~ResolvedFunctionOption();
+}; // class ResolvedFunctionOption
 
 /**
  * <p>MessageFormatter is a Technical Preview API implementing MessageFormat 2.0.
@@ -233,14 +269,33 @@ class U_I18N_API FormattingContext : public UObject {
      * @deprecated This API is for technology preview only.
      */
     virtual const UObject& getObjectOption(const UnicodeString& optionName) const = 0;
-    // TODO
     using FunctionOptionsMap = std::map<UnicodeString, Formattable>;
-    virtual FunctionOptionsMap::const_iterator begin() const = 0;
-    virtual FunctionOptionsMap::const_iterator end() const = 0;
     /**
-     * Gets the number of options.
+     * Returns a map of all name-value pairs provided as options to this function,
+     * except for any object-valued options (which must be accessed using
+     * `getObjectOption()`). The syntactic order of options is not guaranteed to
+     * be preserved.
      *
-     * @return The number of named options.
+     * @return           A map from strings to `Formattable` values representing
+     *                   the results of resolving each option value.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    FunctionOptionsMap getOptions() const {
+        int32_t len;
+        const ResolvedFunctionOption* resolvedOptions = getResolvedFunctionOptions(len);
+        FunctionOptionsMap result;
+        for (int32_t i = 0; i < len; i++) {
+            const ResolvedFunctionOption& opt = resolvedOptions[i];
+            result[opt.getName()] = opt.getValue();
+        }
+        return result;
+    }
+    /**
+     * Returns the number of function options.
+     *
+     * @return           The number of options, including object options.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
@@ -265,6 +320,10 @@ class U_I18N_API FormattingContext : public UObject {
     virtual void formatToString(const Locale& locale, UErrorCode& status) = 0;
 
     virtual ~FormattingContext();
+
+ private:
+
+    virtual const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const = 0;
 };
 
 } // namespace message2

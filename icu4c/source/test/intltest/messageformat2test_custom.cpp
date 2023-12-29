@@ -565,7 +565,8 @@ using Arguments = MessageArguments;
 static Arguments localToGlobal(const FormattingContext& context) {
     Arguments::Builder args;
 
-    for (auto iter = context.begin(); iter != context.end(); ++iter) {
+    FormattingContext::FunctionOptionsMap opts = context.getOptions();
+    for (auto iter = opts.cbegin(); iter != opts.cend(); ++iter) {
         const Formattable& optionValue = iter->second;
         const UnicodeString& optionName = iter->first;
         switch (optionValue.getType()) {
