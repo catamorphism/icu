@@ -34,7 +34,7 @@ void TestMessageFormat2::testSample(TestCase::Builder& testBuilder, IcuTestError
                                 .setArgument("count", "abc")
                                 .setArgument("where", "def")
                                 .setExpected("There are abc files on def")
-                                .build(), errorCode);
+                                .build(errorCode), errorCode);
 }
 
 void TestMessageFormat2::testStaticFormat(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
@@ -44,7 +44,7 @@ there was {$what} on planet {$planet :number kind=integer}.}")
                                 .setArgument("when", (UDate) 871068000000)
                                 .setArgument("what", "a disturbance in the Force")
                                 .setExpected(CharsToUnicodeString("At 12:20:00\\u202FPM on Aug 8, 1997, there was a disturbance in the Force on planet 7."))
-                                .build(), errorCode);
+                                .build(errorCode), errorCode);
 }
 
 void TestMessageFormat2::testSimpleFormat(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
@@ -54,17 +54,17 @@ void TestMessageFormat2::testSimpleFormat(TestCase::Builder& testBuilder, IcuTes
 
     TestCase test = testBuilder.setArgument("fileCount", (int64_t) 0)
         .setExpected("The disk \"MyDisk\" contains 0 file(s).")
-        .build();
+        .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("fileCount", (int64_t) 1)
                       .setExpected("The disk \"MyDisk\" contains 1 file(s).")
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("fileCount", (int64_t) 12)
                       .setExpected("The disk \"MyDisk\" contains 12 file(s).")
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -78,19 +78,19 @@ void TestMessageFormat2::testSelectFormatToPattern(TestCase::Builder& testBuilde
     TestCase test = testBuilder.setArgument("userName", "Charlotte")
                                 .setArgument("userGender", "female")
                                 .setExpected(CharsToUnicodeString("Charlotte est all\\u00e9e \\u00e0 Paris."))
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("userName", "Guillaume")
                                 .setArgument("userGender", "male")
                                 .setExpected(CharsToUnicodeString("Guillaume est all\\u00e9 \\u00e0 Paris."))
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("userName", "Dominique")
                                 .setArgument("userGender", "unknown")
                                 .setExpected(CharsToUnicodeString("Dominique est all\\u00e9 \\u00e0 Paris."))
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -105,35 +105,35 @@ void TestMessageFormat2::testMessageFormatDateTimeSkeleton(TestCase::Builder& te
 
     TestCase test = testBuilder.setPattern("{{$when :datetime skeleton=MMMMd}}")
                                 .setExpected("November 23")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{$when :datetime skeleton=yMMMMdjm}}")
                                  .setExpected(CharsToUnicodeString("November 23, 2021 at 4:42\\u202FPM"))
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{$when :datetime skeleton=|   yMMMMd   |}}")
                                 .setExpected("November 23, 2021")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{$when :datetime skeleton=yMMMMd}}")
                                 .setExpected("23 novembre 2021")
                                 .setLocale(Locale::forLanguageTag("fr", errorCode))
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Expiration: {$when :datetime skeleton=yMMM}!}")
                                 .setExpected("Expiration: Nov 2021!")
                                 .setLocale(Locale::forLanguageTag("en", errorCode))
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{$when :datetime pattern=|'::'yMMMMd|}}")
                                 .setExpected("::2021November23")
                                 .setLocale(Locale::forLanguageTag("en", errorCode))
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -170,7 +170,7 @@ void TestMessageFormat2::testMf1Behavior(TestCase::Builder& testBuilder, IcuTest
                                 .setDateArgument(badArgumentsNames[1], testDate)
                                 .setExpected("Hello {$user}, today is {$today}.")
                                 .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.clearArguments()
@@ -178,7 +178,7 @@ void TestMessageFormat2::testMf1Behavior(TestCase::Builder& testBuilder, IcuTest
                       .setArgument(goodArgumentsNames[0], user)
                       .setDateArgument(goodArgumentsNames[1], testDate)
                       .setExpected(expectedGood)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 

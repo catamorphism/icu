@@ -22,74 +22,61 @@ namespace message2 {
 
     using Arguments = MessageArguments;
 
+    int32_t Arguments::findArg(const VariableName& arg) const {
+        U_ASSERT(argsLen == 0 || arguments.isValid());
+        for (int32_t i = 0; i < argsLen; i++) {
+            if (arguments[i].name == arg.identifier()) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     bool Arguments::hasFormattable(const VariableName& arg) const {
-        return contents.count(arg.identifier()) > 0;
+        int32_t i = findArg(arg);
+        return ((i != -1) && !arguments[i].isObject());
     }
 
     bool Arguments::hasObject(const VariableName& arg) const {
-        return objectContents.count(arg.identifier()) > 0;
+        int32_t i = findArg(arg);
+        return ((i != -1) && arguments[i].isObject());
     }
 
     const Formattable& Arguments::getFormattable(const VariableName& arg) const {
-        U_ASSERT(hasFormattable(arg));
-        return contents.at(arg.identifier());
+        int32_t i = findArg(arg);
+        U_ASSERT(!arguments[i].isObject());
+        return arguments[i].value;
     }
 
     const UObject* Arguments::getObject(const VariableName& arg) const {
-        U_ASSERT(hasObject(arg));
-        return objectContents.at(arg.identifier());
-    }
-
-    Arguments::Builder::Builder() {}
-
-    Arguments::Builder& Arguments::Builder::add(const UnicodeString& name, const UnicodeString& val) {
-        return addFormattable(name, Formattable(val));
-    }
-
-    Arguments::Builder& Arguments::Builder::addDouble(const UnicodeString& name, double val) {
-        return addFormattable(name, Formattable(val));
-    }
-
-    Arguments::Builder& Arguments::Builder::addInt64(const UnicodeString& name, int64_t val) {
-        return addFormattable(name, Formattable(val));
-    }
-
-    Arguments::Builder& Arguments::Builder::addDate(const UnicodeString& name, UDate val) {
-        return addFormattable(name, Formattable(val, Formattable::kIsDate));
-    }
-
-    Arguments::Builder& Arguments::Builder::addDecimal(const UnicodeString& name, StringPiece val, UErrorCode& errorCode) {
-        Formattable result(val, errorCode);
-        THIS_ON_ERROR(errorCode);
-        return addFormattable(name, std::move(result));
-    }
-
-    // members of `arr` should be strings
-    Arguments::Builder& Arguments::Builder::adoptArray(const UnicodeString& name, const Formattable* arr, int32_t count) {
-        return addFormattable(name, Formattable(arr, count));
-    }
-
-    // Does not adopt the object
-    Arguments::Builder& Arguments::Builder::addObject(const UnicodeString& name, const UObject* obj) noexcept {
-        objectContents[name] = obj;
-        return *this;
-    }
-
-    Arguments::Builder& Arguments::Builder::addFormattable(const UnicodeString& name, Formattable&& value) noexcept {
-        contents[name] = std::move(value);
-        return *this;
-    }
-
-    MessageArguments MessageArguments::Builder::build() const noexcept {
-        return MessageArguments(contents, objectContents);
+        int32_t i = findArg(arg);
+        U_ASSERT(arguments[i].isObject());
+        return arguments[i].objectValue;
     }
 
     MessageArguments::~MessageArguments() {}
 
-    MessageArguments::Builder::~Builder() {}
-
     // Message arguments
     // -----------------
+
+
+    MessageArgument::MessageArgument(const UnicodeString& n, Formattable&& f) : name(n), objectValue(nullptr), value(std::move(f)) {
+        U_ASSERT(f.getType() != Formattable::kObject);
+    }
+    MessageArgument::MessageArgument(const UnicodeString& n, const Formattable& f) : name(n), objectValue(nullptr), value(f) {
+        U_ASSERT(f.getType() != Formattable::kObject);
+    }
+    MessageArgument::MessageArgument(const UnicodeString& n, const UObject* p) : name(n), objectValue(p) {
+        U_ASSERT(p != nullptr);
+    }
+    MessageArguments& MessageArguments::operator=(MessageArguments&& other) noexcept {
+        U_ASSERT(other.arguments.isValid() || other.argsLen == 0);
+        argsLen = other.argsLen;
+        if (argsLen != 0) {
+            arguments.adoptInstead(other.arguments.orphan());
+        }
+        return *this;
+    }
 
     bool MessageContext::hasGlobalAsObject(const VariableName& v) const {
         return arguments.hasObject(v);
@@ -238,8 +225,6 @@ namespace message2 {
             return result;
         }
     }
-
-    MessageArguments::MessageArguments(const std::map<UnicodeString, Formattable>& vals, const std::map<UnicodeString, const UObject*>& objs) noexcept : contents(vals), objectContents(objs) {}
 
     // -------------------------------------------------------
     // MessageContext accessors and constructors

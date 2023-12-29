@@ -84,42 +84,47 @@ class TestCase : public UMemory {
         Builder& setName(UnicodeString name) { testName = name; return *this; }
         Builder& setPattern(UnicodeString pat) { pattern = pat; return *this; }
         Builder& setArgument(const UnicodeString& k, const UnicodeString& val) {
-            arguments.add(k, val);
+            deleteArgument(k);
+            arguments.push_back(MessageArgument(k, Formattable(val)));
             return *this;
         }
         Builder& setArgument(const UnicodeString& k, const Formattable* val, int32_t count) {
             U_ASSERT(val != nullptr);
-            arguments.adoptArray(k, val, count);
+            deleteArgument(k);
+            arguments.push_back(MessageArgument(k, Formattable(val, count)));
             return *this;
         }
         Builder& setArgument(const UnicodeString& k, double val) {
-            arguments.addDouble(k, val);
+            deleteArgument(k);
+            arguments.push_back(MessageArgument(k, Formattable(val)));
             return *this;
         }
         Builder& setArgument(const UnicodeString& k, int64_t val) {
-            arguments.addInt64(k, val);
+            deleteArgument(k);
+            arguments.push_back(MessageArgument(k, Formattable(val)));
             return *this;
         }
         Builder& setDateArgument(const UnicodeString& k, UDate date) {
-            arguments.addDate(k, date);
+            deleteArgument(k);
+            arguments.push_back(MessageArgument(k, Formattable(date, Formattable::kIsDate)));
             return *this;
         }
         Builder& setDecimalArgument(const UnicodeString& k, StringPiece decimal, UErrorCode& errorCode) {
             THIS_ON_ERROR(errorCode);
-
-            arguments.addDecimal(k, decimal, errorCode);
+            deleteArgument(k);
+            arguments.push_back(MessageArgument(k, Formattable(decimal, errorCode)));
             return *this;
         }
-        // val has to be uniquely owned because the copy constructor for
+        // val has to be shared because the copy constructor for
         // a Formattable of an object doesn't work
-        Builder& setArgument(const UnicodeString& k, UObject* val) {
+        Builder& setArgument(const UnicodeString& k, const UObject* val) {
             U_ASSERT(val != nullptr);
-
-            arguments.addObject(k, val);
+            deleteArgument(k);
+            arguments.push_back(MessageArgument(k, val));
             return *this;
         }
         Builder& clearArguments() {
-            arguments = MessageArguments::Builder();
+            arguments.clear();
             return *this;
         }
         Builder& setExpected(UnicodeString e) {
@@ -165,8 +170,8 @@ class TestCase : public UMemory {
             functionRegistry = reg;
             return *this;
         }
-        TestCase build() const {
-            return TestCase(*this);
+        TestCase build(UErrorCode& status) const {
+            return TestCase(*this, status);
         }
         virtual ~Builder();
 
@@ -174,7 +179,7 @@ class TestCase : public UMemory {
         UnicodeString testName;
         UnicodeString pattern;
         Locale locale;
-        MessageArguments::Builder arguments;
+        std::vector<MessageArgument> arguments;
         bool hasExpectedOutput;
         UnicodeString expected;
         UErrorCode expectedError;
@@ -185,16 +190,24 @@ class TestCase : public UMemory {
         bool ignoreError;
         std::shared_ptr<FunctionRegistry> functionRegistry  = nullptr; // Not owned
 
+        void deleteArgument(const UnicodeString& k) {
+            for (auto iter = arguments.begin(); iter != arguments.end(); ++iter) {
+                if (iter->getName() == k) {
+                    arguments.erase(iter);
+                    break;
+                }
+            }
+        }
         public:
-        Builder() : pattern(""), locale(Locale::getDefault()), arguments(MessageArguments::Builder()), hasExpectedOutput(false), expected(""), expectedError(U_ZERO_ERROR), expectNoSyntaxError(false), hasLineNumberAndOffset(false), ignoreError(false) {}
+        Builder() : pattern(""), locale(Locale::getDefault()), hasExpectedOutput(false), expected(""), expectedError(U_ZERO_ERROR), expectNoSyntaxError(false), hasLineNumberAndOffset(false), ignoreError(false) {}
     };
 
     private:
-    TestCase(const Builder& builder) :
+    TestCase(const Builder& builder, UErrorCode& errorCode) :
         testName(builder.testName),
         pattern(builder.pattern),
         locale(builder.locale),
-        arguments(builder.arguments.build()),
+        arguments(MessageArguments(builder.arguments, errorCode)),
         expectedError(builder.expectedError),
         expectedNoSyntaxError(builder.expectNoSyntaxError),
         hasExpectedOutput(builder.hasExpectedOutput),
