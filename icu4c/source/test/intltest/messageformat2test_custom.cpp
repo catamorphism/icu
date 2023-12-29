@@ -45,14 +45,14 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
         .setArgument(name, person.getAlias())
         .setExpected("Hello {$name}")
         .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
-        .build();
+        .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=informal}}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello {$name}")
                                 .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setFunctionRegistry(std::make_shared<FunctionRegistry>(std::move(customRegistry)));
@@ -61,35 +61,35 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello Mr. Doe")
                                 .setExpectSuccess()
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=informal}}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello John")
                                 .setExpectSuccess()
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=formal length=long}}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello Mr. John Doe")
                                 .setExpectSuccess()
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=formal length=medium}}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello John Doe")
                                 .setExpectSuccess()
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=formal length=short}}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello Mr. Doe")
                                 .setExpectSuccess()
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -140,7 +140,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
         .setArgument(guestCount, (int64_t) 3)
         .setExpected("Ms. Jane Doe invites Mr. John Doe and 2 other people to her party.")
         .setExpectSuccess()
-        .build();
+        .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument(host, jane.getAlias())
@@ -149,7 +149,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                                 .setArgument(guestCount, (int64_t) 2)
                                 .setExpected("Ms. Jane Doe invites Mr. John Doe and one other person to her party.")
                                 .setExpectSuccess()
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument(host, jane.getAlias())
@@ -158,7 +158,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                                 .setArgument(guestCount, (int64_t) 1)
                                 .setExpected("Ms. Jane Doe invites Mr. John Doe to her party.")
                                 .setExpectSuccess()
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument(host, john.getAlias())
@@ -167,7 +167,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                                 .setArgument(guestCount, (int64_t) 3)
                                 .setExpected("Mr. John Doe invites Ms. Jane Doe and 2 other people to his party.")
                                 .setExpectSuccess()
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument(host, anonymous.getAlias())
@@ -176,7 +176,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                                 .setArgument(guestCount, (int64_t) 2)
                                 .setExpected("Mx. Anonymous Doe invites Ms. Jane Doe and one other person to their party.")
                                 .setExpectSuccess()
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -354,22 +354,22 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
     testBuilder.setPattern("{Cartea {$owner :grammarBB case=genitive}}");
     TestCase test = testBuilder.setArgument("owner", "Maria")
                                 .setExpected("Cartea Mariei")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Rodica")
                                 .setExpected("Cartea Rodicăi")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Ileana")
                                 .setExpected("Cartea Ilenei")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Petre")
                                 .setExpected("Cartea lui Petre")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setName("testGrammarCasesFormatter - nominative");
@@ -377,22 +377,22 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
 
     test = testBuilder.setArgument("owner", "Maria")
                                 .setExpected("M-a sunat Maria")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Rodica")
                                 .setExpected("M-a sunat Rodica")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Ileana")
                                 .setExpected("M-a sunat Ileana")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Petre")
                                 .setExpected("M-a sunat Petre")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -498,13 +498,13 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     TestCase test = testBuilder.setName("testListFormatter")
         .setPattern("{I know {$languages :listformat type=AND}!}")
         .setExpected("I know C/C++, Java, and Python!")
-        .build();
+        .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setName("testListFormatter")
                       .setPattern("{You are allowed to use {$languages :listformat type=OR}!}")
                       .setExpected("You are allowed to use C/C++, Java, or Python!")
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -562,42 +562,20 @@ Formatter* ResourceManagerFactory::createFormatter(const Locale& locale, UErrorC
 
 using Arguments = MessageArguments;
 
-static Arguments localToGlobal(const FormattingContext& context) {
-    Arguments::Builder args;
+static Arguments localToGlobal(const FormattingContext& context, UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+
+    std::vector<MessageArgument> args;
 
     FormattingContext::FunctionOptionsMap opts = context.getOptions();
     for (auto iter = opts.cbegin(); iter != opts.cend(); ++iter) {
         const Formattable& optionValue = iter->second;
         const UnicodeString& optionName = iter->first;
-        switch (optionValue.getType()) {
-            case Formattable::Type::kString: {
-                // add it as a string arg
-                args.add(optionName, optionValue.getString());
-                break;
-            }
-            case Formattable::Type::kDouble: {
-                args.addDouble(optionName, optionValue.getDouble());
-                break;
-            }
-            case Formattable::Type::kInt64: {
-                args.addInt64(optionName, optionValue.getInt64());
-                break;
-            }
-            case Formattable::Type::kLong: {
-                args.addInt64(optionName, (int64_t) optionValue.getLong());
-                break;
-            }
-            case Formattable::Type::kDate: {
-                args.addDate(optionName, optionValue.getDate());
-                break;
-            }
-            default: {
-                // Ignore other types
-                continue;
-            }
-	}
+        args.push_back(MessageArgument(optionName, optionValue));
     }
-    return args.build();
+    return MessageArguments(args, status);
 }
 
 void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) const {
@@ -639,9 +617,8 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
         UParseError parseErr;
         // Any parse/data model errors will be propagated
 	MessageFormatter mf = mfBuilder.setPattern(*msg).build(parseErr, errorCode);
+        Arguments arguments = localToGlobal(context, errorCode);
         CHECK_ERROR(errorCode);
-
-        Arguments arguments = localToGlobal(context);
 
         UErrorCode savedStatus = errorCode;
         UnicodeString result = mf.formatToString(arguments, errorCode);
@@ -678,22 +655,22 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
 
     TestCase test = testBuilder.setArgument("gcase", "whatever")
                                 .setExpected("Firefox")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("gcase", "genitive")
                                 .setExpected("Firefoxin")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setPattern(*((UnicodeString*) properties->get("chrome")));
 
     test = testBuilder.setArgument("gcase", "whatever")
                                 .setExpected("Chrome")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("gcase", "genitive")
                                 .setExpected("Chromen")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setArgument("res", (UObject*) properties);
@@ -701,29 +678,29 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
     testBuilder.setPattern("{Please start {$browser :msgRef gcase=genitive resbundle=$res}}");
     test = testBuilder.setArgument("browser", "firefox")
                                 .setExpected("Please start Firefoxin")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("browser", "chrome")
                                 .setExpected("Please start Chromen")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("browser", "safari")
                                 .setExpected("Please start Safarin")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setPattern("{Please start {$browser :msgRef resbundle=$res}}");
     test = testBuilder.setArgument("browser", "firefox")
                                 .setExpected("Please start Firefox")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("browser", "chrome")
                                 .setExpected("Please start Chrome")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("browser", "safari")
                                 .setExpected("Please start Safari")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     delete properties;

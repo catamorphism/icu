@@ -206,9 +206,9 @@ void TestMessageFormat2::testAPISimple() {
     MessageFormatter mf = builder.setPattern(u"{Hello, {$userName}!}")
         .build(parseError, errorCode);
 
-    MessageArguments::Builder argsBuilder = MessageArguments::Builder();
-    argsBuilder.add("userName", "John");
-    MessageArguments args = argsBuilder.build();
+    std::vector<MessageArgument> argsBuilder;
+    argsBuilder.push_back(MessageArgument("userName", Formattable("John")));
+    MessageArguments args(argsBuilder, errorCode);
 
     UnicodeString result;
     result = mf.formatToString(args, errorCode);
@@ -223,15 +223,17 @@ void TestMessageFormat2::testAPISimple() {
     cal->set(2136, Calendar::OCTOBER, 28, 8, 39, 12);
     UDate date = cal->getTime(errorCode);
 
-    argsBuilder.addDate("today", date);
-    args = argsBuilder.build();
+    argsBuilder.clear();
+    argsBuilder.push_back(MessageArgument("today", Formattable(date, Formattable::kIsDate)));
+    args = MessageArguments(argsBuilder, errorCode);
     result = mf.formatToString(args, errorCode);
     assertEquals("testAPI", "Today is Sun, Oct 28, 2136.", result);
 
-    argsBuilder.addInt64("photoCount", 12);
-    argsBuilder.add("userGender", "feminine");
-    argsBuilder.add("userName", "Maria");
-    args = argsBuilder.build();
+    argsBuilder.clear();
+    argsBuilder.push_back(MessageArgument("photoCount", Formattable((int64_t) 12)));
+    argsBuilder.push_back(MessageArgument("userGender", Formattable("feminine")));
+    argsBuilder.push_back(MessageArgument("userName", Formattable("Maria")));
+    args = MessageArguments(argsBuilder, errorCode);
 
     mf = builder.setPattern("match {$photoCount :plural} {$userGender :select}\n\
                      when 1 masculine {{$userName} added a new photo to his album.}\n \
@@ -259,7 +261,7 @@ void TestMessageFormat2::testAPI() {
                   .setArgument("userName", "John")
                   .setExpected("Hello, John!")
                   .setLocale("en_US")
-                  .build());
+                  .build(errorCode));
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Pattern: "{Today is {$today ..."
@@ -273,7 +275,7 @@ void TestMessageFormat2::testAPI() {
         .setDateArgument("today", date)
         .setExpected("Today is Sun, Oct 28, 2136.")
         .setLocale("en_US")
-        .build();
+        .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Pattern matching - plural
@@ -294,7 +296,7 @@ void TestMessageFormat2::testAPI() {
         .setArgument("userName", "Maria")
         .setExpected("Maria added 12 photos to her album.")
         .setLocale("en_US")
-        .build();
+        .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Built-in functions
@@ -314,7 +316,7 @@ void TestMessageFormat2::testAPI() {
         .setArgument("userName", "Maria")
         .setExpected("Maria added a new photo to her album.")
         .setLocale("en_US")
-        .build();
+        .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -335,9 +337,9 @@ void TestMessageFormat2::testAPICustomFunctions() {
 
     Person* person = new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe"));
 
-    MessageArguments::Builder argsBuilder;
-    argsBuilder.addObject("name", person);
-    MessageArguments arguments = argsBuilder.build();
+    std::vector<MessageArgument> argsBuilder;
+    argsBuilder.push_back(MessageArgument("name", person));
+    MessageArguments arguments(argsBuilder, errorCode);
 
     MessageFormatter::Builder mfBuilder;
     UnicodeString result;
@@ -379,7 +381,7 @@ void TestMessageFormat2::testValidPatterns(const TestResult* patterns, int32_t l
         TestUtils::runTestCase(*this, testBuilder.setPattern(patterns[i].pattern)
                                .setExpected(patterns[i].output)
                                .setExpectSuccess()
-                               .build(), errorCode);
+                               .build(errorCode), errorCode);
     }
 }
 
@@ -393,7 +395,7 @@ void TestMessageFormat2::testResolutionErrors(IcuTestErrorCode& errorCode) {
         TestUtils::runTestCase(*this, testBuilder.setPattern(jsonTestCasesResolutionError[i].pattern)
                           .setExpected(jsonTestCasesResolutionError[i].output)
                           .setExpectedError(jsonTestCasesResolutionError[i].expected)
-                          .build(), errorCode);
+                          .build(errorCode), errorCode);
     }
 }
 
@@ -406,7 +408,7 @@ void TestMessageFormat2::testNoSyntaxErrors(const UnicodeString* patterns, int32
     for (int32_t i = 0; i < len - 1; i++) {
         TestUtils::runTestCase(*this, testBuilder.setPattern(patterns[i])
                           .setNoSyntaxError()
-                          .build(), errorCode);
+                          .build(errorCode), errorCode);
     } 
 }
 
@@ -465,7 +467,7 @@ void TestMessageFormat2::testInvalidPattern(uint32_t testNum, const UnicodeStrin
     TestUtils::runTestCase(*this, testBuilder.setPattern(s)
                            .setExpectedError(U_SYNTAX_ERROR)
                            .setExpectedLineNumberAndOffset(expectedErrorLine, expectedErrorOffset)
-                           .build(), errorCode);
+                           .build(errorCode), errorCode);
 }
 
 /*
@@ -488,7 +490,7 @@ void TestMessageFormat2::testSemanticallyInvalidPattern(uint32_t testNum, const 
     testBuilder.setName("testName").setPattern(s);
     testBuilder.setExpectedError(expectedErrorCode);
 
-    TestUtils::runTestCase(*this, testBuilder.build(), errorCode);
+    TestUtils::runTestCase(*this, testBuilder.build(errorCode), errorCode);
 }
 
 /*
@@ -511,7 +513,7 @@ void TestMessageFormat2::testRuntimeErrorPattern(uint32_t testNum, const Unicode
     TestUtils::runTestCase(*this, testBuilder.setName(testName)
                            .setPattern(s)
                            .setExpectedError(expectedErrorCode)
-                           .build(), errorCode);
+                           .build(errorCode), errorCode);
 }
 
 /*
@@ -535,7 +537,7 @@ void TestMessageFormat2::testRuntimeWarningPattern(uint32_t testNum, const Unico
                                 .setPattern(s)
                                 .setExpected(expectedResult)
                                 .setExpectedError(expectedErrorCode)
-                                .build(), errorCode);
+                                .build(errorCode), errorCode);
 }
 
 void TestMessageFormat2::testDataModelErrors() {
@@ -600,7 +602,7 @@ void TestMessageFormat2::testDataModelErrors() {
                  when * {Value is not one}")
                           .setExpected("Value is not one")
                           .setExpectSuccess()
-                          .build();
+                          .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $one = {|The one| :select}\n\
@@ -610,7 +612,7 @@ void TestMessageFormat2::testDataModelErrors() {
                  when * {Value is not one}")
                           .setExpected("Value is not one")
                           .setExpectSuccess()
-                          .build();
+                          .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 

@@ -35,145 +35,51 @@ namespace message2 {
     // Arguments
     // ----------
 
+    class MessageArguments;
+    // TODO doc comments
+    class U_I18N_API MessageArgument : public UObject {
+        public:
+            MessageArgument(const UnicodeString&, Formattable&&);
+            MessageArgument(const UnicodeString&, const Formattable&);
+            MessageArgument(const UnicodeString&, const UObject*);
+            MessageArgument() : objectValue(nullptr) {}
+            const UnicodeString& getName() const { return name; }
+        private:
+            friend class MessageArguments;
+
+            UBool ok() const { return (isObject() || (value.getType() != Formattable::kObject)); }
+            UBool isObject() const { return (objectValue != nullptr); }
+            /* const */ UnicodeString name;
+            const UObject* objectValue; // Not owned; null if this is a non-object
+            Formattable value;
+    }; // class MessageArgument
+
     /**
      *
      * The `MessageArguments` class represents the named arguments to a message.
-     * It is immutable and is not copyable or movable.
+     * It is immutable and movable. It is not copyable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     class U_I18N_API MessageArguments : public UObject {
     public:
-        /**
-         * The mutable Builder class allows each message argument to be initialized
-         * separately; calling its `build()` method yields an immutable MessageArguments.
-         *
-         * Builder is not movable or copyable.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        class U_I18N_API Builder {
-        public:
-            /**
-             * Adds an argument of type `UnicodeString`.
-             *
-             * @param key The name of the argument.
-             * @param value The value of the argument.
-             * @return          A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& add(const UnicodeString& key, const UnicodeString& value);
-            /**
-             * Adds an argument of type `double`.
-             *
-             * @param key The name of the argument.
-             * @param value The value of the argument.
-             * @return          A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& addDouble(const UnicodeString& key, double value);
-            /**
-             * Adds an argument of type `int64_t`.
-             *
-             * @param key The name of the argument.
-             * @param value The value of the argument.
-             * @return          A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& addInt64(const UnicodeString& key, int64_t value);
-            /**
-             * Adds an argument of type `UDate`.
-             *
-             * @param key The name of the argument.
-             * @param value The value of the argument.
-             * @return          A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& addDate(const UnicodeString& key, UDate value);
-            /**
-             * Adds an argument of type `StringPiece`, representing a
-             * decimal number.
-             *
-             * @param key The name of the argument.
-             * @param value The value of the argument.
-             * @param status    Input/output error code.
-             * @return          A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& addDecimal(const UnicodeString& key, StringPiece value, UErrorCode& status);
-            /**
-             * Adds an argument of type UnicodeString[]. Adopts `value`.
-             *
-             * @param key The name of the argument.
-             * @param value The value of the argument, interpreted as an array of Formattables
-             *                (which must have string values)
-             * @param length The length of the array.
-             * @return        A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& adoptArray(const UnicodeString& key, const Formattable* value, int32_t length);
-            /**
-             * Adds an argument of type UObject*, which must be non-null. Does not
-             * adopt this argument.
-             *
-             * @param key The name of the argument.
-             * @param value The value of the argument.
-             * @return        A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& addObject(const UnicodeString& key, const UObject* value) noexcept;
-            /**
-             * Creates an immutable `MessageArguments` object with the argument names
-             * and values that were added by previous calls. The builder can still be used
-             * after this call.
-             *
-             * @return        The new MessageArguments object
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            MessageArguments build() const noexcept;
-            /**
-             * Default constructor.
-             * Returns a Builder with no arguments set.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder();
-            /**
-             * Destructor.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            virtual ~Builder();
-        private:
-            friend class MessageArguments;
-            Builder& addFormattable(const UnicodeString&, Formattable&&) noexcept;
-            std::map<UnicodeString, Formattable> contents;
-            // Keep a separate map for objects, which does not
-            // own the values
-            // This is because a Formattable that wraps an object can't
-            // be copied
-            std::map<UnicodeString, const UObject*> objectContents;
-        }; // class MessageArguments::Builder
+        MessageArguments(const std::vector<MessageArgument>& args, UErrorCode& status) {
+            if (U_FAILURE(status)) {
+                return;
+            }
+            arguments = LocalArray<MessageArgument>(new MessageArgument[argsLen = args.size()]);
+            if (!arguments.isValid()) {
+                status = U_MEMORY_ALLOCATION_ERROR;
+                return;
+            }
+            for (int32_t i = 0; i < argsLen; i++) {
+                arguments[i] = args[i];
+            }
+        }
+        MessageArguments& operator=(MessageArguments&&) noexcept;
+        MessageArguments(MessageArguments&&);
+        MessageArguments() : argsLen(0) {}
         /**
          * Destructor.
          *
@@ -184,20 +90,14 @@ namespace message2 {
     private:
         friend class MessageContext;
 
+        int32_t findArg(const data_model::VariableName&) const;
         bool hasFormattable(const data_model::VariableName&) const;
         bool hasObject(const data_model::VariableName&) const;
         const Formattable& getFormattable(const data_model::VariableName&) const;
         const UObject* getObject(const data_model::VariableName&) const;
 
-        MessageArguments& add(const UnicodeString&, Formattable*, UErrorCode&) noexcept;
-        MessageArguments(const std::map<UnicodeString, Formattable>&, const std::map<UnicodeString, const UObject*>&) noexcept;
-
-        std::map<UnicodeString, Formattable> contents;
-        // Keep a separate map for objects, which does not
-        // own the values
-        // This is because a Formattable that wraps an object can't
-        // be copied
-        std::map<UnicodeString, const UObject*> objectContents;
+        LocalArray<MessageArgument> arguments;
+        int32_t argsLen;
     }; // class MessageArguments
 
     /**

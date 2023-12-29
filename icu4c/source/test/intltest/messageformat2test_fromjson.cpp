@@ -39,36 +39,36 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
 
     TestCase test = testBuilder.setPattern("{hello}")
         .setExpected("hello")
-        .build();
+        .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{hello {|world|}}")
                                 .setExpected("hello world")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{hello {||}}")
                                 .setExpected("hello ")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{hello {$place}}")
                                 .setExpected("hello world")
                                 .setArgument("place", "world")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{hello {$place:-.}}")
                                 .setExpected("hello world")
                                 .setArgument("place:-.", "world")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{hello {$place}}")
                                 .setExpected("hello {$place}")
                                 .clearArguments()
                                 .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{$one} and {$two}}")
@@ -76,10 +76,10 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
                                 .setExpectSuccess()
                                 .setArgument("one", 1.3)
                                 .setArgument("two", 4.2)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
     testBuilder.setArgument("one", "1.3").setArgument("two", "4.2");
-    test = testBuilder.build();
+    test = testBuilder.build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{$one} et {$two}}")
@@ -87,125 +87,125 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
                                 .setLocale(Locale("fr"))
                                 .setArgument("one", 1.3)
                                 .setArgument("two", 4.2)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{hello {|4.2| :number}}")
                                 .setExpected("hello 4.2")
                                 .setLocale(Locale("en"))
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{hello {|foo| :number}}")
                                 .setExpected("hello NaN")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{hello {:number}}")
                                 .setExpected("hello NaN")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
 
     test = testBuilder.setPattern("{hello {|4.2| :number minimumFractionDigits=2}}")
                                 .setExpected("hello 4.20")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{hello {|4.2| :number minimumFractionDigits=|2|}}")
                                 .setExpected("hello 4.20")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{hello {|4.2| :number minimumFractionDigits=$foo}}")
                                 .setExpected("hello 4.20")
                                 .setArgument("foo", (int64_t) 2)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {bar} {bar {$foo}}")
                                 .setExpected("bar bar")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {|bar|} {bar {$foo}}")
                                 .setExpected("bar bar")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {|bar|} {bar {$foo}}")
                                 .setExpected("bar bar")
                                 .setArgument("foo", "foo")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$bar} {bar {$foo}}")
                                 .setExpected("bar foo")
                                 .setArgument("bar", "foo")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$bar :number} {bar {$foo}}")
                                 .setExpected("bar 4.2")
                                 .setArgument("bar", 4.2)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$bar :number minimumFractionDigits=2} {bar {$foo}}")
                                 .setExpected("bar 4.20")
                                 .setArgument("bar", 4.2)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$bar :number minimumFractionDigits=foo} {bar {$foo}}")
                                 .setExpected("bar 4.2")
                                 .setArgument("bar", 4.2)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$bar :number} {bar {$foo}}")
                                 .setExpected("bar NaN")
                                 .setArgument("bar", "foo")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$baz} let $bar = {$foo} {bar {$bar}}")
                                 .setExpected("bar foo")
                                 .setArgument("baz", "foo")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$foo} {bar {$foo}}")
                                 .setExpected("bar foo")
                                 .setArgument("foo", "foo")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$foo} let $foo = {42} {bar {$foo}}")
                                 .setExpected("bar 42")
                                 .setArgument("foo", "foo")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {42} let $foo = {$foo} {bar {$foo}}")
                                 .setExpected("bar 42")
                                 .setArgument("foo", "foo")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$foo} let $foo = {42} {bar {$foo}}")
                                 .setExpected("bar 42")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {:unknown} let $foo = {42} {bar {$foo}}")
                                 .setExpected("bar 42")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $x = {42} let $y = {$x} let $x = {13} {{$x} {$y}}")
                                 .setExpected("13 42")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
 /*
@@ -214,20 +214,20 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     test = testBuilder.setPattern("let $foo = {$bar} let $bar = {$baz} {bar {$foo}}")
                                 .setExpected("bar foo")
                                 .setArgument("baz", "foo", errorCode)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 */
 
     test = testBuilder.setPattern("match {$foo :select} when |1| {one} when * {other}")
                                 .setExpected("one")
                                 .setArgument("foo", (int64_t) 1)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {$foo :plural} when 1 {one} when * {other}")
                                 .setExpected("one")
                                 .setArgument("foo", (int64_t) 1)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
 /*
@@ -237,71 +237,71 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
                                 .setExpected("other")
                                 .setArgument("foo", "", errorCode)
                                 .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 */
 
     test = testBuilder.setPattern("match {$foo :plural} when one {one} when * {other}")
                                 .setExpected("one")
                                 .setArgument("foo", (int64_t) 1)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {$foo :plural} when 1 {=1} when one {one} when * {other}")
                                 .setExpected("=1")
                                 .setArgument("foo", "1")
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {$foo :plural} when 1 {=1} when one {one} when * {other}")
                                 .setExpected("=1")
                                 .setArgument("foo", (int64_t) 1)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {$foo :plural} when one {one} when 1 {=1} when * {other}")
                                 .setExpected("=1")
                                 .setArgument("foo", (int64_t) 1)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {$foo :plural} {$bar :plural} when one one {one one} when one * {one other} when * * {other}")
                                 .setExpected("one one")
                                 .setArgument("foo", (int64_t) 1)
                                 .setArgument("bar", (int64_t) 1)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {$foo :plural} {$bar :plural} when one one {one one} when one * {one other} when * * {other}")
                                 .setExpected("one other")
                                 .setArgument("foo", (int64_t) 1)
                                 .setArgument("bar", (int64_t) 2)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {$foo :plural} {$bar :plural} when one one {one one} when one * {one other} when * * {other}")
                                 .setExpected("other")
                                 .setArgument("foo", (int64_t) 2)
                                 .setArgument("bar", (int64_t) 2)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$bar :plural} match {$foo} when one {one} when * {other}")
                                 .setExpected("one")
                                 .setArgument("bar", (int64_t) 1)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $foo = {$bar :plural} match {$foo} when one {one} when * {other}")
                                 .setExpected("other")
                                 .setArgument("bar", (int64_t) 2)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("let $bar = {$none} match {$foo :plural} when one {one} when * {{$bar}}")
                                 .setExpected("one")
                                 .setArgument("foo", (int64_t) 1)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
 /*
@@ -316,7 +316,7 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
                                 .setExpected("{$none}")
                                 .setArgument("foo", (int64_t) 2)
                                 .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Missing '$' before `bar`
@@ -324,216 +324,216 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
                                 .setExpected("{$bar}")
                                 .clearArguments()
                                 .setExpectedError(U_SYNTAX_ERROR)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Missing '=' after `bar`
     test = testBuilder.setPattern("let $bar {|foo|} {{$bar}}")
                                 .setExpected("foo")
                                 .setExpectedError(U_SYNTAX_ERROR)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Missing '{'/'}' around `foo`
     test = testBuilder.setPattern("let bar = |foo| {{$bar}}")
                                 .setExpected("{$bar}")
                                 .setExpectedError(U_SYNTAX_ERROR)
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{+tag}}")
                                 .setExpected("{+tag}")
                                 .setIgnoreError()
-                                .build();
+                                .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{+tag}content}")
                       .setExpected("{+tag}content")
                       .setIgnoreError()
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{+tag}content{-tag}}")
                       .setExpected("{+tag}content{-tag}")
                       .setIgnoreError()
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{-tag}content}")
                       .setExpected("{-tag}content")
                       .setIgnoreError()
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{+tag foo=bar}}")
                       .setExpected("{+tag}")
                       .setIgnoreError()
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{+tag foo=|foo| bar=$bar}}")
                       .setArgument("bar", "b a r")
                       .setExpected("{+tag}")
                       .setIgnoreError()
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{|foo| +markup}}")
                       .setExpected("{|foo|}")
                       .setIgnoreError()
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{-tag foo=bar}}")
                       .setExpected("{-tag}")
                       .setIgnoreError()
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("no braces")
                       .clearIgnoreError()
                       .setExpected("{no braces}")
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("no braces {$foo}")
                       .setExpected("{no braces {$foo}}")
                       .setArgument("foo", (int64_t) 2)
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{missing end brace")
                       .setExpected("missing end brace")
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{missing end {$brace")
                       .setExpected("missing end {$brace}")
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{extra} content")
                       .setExpected("extra")
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{empty { }}")
                       .setExpectedError(U_SYNTAX_ERROR)
                       .setExpected(CharsToUnicodeString("empty \\uFFFD"))
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{bad {:}}")
                       .setExpected("bad {:}")
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{unquoted {literal}}")
                       .setExpected("unquoted literal")
                       .setExpectSuccess()
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(CharsToUnicodeString("{bad {\\u0000placeholder}}"))
                       .clearExpected()
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{no-equal {|42| :number minimumFractionDigits 2}}")
                       .setExpected("no-equal 42.00")
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{bad {:placeholder option=}}")
                       .setExpected("bad {:placeholder}")
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{bad {:placeholder option value}}")
                       .setExpected("bad {:placeholder}")
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{bad {:placeholder option}}")
                       .setExpected("bad {:placeholder}")
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{bad {$placeholder option}}")
                       .clearExpected()
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{no {$placeholder end}")
                       .clearExpected()
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {} when * {foo}")
                       .clearExpected()
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {+foo} when * {foo}")
                       .setExpected("foo")
                       .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {|foo|} when*{foo}")
                       .clearExpected()
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match when * {foo}")
                       .clearExpected()
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {|x|} when * foo")
                       .clearExpected()
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {|x|} when * {foo} extra")
                       .clearExpected()
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match |x| when * {foo}")
                       .clearExpected()
                       .setExpectedError(U_SYNTAX_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {$foo :plural} when * * {foo}")
                       .clearExpected()
                       .setExpectedError(U_VARIANT_KEY_MISMATCH_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("match {$foo :plural} {$bar :plural} when * {foo}")
                       .clearExpected()
                       .setExpectedError(U_VARIANT_KEY_MISMATCH_ERROR)
-                      .build();
+                      .build(errorCode);
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
