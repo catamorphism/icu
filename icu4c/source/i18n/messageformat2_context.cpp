@@ -99,15 +99,12 @@ namespace message2 {
     // ------------------------------------------------------
     // Formatter cache
 
-    const std::shared_ptr<Formatter> CachedFormatters::getFormatter(const FunctionName& f) {
-        if (cache.count(f) <= 0) {
-            return nullptr;
-        }
-        return cache[f];
+    const Formatter* CachedFormatters::getFormatter(const FunctionName& f) {
+        return static_cast<const Formatter*>(cache.get(f.toString()));
     }
 
-    void CachedFormatters::setFormatter(const FunctionName& f, std::shared_ptr<Formatter> val) noexcept {
-        cache[f] = val;
+    void CachedFormatters::adoptFormatter(const FunctionName& f, Formatter* val, UErrorCode& status) {
+        cache.put(f.toString(), val, status);
     }
 
     CachedFormatters::CachedFormatters() {}
@@ -193,11 +190,11 @@ namespace message2 {
         return parent.hasCustomFunctionRegistry() && parent.getCustomFunctionRegistry().getSelector(fn) != nullptr;
     }
 
-    const std::shared_ptr<Formatter> MessageContext::maybeCachedFormatter(const FunctionName& f, UErrorCode& errorCode) {
+    const Formatter* MessageContext::maybeCachedFormatter(const FunctionName& f, UErrorCode& errorCode) {
         NULL_ON_ERROR(errorCode);
         U_ASSERT(parent.cachedFormatters != nullptr);
 
-        const std::shared_ptr<Formatter> result = parent.cachedFormatters->getFormatter(f);
+        const Formatter* result = parent.cachedFormatters->getFormatter(f);
         if (result == nullptr) {
             // Create the formatter
 
@@ -213,13 +210,13 @@ namespace message2 {
             }
 
             // Create a specific instance of the formatter
-            std::shared_ptr<Formatter> formatter(formatterFactory->createFormatter(parent.locale, errorCode));
+            Formatter* formatter = formatterFactory->createFormatter(parent.locale, errorCode);
             NULL_ON_ERROR(errorCode);
             if (formatter == nullptr) {
                 errorCode = U_MEMORY_ALLOCATION_ERROR;
                 return nullptr;
             }
-            parent.cachedFormatters->setFormatter(f, formatter);
+            parent.cachedFormatters->adoptFormatter(f, formatter, errorCode);
             return formatter;
         } else {
             return result;

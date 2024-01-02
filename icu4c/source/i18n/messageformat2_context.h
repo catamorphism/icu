@@ -21,6 +21,7 @@
 #include "unicode/numberformatter.h"
 #include "unicode/utypes.h"
 
+#include "hash.h"
 #include "uvector.h"
 
 U_NAMESPACE_BEGIN
@@ -309,13 +310,16 @@ namespace message2 {
     private:
         friend class MessageFormatter;
 
-        std::map<FunctionName, std::shared_ptr<Formatter>> cache;
+        // Maps stringified FunctionNames onto Formatter*
+        // Adopts its values
+        Hashtable cache;
         CachedFormatters();
 
     public:
-        // Since Formatter is an interface, it's easiest to return a pointer here
-        const std::shared_ptr<Formatter> getFormatter(const FunctionName&);
-        void setFormatter(const FunctionName&, std::shared_ptr<Formatter>) noexcept;
+        // Returns a pointer because Formatter is an abstract class
+        const Formatter* getFormatter(const FunctionName&);
+        // Adopts its argument
+        void adoptFormatter(const FunctionName&, Formatter*, UErrorCode&);
 
         CachedFormatters& operator=(const CachedFormatters&) = delete;
         virtual ~CachedFormatters();
@@ -331,7 +335,7 @@ namespace message2 {
         MessageContext(MessageFormatter&, const MessageArguments&, const StaticErrors&, UErrorCode&);
 
         bool isCustomFormatter(const FunctionName&) const;
-        const std::shared_ptr<Formatter> maybeCachedFormatter(const FunctionName&, UErrorCode&);
+        const Formatter* maybeCachedFormatter(const FunctionName&, UErrorCode&);
         const SelectorFactory* lookupSelectorFactory(const FunctionName&, UErrorCode&);
         bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
         bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
