@@ -486,13 +486,10 @@ std::unique_ptr<Selector> ExpressionContext::getSelector(UErrorCode& status) con
 }
 
 // Precondition: pending function name is set and formatter is defined
-// Postcondition: formatter != nullptr
-const std::shared_ptr<Formatter> ExpressionContext::getFormatter(UErrorCode& status) {
-    NULL_ON_ERROR(status);
-
+const Formatter& ExpressionContext::getFormatter(UErrorCode& status) {
     U_ASSERT(hasFunctionName());
     U_ASSERT(hasFormatter());
-    return context.maybeCachedFormatter(pendingFunctionName, status);
+    return *(context.maybeCachedFormatter(pendingFunctionName, status));
 }
 
 bool ExpressionContext::hasFormatter() const {
@@ -582,10 +579,10 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
     setFunctionName(functionName);
     CHECK_ERROR(status);
     if (hasFormatter()) {
-        const std::shared_ptr<Formatter> formatterImpl = getFormatter(status);
+        const Formatter& formatterImpl = getFormatter(status);
         CHECK_ERROR(status);
         UErrorCode savedStatus = status;
-        formatterImpl->format(*this, status);
+        formatterImpl.format(*this, status);
         // Update errors
         if (savedStatus != status) {
             if (U_FAILURE(status)) {

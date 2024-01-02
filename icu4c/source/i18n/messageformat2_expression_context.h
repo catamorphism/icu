@@ -55,7 +55,7 @@ namespace message2 {
         // Precondition: hasSelector()
         std::unique_ptr<Selector> getSelector(UErrorCode&) const;
         // Precondition: hasFormatter()
-        const std::shared_ptr<Formatter> getFormatter(UErrorCode&);
+        const Formatter& getFormatter(UErrorCode&);
 
         void adoptFunctionOptions(UVector*, UErrorCode&);
         void clearFunctionOptions();
