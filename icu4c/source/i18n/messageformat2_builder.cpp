@@ -59,20 +59,20 @@ namespace message2 {
     }
 
     MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError,
-                                       UErrorCode &success) noexcept : locale(builder.locale), customFunctionRegistry(builder.customFunctionRegistry) {
-        CHECK_ERROR(success);
-
+                                       UErrorCode &success) : locale(builder.locale), customFunctionRegistry(builder.customFunctionRegistry) {
         // Set up the standard function registry
-        FunctionRegistry::Builder standardFunctionsBuilder;
+        FunctionRegistry::Builder standardFunctionsBuilder(success);
 
-        standardFunctionsBuilder.setFormatter(UnicodeString("datetime"), new StandardFunctions::DateTimeFactory())
-            .setFormatter(UnicodeString("number"), new StandardFunctions::NumberFactory())
-            .setFormatter(UnicodeString("identity"), new StandardFunctions::IdentityFactory())
-            .setSelector(UnicodeString("plural"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL))
-            .setSelector(UnicodeString("selectordinal"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL))
-            .setSelector(UnicodeString("select"), new StandardFunctions::TextFactory())
-            .setSelector(UnicodeString("gender"), new StandardFunctions::TextFactory());
+        standardFunctionsBuilder.setFormatter(UnicodeString("datetime"), new StandardFunctions::DateTimeFactory(), success)
+            .setFormatter(UnicodeString("number"), new StandardFunctions::NumberFactory(), success)
+            .setFormatter(UnicodeString("identity"), new StandardFunctions::IdentityFactory(), success)
+            .setSelector(UnicodeString("plural"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
+            .setSelector(UnicodeString("selectordinal"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL), success)
+            .setSelector(UnicodeString("select"), new StandardFunctions::TextFactory(), success)
+            .setSelector(UnicodeString("gender"), new StandardFunctions::TextFactory(), success);
+        CHECK_ERROR(success);
         standardFunctionRegistry = standardFunctionsBuilder.build();
+        CHECK_ERROR(success);
         standardFunctionRegistry.checkStandard();
 
         // Validate pattern and build data model

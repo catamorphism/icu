@@ -27,44 +27,53 @@ FormatterFactory::~FormatterFactory() {}
 SelectorFactory::~SelectorFactory() {}
 
 FunctionRegistry FunctionRegistry::Builder::build() {
-    return FunctionRegistry(std::move(formatters), std::move(selectors));
+    U_ASSERT(formatters.isValid() && selectors.isValid());
+    return FunctionRegistry(formatters.orphan(), selectors.orphan());
 }
 
-FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory) noexcept {
-    selectors[selectorName] = std::shared_ptr<SelectorFactory>(selectorFactory);
+// Does not adopt its argument
+FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode) {
+    U_ASSERT(selectors.isValid());
+    selectors->put(selectorName.toString(), selectorFactory, errorCode);
     return *this;
 }
 
-FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory) noexcept {
-    formatters[formatterName] = std::shared_ptr<FormatterFactory>(formatterFactory);
+// Does not adopt its argument
+FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode) {
+    U_ASSERT(formatters.isValid());
+    formatters->put(formatterName.toString(), formatterFactory, errorCode);
     return *this;
+}
+
+FunctionRegistry::Builder::Builder(UErrorCode& errorCode) {
+    CHECK_ERROR(errorCode);
+
+    // Maps don't own their values
+    formatters.adoptInstead(new Hashtable());
+    selectors.adoptInstead(new Hashtable());
+    if (!formatters.isValid() || !selectors.isValid()) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
 }
 
 FunctionRegistry::Builder::~Builder() {}
 
-// This method is not const since it returns a non-const alias to a value in the map
-std::shared_ptr<FormatterFactory> FunctionRegistry::getFormatter(const FunctionName& formatterName) {
-    // Caller must check for null
-    if (!hasFormatter(formatterName)) {
-	return nullptr;
-    }
-    return formatters.at(formatterName);
+FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterName) const {
+    U_ASSERT(formatters.isValid());
+    return static_cast<FormatterFactory*>(formatters->get(formatterName.toString()));
 }
 
-const std::shared_ptr<SelectorFactory> FunctionRegistry::getSelector(const FunctionName& selectorName) const {
-    // Caller must check for null
-    if (!hasSelector(selectorName)) {
-	return nullptr;
-    }
-    return selectors.at(selectorName);
+const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selectorName) const {
+    U_ASSERT(selectors.isValid());
+    return static_cast<const SelectorFactory*>(selectors->get(selectorName.toString()));
 }
 
 bool FunctionRegistry::hasFormatter(const FunctionName& f) const {
-    return formatters.count(f) > 0;
+    return getFormatter(f) != nullptr;
 }
 
 bool FunctionRegistry::hasSelector(const FunctionName& s) const {
-    return selectors.count(s) > 0;
+    return getSelector(s) != nullptr;
 }
 
 void FunctionRegistry::checkFormatter(const char* s) const {
@@ -147,7 +156,10 @@ bool tryFormattableAsNumber(const Formattable& optionValue, int64_t& result) {
     return false;
 }
 
-FunctionRegistry::FunctionRegistry(FormatterMap&& f, SelectorMap&& s) : formatters(std::move(f)), selectors(std::move(s)) {}
+// Adopts its arguments
+FunctionRegistry::FunctionRegistry(FormatterMap* f, SelectorMap* s) : formatters(f), selectors(s) {
+    U_ASSERT(f != nullptr && s != nullptr);
+}
 
 FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept {
     formatters = std::move(other.formatters);

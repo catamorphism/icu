@@ -140,7 +140,7 @@ class GrammarCasesFormatterFactory : public FormatterFactory {
 class GrammarCasesFormatter : public Formatter {
     public:
     void format(FormattingContext&, UErrorCode& errorCode) const override;
-    static FunctionRegistry customRegistry();
+    static FunctionRegistry customRegistry(UErrorCode&);
     private:
     void getDativeAndGenitive(const UnicodeString&, UnicodeString& result) const;
 };
@@ -153,7 +153,7 @@ class ListFormatterFactory : public FormatterFactory {
 class ListFormatter : public Formatter {
     public:
     void format(FormattingContext&, UErrorCode& errorCode) const override;
-    static FunctionRegistry customRegistry();
+    static FunctionRegistry customRegistry(UErrorCode&);
     private:
     friend class ListFormatterFactory;
     const Locale& locale;
@@ -168,7 +168,7 @@ class ResourceManagerFactory : public FormatterFactory {
 class ResourceManager : public Formatter {
     public:
     void format(FormattingContext&, UErrorCode& errorCode) const override;
-    static FunctionRegistry customRegistry();
+    static FunctionRegistry customRegistry(UErrorCode&);
     static Hashtable* properties(UErrorCode&);
     static UnicodeString propertiesAsString(const Hashtable&);
     static Hashtable* parseProperties(const UnicodeString&, UErrorCode&);
@@ -193,7 +193,7 @@ class TemperatureFormatterFactory : public FormatterFactory {
 class TemperatureFormatter : public Formatter {
     public:
     void format(FormattingContext&, UErrorCode& errorCode) const override;
-    static FunctionRegistry customRegistry();
+    static FunctionRegistry customRegistry(UErrorCode&);
     ~TemperatureFormatter();
     private:
     friend class TemperatureFormatterFactory;

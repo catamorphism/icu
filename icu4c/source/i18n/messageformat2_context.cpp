@@ -130,7 +130,7 @@ namespace message2 {
     // Unknown function = unknown function error
     // Formatter used as selector  = selector error
     // Selector used as formatter = formatting error
-    const std::shared_ptr<SelectorFactory> MessageContext::lookupSelectorFactory(const FunctionName& functionName, UErrorCode& status) {
+    const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName& functionName, UErrorCode& status) {
         if (isBuiltInSelector(functionName)) {
             return parent.standardFunctionRegistry.getSelector(functionName);
         }
@@ -140,9 +140,9 @@ namespace message2 {
         }
         if (parent.hasCustomFunctionRegistry()) {
             FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
-            const std::shared_ptr<SelectorFactory> customSelector = customFunctionRegistry.getSelector(functionName);
-            if (customSelector != nullptr) {
-                return customSelector;
+            const SelectorFactory* selectorFactory = customFunctionRegistry.getSelector(functionName);
+            if (selectorFactory != nullptr) {
+                return selectorFactory;
             }
             if (customFunctionRegistry.getFormatter(functionName) != nullptr) {
                 errors.setSelectorError(functionName, status);
@@ -157,7 +157,7 @@ namespace message2 {
         return nullptr;
     }
 
-    std::shared_ptr<FormatterFactory> MessageContext::lookupFormatterFactory(const FunctionName& functionName, UErrorCode& status) {
+    FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& functionName, UErrorCode& status) {
         if (isBuiltInFormatter(functionName)) {
             return parent.standardFunctionRegistry.getFormatter(functionName);
         }
@@ -167,9 +167,9 @@ namespace message2 {
         }
         if (parent.hasCustomFunctionRegistry()) {
             FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
-            std::shared_ptr<FormatterFactory> customFormatter = customFunctionRegistry.getFormatter(functionName);
-            if (customFormatter != nullptr) {
-                return customFormatter;
+            FormatterFactory* formatterFactory = customFunctionRegistry.getFormatter(functionName);
+            if (formatterFactory != nullptr) {
+                return formatterFactory;
             }
             if (customFunctionRegistry.getSelector(functionName) != nullptr) {
                 errors.setFormattingError(functionName, status);
@@ -202,7 +202,7 @@ namespace message2 {
             // Create the formatter
 
             // First, look up the formatter factory for this function
-            std::shared_ptr<FormatterFactory> formatterFactory = lookupFormatterFactory(f, errorCode);
+            FormatterFactory* formatterFactory = lookupFormatterFactory(f, errorCode);
             NULL_ON_ERROR(errorCode);
 
             // If the formatter factory was null, there must have been

@@ -313,7 +313,7 @@ namespace message2 {
         friend class Builder;
         friend class MessageContext;
 
-        MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError, UErrorCode &status) noexcept;
+        MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError, UErrorCode &status);
 
         MessageFormatter() = delete; // default constructor not implemented
 

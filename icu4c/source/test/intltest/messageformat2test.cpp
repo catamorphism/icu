@@ -329,10 +329,10 @@ void TestMessageFormat2::testAPICustomFunctions() {
     Locale locale = "en_US";
 
     // Set up custom function registry
-    FunctionRegistry::Builder builder;
+    FunctionRegistry::Builder builder(errorCode);
     // Note that this doesn't use `setDefaultFormatterNameForType()`; not implemented yet
     FunctionRegistry functionRegistry =
-        builder.setFormatter(data_model::FunctionName("person"), new PersonNameFormatterFactory())
+        builder.setFormatter(data_model::FunctionName("person"), new PersonNameFormatterFactory(), errorCode)
                .build();
 
     Person* person = new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe"));
