@@ -1031,8 +1031,9 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            std::vector<Option> getOptions() const;
-
+            std::vector<Option> getOptions() const {
+                return toStdVector<Option>(options.options.getAlias(), options.len);
+            }
             /**
              * The mutable `Operator::Builder` class allows the operator to be constructed
              * incrementally.
