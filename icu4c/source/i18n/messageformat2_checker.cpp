@@ -83,9 +83,6 @@ void Checker::checkVariants(UErrorCode& status) {
 
     U_ASSERT(dataModel.hasSelectors());
 
-    // Determine the number of selectors
-    int32_t numSelectors = dataModel.getSelectors().size();
-
     // Check that each variant has a key list with size
     // equal to the number of selectors
     const Variant* variants = dataModel.getVariantsInternal();
@@ -97,7 +94,7 @@ void Checker::checkVariants(UErrorCode& status) {
         const SelectorKeys& k = variants[i].getKeys();
         const Key* keys = k.getKeysInternal();
         int32_t len = k.len;
-        if (len != numSelectors) {
+        if (len != dataModel.numSelectors) {
             // Variant key mismatch
             errors.addError(StaticErrorType::VariantKeyMismatchError, status);
             return;
