@@ -11,6 +11,7 @@
 #include "messageformat2_context.h"
 #include "messageformat2_expression_context.h"
 #include "messageformat2_macros.h"
+#include "hash.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
@@ -473,7 +474,7 @@ std::unique_ptr<Selector> ExpressionContext::getSelector(UErrorCode& status) con
     NULL_ON_ERROR(status);
 
     U_ASSERT(hasFunctionName());
-    const std::shared_ptr<SelectorFactory> selectorFactory = context.lookupSelectorFactory(pendingFunctionName, status);
+    const SelectorFactory* selectorFactory = context.lookupSelectorFactory(pendingFunctionName, status);
     if (selectorFactory == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;

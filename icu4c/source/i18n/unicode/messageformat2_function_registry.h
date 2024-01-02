@@ -22,6 +22,8 @@
 
 U_NAMESPACE_BEGIN
 
+class Hashtable;
+
 namespace message2 {
 
     class Formatter;
@@ -92,41 +94,37 @@ namespace message2 {
     class U_I18N_API FunctionRegistry : public UObject {
     private:
 
-        /*
-          Note: since FormatterFactory and SelectorFactory are interfaces,
-          they are not copyable or movable and thus we have to use pointers here.
-          The pointers are shared so that getFormatter() and getSelector() can return
-          shared references safely.
-        */
-        using FormatterMap = std::map<FunctionName, std::shared_ptr<FormatterFactory>>;
-        using SelectorMap = std::map<FunctionName, std::shared_ptr<SelectorFactory>>;
-
+        using FormatterMap = Hashtable; // Map from stringified function names to FormatterFactory*
+        using SelectorMap  = Hashtable; // Map from stringified function names to SelectorFactory*
 
     public:
         /**
          * Looks up a formatter factory by the name of the formatter. The result is non-const,
-         * since formatter factories may have local state.
+         * since formatter factories may have local state. (This returns the result by pointer
+         * rather than by reference since `FormatterFactory` is an abstract class.)
          *
          * @param formatterName Name of the desired formatter.
-         * @return The new FormatterFactory, or null if no formatter factory has
-         *         been registered under `formatterName`.
+         * @return A pointer to the `FormatterFactory` registered under `formatterName`, or null
+         *         if no formatter was registered under that name.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        std::shared_ptr<FormatterFactory> getFormatter(const data_model::FunctionName& formatterName);
+        FormatterFactory* getFormatter(const data_model::FunctionName& formatterName) const;
         /**
-         * Looks up a selector factory by the name of the selector.
+         * Looks up a selector factory by the name of the selector. (This returns the result by pointer
+         * rather than by reference since `FormatterFactory` is an abstract class.)
          *
          * @param selectorName Name of the desired selector.
-         * @return The new SelectorFactory, or null if no selector factory has
-         *         been registered under `selectorName`.
+         * @param result A reference that will be initialized to the selector factory registered
+         *               under `selectorName` if the return value is true. If the return value is
+         *               false, this reference is undefined.
+         * @return True if and only if a selector factory was registered under `selectorName`.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const std::shared_ptr<SelectorFactory> getSelector(const data_model::FunctionName& selectorName) const;
-
+        const SelectorFactory* getSelector(const data_model::FunctionName& selectorName) const;
         /**
          * The mutable Builder class allows each formatter and selector factory
          * to be initialized separately; calling its `build()` method yields an
@@ -139,8 +137,8 @@ namespace message2 {
          */
         class U_I18N_API Builder : public UObject {
         private:
-            FormatterMap formatters;
-            SelectorMap selectors;
+            LocalPointer<FormatterMap> formatters;
+            LocalPointer<SelectorMap> selectors;
 
             // Do not define copy constructor/assignment operator
             Builder& operator=(const Builder&) = delete;
@@ -153,27 +151,33 @@ namespace message2 {
              * @param formatterName Name of the formatter being registered.
              * @param formatterFactory A FormatterFactory object to use for creating `formatterName`
              *        formatters.
+             * @param errorCode Input/output error code
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory) noexcept;
+            Builder& setFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode);
             /**
              * Registers a selector factory to a given selector name. Adopts `selectorFactory`.
              *
              * @param selectorName Name of the selector being registered.
              * @param selectorFactory A SelectorFactory object to use for creating `selectorName`
              *        selectors.
+             * @param errorCode Input/output error code
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory) noexcept;
+            Builder& setSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode);
             /**
              * Creates an immutable `FunctionRegistry` object with the selectors and formatters
              * that were previously registered. The builder cannot be used after this call.
+             * The `build()` method is destructive to avoid the need for a deep copy of the
+             * `FormatterFactory` and `SelectorFactory` objects (this would be necessary because
+             * `FormatterFactory` can have mutable state), which in turn would require implementors
+             * of those interfaces to implement a `clone()` method.
              *
              * @return The new FunctionRegistry
              *
@@ -185,11 +189,12 @@ namespace message2 {
              * Default constructor.
              * Returns a Builder with no functions registered.
              *
+             * @param errorCode Input/output error code
+             *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder() = default;
-
+            Builder(UErrorCode& errorCode);
             /**
              * Destructor.
              *
@@ -231,8 +236,9 @@ namespace message2 {
         FunctionRegistry& operator=(const FunctionRegistry&) = delete;
         FunctionRegistry(const FunctionRegistry&) = delete;
 
-        FunctionRegistry() = default; // TODO
-        FunctionRegistry(FormatterMap&& f, SelectorMap&& s);
+        FunctionRegistry(FormatterMap* f, SelectorMap* s);
+
+        FunctionRegistry() {}
 
         // Debugging; should only be called on a function registry with
         // all the standard functions registered
@@ -243,8 +249,8 @@ namespace message2 {
         bool hasFormatter(const data_model::FunctionName& f) const;
         bool hasSelector(const data_model::FunctionName& s) const;
 
-        FormatterMap formatters;
-        SelectorMap selectors;
+        LocalPointer<FormatterMap> formatters;
+        LocalPointer<SelectorMap> selectors;
     }; // class FunctionRegistry
 
     /**

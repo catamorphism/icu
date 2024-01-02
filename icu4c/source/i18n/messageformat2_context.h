@@ -332,7 +332,7 @@ namespace message2 {
 
         bool isCustomFormatter(const FunctionName&) const;
         const std::shared_ptr<Formatter> maybeCachedFormatter(const FunctionName&, UErrorCode&);
-        const std::shared_ptr<SelectorFactory> lookupSelectorFactory(const FunctionName&, UErrorCode&);
+        const SelectorFactory* lookupSelectorFactory(const FunctionName&, UErrorCode&);
         bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
         bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
 
@@ -352,7 +352,7 @@ namespace message2 {
 
     private:
 
-        std::shared_ptr<FormatterFactory> lookupFormatterFactory(const FunctionName&, UErrorCode& status);
+        FormatterFactory* lookupFormatterFactory(const FunctionName&, UErrorCode& status);
         bool isBuiltInSelector(const FunctionName&) const;
         bool isBuiltInFormatter(const FunctionName&) const;
         bool isCustomSelector(const FunctionName&) const;

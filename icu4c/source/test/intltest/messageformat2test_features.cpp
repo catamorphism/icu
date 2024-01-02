@@ -44,7 +44,6 @@ void TestMessageFormat2::testPlainText(TestCase::Builder& testBuilder, IcuTestEr
 
 void TestMessageFormat2::testPlaceholders(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, testBuilder.setPattern("{Hello, {$userName}!}")
-                                
                                 .setExpected("Hello, John!")
                                 .setArgument("userName", "John")
                                 .build(errorCode), errorCode);
@@ -565,12 +564,11 @@ void putFormattableArg(Hashtable& arguments, const UnicodeString& k, double arg,
 }
 
 void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode) {
+    FunctionRegistry::Builder frBuilder(errorCode);
     CHECK_ERROR(errorCode);
 
-    FunctionRegistry::Builder frBuilder;
-    // Counter will be adopted by function registry
-    TemperatureFormatterFactory* counter = new TemperatureFormatterFactory();
-    if (counter == nullptr) {
+    LocalPointer<TemperatureFormatterFactory> counter(new TemperatureFormatterFactory());
+    if (!counter.isValid()) {
         ((UErrorCode&) errorCode) = U_MEMORY_ALLOCATION_ERROR;
         return;
     }
@@ -578,8 +576,10 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
     UnicodeString message = "{Testing {$count :temp unit=$unit skeleton=|.00/w|}.}";
 
     MessageFormatter::Builder mfBuilder;
-    mfBuilder.setPattern(message).setFunctionRegistry(std::make_shared<FunctionRegistry>(frBuilder.setFormatter(FunctionName("temp"),
-                                                                                                                counter).build()));
+    mfBuilder
+        .setPattern(message)
+        .setFunctionRegistry(std::make_shared<FunctionRegistry>(frBuilder.setFormatter(FunctionName("temp"), counter.getAlias(), errorCode)
+                                                                .build()));
     UParseError parseError;
     MessageFormatter mf = mfBuilder.build(parseError, errorCode);
     UnicodeString result;
