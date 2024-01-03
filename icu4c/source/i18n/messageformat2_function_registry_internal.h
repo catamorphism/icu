@@ -25,6 +25,8 @@ namespace message2 {
     class StandardFunctions {
         friend class MessageFormatter;
 
+        static number::LocalizedNumberFormatter formatterForOptions(Locale locale, const FormattingContext& context, UErrorCode& status);
+
         class DateTimeFactory : public FormatterFactory {
         public:
             Formatter* createFormatter(const Locale& locale, UErrorCode& status) override;

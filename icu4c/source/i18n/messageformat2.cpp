@@ -39,11 +39,7 @@ void MessageFormatter::evalArgument(const VariableName& var, ExpressionContext& 
     U_ASSERT(c.hasGlobal(var));
     // The fallback for a variable name is itself.
     context.setFallbackTo(var);
-    if (c.hasGlobalAsFormattable(var)) {
-        context.setInput(c.getGlobalAsFormattable(var));
-    } else {
-        context.setInput(c.getGlobalAsObject(var));
-    }
+    context.setInput(c.getGlobal(var));
 }
 
 // Sets the input to the contents of the literal
@@ -110,7 +106,7 @@ void MessageFormatter::resolveOptions(const Environment& env, const OptionMap& o
 
         // Options are fully evaluated before calling the function
         // Create a new context for formatting the right-hand side of the option
-        ExpressionContext rhsContext = context.create(status);
+        ExpressionContext rhsContext = context.create();
         // Format the operand in its own context
         formatOperand(env, v, rhsContext, status);
         // If formatting succeeded, pass the string
@@ -118,23 +114,12 @@ void MessageFormatter::resolveOptions(const Environment& env, const OptionMap& o
             resolvedOpt.adoptInstead(create<ResolvedFunctionOption>(ResolvedFunctionOption(k, Formattable(rhsContext.getStringOutput())), status));
             CHECK_ERROR(status);
             optionsVector->adoptElement(resolvedOpt.orphan(), status);
-        } else if (rhsContext.hasFormattableInput()) {
+        } else if (rhsContext.hasInput()) {
             // (Fall back to the input if the result was a formatted number)
-            const Formattable& f = rhsContext.getFormattableInput();
-            switch (f.getType()) {
-                case Formattable::Type::kArray:
-                case Formattable::Type::kObject: {
-                    // Options with array or object types are ignored
-                    continue;
-                }
-                default: {
-                    resolvedOpt.adoptInstead(create<ResolvedFunctionOption>(ResolvedFunctionOption(k, f), status));
-                    CHECK_ERROR(status);
-                    optionsVector->adoptElement(resolvedOpt.orphan(), status);
-                }
-            }
-        } else if (rhsContext.hasObjectInput()) {
-	    context.setObjectOption(k, rhsContext.getObjectInputPointer(), status);
+            const Formattable& f = rhsContext.getInput();
+            resolvedOpt.adoptInstead(create<ResolvedFunctionOption>(ResolvedFunctionOption(k, f), status));
+            CHECK_ERROR(status);
+            optionsVector->adoptElement(resolvedOpt.orphan(), status);
         } else {
             // Ignore fallbacks
             U_ASSERT(rhsContext.isFallback());
@@ -202,7 +187,7 @@ void MessageFormatter::formatPattern(MessageContext& globalContext, const Enviro
             result += part.asText();
         } else {
               // Create a new context to evaluate the expression part
-              ExpressionContext context(globalContext, status);
+              ExpressionContext context(globalContext);
 	      // Format the expression
 	      formatExpression(globalEnv, part.contents(), context, status);
 	      // Force full evaluation, e.g. applying default formatters to
@@ -228,7 +213,7 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
     // (Implicit, since `res` is an out-parameter)
     // 2. For each expression exp of the message's selectors
     for (int32_t i = 0; i < dataModel.numSelectors; i++) {
-        ExpressionContext rv(context, status);
+        ExpressionContext rv(context);
         // 2i. Let rv be the resolved value of exp.
         formatSelectorExpression(env, selectors[i], rv, status);
         if (rv.hasSelector()) {
@@ -684,7 +669,7 @@ void MessageFormatter::check(MessageContext& context, const Environment& localEn
         return;
     }
     // Check global scope
-    if (context.hasGlobalAsFormattable(var) || context.hasGlobalAsObject(var)) {
+    if (context.hasGlobal(var)) {
         return;
     }
     context.getErrors().setUnresolvedVariable(var, status);

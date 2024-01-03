@@ -17,8 +17,8 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/format.h"
 #include "unicode/messageformat2_data_model.h"
+#include "unicode/messageformat2_formattable.h"
 #include "unicode/messageformat2_function_registry.h"
 #include "unicode/unistr.h"
 
@@ -35,25 +35,6 @@ namespace message2 {
     // Arguments
     // ----------
 
-    class MessageArguments;
-    // TODO doc comments
-    class U_I18N_API MessageArgument : public UObject {
-        public:
-            MessageArgument(const UnicodeString&, Formattable&&);
-            MessageArgument(const UnicodeString&, const Formattable&);
-            MessageArgument(const UnicodeString&, const UObject*);
-            MessageArgument() : objectValue(nullptr) {}
-            const UnicodeString& getName() const { return name; }
-        private:
-            friend class MessageArguments;
-
-            UBool ok() const { return (isObject() || (value.getType() != Formattable::kObject)); }
-            UBool isObject() const { return (objectValue != nullptr); }
-            /* const */ UnicodeString name;
-            const UObject* objectValue; // Not owned; null if this is a non-object
-            Formattable value;
-    }; // class MessageArgument
-
     /**
      *
      * The `MessageArguments` class represents the named arguments to a message.
@@ -64,22 +45,26 @@ namespace message2 {
      */
     class U_I18N_API MessageArguments : public UObject {
     public:
-        MessageArguments(const std::vector<MessageArgument>& args, UErrorCode& status) {
+        MessageArguments(const std::map<UnicodeString, Formattable>& args, UErrorCode& status) {
             if (U_FAILURE(status)) {
                 return;
             }
-            arguments = LocalArray<MessageArgument>(new MessageArgument[argsLen = args.size()]);
-            if (!arguments.isValid()) {
+            argumentNames = LocalArray<UnicodeString>(new UnicodeString[argsLen = args.size()]);
+            arguments = LocalArray<Formattable>(new Formattable[argsLen]);
+            if (!argumentNames.isValid() || !arguments.isValid()) {
                 status = U_MEMORY_ALLOCATION_ERROR;
                 return;
             }
-            for (int32_t i = 0; i < argsLen; i++) {
-                arguments[i] = args[i];
+            int32_t i = 0;
+            for (auto iter = args.begin(); iter != args.end(); ++iter) {
+                argumentNames[i] = iter->first;
+                arguments[i] = iter->second;
+                i++;
             }
         }
         MessageArguments& operator=(MessageArguments&&) noexcept;
         MessageArguments(MessageArguments&&);
-        MessageArguments() : argsLen(0) {}
+        MessageArguments() = default;
         /**
          * Destructor.
          *
@@ -91,13 +76,14 @@ namespace message2 {
         friend class MessageContext;
 
         int32_t findArg(const data_model::VariableName&) const;
-        bool hasFormattable(const data_model::VariableName&) const;
-        bool hasObject(const data_model::VariableName&) const;
-        const Formattable& getFormattable(const data_model::VariableName&) const;
-        const UObject* getObject(const data_model::VariableName&) const;
+        bool hasArgument(const data_model::VariableName&) const;
+        const Formattable& getArgument(const data_model::VariableName&) const;
 
-        LocalArray<MessageArgument> arguments;
-        int32_t argsLen;
+        // Avoids using Hashtable so that code constructing a Hashtable
+        // doesn't have to appear in this header file
+        LocalArray<UnicodeString> argumentNames;
+        LocalArray<Formattable> arguments;
+        int32_t argsLen = 0;
     }; // class MessageArguments
 
     /**

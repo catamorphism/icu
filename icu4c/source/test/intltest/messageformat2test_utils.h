@@ -5,6 +5,7 @@
 #define _TESTMESSAGEFORMAT2_UTILS
 
 #include "unicode/locid.h"
+#include "unicode/messageformat2_formattable.h"
 #include "unicode/messageformat2.h"
 #include "intltest.h"
 #include "messageformat2_macros.h"
@@ -18,7 +19,7 @@ class TestCase : public UMemory {
     /* const */ UnicodeString testName;
     /* const */ UnicodeString pattern;
     /* const */ Locale locale;
-    /* const */ MessageArguments arguments;
+    /* const */ std::map<UnicodeString, Formattable> arguments;
     /* const */ UErrorCode expectedError;
     /* const */ bool expectedNoSyntaxError;
     /* const */ bool hasExpectedOutput;
@@ -34,7 +35,7 @@ class TestCase : public UMemory {
     public:
     const UnicodeString& getPattern() const { return pattern; }
     const Locale& getLocale() const { return locale; }
-    const MessageArguments& getArguments() const { return arguments; }
+    std::map<UnicodeString, Formattable> getArguments() const { return std::move(arguments); }
     const UnicodeString& getTestName() const { return testName; }
     bool expectSuccess() const {
         return (!ignoreError && U_SUCCESS(expectedError));
@@ -84,43 +85,34 @@ class TestCase : public UMemory {
         Builder& setName(UnicodeString name) { testName = name; return *this; }
         Builder& setPattern(UnicodeString pat) { pattern = pat; return *this; }
         Builder& setArgument(const UnicodeString& k, const UnicodeString& val) {
-            deleteArgument(k);
-            arguments.push_back(MessageArgument(k, Formattable(val)));
+            arguments[k] = Formattable(val);
             return *this;
         }
         Builder& setArgument(const UnicodeString& k, const Formattable* val, int32_t count) {
             U_ASSERT(val != nullptr);
-            deleteArgument(k);
-            arguments.push_back(MessageArgument(k, Formattable(val, count)));
+            arguments[k] = Formattable(val, count);
             return *this;
         }
         Builder& setArgument(const UnicodeString& k, double val) {
-            deleteArgument(k);
-            arguments.push_back(MessageArgument(k, Formattable(val)));
+            arguments[k] = Formattable(val);
             return *this;
         }
         Builder& setArgument(const UnicodeString& k, int64_t val) {
-            deleteArgument(k);
-            arguments.push_back(MessageArgument(k, Formattable(val)));
+            arguments[k] = Formattable(val);
             return *this;
         }
         Builder& setDateArgument(const UnicodeString& k, UDate date) {
-            deleteArgument(k);
-            arguments.push_back(MessageArgument(k, Formattable(date, Formattable::kIsDate)));
+            arguments[k] = Formattable(date, Formattable::kIsDate);
             return *this;
         }
         Builder& setDecimalArgument(const UnicodeString& k, StringPiece decimal, UErrorCode& errorCode) {
             THIS_ON_ERROR(errorCode);
-            deleteArgument(k);
-            arguments.push_back(MessageArgument(k, Formattable(decimal, errorCode)));
+            arguments[k] = Formattable(decimal, errorCode);
             return *this;
         }
-        // val has to be shared because the copy constructor for
-        // a Formattable of an object doesn't work
-        Builder& setArgument(const UnicodeString& k, const UObject* val) {
+        Builder& setArgument(const UnicodeString& k, const FormattableObject* val) {
             U_ASSERT(val != nullptr);
-            deleteArgument(k);
-            arguments.push_back(MessageArgument(k, val));
+            arguments[k] = Formattable(val);
             return *this;
         }
         Builder& clearArguments() {
@@ -170,8 +162,8 @@ class TestCase : public UMemory {
             functionRegistry = reg;
             return *this;
         }
-        TestCase build(UErrorCode& status) const {
-            return TestCase(*this, status);
+        TestCase build() const {
+            return TestCase(*this);
         }
         virtual ~Builder();
 
@@ -179,7 +171,7 @@ class TestCase : public UMemory {
         UnicodeString testName;
         UnicodeString pattern;
         Locale locale;
-        std::vector<MessageArgument> arguments;
+        std::map<UnicodeString, Formattable> arguments;
         bool hasExpectedOutput;
         UnicodeString expected;
         UErrorCode expectedError;
@@ -190,24 +182,16 @@ class TestCase : public UMemory {
         bool ignoreError;
         std::shared_ptr<FunctionRegistry> functionRegistry  = nullptr; // Not owned
 
-        void deleteArgument(const UnicodeString& k) {
-            for (auto iter = arguments.begin(); iter != arguments.end(); ++iter) {
-                if (iter->getName() == k) {
-                    arguments.erase(iter);
-                    break;
-                }
-            }
-        }
         public:
         Builder() : pattern(""), locale(Locale::getDefault()), hasExpectedOutput(false), expected(""), expectedError(U_ZERO_ERROR), expectNoSyntaxError(false), hasLineNumberAndOffset(false), ignoreError(false) {}
     };
 
     private:
-    TestCase(const Builder& builder, UErrorCode& errorCode) :
+    TestCase(const Builder& builder) :
         testName(builder.testName),
         pattern(builder.pattern),
         locale(builder.locale),
-        arguments(MessageArguments(builder.arguments, errorCode)),
+        arguments(builder.arguments),
         expectedError(builder.expectedError),
         expectedNoSyntaxError(builder.expectNoSyntaxError),
         hasExpectedOutput(builder.hasExpectedOutput),
@@ -243,7 +227,7 @@ class TestUtils {
         UnicodeString result;
 
         if (U_SUCCESS(errorCode)) {
-            result = mf.formatToString(testCase.getArguments(), errorCode);
+            result = mf.formatToString(MessageArguments(testCase.getArguments(), errorCode), errorCode);
         }
 
         if (testCase.expectNoSyntaxError()) {

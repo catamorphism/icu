@@ -11,7 +11,7 @@
 
 #include "messageformat2test_utils.h"
 #include "unicode/unistr.h"
-#include "unicode/fmtable.h"
+#include "unicode/messageformat2_formattable.h"
 #include "unicode/parseerr.h"
 #include "intltest.h"
 
@@ -109,7 +109,9 @@ private:
 
 }; // class TestMessageFormat2
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 // Custom function classes
 class PersonNameFormatterFactory : public FormatterFactory {
@@ -118,18 +120,33 @@ class PersonNameFormatterFactory : public FormatterFactory {
     Formatter* createFormatter(const Locale&, UErrorCode&) override;
 };
 
-class Person : public UObject {
+class Person : public FormattableObject {
     public:
     UnicodeString title;
     UnicodeString firstName;
     UnicodeString lastName;
     Person(UnicodeString t, UnicodeString f, UnicodeString l) : title(t), firstName(f), lastName(l) {}
     ~Person();
+    const UnicodeString& tag() const override { return tagName; }
+    private:
+    const UnicodeString tagName = "person";
 };
 
 class PersonNameFormatter : public Formatter {
     public:
     void format(FormattingContext&, UErrorCode& errorCode) const override;
+};
+
+class FormattableProperties : public FormattableObject {
+    public:
+    const UnicodeString& tag() const override { return tagName; }
+    FormattableProperties(Hashtable* hash) : properties(hash) {
+        U_ASSERT(hash != nullptr);
+    }
+    ~FormattableProperties();
+    LocalPointer<Hashtable> properties;
+private:
+    const UnicodeString tagName = "properties";
 };
 
 class GrammarCasesFormatterFactory : public FormatterFactory {

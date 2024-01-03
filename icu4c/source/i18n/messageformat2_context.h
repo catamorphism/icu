@@ -61,6 +61,22 @@ namespace message2 {
         return dest;
     }
 
+    template<typename T>
+    static T* moveVectorToArray(UVector& source, int32_t& len) {
+        len = source.size();
+        T* dest = new T[len];
+        if (dest == nullptr) {
+            // Set length to 0 to prevent the
+            // array from being accessed
+            len = 0;
+        } else {
+            for (int32_t i = 0; i < len; i++) {
+                dest[i] = std::move(*static_cast<T*>(source.elementAt(i)));
+            }
+        }
+        return dest;
+    }
+
     inline UVector* createUVector(UErrorCode& status) {
         if (U_FAILURE(status)) {
             return nullptr;
@@ -340,11 +356,8 @@ namespace message2 {
         bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
         bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
 
-        bool hasGlobal(const VariableName& v) const { return hasGlobalAsFormattable(v) || hasGlobalAsObject(v); }
-        bool hasGlobalAsFormattable(const VariableName&) const;
-        bool hasGlobalAsObject(const VariableName&) const;
-        const Formattable& getGlobalAsFormattable(const VariableName&) const;
-        const UObject* getGlobalAsObject(const VariableName&) const;
+        bool hasGlobal(const VariableName&) const;
+        const Formattable& getGlobal(const VariableName&) const;
 
         // If any errors were set, update `status` accordingly
         void checkErrors(UErrorCode& status) const;
