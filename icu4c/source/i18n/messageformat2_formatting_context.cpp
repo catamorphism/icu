@@ -30,12 +30,10 @@ using namespace data_model;
 // Constructors
 // ------------
 
-ExpressionContext::ExpressionContext(MessageContext& c, UErrorCode& status) : context(c), inState(FALLBACK), outState(NONE) {
-    functionObjectOptions.adoptInstead(new Hashtable(status));
-}
+ExpressionContext::ExpressionContext(MessageContext& c) : context(c), inState(FALLBACK), outState(NONE) {}
 
-ExpressionContext ExpressionContext::create(UErrorCode& status) const {
-    return ExpressionContext(context, status);
+ExpressionContext ExpressionContext::create() const {
+    return ExpressionContext(context);
 }
 
 ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.context), inState(other.inState), outState(other.outState) {
@@ -45,12 +43,10 @@ ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.
     }
     fallback = std::move(other.fallback);
     input = std::move(other.input);
-    objectInput = other.objectInput;
     stringOutput = std::move(other.stringOutput);
     numberOutput = std::move(other.numberOutput);
     functionOptions = std::move(other.functionOptions);
     functionOptionsLen = other.functionOptionsLen;
-    functionObjectOptions = std::move(other.functionObjectOptions);
 }
 
 // State
@@ -122,39 +118,18 @@ void ExpressionContext::setNoOperand() {
     enterState(NO_OPERAND);
 }
 
-void ExpressionContext::setInput(const UnicodeString& s) {
-    U_ASSERT(inState <= NO_OPERAND);
-    enterState(FORMATTABLE_INPUT);
-    input = Formattable(s);
-}
-
 void ExpressionContext::setInput(const Formattable& s) {
-    U_ASSERT(isFallback());
-    enterState(FORMATTABLE_INPUT);
-    U_ASSERT(s.getType() != Formattable::Type::kObject);
+    U_ASSERT(inState != INPUT);
+    enterState(INPUT);
     input = s;
 }
 
-UBool ExpressionContext::hasFormattableInput() const {
-    return (inState == InputState::FORMATTABLE_INPUT);
+UBool ExpressionContext::hasInput() const {
+    return (inState == InputState::INPUT);
 }
 
-UBool ExpressionContext::hasObjectInput() const {
-    return (inState == InputState::OBJECT_INPUT);
-}
-
-const UObject& ExpressionContext::getObjectInput() const {
-    U_ASSERT(hasObjectInput());
-    return *objectInput;
-}
-
-const UObject* ExpressionContext::getObjectInputPointer() const {
-    U_ASSERT(hasObjectInput());
-    return objectInput;
-}
-
-const Formattable& ExpressionContext::getFormattableInput() const {
-    U_ASSERT(hasFormattableInput());
+const Formattable& ExpressionContext::getInput() const {
+    U_ASSERT(hasInput());
     return input;
 }
 
@@ -174,13 +149,6 @@ UBool ExpressionContext::hasNumberOutput() const {
 const UnicodeString& ExpressionContext::getStringOutput() const {
     U_ASSERT(hasStringOutput());
     return stringOutput;
-}
-
-void ExpressionContext::setInput(const UObject* obj) {
-    U_ASSERT(isFallback());
-    U_ASSERT(obj != nullptr);
-    enterState(OBJECT_INPUT);
-    objectInput = obj;
 }
 
 void ExpressionContext::setOutput(const UnicodeString& s) {
@@ -212,12 +180,16 @@ void ExpressionContext::clearOutput() {
 void ExpressionContext::formatInputWithDefaults(const Locale& locale, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    U_ASSERT(hasFormattableInput());
+    U_ASSERT(hasInput());
     U_ASSERT(!hasOutput());
 
     // Try as decimal number first
     if (input.isNumeric()) {
-        StringPiece asDecimal = input.getDecimalNumber(status);
+        // Note: the ICU Formattable has to be created here since the StringPiece
+        // refers to state inside the Formattable; so otherwise we'll have a reference
+        // to a temporary object
+        icu::Formattable icuFormattable = input.asICUFormattable();
+        StringPiece asDecimal = icuFormattable.getDecimalNumber(status);
         CHECK_ERROR(status);
         if (asDecimal != nullptr) {
             setOutput(formatNumberWithDefaults(locale, asDecimal, status));
@@ -277,15 +249,14 @@ void ExpressionContext::formatToString(const Locale& locale, UErrorCode& status)
             setOutput(fallback);
             break;
         }
-        case InputState::NO_OPERAND:
+        case InputState::NO_OPERAND: {
             // No operand and a function call hasn't cleared the state --
             // use fallback
-        case InputState::OBJECT_INPUT: {
             setFallback();
             promoteFallbackToOutput();
             break;
         }
-        case InputState::FORMATTABLE_INPUT: {
+        case InputState::INPUT: {
             formatInputWithDefaults(locale, status);
             // Force number to string, in case the result was a number
             formatToString(locale, status);
@@ -309,16 +280,6 @@ const FunctionName& ExpressionContext::getFunctionName() {
 // Function options
 // ----------------
 
-void ExpressionContext::setObjectOption(const UnicodeString& key, const UObject* value, UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    // The const_cast is safe because no methods that allow
-    // writing to `value` are exposed
-    U_ASSERT(functionObjectOptions.isValid());
-    functionObjectOptions->put(key, const_cast<UObject*>(value), status);
-}
-
-
 int32_t ExpressionContext::optionsCount() const { return functionOptionsLen; }
 
 // Takes a vector of ResolvedFunctionOptions
@@ -326,37 +287,11 @@ void ExpressionContext::adoptFunctionOptions(UVector* opt, UErrorCode& status) {
     CHECK_ERROR(status);
     U_ASSERT(opt != nullptr);
 
-    functionOptions.adoptInstead(copyVectorToArray<ResolvedFunctionOption>(*opt, functionOptionsLen));
+    functionOptions.adoptInstead(moveVectorToArray<ResolvedFunctionOption>(*opt, functionOptionsLen));
     if (!functionOptions.isValid()) {
         status = U_MEMORY_ALLOCATION_ERROR;
     }
     delete opt;
-}
-
-UBool ExpressionContext::getNumericOption(const UnicodeString& key, Formattable& result) const {
-    if (!getFunctionOption(key, result)) {
-        return false;
-    }
-    if (!result.isNumeric()) {
-        return false;
-    }
-    return true;
-}
-
-UBool ExpressionContext::getStringOption(const UnicodeString& key, UnicodeString& value) const {
-    Formattable result;
-    if (!getFunctionOption(key, result) || result.getType() != Formattable::kString) {
-      return false;
-    }
-    value = result.getString();
-    return true;
-}
-
-const UObject& ExpressionContext::getObjectOption(const UnicodeString& key) const {
-    U_ASSERT(functionObjectOptions.isValid());
-    const UObject* result = static_cast<const UObject*>(functionObjectOptions->get(key));
-    U_ASSERT(result != nullptr);
-    return *result;
 }
 
 const ResolvedFunctionOption* ExpressionContext::getResolvedFunctionOptions(int32_t& len) const {
@@ -365,68 +300,21 @@ const ResolvedFunctionOption* ExpressionContext::getResolvedFunctionOptions(int3
     return functionOptions.getAlias();
 }
 
-UBool ExpressionContext::getFunctionOption(const UnicodeString& key, Formattable& value) const {
+UBool ExpressionContext::getFunctionOption(const UnicodeString& key, Formattable& option) const {
     if (!functionOptions.isValid()) {
         U_ASSERT(functionOptionsLen == 0);
     }
     for (int32_t i = 0; i < functionOptionsLen; i++) {
         const ResolvedFunctionOption& opt = functionOptions[i];
         if (opt.getName() == key) {
-            U_ASSERT(opt.getValue().getType() != Formattable::kObject);
-            value = opt.getValue();
+            option = opt.getValue();
             return true;
         }
     }
     return false;
 }
 
-UBool ExpressionContext::hasObjectOption(const UnicodeString& key) const {
-    return (functionObjectOptions->get(key) != nullptr);
-}
-
-bool ExpressionContext::tryStringAsNumberOption(const UnicodeString& key, double& value) const {
-    // Check for a string option, try to parse it as a number if present
-    UnicodeString tempValue;
-    if (!getStringOption(key, tempValue)) {
-        return false;
-    }
-    UErrorCode localErrorCode = U_ZERO_ERROR;
-    LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(context.messageFormatter().getLocale(), localErrorCode));
-    if (U_FAILURE(localErrorCode)) {
-        return false;
-    }
-    Formattable asNumber;
-    numberFormat->parse(tempValue, asNumber, localErrorCode);
-    if (U_FAILURE(localErrorCode)) {
-        return false;
-    }
-    value = asNumber.getDouble(localErrorCode);
-    if (U_FAILURE(localErrorCode)) {
-        return false;
-    }
-    return true;
-}
-
-UBool ExpressionContext::getInt64Option(const UnicodeString& key, int64_t& value) const {
-    Formattable val;
-    UBool isNumeric = getNumericOption(key, val);
-    if (!isNumeric) {
-        double doubleResult;
-        if (tryStringAsNumberOption(key, doubleResult)) {
-            value = (int64_t) doubleResult;
-            return true;
-        }
-        return false;
-    }
-    UErrorCode localErrorCode = U_ZERO_ERROR;
-    value = val.getInt64(localErrorCode);
-    if (U_SUCCESS(localErrorCode)) {
-        return true;
-    }
-    // Option was numeric but couldn't be converted to int64_t -- could be overflow
-    return false;
-}
-
+    /*
 UBool ExpressionContext::getDoubleOption(const UnicodeString& key, double& value) const {
     Formattable val;
     UBool isNumeric = getNumericOption(key, val);
@@ -439,7 +327,7 @@ UBool ExpressionContext::getDoubleOption(const UnicodeString& key, double& value
     U_ASSERT(U_SUCCESS(localErrorCode));
     return true;
 }
-
+    */
 
 // Functions
 // -------------
@@ -464,6 +352,11 @@ void ExpressionContext::clearFunctionOptions() {
     U_ASSERT(functionOptions.isValid() || functionOptionsLen == 0);
     functionOptions.adoptInstead(nullptr);
     functionOptionsLen = 0;
+}
+
+ResolvedFunctionOption::ResolvedFunctionOption(ResolvedFunctionOption&& other) {
+    name = std::move(other.name);
+    value = std::move(other.value);
 }
 
 ResolvedFunctionOption::~ResolvedFunctionOption() {}

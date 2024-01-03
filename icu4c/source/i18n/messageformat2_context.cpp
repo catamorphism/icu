@@ -25,33 +25,21 @@ namespace message2 {
     int32_t Arguments::findArg(const VariableName& arg) const {
         U_ASSERT(argsLen == 0 || arguments.isValid());
         for (int32_t i = 0; i < argsLen; i++) {
-            if (arguments[i].name == arg.identifier()) {
+            if (argumentNames[i] == arg.identifier()) {
                 return i;
             }
         }
         return -1;
     }
 
-    bool Arguments::hasFormattable(const VariableName& arg) const {
+    bool Arguments::hasArgument(const VariableName& arg) const {
         int32_t i = findArg(arg);
-        return ((i != -1) && !arguments[i].isObject());
+        return i != -1;
     }
 
-    bool Arguments::hasObject(const VariableName& arg) const {
+    const Formattable& Arguments::getArgument(const VariableName& arg) const {
         int32_t i = findArg(arg);
-        return ((i != -1) && arguments[i].isObject());
-    }
-
-    const Formattable& Arguments::getFormattable(const VariableName& arg) const {
-        int32_t i = findArg(arg);
-        U_ASSERT(!arguments[i].isObject());
-        return arguments[i].value;
-    }
-
-    const UObject* Arguments::getObject(const VariableName& arg) const {
-        int32_t i = findArg(arg);
-        U_ASSERT(arguments[i].isObject());
-        return arguments[i].objectValue;
+        return arguments[i];
     }
 
     MessageArguments::~MessageArguments() {}
@@ -59,41 +47,23 @@ namespace message2 {
     // Message arguments
     // -----------------
 
-
-    MessageArgument::MessageArgument(const UnicodeString& n, Formattable&& f) : name(n), objectValue(nullptr), value(std::move(f)) {
-        U_ASSERT(f.getType() != Formattable::kObject);
-    }
-    MessageArgument::MessageArgument(const UnicodeString& n, const Formattable& f) : name(n), objectValue(nullptr), value(f) {
-        U_ASSERT(f.getType() != Formattable::kObject);
-    }
-    MessageArgument::MessageArgument(const UnicodeString& n, const UObject* p) : name(n), objectValue(p) {
-        U_ASSERT(p != nullptr);
-    }
     MessageArguments& MessageArguments::operator=(MessageArguments&& other) noexcept {
         U_ASSERT(other.arguments.isValid() || other.argsLen == 0);
         argsLen = other.argsLen;
         if (argsLen != 0) {
+            argumentNames.adoptInstead(other.argumentNames.orphan());
             arguments.adoptInstead(other.arguments.orphan());
         }
         return *this;
     }
 
-    bool MessageContext::hasGlobalAsObject(const VariableName& v) const {
-        return arguments.hasObject(v);
+    bool MessageContext::hasGlobal(const VariableName& v) const {
+        return arguments.hasArgument(v);
     }
 
-    bool MessageContext::hasGlobalAsFormattable(const VariableName& v) const {
-        return arguments.hasFormattable(v);
-    }
-
-    const UObject* MessageContext::getGlobalAsObject(const VariableName& v) const {
-        U_ASSERT(hasGlobalAsObject(v));
-        return arguments.getObject(v);
-    }
-
-    const Formattable& MessageContext::getGlobalAsFormattable(const VariableName& v) const {
-        U_ASSERT(hasGlobalAsFormattable(v));
-        return arguments.getFormattable(v);
+    const Formattable& MessageContext::getGlobal(const VariableName& v) const {
+        U_ASSERT(hasGlobal(v));
+        return arguments.getArgument(v);
     }
 
     // ------------------------------------------------------

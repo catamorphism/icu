@@ -33,7 +33,7 @@ void TestMessageFormat2::testDateTime(IcuTestErrorCode& errorCode) {
     TestCase test = testBuilder.setPattern("{Testing date formatting: {$date :datetime}.}")
                                 .setExpected("Testing date formatting: 23.11.2022, 19:42.")
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setLocale(Locale("ro", "RO"));
@@ -42,13 +42,13 @@ void TestMessageFormat2::testDateTime(IcuTestErrorCode& errorCode) {
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime skeleton=yMMMMd}.}")
                                 .setExpected("Testing date formatting: 23 noiembrie 2022.")
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime skeleton=jm}.}")
                                 .setExpected("Testing date formatting: 19:42.")
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setLocale(Locale("en"));
@@ -56,19 +56,19 @@ void TestMessageFormat2::testDateTime(IcuTestErrorCode& errorCode) {
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime skeleton=yMMMd}.}")
                                 .setExpected("Testing date formatting: Nov 23, 2022.")
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime skeleton=yMMMdjms}.}")
                                 .setExpected(CharsToUnicodeString("Testing date formatting: Nov 23, 2022, 7:42:37\\u202FPM."))
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime skeleton=jm}.}")
                                 .setExpected(CharsToUnicodeString("Testing date formatting: 7:42\\u202FPM."))
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
    // Style
@@ -76,44 +76,44 @@ void TestMessageFormat2::testDateTime(IcuTestErrorCode& errorCode) {
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime datestyle=long}.}")
                                 .setExpected("Testing date formatting: November 23, 2022.")
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime datestyle=medium}.}")
                                 .setExpected("Testing date formatting: Nov 23, 2022.")
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime datestyle=short}.}")
                                 .setExpected("Testing date formatting: 11/23/22.")
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime timestyle=long}.}")
                                 .setExpected(CharsToUnicodeString("Testing date formatting: 7:42:37\\u202FPM PST."))
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime timestyle=medium}.}")
                                 .setExpected(CharsToUnicodeString("Testing date formatting: 7:42:37\\u202FPM."))
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime timestyle=short}.}")
                                 .setExpected(CharsToUnicodeString("Testing date formatting: 7:42\\u202FPM."))
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Pattern
     test = testBuilder.setPattern("{Testing date formatting: {$date :datetime pattern=|d 'of' MMMM, y 'at' HH:mm|}.}")
                                 .setExpected("Testing date formatting: 23 of November, 2022 at 19:42.")
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Error cases
@@ -123,20 +123,20 @@ void TestMessageFormat2::testDateTime(IcuTestErrorCode& errorCode) {
                                 .clearArguments()
                                 .setExpected("Testing date formatting: {|42|}")
                                 .setExpectedError(U_FORMATTING_ERROR)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     // Literal string as argument
     test = testBuilder.setPattern("{Testing date formatting: {|horse| :datetime}}")
                                 .setExpected("Testing date formatting: |horse|")
                                 .setExpectedError(U_FORMATTING_ERROR)
-                                .build(errorCode);
+                                .build();
     // Formatted string as argument
     test = testBuilder.setPattern("let $dateStr = {$date :datetime}\n\
                                                {Testing date formatting: {$dateStr :datetime}}")
                                 .setExpected("Testing date formatting: {$date}")
                                 .setExpectedError(U_FORMATTING_ERROR)
                                 .setDateArgument(date, TEST_DATE)
-                                .build(errorCode);
+                                .build();
 
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -156,20 +156,20 @@ void TestMessageFormat2::testNumbers(IcuTestErrorCode& errorCode) {
         .setArgument(val, value)
         .setExpected("From literal: 123.456.789!")
         .setLocale(Locale("ro"))
-        .build(errorCode);
+        .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{From literal: {|123456789,531| :number}!}")
                                 .setArgument(val, value)
                                 .setExpected("From literal: 123.456.789,531!")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(CharsToUnicodeString("{From literal: {|\\u1041\\u1042\\u1043,\\u1044\\u1045\\u1046,\\u1047\\u1048\\u1049.\\u1045\\u1043\\u1041| :number}!}"))
                                 .setArgument(val, value)
                                 .setExpected(CharsToUnicodeString("From literal: \\u1041\\u1042\\u1043,\\u1044\\u1045\\u1046,\\u1047\\u1048\\u1049.\\u1045\\u1043\\u1041!"))
                                 .setLocale(Locale("my"))
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
 
@@ -178,31 +178,31 @@ void TestMessageFormat2::testNumbers(IcuTestErrorCode& errorCode) {
                                 .setLocale(Locale("en", "IN"))
                                 .setArgument(val, value)
                                 .setExpected("Default double: 1,23,45,67,890.97531!")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setPattern("{Default double: {$val}!}")
                                 .setLocale(Locale("ro"))
                                 .setArgument(val, value)
                                 .setExpected("Default double: 1.234.567.890,97531!")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setPattern("{Default float: {$val}!}")
                                 .setLocale(Locale("ro"))
                                 .setArgument(val, 3.1415926535)
                                 .setExpected("Default float: 3,141593!")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setPattern("{Default int64: {$val}!}")
                                 .setLocale(Locale("ro"))
                                 .setArgument(val, (int64_t) 1234567890123456789)
                                 .setExpected("Default int64: 1.234.567.890.123.456.789!")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setPattern("{Default number: {$val}!}")
                                 .setLocale(Locale("ro"))
                                 .setDecimalArgument(val, StringPiece("1234567890123456789.987654321"), errorCode)
                                 .setExpected("Default number: 1.234.567.890.123.456.789,987654!")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Omitted CurrencyAmount test from ICU4J since it's not supported by Formattable
@@ -213,13 +213,13 @@ void TestMessageFormat2::testNumbers(IcuTestErrorCode& errorCode) {
     test = testBuilder.setPattern("{Skeletons, minFraction: {$val :number skeleton=|.00000000*|}!}")
                                 .setArgument(val, value)
                                 .setExpected("Skeletons, minFraction: 1.234.567.890,97531000!")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Skeletons, maxFraction: {$val :number skeleton=|.###|}!}")
                                 .setArgument(val, value)
                                 .setExpected("Skeletons, maxFraction: 1.234.567.890,975!")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Currency
@@ -227,7 +227,7 @@ void TestMessageFormat2::testNumbers(IcuTestErrorCode& errorCode) {
                                 .setArgument(val, value)
                                 .setExpected(CharsToUnicodeString("Skeletons, currency: 1.234.567.890,98\\u00A0\\u20AC!"))
                                 .setLocale(Locale("de"))
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Currency as a parameter
@@ -235,14 +235,14 @@ void TestMessageFormat2::testNumbers(IcuTestErrorCode& errorCode) {
                                 .setArgument(val, value)
                                 .setArgument("skel", "currency/EUR")
                                 .setExpected(CharsToUnicodeString("Skeletons, currency: 1.234.567.890,98\\u00A0\\u20AC!"))
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Skeletons, currency: {$val :number skeleton=$skel}!}")
                                 .setArgument(val, value)
                                 .setArgument("skel", "currency/JPY")
                                 .setExpected(CharsToUnicodeString("Skeletons, currency: 1.234.567.891\\u00A0\\u00A5!"))
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Various measures
@@ -253,13 +253,13 @@ void TestMessageFormat2::testNumbers(IcuTestErrorCode& errorCode) {
                                 .setArgument("valF", 80.6)
                                 .setExpected(CharsToUnicodeString("Temperature: 27 \\u00B0C (80,6 \\u00B0F)"))
                                 .setLocale(Locale("ro"))
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Height: {$len :number skeleton=|unit/meter|}}")
                                 .setArgument("len", 1.75)
                                 .setExpected("Height: 1,75 m")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 }
 

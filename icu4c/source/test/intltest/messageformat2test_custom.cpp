@@ -46,14 +46,14 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
         .setArgument(name, person.getAlias())
         .setExpected("Hello {$name}")
         .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
-        .build(errorCode);
+        .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=informal}}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello {$name}")
                                 .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setFunctionRegistry(std::make_shared<FunctionRegistry>(std::move(customRegistry)));
@@ -62,35 +62,35 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello Mr. Doe")
                                 .setExpectSuccess()
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=informal}}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello John")
                                 .setExpectSuccess()
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=formal length=long}}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello Mr. John Doe")
                                 .setExpectSuccess()
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=formal length=medium}}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello John Doe")
                                 .setExpectSuccess()
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{Hello {$name :person formality=formal length=short}}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello Mr. Doe")
                                 .setExpectSuccess()
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -106,7 +106,8 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
     LocalPointer<Person> jane(new Person(UnicodeString("Ms."), UnicodeString("Jane"), UnicodeString("Doe")));
     LocalPointer<Person> john(new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe")));
     LocalPointer<Person> anonymous(new Person(UnicodeString("Mx."), UnicodeString("Anonymous"), UnicodeString("Doe")));
-   if (!jane.isValid() || !john.isValid() || !anonymous.isValid()) {
+
+    if (!jane.isValid() || !john.isValid() || !anonymous.isValid()) {
        ((UErrorCode&) errorCode) = U_MEMORY_ALLOCATION_ERROR;
        return;
    }
@@ -141,7 +142,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
         .setArgument(guestCount, (int64_t) 3)
         .setExpected("Ms. Jane Doe invites Mr. John Doe and 2 other people to her party.")
         .setExpectSuccess()
-        .build(errorCode);
+        .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument(host, jane.getAlias())
@@ -150,7 +151,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                                 .setArgument(guestCount, (int64_t) 2)
                                 .setExpected("Ms. Jane Doe invites Mr. John Doe and one other person to her party.")
                                 .setExpectSuccess()
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument(host, jane.getAlias())
@@ -159,7 +160,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                                 .setArgument(guestCount, (int64_t) 1)
                                 .setExpected("Ms. Jane Doe invites Mr. John Doe to her party.")
                                 .setExpectSuccess()
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument(host, john.getAlias())
@@ -168,7 +169,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                                 .setArgument(guestCount, (int64_t) 3)
                                 .setExpected("Mr. John Doe invites Ms. Jane Doe and 2 other people to his party.")
                                 .setExpectSuccess()
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument(host, anonymous.getAlias())
@@ -177,7 +178,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                                 .setArgument(guestCount, (int64_t) 2)
                                 .setExpected("Mx. Anonymous Doe invites Ms. Jane Doe and one other person to their party.")
                                 .setExpectSuccess()
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -212,23 +213,26 @@ Formatter* PersonNameFormatterFactory::createFormatter(const Locale& locale, UEr
 void PersonNameFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
     CHECK_ERROR(errorCode);
 
-    if (!context.hasObjectInput()) {
+    if (!context.hasInput() || context.getInput().getType() != Formattable::Type::kObject) {
         return;
     }
 
-    UnicodeString formalityOpt, lengthOpt;
-    bool hasFormality, hasLength;
-    hasFormality = context.getStringOption(UnicodeString("formality"), formalityOpt);
-    hasLength = context.getStringOption(UnicodeString("length"), lengthOpt);
+    FormattingContext::FunctionOptionsMap opt = context.getOptions();
+    bool hasFormality = opt.count("formality") > 0 && opt["formality"].getType() == Formattable::Type::kString;
+    bool hasLength = opt.count("length") > 0 && opt["length"].getType() == Formattable::Type::kString;
 
-    bool useFormal = hasFormality && formalityOpt == "formal";
-    UnicodeString length = hasLength ? lengthOpt : "short";
+    bool useFormal = hasFormality && opt["formality"].getString() == "formal";
+    UnicodeString length = hasLength ? opt["length"].getString() : "short";
 
-    const Person& p = static_cast<const Person&>(context.getObjectInput());
+    const FormattableObject* fp = context.getInput().getObject();
+    if (fp == nullptr || fp->tag() != "person") {
+        return;
+    }
+    const Person* p = static_cast<const Person*>(fp);
 
-    UnicodeString title = p.title;
-    UnicodeString firstName = p.firstName;
-    UnicodeString lastName = p.lastName;
+    UnicodeString title = p->title;
+    UnicodeString firstName = p->firstName;
+    UnicodeString lastName = p->lastName;
 
     UnicodeString result;
     if (length == "long") {
@@ -259,6 +263,7 @@ void PersonNameFormatter::format(FormattingContext& context, UErrorCode& errorCo
     context.setOutput(result);
 }
 
+FormattableProperties::~FormattableProperties() {}
 Person::~Person() {}
 
 /*
@@ -308,21 +313,22 @@ void GrammarCasesFormatter::format(FormattingContext& context, UErrorCode& error
     CHECK_ERROR(errorCode);
 
     // Argument must be present
-    if (!context.hasFormattableInput()) {
+    if (!context.hasInput()) {
         context.setFormattingError("grammarBB", errorCode);
         return;
     }
 
     // Assumes the argument is not-yet-formatted
-    const Formattable& toFormat = context.getFormattableInput();
+    const Formattable& toFormat = context.getInput();
     UnicodeString result;
 
+    FormattingContext::FunctionOptionsMap opt = context.getOptions();
     switch (toFormat.getType()) {
         case Formattable::Type::kString: {
             const UnicodeString& in = toFormat.getString();
-            UnicodeString grammarCase;
-            bool hasCase = context.getStringOption(UnicodeString("case"), grammarCase);
-            if (hasCase && (grammarCase == "dative" || grammarCase == "genitive")) {
+            bool hasCase = opt.count("case") > 0;
+            bool caseIsString = opt["case"].getType() == Formattable::Type::kString;
+            if (hasCase && caseIsString && (opt["case"].getString() == "dative" || opt["case"].getString() == "genitive")) {
                 getDativeAndGenitive(in, result);
             } else {
                 result += in;
@@ -355,22 +361,22 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
     testBuilder.setPattern("{Cartea {$owner :grammarBB case=genitive}}");
     TestCase test = testBuilder.setArgument("owner", "Maria")
                                 .setExpected("Cartea Mariei")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Rodica")
                                 .setExpected("Cartea Rodicăi")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Ileana")
                                 .setExpected("Cartea Ilenei")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Petre")
                                 .setExpected("Cartea lui Petre")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setName("testGrammarCasesFormatter - nominative");
@@ -378,22 +384,22 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
 
     test = testBuilder.setArgument("owner", "Maria")
                                 .setExpected("M-a sunat Maria")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Rodica")
                                 .setExpected("M-a sunat Rodica")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Ileana")
                                 .setExpected("M-a sunat Ileana")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setArgument("owner", "Petre")
                                 .setExpected("M-a sunat Petre")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -422,30 +428,29 @@ void message2::ListFormatter::format(FormattingContext& context, UErrorCode& err
     CHECK_ERROR(errorCode);
 
     // Argument must be present
-    if (!context.hasFormattableInput()) {
+    if (!context.hasInput()) {
         context.setFormattingError("listformat", errorCode);
         return;
     }
     // Assumes arg is not-yet-formatted
-    const Formattable& toFormat = context.getFormattableInput();
+    const Formattable& toFormat = context.getInput();
 
-    UnicodeString optType;
-    bool hasType = context.getStringOption(UnicodeString("type"), optType);
+    FormattingContext::FunctionOptionsMap opt = context.getOptions();
+    bool hasType = opt.count("type") > 0 && opt["type"].getType() == Formattable::Type::kString;
     UListFormatterType type = UListFormatterType::ULISTFMT_TYPE_AND;
     if (hasType) {
-        if (optType == "OR") {
+        if (opt["type"].getString() == "OR") {
             type = UListFormatterType::ULISTFMT_TYPE_OR;
-        } else if (optType == "UNITS") {
+        } else if (opt["type"].getString() == "UNITS") {
             type = UListFormatterType::ULISTFMT_TYPE_UNITS;
         }
     }
-    UnicodeString optWidth;
-    bool hasWidth = context.getStringOption(UnicodeString("width"), optWidth);
+    bool hasWidth = opt.count("width") > 0 && opt["width"].getType() == Formattable::Type::kString;
     UListFormatterWidth width = UListFormatterWidth::ULISTFMT_WIDTH_WIDE;
     if (hasWidth) {
-        if (optWidth == "SHORT") {
+        if (opt["width"].getString() == "SHORT") {
             width = UListFormatterWidth::ULISTFMT_WIDTH_SHORT;
-        } else if (optWidth == "NARROW") {
+        } else if (opt["width"].getString() == "NARROW") {
             width = UListFormatterWidth::ULISTFMT_WIDTH_NARROW;
         }
     }
@@ -486,10 +491,10 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {
         return;
     }
-    const Formattable progLanguages[3] = {
-        Formattable("C/C++"),
-        Formattable("Java"),
-        Formattable("Python")
+    const message2::Formattable progLanguages[3] = {
+        message2::Formattable("C/C++"),
+        message2::Formattable("Java"),
+        message2::Formattable("Python")
     };
 
     TestCase::Builder testBuilder;
@@ -499,13 +504,13 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     TestCase test = testBuilder.setName("testListFormatter")
         .setPattern("{I know {$languages :listformat type=AND}!}")
         .setExpected("I know C/C++, Java, and Python!")
-        .build(errorCode);
+        .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setName("testListFormatter")
                       .setPattern("{You are allowed to use {$languages :listformat type=OR}!}")
                       .setExpected("You are allowed to use C/C++, Java, or Python!")
-                      .build(errorCode);
+                      .build();
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
@@ -567,29 +572,20 @@ static Arguments localToGlobal(const FormattingContext& context, UErrorCode& sta
     if (U_FAILURE(status)) {
         return {};
     }
-
-    std::vector<MessageArgument> args;
-
-    FormattingContext::FunctionOptionsMap opts = context.getOptions();
-    for (auto iter = opts.cbegin(); iter != opts.cend(); ++iter) {
-        const Formattable& optionValue = iter->second;
-        const UnicodeString& optionName = iter->first;
-        args.push_back(MessageArgument(optionName, optionValue));
-    }
-    return MessageArguments(args, status);
+    return MessageArguments(context.getOptions(), status);
 }
 
 void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) const {
     CHECK_ERROR(errorCode);
 
     // Argument must be present
-    if (!context.hasFormattableInput()) {
+    if (!context.hasInput()) {
         context.setFormattingError("msgref", errorCode);
         return;
     }
 
     // Assumes arg is not-yet-formatted
-    const Formattable& toFormat = context.getFormattableInput();
+    const Formattable& toFormat = context.getInput();
     UnicodeString in;
     switch (toFormat.getType()) {
         case Formattable::Type::kString: {
@@ -602,13 +598,13 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
         }
     }
 
-    UnicodeString resbundle("resbundle");
-    bool hasProperties = context.hasObjectOption(resbundle);
+    FormattingContext::FunctionOptionsMap opt = context.getOptions();
+    bool hasProperties = opt.count("resbundle") > 0 && opt["resbundle"].getType() == Formattable::Type::kObject && opt["resbundle"].getObject()->tag() == "properties";
     // If properties were provided, look up the given string in the properties,
     // yielding a message
     if (hasProperties) {
-        const Hashtable& properties = reinterpret_cast<const Hashtable&>(context.getObjectOption(resbundle));
-        UnicodeString* msg = (UnicodeString*) properties.get(in);
+        const FormattableProperties* properties = reinterpret_cast<const FormattableProperties*>(opt["resbundle"].getObject());
+        UnicodeString* msg = static_cast<UnicodeString*>(properties->properties->get(in));
         if (msg == nullptr) {
             // No message given for this key -- error out
             context.setFormattingError("msgref", errorCode);
@@ -643,7 +639,8 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
 
     Hashtable* properties = ResourceManager::properties(errorCode);
     CHECK_ERROR(errorCode);
-    if (properties == nullptr) {
+    LocalPointer<FormattableProperties> fProperties(new FormattableProperties(properties));
+    if (!fProperties.isValid()) {
         ((UErrorCode&) errorCode) = U_MEMORY_ALLOCATION_ERROR;
         return;
     }
@@ -656,55 +653,53 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
 
     TestCase test = testBuilder.setArgument("gcase", "whatever")
                                 .setExpected("Firefox")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("gcase", "genitive")
                                 .setExpected("Firefoxin")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setPattern(*((UnicodeString*) properties->get("chrome")));
 
     test = testBuilder.setArgument("gcase", "whatever")
                                 .setExpected("Chrome")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("gcase", "genitive")
                                 .setExpected("Chromen")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    testBuilder.setArgument("res", (UObject*) properties);
+    testBuilder.setArgument("res", fProperties.getAlias());
 
     testBuilder.setPattern("{Please start {$browser :msgRef gcase=genitive resbundle=$res}}");
     test = testBuilder.setArgument("browser", "firefox")
                                 .setExpected("Please start Firefoxin")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("browser", "chrome")
                                 .setExpected("Please start Chromen")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("browser", "safari")
                                 .setExpected("Please start Safarin")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setPattern("{Please start {$browser :msgRef resbundle=$res}}");
     test = testBuilder.setArgument("browser", "firefox")
                                 .setExpected("Please start Firefox")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("browser", "chrome")
                                 .setExpected("Please start Chrome")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setArgument("browser", "safari")
                                 .setExpected("Please start Safari")
-                                .build(errorCode);
+                                .build();
     TestUtils::runTestCase(*this, test, errorCode);
-
-    delete properties;
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

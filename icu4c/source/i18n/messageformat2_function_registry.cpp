@@ -33,15 +33,19 @@ FunctionRegistry FunctionRegistry::Builder::build() {
 
 // Does not adopt its argument
 FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode) {
-    U_ASSERT(selectors.isValid());
-    selectors->put(selectorName.toString(), selectorFactory, errorCode);
+    if (U_SUCCESS(errorCode)) {
+        U_ASSERT(selectors.isValid());
+        selectors->put(selectorName.toString(), selectorFactory, errorCode);
+    }
     return *this;
 }
 
 // Does not adopt its argument
 FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode) {
-    U_ASSERT(formatters.isValid());
-    formatters->put(formatterName.toString(), formatterFactory, errorCode);
+    if (U_SUCCESS(errorCode)) {
+        U_ASSERT(formatters.isValid());
+        formatters->put(formatterName.toString(), formatterFactory, errorCode);
+    }
     return *this;
 }
 
@@ -116,7 +120,7 @@ static bool tryStringToNumber(const UnicodeString& s, int64_t& result) {
         return false;
     }
     numberFormat->setParseIntegerOnly(true);
-    Formattable asNumber;
+    icu::Formattable asNumber;
     numberFormat->parse(s, asNumber, localErrorCode);
     if (U_SUCCESS(localErrorCode)) {
         result = asNumber.getInt64(localErrorCode);
@@ -133,7 +137,7 @@ static void strToDouble(const UnicodeString& s, const Locale& loc, double& resul
 
     LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(loc, errorCode));
     CHECK_ERROR(errorCode);
-    Formattable asNumber;
+    icu::Formattable asNumber;
     numberFormat->parse(s, asNumber, errorCode);
     CHECK_ERROR(errorCode);
     result = asNumber.getDouble(errorCode);
@@ -153,6 +157,47 @@ bool tryFormattableAsNumber(const Formattable& optionValue, int64_t& result) {
             return true;
         }
     }
+    return false;
+}
+
+static bool tryStringAsNumber(const Locale& locale, const Formattable& val, double& value) {
+    // Check for a string option, try to parse it as a number if present
+    if (val.getType() != Formattable::Type::kString) {
+        return false;
+    }
+    UnicodeString tempString = val.getString();
+    UErrorCode localErrorCode = U_ZERO_ERROR;
+    LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(locale, localErrorCode));
+    if (U_FAILURE(localErrorCode)) {
+        return false;
+    }
+    icu::Formattable asNumber;
+    numberFormat->parse(tempString, asNumber, localErrorCode);
+    if (U_FAILURE(localErrorCode)) {
+        return false;
+    }
+    value = asNumber.getDouble(localErrorCode);
+    if (U_FAILURE(localErrorCode)) {
+        return false;
+    }
+    return true;
+}
+
+static UBool getInt64Value(const Locale& locale, const Formattable& value, int64_t& result) {
+    if (!value.isNumeric()) {
+        double doubleResult;
+        if (tryStringAsNumber(locale, value, doubleResult)) {
+            result = (int64_t) doubleResult;
+            return true;
+        }
+        return false;
+    }
+    UErrorCode localErrorCode = U_ZERO_ERROR;
+    result = value.getInt64(localErrorCode);
+    if (U_SUCCESS(localErrorCode)) {
+        return true;
+    }
+    // Option was numeric but couldn't be converted to int64_t -- could be overflow
     return false;
 }
 
@@ -176,15 +221,19 @@ FunctionRegistry::~FunctionRegistry() {}
 
 // --------- Number
 
-number::LocalizedNumberFormatter formatterForOptions(Locale locale, const FormattingContext& context, UErrorCode& status) {
+/* static */ number::LocalizedNumberFormatter StandardFunctions::formatterForOptions(Locale locale, const FormattingContext& context, UErrorCode& status) {
     number::UnlocalizedNumberFormatter nf;
     if (U_SUCCESS(status)) {
-        UnicodeString skeleton;
-        if (context.getStringOption(UnicodeString("skeleton"), skeleton)) {
-            nf = number::NumberFormatter::forSkeleton(skeleton, status);
+        Formattable opt;
+        if (context.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == Formattable::Type::kString) {
+            nf = number::NumberFormatter::forSkeleton(opt.getString(), status);
         } else {
             int64_t minFractionDigits = 0;
-            context.getInt64Option(UnicodeString("minimumFractionDigits"), minFractionDigits);
+            if (context.getFunctionOption(UnicodeString("minimumFractionDigits"), opt)) {
+                if (!getInt64Value(locale, opt, minFractionDigits)) {
+                    minFractionDigits = 0;
+                }
+            }
             nf = number::NumberFormatter::with().precision(number::Precision::minFraction((int32_t) minFractionDigits));
         }
     }
@@ -229,12 +278,15 @@ void StandardFunctions::Number::format(FormattingContext& context, UErrorCode& e
     CHECK_ERROR(errorCode);
 
     // No argument => return "NaN"
-    if (!context.hasFormattableInput()) {
+    if (!context.hasInput()) {
         return notANumber(context);
     }
 
-    int64_t offset = 0;
-    context.getInt64Option(UnicodeString("offset"), offset);
+    int64_t offset;
+    Formattable opt;
+    if (!(context.getFunctionOption(UnicodeString("offset"), opt) && getInt64Value(locale, opt, offset))) {
+        offset = 0;
+    }
 
     number::LocalizedNumberFormatter realFormatter;
     if (context.optionsCount() == 0) {
@@ -253,7 +305,7 @@ void StandardFunctions::Number::format(FormattingContext& context, UErrorCode& e
 
     number::FormattedNumber numberResult;
     // Already checked that input is present
-    const Formattable& toFormat = context.getFormattableInput();
+    const Formattable& toFormat = context.getInput();
     switch (toFormat.getType()) {
     case Formattable::Type::kDouble: {
         numberResult = realFormatter.formatDouble(toFormat.getDouble() - offset, errorCode);
@@ -348,13 +400,16 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context,
     CHECK_ERROR(errorCode);
 
     // No argument => return "NaN"
-    if (!context.hasFormattableInput()) {
+    if (!context.hasInput()) {
         context.setSelectorError(UnicodeString("plural"), errorCode);
         return;
     }
 
-    int64_t offset = 0;
-    context.getInt64Option(UnicodeString("offset"), offset);
+    int64_t offset;
+    Formattable opt;
+    if (!(context.getFunctionOption(UnicodeString("offset"), opt) && getInt64Value(locale, opt, offset))) {
+        offset = 0;
+    }
 
     // Only doubles and integers can match
     double valToCheck;
@@ -368,7 +423,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context,
         tryAsString(locale, context.getStringOutput(), valToCheck, noMatch);
     } else {
         // Already checked that input is present
-        tryWithFormattable(locale, context.getFormattableInput(), valToCheck, noMatch);
+        tryWithFormattable(locale, context.getInput(), valToCheck, noMatch);
     }
 
     if (noMatch) {
@@ -462,31 +517,30 @@ void StandardFunctions::DateTime::format(FormattingContext& context, UErrorCode&
     // Argument must be present;
     // also, if there is existing string output, that's
     // like passing in a string, so we return
-    if (!context.hasFormattableInput() || context.hasStringOutput()) {
+    if (!context.hasInput() || context.hasStringOutput()) {
         context.setFormattingError(UnicodeString("datetime"), errorCode);
         return;
     }
 
     LocalPointer<DateFormat> df;
-
-    UnicodeString opt;
-    if (context.getStringOption(UnicodeString("skeleton"), opt)) {
+    Formattable opt;
+    if (context.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == Formattable::Type::kString) {
         // Same as getInstanceForSkeleton(), see ICU 9029
         // Based on test/intltest/dtfmttst.cpp - TestPatterns()
         LocalPointer<DateTimePatternGenerator> generator(DateTimePatternGenerator::createInstance(locale, errorCode));
-        UnicodeString pattern = generator->getBestPattern(opt, errorCode);
+        UnicodeString pattern = generator->getBestPattern(opt.getString(), errorCode);
         df.adoptInstead(new SimpleDateFormat(pattern, locale, errorCode));
     } else {
-        if (context.getStringOption(UnicodeString("pattern"), opt)) {
-            df.adoptInstead(new SimpleDateFormat(opt, locale, errorCode));
+        if (context.getFunctionOption(UnicodeString("pattern"), opt) && opt.getType() == Formattable::Type::kString) {
+            df.adoptInstead(new SimpleDateFormat(opt.getString(), locale, errorCode));
         } else {
             DateFormat::EStyle dateStyle = DateFormat::NONE;
-            if (context.getStringOption(UnicodeString("datestyle"), opt)) {
-                dateStyle = stringToStyle(opt, errorCode);
+            if (context.getFunctionOption(UnicodeString("datestyle"), opt) && opt.getType() == Formattable::Type::kString) {
+                dateStyle = stringToStyle(opt.getString(), errorCode);
             }
             DateFormat::EStyle timeStyle = DateFormat::NONE;
-            if (context.getStringOption(UnicodeString("timestyle"), opt)) {
-                timeStyle = stringToStyle(opt, errorCode);
+            if (context.getFunctionOption(UnicodeString("timestyle"), opt) && opt.getType() == Formattable::Type::kString) {
+                timeStyle = stringToStyle(opt.getString(), errorCode);
             }
             if (dateStyle == DateFormat::NONE && timeStyle == DateFormat::NONE) {
                 df.adoptInstead(defaultDateTimeInstance(locale, errorCode));
@@ -503,7 +557,7 @@ void StandardFunctions::DateTime::format(FormattingContext& context, UErrorCode&
     CHECK_ERROR(errorCode);
 
     UnicodeString result;
-    df->format(context.getFormattableInput(), result, 0, errorCode);
+    df->format(context.getInput().asICUFormattable(), result, 0, errorCode);
     context.setOutput(result);
 }
 
@@ -532,7 +586,7 @@ void StandardFunctions::TextSelector::selectKey(FormattingContext& context,
     // Just compares the key and value as strings
 
     // Argument must be present
-    if (!context.hasFormattableInput()) {
+    if (!context.hasInput()) {
         context.setSelectorError(UnicodeString("select"), errorCode);
         return;
     }
@@ -575,7 +629,7 @@ void StandardFunctions::Identity::format(FormattingContext& context, UErrorCode&
     CHECK_ERROR(errorCode);
 
     // Argument must be present
-    if (!context.hasFormattableInput()) {
+    if (!context.hasInput()) {
         context.setFormattingError(UnicodeString("text"), errorCode);
         return;
     }

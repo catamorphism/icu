@@ -18,6 +18,7 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/formattedvalue.h"
+#include "unicode/messageformat2_formattable.h"
 #include "unicode/numberformatter.h"
 #include "unicode/smpdtfmt.h"
 
@@ -50,15 +51,13 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
   public:
       const UnicodeString& getName() const { return name; }
       const Formattable& getValue() const { return value; }
-      ResolvedFunctionOption(const UnicodeString& n, Formattable&& f) : name(n), value(std::move(f)) {}
       ResolvedFunctionOption(const UnicodeString& n, const Formattable& f) : name(n), value(f) {}
       ResolvedFunctionOption() {}
-      ResolvedFunctionOption& operator=(const ResolvedFunctionOption& other) {
-          if (this != &other) {
-              name = other.name;
-              value = other.value;
-          }
-        return *this;
+      ResolvedFunctionOption(ResolvedFunctionOption&&);
+      ResolvedFunctionOption& operator=(ResolvedFunctionOption&& other) noexcept {
+          name = std::move(other.name);
+          value = std::move(other.value);
+          return *this;
     }
     virtual ~ResolvedFunctionOption();
 }; // class ResolvedFunctionOption
@@ -122,48 +121,23 @@ class U_I18N_API FormattingContext : public UObject {
      */
     virtual void setFormattingError(const UnicodeString& name, UErrorCode& status) = 0;
     /**
-     * Returns true if and only if a `Formattable` argument was supplied to this
-     * function. (Object arguments must be checked for using `hasObjectinput()` and
-     * are not treated as a `Formattable` wrapping an object.) Each function has
-     * at most one argument, so if `hasFormattableInput()` is true,
-     * `hasObjectInput()` is false, and vice versa.
+     * Returns true if and only if an argument was supplied to this
+     * function. Each function has at most one argument.
      *     *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    virtual UBool hasFormattableInput() const = 0;
+    virtual UBool hasInput() const = 0;
     /**
-     * Accesses the function's argument, assuming it has type  `Formattable`.
-     * It is an internal error to call this method if `!hasFormattableInput()`.
-     * In particular, if the argument passed in is a UObject*, it is an internal
-     * error to call `getFormattableInput()` (`getObjectInput()` must be called instead.)
+     * Accesses the function's argument.
+     * It is an internal error to call this method if `!hasInput()`.
      *
      * @return A reference to the argument to this function.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    virtual const Formattable& getFormattableInput() const = 0;
-    /**
-     * Determines the type of input to this function.
-     *
-     * @return True if and only if a `UObject*` argument was supplied to this
-     *         function.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual UBool hasObjectInput() const = 0;
-    /**
-     * Accesses the function's argument, assuming it has type `UObject`.
-     * It is an internal error to call this method if `!hasObjectInput()`.
-     *
-     * @return A reference to the argument to this function.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual const UObject& getObjectInput() const = 0;
+    virtual const message2::Formattable& getInput() const = 0;
     /**
      * Checks if the argument being passed in already has a formatted
      * result that is a string. This formatted result may be treated as the input
@@ -208,68 +182,7 @@ class U_I18N_API FormattingContext : public UObject {
      * @deprecated This API is for technology preview only.
      */
     virtual const number::FormattedNumber& getNumberOutput() const = 0;
-    /**
-     * Looks up the value of a named string option.
-     *
-     * @param optionName The name of the option.
-     * @param optionValue A mutable reference that is set to the string value of
-     *        the option if the named option exists.
-     * @return True if and only if a string-typed option named `optionName` exists.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual UBool getStringOption(const UnicodeString& optionName, UnicodeString& optionValue) const = 0;
-    /**
-     * Looks up the value of a named numeric option of type `double`.
-     * The return value is true if and only if there is a `double`-typed option
-     * named `optionName`
-     *
-     * @param optionName The name of the option.
-     * @param optionValue A mutable reference that is set to the `double` value of
-     *        the option if the named option exists.
-     * @return True if and only if a double-typed option named `optionName` exists.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual UBool getDoubleOption(const UnicodeString& optionName, double& optionValue) const = 0;
-    /**
-     * Looks up the value of a named numeric option of type `int64_t`.
-     * The return value is true if and only if there is a `int64_t`-typed option
-     * named `optionName`
-     *
-     * @param optionName The name of the option.
-     * @param optionValue A mutable reference that is set to the `double` value of
-     *        the option if the named option exists.
-     * @return True if and only if a int64-typed option named `optionName` exists.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual UBool getInt64Option(const UnicodeString& optionName, int64_t& optionValue) const = 0;
-    /**
-     * Checks for a named object option.
-     *
-     * @param optionName The name of the option.
-     * @return True if and only if an object-typed option named `optionName` exists.
-     **
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual UBool hasObjectOption(const UnicodeString& optionName) const = 0;
-    /**
-     * Accesses a named object option.
-     * Precondition: the option must exist.
-     *
-     * @param optionName The name of the option.
-     * @return           A reference to the object value of the option.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual const UObject& getObjectOption(const UnicodeString& optionName) const = 0;
-    using FunctionOptionsMap = std::map<UnicodeString, Formattable>;
+    using FunctionOptionsMap = std::map<UnicodeString, message2::Formattable>;
     /**
      * Returns a map of all name-value pairs provided as options to this function,
      * except for any object-valued options (which must be accessed using
@@ -322,8 +235,11 @@ class U_I18N_API FormattingContext : public UObject {
     virtual ~FormattingContext();
 
  private:
+    friend class StandardFunctions;
 
     virtual const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const = 0;
+    //    virtual const ResolvedFunctionOption& getResolvedFunctionOption(const UnicodeString&) const = 0;
+    virtual UBool getFunctionOption(const UnicodeString&, Formattable&) const = 0;
 };
 
 } // namespace message2
