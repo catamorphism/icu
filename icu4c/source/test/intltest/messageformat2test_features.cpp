@@ -684,29 +684,29 @@ void TestMessageFormat2::testPluralWithOffsetAndLocalVar(TestCase::Builder& test
                 when * {Anna, Bob, and {$foo} other guests}\n";
 
     testBuilder.clearArguments().setPattern(message);
-    testBuilder.clearArguments().setName("plural with offset and local var");
+    testBuilder.setName("plural with offset and local var");
 
-    TestCase test = testBuilder.clearArguments().setExpected("Anna")
+    TestCase test = testBuilder.setExpected("Anna")
                                 .setArgument("count", (int64_t) 1)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setExpected("Anna and Bob")
+    test = testBuilder.setExpected("Anna and Bob")
                           .setArgument("count", (int64_t) 2)
                           .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setExpected("Anna, Bob, and 1 other guest")
+    test = testBuilder.setExpected("Anna, Bob, and 1 other guest")
                           .setArgument("count", (int64_t) 3)
                           .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setExpected("Anna, Bob, and 2 other guests")
+    test = testBuilder.setExpected("Anna, Bob, and 2 other guests")
                           .setArgument("count", (int64_t) 4)
                           .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setExpected("Anna, Bob, and 10 other guests")
+    test = testBuilder.setExpected("Anna, Bob, and 10 other guests")
                           .setArgument("count", (int64_t) 12)
                           .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -716,16 +716,16 @@ void TestMessageFormat2::testPluralWithOffsetAndLocalVar(TestCase::Builder& test
                 when 1 {Last dollar}\n\
                 when one {{$foo} dollar}\n\
                 when * {{$foo} dollars}\n";
-    testBuilder.clearArguments().setPattern(message);
-    test = testBuilder.clearArguments().setExpected("Last dollar")
+    testBuilder.setPattern(message);
+    test = testBuilder.setExpected("Last dollar")
                           .setArgument("amount", (int64_t) 1)
                           .build();
     TestUtils::runTestCase(*this, test, errorCode);
-    test = testBuilder.clearArguments().setExpected("2 dollars")
+    test = testBuilder.setExpected("2 dollars")
                           .setArgument("amount", (int64_t) 2)
                           .build();
     TestUtils::runTestCase(*this, test, errorCode);
-    test = testBuilder.clearArguments().setExpected("3 dollars")
+    test = testBuilder.setExpected("3 dollars")
                           .setArgument("amount", (int64_t) 3)
                           .build();
     TestUtils::runTestCase(*this, test, errorCode);
