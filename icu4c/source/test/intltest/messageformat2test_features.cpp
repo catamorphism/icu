@@ -458,7 +458,7 @@ Formatter* TemperatureFormatterFactory::createFormatter(const Locale& locale, UE
     return result.orphan();
 }
 
-message2::FormattedValue TemperatureFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
+message2::FormattedValue TemperatureFormatter::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -466,12 +466,12 @@ message2::FormattedValue TemperatureFormatter::format(FormattingContext& context
     message2::FormattedValue errorVal("temp");
 
     // Argument must be present
-    if (!context.canFormat()) {
+    if (!arg.canFormat()) {
         context.setFormattingError("temp", errorCode);
         return errorVal;
     }
     // Assume arg is not-yet-formatted
-    const Formattable& toFormat = context.getContents().asFormattable();
+    const Formattable& toFormat = arg.asFormattable();
 
     counter.formatCount++;
 

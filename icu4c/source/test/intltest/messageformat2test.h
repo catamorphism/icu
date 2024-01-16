@@ -134,7 +134,7 @@ class Person : public FormattableObject {
 
 class PersonNameFormatter : public Formatter {
     public:
-    FormattedValue format(FormattingContext&, UErrorCode& errorCode) const override;
+    FormattedValue format(FormattingContext&, FormattedValue&&, UErrorCode& errorCode) const override;
 };
 
 class FormattableProperties : public FormattableObject {
@@ -156,7 +156,7 @@ class GrammarCasesFormatterFactory : public FormatterFactory {
 
 class GrammarCasesFormatter : public Formatter {
     public:
-    FormattedValue format(FormattingContext&, UErrorCode& errorCode) const override;
+    FormattedValue format(FormattingContext&, FormattedValue&&, UErrorCode& errorCode) const override;
     static FunctionRegistry customRegistry(UErrorCode&);
     private:
     void getDativeAndGenitive(const UnicodeString&, UnicodeString& result) const;
@@ -169,7 +169,7 @@ class ListFormatterFactory : public FormatterFactory {
 
 class ListFormatter : public Formatter {
     public:
-    FormattedValue format(FormattingContext&, UErrorCode& errorCode) const override;
+    FormattedValue format(FormattingContext&, FormattedValue&&, UErrorCode& errorCode) const override;
     static FunctionRegistry customRegistry(UErrorCode&);
     private:
     friend class ListFormatterFactory;
@@ -184,7 +184,7 @@ class ResourceManagerFactory : public FormatterFactory {
 
 class ResourceManager : public Formatter {
     public:
-    FormattedValue format(FormattingContext&, UErrorCode& errorCode) const override;
+    FormattedValue format(FormattingContext&, FormattedValue&&, UErrorCode& errorCode) const override;
     static FunctionRegistry customRegistry(UErrorCode&);
     static Hashtable* properties(UErrorCode&);
     static UnicodeString propertiesAsString(const Hashtable&);
@@ -209,7 +209,7 @@ class TemperatureFormatterFactory : public FormatterFactory {
 
 class TemperatureFormatter : public Formatter {
     public:
-    FormattedValue format(FormattingContext&, UErrorCode& errorCode) const override;
+    FormattedValue format(FormattingContext&, FormattedValue&&, UErrorCode& errorCode) const override;
     static FunctionRegistry customRegistry(UErrorCode&);
     ~TemperatureFormatter();
     private:

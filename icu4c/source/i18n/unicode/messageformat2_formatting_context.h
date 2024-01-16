@@ -100,24 +100,6 @@ class U_I18N_API FormattingContext : public UObject {
      * @deprecated This API is for technology preview only.
      */
     virtual void setFormattingError(const UnicodeString& name, UErrorCode& status) = 0;
-    /**
-     * Returns true if and only if an argument was supplied to this
-     * function. Each function has at most one argument.
-     *     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual UBool canFormat() const = 0;
-    /**
-     * Accesses the function's argument.
-     * It is an internal error to call this method if `!canFormat()`.
-     *
-     * @return A reference to the argument to this function.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual const message2::FormattedValue& getContents() const = 0;
     using FunctionOptionsMap = std::map<UnicodeString, message2::Formattable>;
     /**
      * Returns a map of all name-value pairs provided as options to this function,
@@ -150,21 +132,6 @@ class U_I18N_API FormattingContext : public UObject {
      * @deprecated This API is for technology preview only.
      */
     virtual int32_t optionsCount() const = 0;
-    /**
-     * Formats the current argument as a string, using defaults.  If the function's argument is
-     * either absent or is a fallback value, the return value is the result of formatting the
-     * fallback value (which is the default fallback string if the argument is absent).
-     * If the function's argument is object-typed, then the argument is treated as a
-     * fallback value, since there is no default formatter for objects.
-     *
-     * @param locale The locale to use for formatting numbers or dates
-     * @param status Input/output error code
-     * @return The result of formatting the input.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual UnicodeString formatToString(const Locale& locale, UErrorCode& status) = 0;
 
     virtual ~FormattingContext();
 

@@ -6,6 +6,8 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/messageformat2_formattable.h"
+#include "unicode/numberformatter.h"
+#include "unicode/smpdtfmt.h"
 
 U_NAMESPACE_BEGIN
 
@@ -132,27 +134,6 @@ namespace message2 {
             break;
         }
         }
-        /*
-        auto* dq = new number::impl::DecimalQuantity();
-        if (dq == nullptr) {
-            status = U_MEMORY_ALLOCATION_ERROR;
-            bogus = true;
-            return;
-        }
-        dq->setToDecNumber(number, status);
-        if (dq->fitsInLong()) {
-            scalar.fInt64 = dq->toLong();
-            if (scalar.fInt64 <= INT32_MAX && scalar.fInt64 >= INT32_MIN) {
-                type = Type::kLong;
-            } else {
-                type = Type::kInt64;
-            }
-        } else {
-            type = Type::kDouble;
-            scalar.fDouble = dq->toDouble();
-        }
-        decimalQuantity.adoptInstead(dq);
-        */
     }
 
     Formattable::Type Formattable::getType() const {
@@ -262,6 +243,118 @@ namespace message2 {
         } else {
             return source;
         }
+    }
+
+    // Default formatters
+    // ------------------
+
+    number::FormattedNumber formatNumberWithDefaults(const Locale& locale, double toFormat, UErrorCode& errorCode) {
+        return number::NumberFormatter::withLocale(locale).formatDouble(toFormat, errorCode);
+    }
+
+    number::FormattedNumber formatNumberWithDefaults(const Locale& locale, int32_t toFormat, UErrorCode& errorCode) {
+        return number::NumberFormatter::withLocale(locale).formatInt(toFormat, errorCode);
+    }
+
+    number::FormattedNumber formatNumberWithDefaults(const Locale& locale, int64_t toFormat, UErrorCode& errorCode) {
+        return number::NumberFormatter::withLocale(locale).formatInt(toFormat, errorCode);
+    }
+
+    number::FormattedNumber formatNumberWithDefaults(const Locale& locale, StringPiece toFormat, UErrorCode& errorCode) {
+        return number::NumberFormatter::withLocale(locale).formatDecimal(toFormat, errorCode);
+    }
+
+    DateFormat* defaultDateTimeInstance(const Locale& locale, UErrorCode& errorCode) {
+        NULL_ON_ERROR(errorCode);
+        LocalPointer<DateFormat> df(DateFormat::createDateTimeInstance(DateFormat::SHORT, DateFormat::SHORT, locale));
+        if (!df.isValid()) {
+            errorCode = U_MEMORY_ALLOCATION_ERROR;
+            return nullptr;
+        }
+        return df.orphan();
+    }
+
+    void formatDateWithDefaults(const Locale& locale, UDate date, UnicodeString& result, UErrorCode& errorCode) {
+        CHECK_ERROR(errorCode);
+
+        LocalPointer<DateFormat> df(defaultDateTimeInstance(locale, errorCode));
+        CHECK_ERROR(errorCode);
+        df->format(date, result, 0, errorCode);
+    }
+
+    // Called when output is required and the contents are an unevaluated `Formattable`;
+    // formats the source `Formattable` to a string with defaults, if it can be
+    // formatted with a default formatter
+    static FormattedValue formatWithDefaults(const Locale& locale, const Formattable& input, const UnicodeString& fallback, UErrorCode& status) {
+        if (U_FAILURE(status)) {
+            return {};
+        }
+
+        // Try as decimal number first
+        if (input.isNumeric()) {
+            // Note: the ICU Formattable has to be created here since the StringPiece
+            // refers to state inside the Formattable; so otherwise we'll have a reference
+            // to a temporary object
+            icu::Formattable icuFormattable = input.asICUFormattable();
+            StringPiece asDecimal = icuFormattable.getDecimalNumber(status);
+            if (U_FAILURE(status)) {
+                return {};
+            }
+            if (asDecimal != nullptr) {
+                return FormattedValue(formatNumberWithDefaults(locale, asDecimal, status), input);
+            }
+        }
+
+        switch (input.getType()) {
+        case Formattable::Type::kDate: {
+            UnicodeString result;
+            formatDateWithDefaults(locale, input.getDate(), result, status);
+            return FormattedValue(std::move(result), input);
+        }
+        case Formattable::Type::kDouble: {
+            return FormattedValue(formatNumberWithDefaults(locale, input.getDouble(), status), input);
+        }
+        case Formattable::Type::kLong: {
+            return FormattedValue(formatNumberWithDefaults(locale, input.getLong(), status), input);
+        }
+        case Formattable::Type::kInt64: {
+            return FormattedValue(formatNumberWithDefaults(locale, input.getInt64(), status), input);
+        }
+        case Formattable::Type::kString: {
+            return FormattedValue(UnicodeString(input.getString()), input);
+        }
+        default: {
+            // No default formatters for other types; use fallback
+            return FormattedValue(UnicodeString(fallback), input);
+        }
+        }
+    }
+
+    // Called when string output is required; forces output to be produced
+    // if none is present (including formatting number output as a string)
+    UnicodeString FormattedValue::formatToString(const Locale& locale, UErrorCode& status) const {
+        if (U_FAILURE(status)) {
+            return {};
+        }
+        if (isFallback()) {
+            return getString();
+        }
+        if (isNullOperand()) {
+            return fallback;
+        }
+
+        // Evaluated value: either just return the string, or format the number
+        // as a string and return it
+        if (isEvaluated()) {
+            if (isString()) {
+                return getString();
+            } else {
+                return getNumber().toString(status);
+            }
+        }
+        // Unevaluated value: first evaluate it fully, then format
+        FormattedValue evaluated = formatWithDefaults(locale, source, fallback, status);
+        return evaluated.formatToString(locale, status);
     }
 
 } // namespace message2

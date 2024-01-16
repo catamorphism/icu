@@ -35,7 +35,7 @@ namespace message2 {
 
         class DateTime : public Formatter {
         public:
-            FormattedValue format(FormattingContext& context, UErrorCode& status) const override;
+            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, UErrorCode& status) const override;
             virtual ~DateTime();
 
         private:
@@ -53,7 +53,7 @@ namespace message2 {
 
         class Number : public Formatter {
         public:
-            FormattedValue format(FormattingContext& context, UErrorCode& status) const override;
+            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, UErrorCode& status) const override;
             virtual ~Number();
 
         private:
@@ -73,7 +73,7 @@ namespace message2 {
 
         class Identity : public Formatter {
         public:
-            FormattedValue format(FormattingContext& context, UErrorCode& status) const override;
+            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, UErrorCode& status) const override;
             virtual ~Identity();
 
         private:
@@ -98,6 +98,7 @@ namespace message2 {
         class Plural : public Selector {
         public:
             void selectKey(FormattingContext& context,
+                           FormattedValue&& val,
                            const UnicodeString* keys,
                            int32_t keysLen,
                            UnicodeString* prefs,
@@ -124,6 +125,7 @@ namespace message2 {
         class TextSelector : public Selector {
         public:
             void selectKey(FormattingContext& context,
+                           FormattedValue&& val,
                            const UnicodeString* keys,
                            int32_t keysLen,
                            UnicodeString* prefs,

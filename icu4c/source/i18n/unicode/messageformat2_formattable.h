@@ -427,6 +427,13 @@ namespace message2 {
         bool isNullOperand() const { return type == kNullValue; }
         bool isNumber() const { return type == kNumberValue; }
         bool isEvaluated() const { return (type == kStringValue || type == kNumberValue); }
+        // Returns true if this is a valid argument to the formatter
+        // (it's not null and is not a fallback value)
+        bool canFormat() const { return !(isFallback() || isNullOperand()); }
+        FormattedValue promote() {
+            // Return a non-error value with string contents `fallback`
+            return FormattedValue(std::move(fallback), Formattable(fallback));
+        }
         const UnicodeString& getString() const {
             switch (type) {
             case kFallbackValue:
@@ -452,6 +459,23 @@ namespace message2 {
         }
         FormattedValue(FormattedValue&&);
         FormattedValue& operator=(FormattedValue&&) noexcept;
+
+        /**
+         * Formats this as a string, using defaults.  If this is
+         * either the null operand or is a fallback value, the return value is the result of formatting the
+         * fallback value (which is the default fallback string if this is the null operand).
+         * If this is object- or array-typed, then the argument is treated as a
+         * fallback value, since there is no default formatter for objects or arrays.
+         *
+         * @param locale The locale to use for formatting numbers or dates
+         * @param status Input/output error code
+         * @return The result of formatting the input.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        UnicodeString formatToString(const Locale& locale, UErrorCode& status) const;
+
     private:
         enum Type {
             kFallbackValue,    // Represents the result of formatting that encountered an error
@@ -460,6 +484,7 @@ namespace message2 {
             kStringValue,
             kNumberValue
         };
+        UnicodeString fallback;
         UnicodeString stringOutput;
         number::FormattedNumber numberOutput;
         Formattable source;

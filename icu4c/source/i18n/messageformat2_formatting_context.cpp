@@ -51,10 +51,6 @@ ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.
 // State
 // ---------
 
-bool ExpressionContext::isFallback() const {
-    return contents.isFallback();
-}
-
 void ExpressionContext::setFallback() {
     contents = FormattedValue(fallback);
 }
@@ -84,101 +80,6 @@ void ExpressionContext::setFallbackTo(const Literal& l) {
 
 void ExpressionContext::setContents(FormattedValue&& val) {
     contents = std::move(val);
-}
-
-UBool ExpressionContext::canFormat() const {
-    return (!(contents.isFallback() || contents.isNullOperand()));
-}
-
-const FormattedValue& ExpressionContext::getContents() const {
-    U_ASSERT(!(contents.isFallback() || contents.isNullOperand()));
-    return contents;
-}
-
-// Called when output is required and the contents are an unevaluated `Formattable`;
-// formats the source `Formattable` to a string with defaults, if it can be
-// formatted with a default formatter
-static FormattedValue formatWithDefaults(const Locale& locale, const Formattable& input, const UnicodeString& fallback, UErrorCode& status) {
-    if (U_FAILURE(status)) {
-        return {};
-    }
-
-    // Try as decimal number first
-    if (input.isNumeric()) {
-        // Note: the ICU Formattable has to be created here since the StringPiece
-        // refers to state inside the Formattable; so otherwise we'll have a reference
-        // to a temporary object
-        icu::Formattable icuFormattable = input.asICUFormattable();
-        StringPiece asDecimal = icuFormattable.getDecimalNumber(status);
-        if (U_FAILURE(status)) {
-            return {};
-        }
-        if (asDecimal != nullptr) {
-            return FormattedValue(formatNumberWithDefaults(locale, asDecimal, status), input);
-        }
-    }
-
-    switch (input.getType()) {
-    case Formattable::Type::kDate: {
-        UnicodeString result;
-        formatDateWithDefaults(locale, input.getDate(), result, status);
-        return FormattedValue(std::move(result), input);
-    }
-    case Formattable::Type::kDouble: {
-        return FormattedValue(formatNumberWithDefaults(locale, input.getDouble(), status), input);
-    }
-    case Formattable::Type::kLong: {
-        return FormattedValue(formatNumberWithDefaults(locale, input.getLong(), status), input);
-    }
-    case Formattable::Type::kInt64: {
-        return FormattedValue(formatNumberWithDefaults(locale, input.getInt64(), status), input);
-    }
-    case Formattable::Type::kString: {
-        return FormattedValue(UnicodeString(input.getString()), input);
-    }
-    default: {
-        // No default formatters for other types; use fallback
-        return FormattedValue(UnicodeString(fallback), input);
-    }
-    }
-}
-
-// Called when string output is required; forces output to be produced
-// if none is present (including formatting number output as a string)
-UnicodeString ExpressionContext::formatToString(const Locale& locale, UErrorCode& status) {
-    if (contents.isEvaluated() && contents.isString()) {
-        return contents.getString();
-    }
-    if (contents.isFallback()) {
-        return contents.getString();
-    }
-    if (contents.isNullOperand()) {
-        // No operand and a function call hasn't cleared the state --
-        // use fallback
-        setFallback();
-        return fallback;
-    }
-    return formatToString(locale, getContents(), status);
-}
-
-// Called when string output is required; forces output to be produced
-// if none is present (including formatting number output as a string)
-UnicodeString ExpressionContext::formatToString(const Locale& locale, const FormattedValue& val, UErrorCode& status) {
-    if (U_FAILURE(status)) {
-        return {};
-    }
-
-    // Evaluated value: either just return the string, or format the number
-    // as a string and return it
-    if (val.isEvaluated()) {
-        if (val.isString() || val.isFallback()) {
-            return val.getString();
-        } else {
-            return val.getNumber().toString(status);
-        }
-    }
-    // Unevaluated value: first evaluate it fully, then format
-    return formatToString(locale, formatWithDefaults(locale, val.asFormattable(), fallback, status), status);
 }
 
 void ExpressionContext::clearFunctionName() {
@@ -227,21 +128,6 @@ UBool ExpressionContext::getFunctionOption(const UnicodeString& key, Formattable
     }
     return false;
 }
-
-    /*
-UBool ExpressionContext::getDoubleOption(const UnicodeString& key, double& value) const {
-    Formattable val;
-    UBool isNumeric = getNumericOption(key, val);
-    if (!isNumeric) {
-        return tryStringAsNumberOption(key, value);
-    }
-    UErrorCode localErrorCode = U_ZERO_ERROR;
-    value = val.getDouble(localErrorCode);
-    // The conversion must succeed, since the result is numeric
-    U_ASSERT(U_SUCCESS(localErrorCode));
-    return true;
-}
-    */
 
 // Functions
 // -------------
@@ -311,7 +197,7 @@ bool ExpressionContext::hasSelector() const {
     return context.isSelector(pendingFunctionName);
 }
 
-void ExpressionContext::evalPendingSelectorCall(const UVector& keys, UVector& keysOut, UErrorCode& status) {
+void ExpressionContext::evalPendingSelectorCall(FormattedValue&& val, const UVector& keys, UVector& keysOut, UErrorCode& status) {
     U_ASSERT(hasSelector());
     LocalPointer<Selector> selectorImpl(getSelector(status));
     CHECK_ERROR(status);
@@ -341,7 +227,7 @@ void ExpressionContext::evalPendingSelectorCall(const UVector& keys, UVector& ke
     int32_t prefsLen = 0;
 
     // Call the selector
-    selectorImpl->selectKey(*this, adoptedKeys.getAlias(), keysLen, adoptedPrefs.getAlias(), prefsLen, status);
+    selectorImpl->selectKey(*this, std::move(val), adoptedKeys.getAlias(), keysLen, adoptedPrefs.getAlias(), prefsLen, status);
 
     // Update errors
     if (savedStatus != status) {
@@ -374,7 +260,7 @@ void ExpressionContext::evalPendingSelectorCall(const UVector& keys, UVector& ke
 }
 
 // Calls the pending formatter
-FormattedValue ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErrorCode& status) {
+FormattedValue ExpressionContext::evalFormatterCall(const FunctionName& functionName, FormattedValue&& argument, UErrorCode& status) {
     if (U_FAILURE(status)) {
         return {};
     }
@@ -392,7 +278,7 @@ FormattedValue ExpressionContext::evalFormatterCall(const FunctionName& function
             return {};
         }
         UErrorCode savedStatus = status;
-        FormattedValue result = formatterImpl.format(*this, status);
+        FormattedValue result = formatterImpl.format(*this, std::move(argument), status);
         // Update errors
         if (savedStatus != status) {
             if (U_FAILURE(status)) {
@@ -426,42 +312,6 @@ FormattedValue ExpressionContext::evalFormatterCall(const FunctionName& function
     return FormattedValue(fallback);
 }
 
-// Default formatters
-// ------------------
-
-number::FormattedNumber formatNumberWithDefaults(const Locale& locale, double toFormat, UErrorCode& errorCode) {
-    return number::NumberFormatter::withLocale(locale).formatDouble(toFormat, errorCode);
-}
-
-number::FormattedNumber formatNumberWithDefaults(const Locale& locale, int32_t toFormat, UErrorCode& errorCode) {
-    return number::NumberFormatter::withLocale(locale).formatInt(toFormat, errorCode);
-}
-
-number::FormattedNumber formatNumberWithDefaults(const Locale& locale, int64_t toFormat, UErrorCode& errorCode) {
-    return number::NumberFormatter::withLocale(locale).formatInt(toFormat, errorCode);
-}
-
-number::FormattedNumber formatNumberWithDefaults(const Locale& locale, StringPiece toFormat, UErrorCode& errorCode) {
-    return number::NumberFormatter::withLocale(locale).formatDecimal(toFormat, errorCode);
-}
-
-DateFormat* defaultDateTimeInstance(const Locale& locale, UErrorCode& errorCode) {
-    NULL_ON_ERROR(errorCode);
-    LocalPointer<DateFormat> df(DateFormat::createDateTimeInstance(DateFormat::SHORT, DateFormat::SHORT, locale));
-    if (!df.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-    return df.orphan();
-}
-
-void formatDateWithDefaults(const Locale& locale, UDate date, UnicodeString& result, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-
-    LocalPointer<DateFormat> df(defaultDateTimeInstance(locale, errorCode));
-    CHECK_ERROR(errorCode);
-    df->format(date, result, 0, errorCode);
-}
 
 // Errors
 // -------
