@@ -210,16 +210,17 @@ Formatter* PersonNameFormatterFactory::createFormatter(const Locale& locale, UEr
     return result;
 }
 
-message2::FormattedValue PersonNameFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
+message2::FormattedValue PersonNameFormatter::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
 
     message2::FormattedValue errorVal = message2::FormattedValue("not a person");
 
-    if (!context.canFormat() || context.getContents().asFormattable().getType() != Formattable::Type::kObject) {
+    if (!arg.canFormat() || arg.asFormattable().getType() != Formattable::Type::kObject) {
         return errorVal;
     }
+    const Formattable& toFormat = arg.asFormattable();
 
     FormattingContext::FunctionOptionsMap opt = context.getOptions();
     bool hasFormality = opt.count("formality") > 0 && opt["formality"].getType() == Formattable::Type::kString;
@@ -228,7 +229,7 @@ message2::FormattedValue PersonNameFormatter::format(FormattingContext& context,
     bool useFormal = hasFormality && opt["formality"].getString() == "formal";
     UnicodeString length = hasLength ? opt["length"].getString() : "short";
 
-    const FormattableObject* fp = context.getContents().asFormattable().getObject();
+    const FormattableObject* fp = toFormat.getObject();
     if (fp == nullptr || fp->tag() != "person") {
         return errorVal;
     }
@@ -264,7 +265,7 @@ message2::FormattedValue PersonNameFormatter::format(FormattingContext& context,
         result += firstName;
     }
 
-    return FormattedValue(std::move(result), context.getContents().asFormattable());
+    return FormattedValue(std::move(result), toFormat);
 }
 
 FormattableProperties::~FormattableProperties() {}
@@ -313,19 +314,19 @@ Formatter* GrammarCasesFormatterFactory::createFormatter(const Locale& locale, U
     result += postfix;
 }
 
-message2::FormattedValue GrammarCasesFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
+message2::FormattedValue GrammarCasesFormatter::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
 
     // Argument must be present
-    if (!context.canFormat()) {
+    if (!arg.canFormat()) {
         context.setFormattingError("grammarBB", errorCode);
         return message2::FormattedValue("grammarBB");
     }
 
     // Assumes the argument is not-yet-formatted
-    const Formattable& toFormat = context.getContents().asFormattable();
+    const Formattable& toFormat = arg.asFormattable();
     UnicodeString result;
 
     FormattingContext::FunctionOptionsMap opt = context.getOptions();
@@ -430,7 +431,7 @@ Formatter* ListFormatterFactory::createFormatter(const Locale& locale, UErrorCod
     return result;
 }
 
-message2::FormattedValue message2::ListFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
+message2::FormattedValue message2::ListFormatter::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -438,12 +439,12 @@ message2::FormattedValue message2::ListFormatter::format(FormattingContext& cont
     message2::FormattedValue errorVal = FormattedValue("listformat");
 
     // Argument must be present
-    if (!context.canFormat()) {
+    if (!arg.canFormat()) {
         context.setFormattingError("listformat", errorCode);
         return errorVal;
     }
     // Assumes arg is not-yet-formatted
-    const Formattable& toFormat = context.getContents().asFormattable();
+    const Formattable& toFormat = arg.asFormattable();
 
     FormattingContext::FunctionOptionsMap opt = context.getOptions();
     bool hasType = opt.count("type") > 0 && opt["type"].getType() == Formattable::Type::kString;
@@ -587,7 +588,7 @@ static Arguments localToGlobal(const FormattingContext& context, UErrorCode& sta
     return MessageArguments(context.getOptions(), status);
 }
 
-message2::FormattedValue ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) const {
+message2::FormattedValue ResourceManager::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -595,13 +596,13 @@ message2::FormattedValue ResourceManager::format(FormattingContext& context, UEr
     message2::FormattedValue errorVal = message2::FormattedValue("msgref");
 
     // Argument must be present
-    if (!context.canFormat()) {
+    if (!arg.canFormat()) {
         context.setFormattingError("msgref", errorCode);
         return errorVal;
     }
 
     // Assumes arg is not-yet-formatted
-    const Formattable& toFormat = context.getContents().asFormattable();
+    const Formattable& toFormat = arg.asFormattable();
     UnicodeString in;
     switch (toFormat.getType()) {
         case Formattable::Type::kString: {

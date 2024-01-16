@@ -128,7 +128,6 @@ void MessageFormatter::resolveOptions(const Environment& env, const OptionMap& o
     // Formatting error
     if (expr.isReserved()) {
         context.messageContext().getErrors().setReservedError(status);
-        U_ASSERT(context.isFallback());
         return FormattedValue(context.fallback);
     }
 
@@ -151,12 +150,11 @@ void MessageFormatter::resolveOptions(const Environment& env, const OptionMap& o
     }
 
     // Call the formatter function
-    context.setContents(std::move(randVal));
     // The fallback for a nullary function call is the function name
     if (rand.isNull()) {
         context.setFallbackTo(functionName);
     }
-    FormattedValue returnVal = context.evalFormatterCall(functionName, status);
+    FormattedValue returnVal = context.evalFormatterCall(functionName, std::move(randVal), status);
     // If the call was successful, nothing more to do
     if (U_SUCCESS(status)) {
         return returnVal;
@@ -185,7 +183,7 @@ void MessageFormatter::formatPattern(MessageContext& globalContext, const Enviro
 	      FormattedValue partVal = formatExpression(globalEnv, part.contents(), context, status);
 	      // Force full evaluation, e.g. applying default formatters to
 	      // unformatted input (or formatting numbers as strings)
-	      result += context.formatToString(locale, partVal, status);
+	      result += partVal.formatToString(locale, status);
         }
     }
 }
@@ -194,8 +192,8 @@ void MessageFormatter::formatPattern(MessageContext& globalContext, const Enviro
 // Selection
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-selectors
-// `res` is a vector of ExpressionContexts
-void MessageFormatter::resolveSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UVector& res) const {
+// `res` is a vector of ExpressionContexts; `vals` is a vector of FormattedValues
+void MessageFormatter::resolveSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UVector& res, UVector& vals) const {
     CHECK_ERROR(status);
     U_ASSERT(dataModel.hasSelectors());
 
@@ -206,7 +204,7 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
     for (int32_t i = 0; i < dataModel.numSelectors; i++) {
         ExpressionContext rv(context, UnicodeString(REPLACEMENT));
         // 2i. Let rv be the resolved value of exp.
-        formatSelectorExpression(env, selectors[i], rv, status);
+        FormattedValue val = formatSelectorExpression(env, selectors[i], rv, status);
         if (rv.hasSelector()) {
             // 2ii. If selection is supported for rv:
             // (True if this code has been reached)
@@ -225,15 +223,18 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
         // 2ii(a). Append rv as the last element of the list res.
         // (Also fulfills 2iii)
         ExpressionContext* ctx = create<ExpressionContext>(std::move(rv), status);
+        FormattedValue* v = create<FormattedValue>(std::move(val), status);
         CHECK_ERROR(status);
         res.adoptElement(ctx, status);
+        vals.adoptElement(v, status);
     }
 }
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-preferences
 // `keys` and `matches` are vectors of strings
 void MessageFormatter::matchSelectorKeys(const UVector& keys,
-					 ExpressionContext& rv,
+                                         ExpressionContext& context,
+					 FormattedValue&& rv,
 					 UVector& matches,
 					 UErrorCode& status) const {
     CHECK_ERROR(status);
@@ -242,14 +243,15 @@ void MessageFormatter::matchSelectorKeys(const UVector& keys,
         // Return an empty list of matches
         return;
     }
-    U_ASSERT(rv.hasSelector());
+    U_ASSERT(context.hasSelector());
 
-    rv.evalPendingSelectorCall(keys, matches, status);
+    context.evalPendingSelectorCall(std::move(rv), keys, matches, status);
 }
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-preferences
-// `res` is a vector of ExpressionContexts; `pref` is a vector of vectors of strings
-void MessageFormatter::resolvePreferences(UVector& res, UVector& pref, UErrorCode &status) const {
+// `res` is a vector of ExpressionContexts; `vals` is a vector of FormattedValues;
+// `pref` is a vector of vectors of strings
+void MessageFormatter::resolvePreferences(UVector& res, UVector&& vals, UVector& pref, UErrorCode &status) const {
     CHECK_ERROR(status);
 
     // 1. Let pref be a new empty list of lists of strings.
@@ -289,9 +291,10 @@ void MessageFormatter::resolvePreferences(UVector& res, UVector& pref, UErrorCod
         // 2iii. Let `rv` be the resolved value at index `i` of `res`.
         U_ASSERT(i < res.size());
         ExpressionContext& rv = *(static_cast<ExpressionContext*>(res[i]));
+        FormattedValue val = std::move(*(static_cast<FormattedValue*>(vals[i])));
         // 2iv. Let matches be the result of calling the method MatchSelectorKeys(rv, keys)
         LocalPointer<UVector> matches(createUVector(status));
-        matchSelectorKeys(*keys, rv, *matches, status);
+        matchSelectorKeys(*keys, rv, std::move(val), *matches, status);
         // 2v. Append `matches` as the last element of the list `pref`
         pref.adoptElement(matches.orphan(), status);
     }
@@ -435,49 +438,53 @@ void MessageFormatter::sortVariants(const UVector& pref, UVector& vars, UErrorCo
 
 
 // Evaluate the operand
-void MessageFormatter::resolveVariables(const Environment& env, const Operand& rand, ExpressionContext& context, UErrorCode &status) const {
-    CHECK_ERROR(status);
+FormattedValue MessageFormatter::resolveVariables(const Environment& env, const Operand& rand, ExpressionContext& context, UErrorCode &status) const {
+    if (U_FAILURE(status)) {
+        return FormattedValue(context.getFallback());
+    }
 
     if (rand.isNull()) {
-        // Nothing to do
-        return;
-    } else if (rand.isLiteral()) {
+        return FormattedValue();
+    }
+
+    if (rand.isLiteral()) {
         // If there's already a function name set, this shouldn't have been evaluated
         U_ASSERT(!context.hasFunctionName());
-        context.setContents(formatLiteral(rand.asLiteral(), context).asFormattable());
+        return formatLiteral(rand.asLiteral(), context).asFormattable();
+    }
+
+    // Must be variable
+    const VariableName& var = rand.asVariable();
+    // Resolve the variable
+    if (env.has(var)) {
+        const Closure& referent = env.lookup(var);
+        // Resolve the referent
+        return resolveVariables(referent.getEnv(), referent.getExpr(), context, status);
+    }
+    // Either this is a global var or an unbound var --
+    // either way, it can't be bound to a function call.
+    context.setFallbackTo(var);
+    // Check globals
+    if (context.messageContext().hasGlobal(var)) {
+        return evalArgument(var, context).asFormattable();
     } else {
-        // Must be variable
-        const VariableName& var = rand.asVariable();
-        // Resolve the variable
-        if (env.has(var)) {
-            const Closure& referent = env.lookup(var);
-            // Resolve the referent
-            resolveVariables(referent.getEnv(), referent.getExpr(), context, status);
-            return;
-        }
-        // Either this is a global var or an unbound var --
-        // either way, it can't be bound to a function call.
-        context.setFallbackTo(var);
-        // Check globals
-        if (context.messageContext().hasGlobal(var)) {
-            context.setContents(evalArgument(var, context).asFormattable());
-        } else {
-            // Unresolved variable -- could be a previous warning. Nothing to resolve
-            U_ASSERT(context.messageContext().getErrors().hasUnresolvedVariableError());
-        }
+        // Unresolved variable -- could be a previous warning. Nothing to resolve
+        U_ASSERT(context.messageContext().getErrors().hasUnresolvedVariableError());
+        return FormattedValue(context.getFallback());
     }
 }
 
 // Evaluate the expression except for not performing the top-level function call
 // (which is expected to be a selector, but may not be, in error cases)
-void MessageFormatter::resolveVariables(const Environment& env, const Expression& expr, ExpressionContext& context, UErrorCode &status) const {
-    CHECK_ERROR(status);
+FormattedValue MessageFormatter::resolveVariables(const Environment& env, const Expression& expr, ExpressionContext& context, UErrorCode &status) const {
+    if (U_FAILURE(status)) {
+        return FormattedValue(context.getFallback());
+    }
 
     // A `reserved` is an error
     if (expr.isReserved()) {
         context.messageContext().getErrors().setReservedError(status);
-        U_ASSERT(context.isFallback());
-        return;
+        return FormattedValue(context.getFallback());
     }
 
     // Function call -- resolve the operand and options
@@ -486,53 +493,59 @@ void MessageFormatter::resolveVariables(const Environment& env, const Expression
         context.setFunctionName(rator.getFunctionName());
         resolveOptions(env, rator.getOptionsInternal(), context, status);
         // Operand may be the null argument, but resolveVariables() handles that
-        context.setContents(formatOperand(env, expr.getOperand(), context, status));
+        return formatOperand(env, expr.getOperand(), context, status);
     } else {
-        resolveVariables(env, expr.getOperand(), context, status);
+        return resolveVariables(env, expr.getOperand(), context, status);
     }
 }
 
 // Leaves `context` either as a fallback with errors,
 // or in a state with a pending call to a selector that has been set
-void MessageFormatter::formatSelectorExpression(const Environment& globalEnv, const Expression& expr, ExpressionContext& context, UErrorCode &status) const {
-    CHECK_ERROR(status);
+FormattedValue MessageFormatter::formatSelectorExpression(const Environment& globalEnv, const Expression& expr, ExpressionContext& context, UErrorCode &status) const {
+    if (U_FAILURE(status)) {
+        return FormattedValue(context.getFallback());
+    }
 
     // Resolve expression to determine if it's a function call
-    resolveVariables(globalEnv, expr, context, status);
+    FormattedValue exprResult = resolveVariables(globalEnv, expr, context, status);
 
     DynamicErrors& err = context.messageContext().getErrors();
 
     // If there is a selector, then `resolveVariables()` recorded it in the context
     if (context.hasSelector()) {
         // Check if there was an error
-        if (context.isFallback()) {
+        if (exprResult.isFallback()) {
             // Use a null expression if it's a syntax or data model warning;
             // create a valid (non-fallback) formatted placeholder from the
             // fallback string otherwise
             if (err.hasSyntaxError() || err.hasDataModelError()) {
-                U_ASSERT(!context.canFormat());
+                return FormattedValue(); // Null operand
+            } else {
+                return exprResult.promote();
             }
+        }
+        return exprResult;
+    }
+
+    // No selector was found; determine the type of error to set
+    if (context.hasFunctionName()) {
+        const FunctionName& fn = context.getFunctionName();
+        // A selector used as a formatter is a selector error
+        if (context.hasFormatter()) {
+            err.setSelectorError(fn, status);
+        } else {
+            // Otherwise, the error is an unknown function error
+            err.setUnknownFunction(fn, status);
         }
     } else {
-        // Determine the type of error to set
-        if (context.hasFunctionName()) {
-            const FunctionName& fn = context.getFunctionName();
-            // A selector used as a formatter is a selector error
-            if (context.hasFormatter()) {
-                err.setSelectorError(fn, status);
-            } else {
-                // Otherwise, the error is an unknown function error
-                err.setUnknownFunction(fn, status);
-            }
-        } else {
-            // No function name -- this is a missing selector annotation error
-            U_ASSERT(err.hasMissingSelectorAnnotationError());
-        }
-        CHECK_ERROR(status);
+        // No function name -- this is a missing selector annotation error
+        U_ASSERT(err.hasMissingSelectorAnnotationError());
+    }
+    if (U_SUCCESS(status)) {
         context.clearFunctionName();
         context.clearFunctionOptions();
-        context.setFallback();
     }
+    return FormattedValue(context.getFallback());
 }
 
 void MessageFormatter::formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const {
@@ -543,14 +556,16 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
     // Resolve Selectors
     // res is a vector of ExpressionContexts
     LocalPointer<UVector> res(createUVector(status));
+    // vals is a vector of FormattedValues
+    LocalPointer<UVector> vals(createUVector(status));
     CHECK_ERROR(status);
-    resolveSelectors(context, env, status, *res);
+    resolveSelectors(context, env, status, *res, *vals);
 
     // Resolve Preferences
     // pref is a vector of vectors of strings
     LocalPointer<UVector> pref(createUVector(status));
     CHECK_ERROR(status);
-    resolvePreferences(*res, *pref, status);
+    resolvePreferences(*res, std::move(*vals), *pref, status);
 
     // Filter Variants
     // vars is a vector of PrioritizedVariants

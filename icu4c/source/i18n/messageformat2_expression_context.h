@@ -88,17 +88,19 @@ namespace message2 {
         // If there is a function name, clear it and
         // call the function, returning its result.
         // Precondition: hasFormatter()
-        [[nodiscard]] FormattedValue evalFormatterCall(const FunctionName&, UErrorCode&);
+        [[nodiscard]] FormattedValue evalFormatterCall(const FunctionName&, FormattedValue&&, UErrorCode&);
         // If there is a function name, clear it and
         // call the function, setting the contents appropriately
         // Precondition: hasSelector()
         // Calls the pending selector
         // `keys` and `keysOut` are both vectors of strings
-        void evalPendingSelectorCall(const UVector&, UVector&, UErrorCode&);
+        void evalPendingSelectorCall(FormattedValue&&, const UVector&, UVector&, UErrorCode&);
 
         const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const override;
         UBool getFunctionOption(const UnicodeString&, Formattable&) const override;
     public:
+
+        const UnicodeString& getFallback() const { return fallback; }
 
         ExpressionContext create() const;
 
@@ -106,15 +108,6 @@ namespace message2 {
         bool hasSelector() const;
         // Precondition: pending function name is set
         bool hasFormatter() const;
-
-        bool isFallback() const;
-
-        UBool canFormat() const override;
-        const FormattedValue& getContents() const override;
-
-        // Forces evaluation
-        UnicodeString formatToString(const Locale&, UErrorCode&) override;
-        UnicodeString formatToString(const Locale&, const FormattedValue&, UErrorCode&);
 
         // Note: this is provided separately from getOptions() so that internal
         // code, which can't call getOptions(), can query the number of options
