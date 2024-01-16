@@ -210,11 +210,15 @@ Formatter* PersonNameFormatterFactory::createFormatter(const Locale& locale, UEr
     return result;
 }
 
-void PersonNameFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
-    CHECK_ERROR(errorCode);
+message2::FormattedValue PersonNameFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
 
-    if (!context.hasInput() || context.getInput().getType() != Formattable::Type::kObject) {
-        return;
+    message2::FormattedValue errorVal = message2::FormattedValue("not a person");
+
+    if (!context.canFormat() || context.getContents().asFormattable().getType() != Formattable::Type::kObject) {
+        return errorVal;
     }
 
     FormattingContext::FunctionOptionsMap opt = context.getOptions();
@@ -224,9 +228,9 @@ void PersonNameFormatter::format(FormattingContext& context, UErrorCode& errorCo
     bool useFormal = hasFormality && opt["formality"].getString() == "formal";
     UnicodeString length = hasLength ? opt["length"].getString() : "short";
 
-    const FormattableObject* fp = context.getInput().getObject();
+    const FormattableObject* fp = context.getContents().asFormattable().getObject();
     if (fp == nullptr || fp->tag() != "person") {
-        return;
+        return errorVal;
     }
     const Person* p = static_cast<const Person*>(fp);
 
@@ -260,7 +264,7 @@ void PersonNameFormatter::format(FormattingContext& context, UErrorCode& errorCo
         result += firstName;
     }
 
-    context.setOutput(result);
+    return FormattedValue(std::move(result), context.getContents().asFormattable());
 }
 
 FormattableProperties::~FormattableProperties() {}
@@ -309,17 +313,19 @@ Formatter* GrammarCasesFormatterFactory::createFormatter(const Locale& locale, U
     result += postfix;
 }
 
-void GrammarCasesFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
-    CHECK_ERROR(errorCode);
+message2::FormattedValue GrammarCasesFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
 
     // Argument must be present
-    if (!context.hasInput()) {
+    if (!context.canFormat()) {
         context.setFormattingError("grammarBB", errorCode);
-        return;
+        return message2::FormattedValue("grammarBB");
     }
 
     // Assumes the argument is not-yet-formatted
-    const Formattable& toFormat = context.getInput();
+    const Formattable& toFormat = context.getContents().asFormattable();
     UnicodeString result;
 
     FormattingContext::FunctionOptionsMap opt = context.getOptions();
@@ -341,7 +347,7 @@ void GrammarCasesFormatter::format(FormattingContext& context, UErrorCode& error
         }
     }
 
-    context.setOutput(result);
+    return message2::FormattedValue(std::move(result), toFormat);
 }
 
 /* static */ FunctionRegistry GrammarCasesFormatter::customRegistry(UErrorCode& errorCode) {
@@ -424,16 +430,20 @@ Formatter* ListFormatterFactory::createFormatter(const Locale& locale, UErrorCod
     return result;
 }
 
-void message2::ListFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
-    CHECK_ERROR(errorCode);
+message2::FormattedValue message2::ListFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
+
+    message2::FormattedValue errorVal = FormattedValue("listformat");
 
     // Argument must be present
-    if (!context.hasInput()) {
+    if (!context.canFormat()) {
         context.setFormattingError("listformat", errorCode);
-        return;
+        return errorVal;
     }
     // Assumes arg is not-yet-formatted
-    const Formattable& toFormat = context.getInput();
+    const Formattable& toFormat = context.getContents().asFormattable();
 
     FormattingContext::FunctionOptionsMap opt = context.getOptions();
     bool hasType = opt.count("type") > 0 && opt["type"].getType() == Formattable::Type::kString;
@@ -455,7 +465,9 @@ void message2::ListFormatter::format(FormattingContext& context, UErrorCode& err
         }
     }
     LocalPointer<icu::ListFormatter> lf(icu::ListFormatter::createInstance(locale, type, width, errorCode));
-    CHECK_ERROR(errorCode);
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
 
     UnicodeString result;
 
@@ -465,12 +477,12 @@ void message2::ListFormatter::format(FormattingContext& context, UErrorCode& err
             const Formattable* objs = toFormat.getArray(n_items);
             if (objs == nullptr) {
                 context.setFormattingError("listformatter", errorCode);
-                return;
+                return errorVal;
             }
             LocalArray<UnicodeString> parts(new UnicodeString[n_items]);
             if (!parts.isValid()) {
                 errorCode = U_MEMORY_ALLOCATION_ERROR;
-                return;
+                return {};
             }
             for (int32_t i = 0; i < n_items; i++) {
                 parts[i] = objs[i].getString();
@@ -484,7 +496,7 @@ void message2::ListFormatter::format(FormattingContext& context, UErrorCode& err
         }
     }
 
-    context.setOutput(result);
+    return FormattedValue(std::move(result), toFormat);
 }
 
 void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
@@ -575,17 +587,21 @@ static Arguments localToGlobal(const FormattingContext& context, UErrorCode& sta
     return MessageArguments(context.getOptions(), status);
 }
 
-void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) const {
-    CHECK_ERROR(errorCode);
+message2::FormattedValue ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
+
+    message2::FormattedValue errorVal = message2::FormattedValue("msgref");
 
     // Argument must be present
-    if (!context.hasInput()) {
+    if (!context.canFormat()) {
         context.setFormattingError("msgref", errorCode);
-        return;
+        return errorVal;
     }
 
     // Assumes arg is not-yet-formatted
-    const Formattable& toFormat = context.getInput();
+    const Formattable& toFormat = context.getContents().asFormattable();
     UnicodeString in;
     switch (toFormat.getType()) {
         case Formattable::Type::kString: {
@@ -594,7 +610,7 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
         }
         default: {
             // Ignore non-strings
-            return;
+            return errorVal;
         }
     }
 
@@ -608,14 +624,16 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
         if (msg == nullptr) {
             // No message given for this key -- error out
             context.setFormattingError("msgref", errorCode);
-            return;
+            return errorVal;
         }
 	MessageFormatter::Builder mfBuilder;
         UParseError parseErr;
         // Any parse/data model errors will be propagated
 	MessageFormatter mf = mfBuilder.setPattern(*msg).build(parseErr, errorCode);
         Arguments arguments = localToGlobal(context, errorCode);
-        CHECK_ERROR(errorCode);
+        if (U_FAILURE(errorCode)) {
+            return errorVal;
+        }
 
         UErrorCode savedStatus = errorCode;
         UnicodeString result = mf.formatToString(arguments, errorCode);
@@ -625,12 +643,12 @@ void ResourceManager::format(FormattingContext& context, UErrorCode& errorCode) 
         if (U_FAILURE(errorCode)) {
             errorCode = savedStatus;
         }
-       context.setOutput(result);
+        return FormattedValue(std::move(result), toFormat);
     } else {
         // Properties must be provided
         context.setFormattingError("msgref", errorCode);
     }
-    return;
+    return errorVal;
 }
 
 

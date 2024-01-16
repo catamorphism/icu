@@ -251,19 +251,24 @@ Formatter* StandardFunctions::NumberFactory::createFormatter(const Locale& local
     return result;
 }
 
-static void notANumber(FormattingContext& context) {
-    context.setOutput(UnicodeString("NaN"));
+static FormattedValue notANumber(const Formattable& input) {
+    return FormattedValue(UnicodeString("NaN"), input);
 }
 
-static void stringAsNumber(Locale locale, const number::LocalizedNumberFormatter& nf, FormattingContext& context, UnicodeString s, int64_t offset, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
+static FormattedValue notANumber() {
+    return FormattedValue(UnicodeString("NaN"), Formattable(UnicodeString("NaN")));
+}
+
+static FormattedValue stringAsNumber(Locale locale, const number::LocalizedNumberFormatter& nf, const Formattable& input, int64_t offset, UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
 
     double numberValue;
     UErrorCode localErrorCode = U_ZERO_ERROR;
-    strToDouble(s, locale, numberValue, localErrorCode);
+    strToDouble(input.getString(), locale, numberValue, localErrorCode);
     if (U_FAILURE(localErrorCode)) {
-        notANumber(context);
-        return;
+        return notANumber(input);
     }
     UErrorCode savedStatus = errorCode;
     number::FormattedNumber result = nf.formatDouble(numberValue - offset, errorCode);
@@ -271,15 +276,17 @@ static void stringAsNumber(Locale locale, const number::LocalizedNumberFormatter
     if (errorCode == U_USING_DEFAULT_WARNING) {
         errorCode = savedStatus;
     }
-    context.setOutput(std::move(result));
+    return FormattedValue(std::move(result), input);
 }
 
-void StandardFunctions::Number::format(FormattingContext& context, UErrorCode& errorCode) const {
-    CHECK_ERROR(errorCode);
+FormattedValue StandardFunctions::Number::format(FormattingContext& context, UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
 
     // No argument => return "NaN"
-    if (!context.hasInput()) {
-        return notANumber(context);
+    if (!context.canFormat()) {
+        return notANumber();
     }
 
     int64_t offset;
@@ -295,17 +302,9 @@ void StandardFunctions::Number::format(FormattingContext& context, UErrorCode& e
         realFormatter = formatterForOptions(locale, context, errorCode);
     }
 
-    if (context.hasStringOutput()) {
-        stringAsNumber(locale, realFormatter, context, context.getStringOutput(), offset, errorCode);
-        return;
-    } else if (context.hasNumberOutput()) {
-        // Nothing to do
-        return;
-    }
-
     number::FormattedNumber numberResult;
-    // Already checked that input is present
-    const Formattable& toFormat = context.getInput();
+    // Already checked that contents can be formatted
+    const Formattable& toFormat = context.getContents().asFormattable();
     switch (toFormat.getType()) {
     case Formattable::Type::kDouble: {
         numberResult = realFormatter.formatDouble(toFormat.getDouble() - offset, errorCode);
@@ -321,17 +320,15 @@ void StandardFunctions::Number::format(FormattingContext& context, UErrorCode& e
     }
     case Formattable::Type::kString: {
         // Try to parse the string as a number
-        stringAsNumber(locale, realFormatter, context, toFormat.getString(), offset, errorCode);
-        return;
+        return stringAsNumber(locale, realFormatter, toFormat, offset, errorCode);
     }
     default: {
         // Other types can't be parsed as a number
-        notANumber(context);
-        return;
+        return notANumber(toFormat);
     }
     }
 
-    context.setOutput(std::move(numberResult));
+    return FormattedValue(std::move(numberResult), toFormat);;
 }
 
 StandardFunctions::Number::~Number() {}
@@ -400,7 +397,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context,
     CHECK_ERROR(errorCode);
 
     // No argument => return "NaN"
-    if (!context.hasInput()) {
+    if (!context.canFormat()) {
         context.setSelectorError(UnicodeString("plural"), errorCode);
         return;
     }
@@ -415,15 +412,16 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context,
     double valToCheck;
     bool noMatch = true;
 
-    bool isFormattedNumber = context.hasNumberOutput();
-    bool isFormattedString = context.hasStringOutput();
+    const FormattedValue& toFormat = context.getContents();
+    bool isFormattedString = toFormat.isEvaluated() && toFormat.isString();
+    bool isFormattedNumber = toFormat.isEvaluated() && toFormat.isNumber();
 
     if (isFormattedString) {
         // Formatted string: try parsing it as a number
-        tryAsString(locale, context.getStringOutput(), valToCheck, noMatch);
+        tryAsString(locale, toFormat.getString(), valToCheck, noMatch);
     } else {
-        // Already checked that input is present
-        tryWithFormattable(locale, context.getInput(), valToCheck, noMatch);
+        // Already checked that contents can be formatted
+        tryWithFormattable(locale, context.getContents().asFormattable(), valToCheck, noMatch);
     }
 
     if (noMatch) {
@@ -457,7 +455,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context,
     // If there was no exact match, check for a match based on the plural category
     UnicodeString match;
     if (isFormattedNumber) {
-        match = rules->select(context.getNumberOutput(), errorCode);
+        match = rules->select(toFormat.getNumber(), errorCode);
     } else {
         match = rules->select(valToCheck - offset);
     }
@@ -511,15 +509,15 @@ Formatter* StandardFunctions::DateTimeFactory::createFormatter(const Locale& loc
     return result;
 }
 
-void StandardFunctions::DateTime::format(FormattingContext& context, UErrorCode& errorCode) const {
-    CHECK_ERROR(errorCode);
+FormattedValue StandardFunctions::DateTime::format(FormattingContext& context, UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
 
-    // Argument must be present;
-    // also, if there is existing string output, that's
-    // like passing in a string, so we return
-    if (!context.hasInput() || context.hasStringOutput()) {
+    // Argument must be present
+    if (!context.canFormat()) {
         context.setFormattingError(UnicodeString("datetime"), errorCode);
-        return;
+        return FormattedValue(UnicodeString("datetime")); // TODO: use correct fallback
     }
 
     LocalPointer<DateFormat> df;
@@ -548,17 +546,20 @@ void StandardFunctions::DateTime::format(FormattingContext& context, UErrorCode&
                 df.adoptInstead(DateFormat::createDateTimeInstance(dateStyle, timeStyle, locale));
                 if (!df.isValid()) {
                     errorCode = U_MEMORY_ALLOCATION_ERROR;
-                    return;
+                    return {};
                 }
             }
         }
     }
 
-    CHECK_ERROR(errorCode);
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
 
     UnicodeString result;
-    df->format(context.getInput().asICUFormattable(), result, 0, errorCode);
-    context.setOutput(result);
+    const Formattable& source = context.getContents().asFormattable();
+    df->format(source.asICUFormattable(), result, 0, errorCode);
+    return FormattedValue(std::move(result), source);
 }
 
 StandardFunctions::DateTimeFactory::~DateTimeFactory() {}
@@ -586,20 +587,18 @@ void StandardFunctions::TextSelector::selectKey(FormattingContext& context,
     // Just compares the key and value as strings
 
     // Argument must be present
-    if (!context.hasInput()) {
+    if (!context.canFormat()) {
         context.setSelectorError(UnicodeString("select"), errorCode);
         return;
     }
 
     prefsLen = 0;
+
     // Convert to string
-    context.formatToString(locale, errorCode);
-    CHECK_ERROR(errorCode);
-    if (!context.hasStringOutput()) {
+    const UnicodeString& formattedValue = context.formatToString(locale, errorCode); //  output.getString();
+    if (U_FAILURE(errorCode)) {
         return;
     }
-
-    const UnicodeString& formattedValue = context.getStringOutput();
 
     for (int32_t i = 0; i < keysLen; i++) {
         if (keys[i] == formattedValue) {
@@ -625,17 +624,19 @@ Formatter* StandardFunctions::IdentityFactory::createFormatter(const Locale& loc
 
 }
 
-void StandardFunctions::Identity::format(FormattingContext& context, UErrorCode& errorCode) const {
-    CHECK_ERROR(errorCode);
-
-    // Argument must be present
-    if (!context.hasInput()) {
-        context.setFormattingError(UnicodeString("text"), errorCode);
-        return;
+FormattedValue StandardFunctions::Identity::format(FormattingContext& context, UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode)) {
+        return {};
     }
 
-    // Just returns the input value as a string
-    context.formatToString(locale, errorCode);
+    // Argument must be present
+    if (!context.canFormat()) {
+        context.setFormattingError(UnicodeString("text"), errorCode);
+        return FormattedValue(UnicodeString("text")); // TODO: use correct fallback
+    }
+
+    // Just returns the contents as a string
+    return FormattedValue(context.formatToString(locale, errorCode), context.getContents().asFormattable());
 }
 
 StandardFunctions::IdentityFactory::~IdentityFactory() {}

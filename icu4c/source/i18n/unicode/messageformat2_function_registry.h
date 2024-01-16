@@ -273,10 +273,12 @@ namespace message2 {
          *        to signal errors. The custom formatter may pass `status` to other ICU functions
          *        that can signal errors using this mechanism.
          *
+         * @return The formatted value.
+         *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual void format(FormattingContext& context, UErrorCode& status) const = 0;
+        virtual FormattedValue format(FormattingContext& context, UErrorCode& status) const = 0;
         virtual ~Formatter();
     }; // class Formatter
 

@@ -458,16 +458,20 @@ Formatter* TemperatureFormatterFactory::createFormatter(const Locale& locale, UE
     return result.orphan();
 }
 
-void TemperatureFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
-    CHECK_ERROR(errorCode);
+message2::FormattedValue TemperatureFormatter::format(FormattingContext& context, UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
+
+    message2::FormattedValue errorVal("temp");
 
     // Argument must be present
-    if (!context.hasInput()) {
+    if (!context.canFormat()) {
         context.setFormattingError("temp", errorCode);
-        return;
+        return errorVal;
     }
     // Assume arg is not-yet-formatted
-    const Formattable& toFormat = context.getInput();
+    const Formattable& toFormat = context.getContents().asFormattable();
 
     counter.formatCount++;
 
@@ -475,7 +479,7 @@ void TemperatureFormatter::format(FormattingContext& context, UErrorCode& errorC
     bool unitExists = opt.count("unit") >= 0 && opt["unit"].getType() == Formattable::Type::kString;
     if (!unitExists) {
         context.setFormattingError("temp", errorCode);
-        return;
+        return errorVal;
     }
     UnicodeString unit = opt["unit"].getString();
     bool skeletonExists = opt.count("skeleton") >= 0 && opt["skeleton"].getType() == Formattable::Type::kString;
@@ -499,7 +503,7 @@ void TemperatureFormatter::format(FormattingContext& context, UErrorCode& errorC
         realNfCached = new number::LocalizedNumberFormatter(realNf);
         if (realNfCached == nullptr) {
             errorCode = U_MEMORY_ALLOCATION_ERROR;
-            return;
+            return errorVal;
         }
         cachedFormatters->put(unit, realNfCached, errorCode);
     } else {
@@ -524,11 +528,10 @@ void TemperatureFormatter::format(FormattingContext& context, UErrorCode& errorC
             break;
         }
         default: {
-            context.setOutput(UnicodeString());
-            return;
+            return message2::FormattedValue(UnicodeString(), toFormat);
         }
     }
-    context.setOutput(std::move(result));
+    return message2::FormattedValue(std::move(result), toFormat);
 }
 
 TemperatureFormatter::~TemperatureFormatter() { delete cachedFormatters; }

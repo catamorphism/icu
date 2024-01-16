@@ -221,6 +221,49 @@ namespace message2 {
     Formattable::~Formattable() {}
 
     FormattableObject::~FormattableObject() {}
+
+    FormattedValue::FormattedValue(UnicodeString&& s, const Formattable& input) {
+        type = kStringValue;
+        stringOutput = std::move(s);
+        source = input;
+    }
+
+    FormattedValue::FormattedValue(number::FormattedNumber&& n, const Formattable& input) {
+        type = kNumberValue;
+        numberOutput = std::move(n);
+        source = input;
+    }
+
+    FormattedValue::FormattedValue(FormattedValue&& other) {
+        type = other.type;
+        if (type == Type::kStringValue || type == Type::kFallbackValue) {
+            stringOutput = std::move(other.stringOutput);
+        } else if (isNumber()) {
+            numberOutput = std::move(other.numberOutput);
+        }
+        source = other.source;
+    }
+
+    FormattedValue& FormattedValue::operator=(FormattedValue&& other) noexcept {
+        type = other.type;
+        if (type == kStringValue || type == kFallbackValue) {
+            stringOutput = std::move(other.stringOutput);
+        } else if (type == kNumberValue) {
+            numberOutput = std::move(other.numberOutput);
+        }
+        source = other.source;
+
+        return *this;
+    }
+
+    Formattable FormattedValue::asFormattable() const {
+        if (type == kStringValue || type == kFallbackValue) {
+            return Formattable(stringOutput);
+        } else {
+            return source;
+        }
+    }
+
 } // namespace message2
 
 U_NAMESPACE_END
