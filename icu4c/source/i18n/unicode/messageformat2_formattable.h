@@ -13,6 +13,8 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/fmtable.h"
+#include "unicode/formattedvalue.h"
+#include "unicode/numberformatter.h"
 #include "unicode/unistr.h"
 #include "messageformat2_macros.h"
 #include "number_decimalquantity.h"
@@ -407,6 +409,63 @@ namespace message2 {
 
         Type type;
     }; // class Formattable
+
+    /*
+      Really more like a possibly-evaluated thunk than a "formatted value",
+      since it may not be formatted yet
+     */
+    class U_I18N_API FormattedValue : public UObject {
+    public:
+        explicit FormattedValue(const UnicodeString& s) : stringOutput(s), type(kFallbackValue) {} // Fallback constructor
+        FormattedValue(UnicodeString&&, const Formattable&);
+        FormattedValue(number::FormattedNumber&&, const Formattable&);
+        FormattedValue() : source(Formattable()), type(kNullValue) {}
+        FormattedValue(const Formattable& input) : source(input), type(kUnevaluatedValue) {}
+        message2::Formattable asFormattable() const;
+        bool isString() const { return type == kStringValue; }
+        bool isFallback() const { return type == kFallbackValue; }
+        bool isNullOperand() const { return type == kNullValue; }
+        bool isNumber() const { return type == kNumberValue; }
+        bool isEvaluated() const { return (type == kStringValue || type == kNumberValue); }
+        const UnicodeString& getString() const {
+            switch (type) {
+            case kFallbackValue:
+            case kStringValue: {
+                return stringOutput;
+            }
+            case kUnevaluatedValue: {
+                if (source.getType() == Formattable::Type::kString) {
+                    return source.getString();
+                }
+                break;
+            }
+            default: {
+                break;
+            }
+            }
+            // Should be unreachable
+            U_ASSERT(false);
+        }
+        const number::FormattedNumber& getNumber() const {
+            U_ASSERT(type == kNumberValue);
+            return numberOutput;
+        }
+        FormattedValue(FormattedValue&&);
+        FormattedValue& operator=(FormattedValue&&) noexcept;
+    private:
+        enum Type {
+            kFallbackValue,    // Represents the result of formatting that encountered an error
+            kNullValue,        // Represents the absence of both an output and an input (not necessarily an error)
+            kUnevaluatedValue, // `source` should be valid, but there's no result yet
+            kStringValue,
+            kNumberValue
+        };
+        UnicodeString stringOutput;
+        number::FormattedNumber numberOutput;
+        Formattable source;
+        Type type;
+    }; // class FormattedValue
+
 } // namespace message2
 
 U_NAMESPACE_END

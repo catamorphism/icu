@@ -27,26 +27,6 @@ namespace message2 {
     // or expression.
     class ExpressionContext : public FormattingContext {
     private:
-
-        // The input state tracks whether the formatter has a Formattable
-        // or object input; represents an absent operand; or is in an error state.
-        enum InputState {
-            FALLBACK,
-            NO_OPERAND, // Used when the argument is absent, but there are no errors
-            INPUT
-        };
-
-        // The output state tracks whether (formatted) numeric or string output
-        // has been generated.
-        enum OutputState {
-            NONE,
-            NUMBER,
-            STRING
-        };
-
-        void clearInput();
-        void clearOutput();
-
         bool hasFunctionName() const;
         const FunctionName& getFunctionName();
         void clearFunctionName();
@@ -65,18 +45,10 @@ namespace message2 {
         void doSelectorCall(const UnicodeString[], int32_t, UnicodeString[], int32_t&, UErrorCode&);
         void returnFromFunction();
 
-        void enterState(InputState s);
-        void enterState(OutputState s);
-        void promoteFallbackToOutput();
-        void formatInputWithDefaults(const Locale&, UErrorCode&);
-
         friend class MessageArguments;
         friend class MessageFormatter;
 
         MessageContext& context;
-
-        InputState inState;
-        OutputState outState;
 
         // Function name that has been set but not yet invoked on an argument
         FunctionName pendingFunctionName;
@@ -85,12 +57,12 @@ namespace message2 {
         // Fallback string to use in case of errors
         UnicodeString fallback;
 
-        // Input arises from literals or a message argument
-        Formattable input;
-
-        // Output is returned by a formatting function
-        UnicodeString stringOutput;
-        number::FormattedNumber numberOutput;
+        /*
+          The item being formatted, which always has a `Formattable` source value
+          and may have a formatted result (if its type is not "fallback" or "unevaluated").
+          In this way, it represents both the input and the output of the current formatter.
+         */
+        FormattedValue contents;
 
         // Named options passed to functions
         // This is not a Hashtable in order to make it possible for code in a public header file
@@ -101,28 +73,24 @@ namespace message2 {
 
         MessageContext& messageContext() const { return context; }
 
-        // Resets input and output and uses existing fallback
+        // Resets contents and uses existing fallback
         void setFallback();
         // Sets fallback string
         void setFallbackTo(const FunctionName&);
         void setFallbackTo(const VariableName&);
         void setFallbackTo(const Literal&);
-        // Sets the fallback string as input and exits the error state
-        void promoteFallbackToInput();
 
         void setFunctionName(const FunctionName&);
 
         void setNoOperand();
-        void setInput(const Formattable&);
-        void setOutput(const UnicodeString&) override;
-        void setOutput(number::FormattedNumber&&) override;
+        void setContents(FormattedValue&&);
 
         // If there is a function name, clear it and
-        // call the function, setting the input and/or output appropriately
+        // call the function, returning its result.
         // Precondition: hasFormatter()
-        void evalFormatterCall(const FunctionName&, UErrorCode&);
+        [[nodiscard]] FormattedValue evalFormatterCall(const FunctionName&, UErrorCode&);
         // If there is a function name, clear it and
-        // call the function, setting the input and/or output appropriately
+        // call the function, setting the contents appropriately
         // Precondition: hasSelector()
         // Calls the pending selector
         // `keys` and `keysOut` are both vectors of strings
@@ -141,17 +109,12 @@ namespace message2 {
 
         bool isFallback() const;
 
-        UBool hasInput() const override;
-        const Formattable& getInput() const override;
+        UBool canFormat() const override;
+        const FormattedValue& getContents() const override;
 
-        UBool hasStringOutput() const override;
-        UBool hasNumberOutput() const override;
-        bool hasOutput() { return (hasStringOutput() || hasNumberOutput()); }
-        // Just gets existing output, doesn't force evaluation
-        const UnicodeString& getStringOutput() const override;
-        const number::FormattedNumber& getNumberOutput() const override;
         // Forces evaluation
-        void formatToString(const Locale&, UErrorCode&) override;
+        UnicodeString formatToString(const Locale&, UErrorCode&) override;
+        UnicodeString formatToString(const Locale&, const FormattedValue&, UErrorCode&);
 
         // Note: this is provided separately from getOptions() so that internal
         // code, which can't call getOptions(), can query the number of options
@@ -160,7 +123,7 @@ namespace message2 {
         void setSelectorError(const UnicodeString&, UErrorCode&) override;
         void setFormattingError(const UnicodeString&, UErrorCode&) override;
 
-        ExpressionContext(MessageContext&);
+        ExpressionContext(MessageContext&, const UnicodeString&);
         ExpressionContext(ExpressionContext&&);
         virtual ~ExpressionContext();
     };

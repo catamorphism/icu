@@ -54,7 +54,7 @@ namespace message2 {
       its borrowed FunctionRegistry and (if the setDataModel() method was called)
       MessageFormatDataModel pointers could become invalidated.
     */
-    MessageFormatter MessageFormatter::Builder::build(UParseError& parseError, UErrorCode& errorCode) const noexcept {
+    MessageFormatter MessageFormatter::Builder::build(UParseError& parseError, UErrorCode& errorCode) const {
         return MessageFormatter(*this, parseError, errorCode);
     }
 

@@ -30,21 +30,20 @@ using namespace data_model;
 // Constructors
 // ------------
 
-ExpressionContext::ExpressionContext(MessageContext& c) : context(c), inState(FALLBACK), outState(NONE) {}
+ExpressionContext::ExpressionContext(MessageContext& c, const UnicodeString& fallback)
+    : context(c), contents(FormattedValue(fallback)) {}
 
 ExpressionContext ExpressionContext::create() const {
-    return ExpressionContext(context);
+    return ExpressionContext(context, UnicodeString(REPLACEMENT));
 }
 
-ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.context), inState(other.inState), outState(other.outState) {
+ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.context) {
     hasPendingFunctionName = other.hasPendingFunctionName;
     if (hasPendingFunctionName) {
 	pendingFunctionName = std::move(other.pendingFunctionName);
     }
     fallback = std::move(other.fallback);
-    input = std::move(other.input);
-    stringOutput = std::move(other.stringOutput);
-    numberOutput = std::move(other.numberOutput);
+    contents = std::move(other.contents);
     functionOptions = std::move(other.functionOptions);
     functionOptionsLen = other.functionOptionsLen;
 }
@@ -52,28 +51,12 @@ ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.
 // State
 // ---------
 
-void ExpressionContext::enterState(InputState s) {
-    // If we're entering an error state, clear the output
-    if (s == InputState::FALLBACK) {
-        enterState(OutputState::NONE);
-    }
-    inState = s;
-}
-
-void ExpressionContext::enterState(OutputState s) {
-    // Input must exist if output exists
-    if (s > OutputState::NONE) {
-        U_ASSERT(hasInput());
-    }
-    outState = s;
-}
-
 bool ExpressionContext::isFallback() const {
-    return (inState == InputState::FALLBACK);
+    return contents.isFallback();
 }
 
 void ExpressionContext::setFallback() {
-    enterState(FALLBACK);
+    contents = FormattedValue(fallback);
 }
 
 // Fallback values are enclosed in curly braces;
@@ -99,89 +82,26 @@ void ExpressionContext::setFallbackTo(const Literal& l) {
     fallbackToString(l.quoted(), fallback);
 }
 
-// Add the fallback string as the input string, and
-// unset this as a fallback
-void ExpressionContext::promoteFallbackToInput() {
-    U_ASSERT(isFallback());
-    return setInput(fallback);
+void ExpressionContext::setContents(FormattedValue&& val) {
+    contents = std::move(val);
 }
 
-// Add the fallback string as the output string
-void ExpressionContext::promoteFallbackToOutput() {
-    U_ASSERT(isFallback());
-    return setOutput(fallback);
+UBool ExpressionContext::canFormat() const {
+    return (!(contents.isFallback() || contents.isNullOperand()));
 }
 
-// Used when handling function calls with no argument
-void ExpressionContext::setNoOperand() {
-    U_ASSERT(isFallback());
-    enterState(NO_OPERAND);
+const FormattedValue& ExpressionContext::getContents() const {
+    U_ASSERT(!(contents.isFallback() || contents.isNullOperand()));
+    return contents;
 }
 
-void ExpressionContext::setInput(const Formattable& s) {
-    U_ASSERT(inState != INPUT);
-    enterState(INPUT);
-    input = s;
-}
-
-UBool ExpressionContext::hasInput() const {
-    return (inState == InputState::INPUT);
-}
-
-const Formattable& ExpressionContext::getInput() const {
-    U_ASSERT(hasInput());
-    return input;
-}
-
-const number::FormattedNumber& ExpressionContext::getNumberOutput() const {
-    U_ASSERT(hasNumberOutput());
-    return numberOutput;
-}
-
-UBool ExpressionContext::hasStringOutput() const {
-    return (inState > FALLBACK && outState == OutputState::STRING);
-}
-
-UBool ExpressionContext::hasNumberOutput() const {
-    return (inState > FALLBACK && outState == OutputState::NUMBER);
-}
-
-const UnicodeString& ExpressionContext::getStringOutput() const {
-    U_ASSERT(hasStringOutput());
-    return stringOutput;
-}
-
-void ExpressionContext::setOutput(const UnicodeString& s) {
-    if (inState == InputState::NO_OPERAND) {
-        // If setOutput() is called while the
-        // operand is null, set the input to the
-        // output string
-        setInput(s);
-    }
-    U_ASSERT(hasInput());
-    enterState(OutputState::STRING);
-    stringOutput = s;
-}
-
-void ExpressionContext::setOutput(number::FormattedNumber&& num) {
-    U_ASSERT(hasInput());
-    enterState(OutputState::NUMBER);
-    numberOutput = std::move(num);
-}
-
-void ExpressionContext::clearOutput() {
-    stringOutput.remove();
-    enterState(OutputState::NONE);
-}
-
-// Called when output is required and no output is present;
-// formats the input to a string with defaults, for inputs that can be
+// Called when output is required and the contents are an unevaluated `Formattable`;
+// formats the source `Formattable` to a string with defaults, if it can be
 // formatted with a default formatter
-void ExpressionContext::formatInputWithDefaults(const Locale& locale, UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    U_ASSERT(hasInput());
-    U_ASSERT(!hasOutput());
+static FormattedValue formatWithDefaults(const Locale& locale, const Formattable& input, const UnicodeString& fallback, UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
 
     // Try as decimal number first
     if (input.isNumeric()) {
@@ -190,81 +110,75 @@ void ExpressionContext::formatInputWithDefaults(const Locale& locale, UErrorCode
         // to a temporary object
         icu::Formattable icuFormattable = input.asICUFormattable();
         StringPiece asDecimal = icuFormattable.getDecimalNumber(status);
-        CHECK_ERROR(status);
+        if (U_FAILURE(status)) {
+            return {};
+        }
         if (asDecimal != nullptr) {
-            setOutput(formatNumberWithDefaults(locale, asDecimal, status));
-            return;
+            return FormattedValue(formatNumberWithDefaults(locale, asDecimal, status), input);
         }
     }
 
     switch (input.getType()) {
     case Formattable::Type::kDate: {
-        formatDateWithDefaults(locale, input.getDate(), stringOutput, status);
-        enterState(OutputState::STRING);
-        break;
+        UnicodeString result;
+        formatDateWithDefaults(locale, input.getDate(), result, status);
+        return FormattedValue(std::move(result), input);
     }
     case Formattable::Type::kDouble: {
-        setOutput(formatNumberWithDefaults(locale, input.getDouble(), status));
-        break;
+        return FormattedValue(formatNumberWithDefaults(locale, input.getDouble(), status), input);
     }
     case Formattable::Type::kLong: {
-        setOutput(formatNumberWithDefaults(locale, input.getLong(), status));
-        break;
+        return FormattedValue(formatNumberWithDefaults(locale, input.getLong(), status), input);
     }
     case Formattable::Type::kInt64: {
-        setOutput(formatNumberWithDefaults(locale, input.getInt64(), status));
-        break;
+        return FormattedValue(formatNumberWithDefaults(locale, input.getInt64(), status), input);
     }
     case Formattable::Type::kString: {
-        setOutput(input.getString());
-        break;
+        return FormattedValue(UnicodeString(input.getString()), input);
     }
     default: {
         // No default formatters for other types; use fallback
-        promoteFallbackToOutput();
+        return FormattedValue(UnicodeString(fallback), input);
     }
     }
 }
 
 // Called when string output is required; forces output to be produced
 // if none is present (including formatting number output as a string)
-void ExpressionContext::formatToString(const Locale& locale, UErrorCode& status) {
-    CHECK_ERROR(status);
+UnicodeString ExpressionContext::formatToString(const Locale& locale, UErrorCode& status) {
+    if (contents.isEvaluated() && contents.isString()) {
+        return contents.getString();
+    }
+    if (contents.isFallback()) {
+        return contents.getString();
+    }
+    if (contents.isNullOperand()) {
+        // No operand and a function call hasn't cleared the state --
+        // use fallback
+        setFallback();
+        return fallback;
+    }
+    return formatToString(locale, getContents(), status);
+}
 
-    switch (outState) {
-        case OutputState::STRING: {
-            return; // Nothing to do
-        }
-        case OutputState::NUMBER: {
-            setOutput(numberOutput.toString(status));
-            return;
-        }
-        default: {
-            break;
+// Called when string output is required; forces output to be produced
+// if none is present (including formatting number output as a string)
+UnicodeString ExpressionContext::formatToString(const Locale& locale, const FormattedValue& val, UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+
+    // Evaluated value: either just return the string, or format the number
+    // as a string and return it
+    if (val.isEvaluated()) {
+        if (val.isString() || val.isFallback()) {
+            return val.getString();
+        } else {
+            return val.getNumber().toString(status);
         }
     }
-    switch (inState) {
-        case InputState::FALLBACK: {
-            setInput(fallback);
-            setOutput(fallback);
-            break;
-        }
-        case InputState::NO_OPERAND: {
-            // No operand and a function call hasn't cleared the state --
-            // use fallback
-            setFallback();
-            promoteFallbackToOutput();
-            break;
-        }
-        case InputState::INPUT: {
-            formatInputWithDefaults(locale, status);
-            // Force number to string, in case the result was a number
-            formatToString(locale, status);
-            break;
-        }
-    }
-    CHECK_ERROR(status);
-    U_ASSERT(hasStringOutput());
+    // Unevaluated value: first evaluate it fully, then format
+    return formatToString(locale, formatWithDefaults(locale, val.asFormattable(), fallback, status), status);
 }
 
 void ExpressionContext::clearFunctionName() {
@@ -460,8 +374,10 @@ void ExpressionContext::evalPendingSelectorCall(const UVector& keys, UVector& ke
 }
 
 // Calls the pending formatter
-void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErrorCode& status) {
-    CHECK_ERROR(status);
+FormattedValue ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
 
     FunctionName savedFunctionName;
     bool hadFunctionName = hasFunctionName();
@@ -470,12 +386,13 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
       clearFunctionName();
     }
     setFunctionName(functionName);
-    CHECK_ERROR(status);
     if (hasFormatter()) {
         const Formatter& formatterImpl = getFormatter(status);
-        CHECK_ERROR(status);
+        if (U_FAILURE(status)) {
+            return {};
+        }
         UErrorCode savedStatus = status;
-        formatterImpl.format(*this, status);
+        FormattedValue result = formatterImpl.format(*this, status);
         // Update errors
         if (savedStatus != status) {
             if (U_FAILURE(status)) {
@@ -491,13 +408,13 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
         }
         // Ignore the output if any errors occurred
         if (context.getErrors().hasFormattingError()) {
-            clearOutput();
+            result = FormattedValue(fallback);
         }
         returnFromFunction();
         if (hadFunctionName) {
             setFunctionName(savedFunctionName);
         }
-        return;
+        return result;
     }
     // No formatter with this name -- set error
     if (context.isSelector(functionName)) {
@@ -506,6 +423,7 @@ void ExpressionContext::evalFormatterCall(const FunctionName& functionName, UErr
         context.getErrors().setUnknownFunction(functionName, status);
     }
     setFallback();
+    return FormattedValue(fallback);
 }
 
 // Default formatters

@@ -264,7 +264,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            MessageFormatter build(UParseError& parseError, UErrorCode& status) const noexcept;
+            MessageFormatter build(UParseError& parseError, UErrorCode& status) const;
             /**
              * Default constructor.
              * Returns a Builder with the default locale and with no
@@ -323,16 +323,16 @@ namespace message2 {
         void resolvePreferences(UVector&, UVector&, UErrorCode&) const;
 
         // Formatting methods
-        void formatLiteral(const data_model::Literal&, ExpressionContext&) const;
+        [[nodiscard]] FormattedValue formatLiteral(const data_model::Literal&, ExpressionContext&) const;
         void formatPattern(MessageContext&, const Environment&, const data_model::Pattern&, UErrorCode&, UnicodeString&) const;
         // Formats an expression that appears as a selector
         void formatSelectorExpression(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
         // Formats an expression that appears in a pattern or as the definition of a local variable
-        void formatExpression(const Environment&, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
+        [[nodiscard]] FormattedValue formatExpression(const Environment&, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
         void resolveOptions(const Environment& env, const OptionMap&, ExpressionContext&, UErrorCode&) const;
-        void formatOperand(const Environment&, const data_model::Operand&, ExpressionContext&, UErrorCode&) const;
-        void evalArgument(const data_model::VariableName&, ExpressionContext&) const;
-        void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const noexcept;
+        [[nodiscard]] FormattedValue formatOperand(const Environment&, const data_model::Operand&, ExpressionContext&, UErrorCode&) const;
+        [[nodiscard]] FormattedValue evalArgument(const data_model::VariableName&, ExpressionContext&) const;
+        void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const;
 
         // Function registry methods
         const Formatter* maybeCachedFormatter(MessageContext&, const data_model::FunctionName&, UErrorCode& errorCode) const;

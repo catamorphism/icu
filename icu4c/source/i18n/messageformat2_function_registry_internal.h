@@ -35,7 +35,7 @@ namespace message2 {
 
         class DateTime : public Formatter {
         public:
-            void format(FormattingContext& context, UErrorCode& status) const override;
+            FormattedValue format(FormattingContext& context, UErrorCode& status) const override;
             virtual ~DateTime();
 
         private:
@@ -53,7 +53,7 @@ namespace message2 {
 
         class Number : public Formatter {
         public:
-            void format(FormattingContext& context, UErrorCode& status) const override;
+            FormattedValue format(FormattingContext& context, UErrorCode& status) const override;
             virtual ~Number();
 
         private:
@@ -73,7 +73,7 @@ namespace message2 {
 
         class Identity : public Formatter {
         public:
-            void format(FormattingContext& context, UErrorCode& status) const override;
+            FormattedValue format(FormattingContext& context, UErrorCode& status) const override;
             virtual ~Identity();
 
         private:

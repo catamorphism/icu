@@ -67,33 +67,13 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
  * Since it is not final, documentation has not yet been added everywhere.
  *
  * The following class represents the input to a custom function; it encapsulates
- * the function's (unnamed) argument and its named options, as well as providing
- * methods for the function to record its output.
+ * the function's (unnamed) argument and its named options.
  *
  * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
 class U_I18N_API FormattingContext : public UObject {
     public:
-
-    /**
-     * Sets the function's output to a string value.
-     *
-     * @param output The value of the output.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual void setOutput(const UnicodeString& output) = 0;
-    /**
-     * Sets the function's output to a `number::FormattedNumber` value
-     *
-     * @param output The value of the output, which is passed by move.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual void setOutput(number::FormattedNumber&& output) = 0;
     /**
      * Indicates that an error occurred during selection, such as an
      * argument with a type that doesn't support selection. Errors are signaled
@@ -127,61 +107,17 @@ class U_I18N_API FormattingContext : public UObject {
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    virtual UBool hasInput() const = 0;
+    virtual UBool canFormat() const = 0;
     /**
      * Accesses the function's argument.
-     * It is an internal error to call this method if `!hasInput()`.
+     * It is an internal error to call this method if `!canFormat()`.
      *
      * @return A reference to the argument to this function.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    virtual const message2::Formattable& getInput() const = 0;
-    /**
-     * Checks if the argument being passed in already has a formatted
-     * result that is a string. This formatted result may be treated as the input
-     * to this formatter, or may be overwritten with the result of formatting the
-     * original input differently.
-     *
-     * @return True if and only if formatted string output is present.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual UBool hasStringOutput() const = 0;
-    /**
-     * Checks if the argument being passed in already has a formatted
-     * result that is a number. This formatted result may be treated as the input
-     * to this formatter, or may be overwritten with the result of formatting the
-     * original input differently.
-     *
-     * @return True if and only if formatted number output is present.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual UBool hasNumberOutput() const = 0;
-    /**
-     * Accesses the existing formatted output of this argument as a string.
-     * It is an internal error to call this method if `!hasStringOutput()`.
-     *
-     * @return A reference to the existing formatted string output.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual const UnicodeString& getStringOutput() const = 0;
-    /**
-     * Accesses the existing formatted output of this argument as a number.
-     * It is an internal error to call this method if `!hasNumberOutput()`.
-     *
-     * @return A reference to the existing formatted number output.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual const number::FormattedNumber& getNumberOutput() const = 0;
+    virtual const message2::FormattedValue& getContents() const = 0;
     using FunctionOptionsMap = std::map<UnicodeString, message2::Formattable>;
     /**
      * Returns a map of all name-value pairs provided as options to this function,
@@ -215,22 +151,20 @@ class U_I18N_API FormattingContext : public UObject {
      */
     virtual int32_t optionsCount() const = 0;
     /**
-     * Formats the current argument as a string, using defaults. If `hasNumberOutput()` is
-     * true, then the string output is set to the result of formatting the number output,
-     * and the number output is cleared. If the function's argument is either absent or is
-     * a fallback value, the output is the result of formatting the fallback value (which
-     * is the default fallback string if the argument is absent). If the function's argument
-     * is object-typed, then the argument is treated as a fallback value, since there is
-     * no default formatter for objects.
+     * Formats the current argument as a string, using defaults.  If the function's argument is
+     * either absent or is a fallback value, the return value is the result of formatting the
+     * fallback value (which is the default fallback string if the argument is absent).
+     * If the function's argument is object-typed, then the argument is treated as a
+     * fallback value, since there is no default formatter for objects.
      *
-     * @param locale The locale to use for formatting numbers or dates (does not affect
-     *        the formatting of a pre-formatted number, if a number output is already present)
+     * @param locale The locale to use for formatting numbers or dates
      * @param status Input/output error code
+     * @return The result of formatting the input.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    virtual void formatToString(const Locale& locale, UErrorCode& status) = 0;
+    virtual UnicodeString formatToString(const Locale& locale, UErrorCode& status) = 0;
 
     virtual ~FormattingContext();
 
@@ -238,7 +172,6 @@ class U_I18N_API FormattingContext : public UObject {
     friend class StandardFunctions;
 
     virtual const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const = 0;
-    //    virtual const ResolvedFunctionOption& getResolvedFunctionOption(const UnicodeString&) const = 0;
     virtual UBool getFunctionOption(const UnicodeString&, Formattable&) const = 0;
 };
 
