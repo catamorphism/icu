@@ -179,9 +179,15 @@ namespace message2 {
         }
     }
 
-    icu::Formattable Formattable::asICUFormattable() const {
+    icu::Formattable Formattable::asICUFormattable(UErrorCode& status) const {
+        if (U_FAILURE(status)) {
+            return {};
+        }
         // Type must not be kArray or kObject
-        U_ASSERT(type != kArray && type != kObject);
+        if (type == kArray || type == kObject) {
+            status = U_ILLEGAL_ARGUMENT_ERROR;
+            return {};
+        }
 
         if (isDecimal) {
             return icuFormattable;
@@ -306,7 +312,7 @@ namespace message2 {
             // Note: the ICU Formattable has to be created here since the StringPiece
             // refers to state inside the Formattable; so otherwise we'll have a reference
             // to a temporary object
-            icu::Formattable icuFormattable = toFormat.asICUFormattable();
+            icu::Formattable icuFormattable = toFormat.asICUFormattable(status);
             StringPiece asDecimal = icuFormattable.getDecimalNumber(status);
             if (U_FAILURE(status)) {
                 return {};
