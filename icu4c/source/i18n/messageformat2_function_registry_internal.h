@@ -25,7 +25,9 @@ namespace message2 {
     class StandardFunctions {
         friend class MessageFormatter;
 
-        static number::LocalizedNumberFormatter formatterForOptions(Locale locale, const FormattingContext& context, UErrorCode& status);
+        static number::LocalizedNumberFormatter formatterForOptions(Locale locale,
+                                                                    const FunctionOptions& opts,
+                                                                    UErrorCode& status);
 
         class DateTimeFactory : public FormatterFactory {
         public:
@@ -35,7 +37,7 @@ namespace message2 {
 
         class DateTime : public Formatter {
         public:
-            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, UErrorCode& status) const override;
+            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
             virtual ~DateTime();
 
         private:
@@ -53,7 +55,7 @@ namespace message2 {
 
         class Number : public Formatter {
         public:
-            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, UErrorCode& status) const override;
+            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
             virtual ~Number();
 
         private:
@@ -73,7 +75,7 @@ namespace message2 {
 
         class Identity : public Formatter {
         public:
-            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, UErrorCode& status) const override;
+            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
             virtual ~Identity();
 
         private:
@@ -99,6 +101,7 @@ namespace message2 {
         public:
             void selectKey(FormattingContext& context,
                            FormattedValue&& val,
+                           FunctionOptions&& options,
                            const UnicodeString* keys,
                            int32_t keysLen,
                            UnicodeString* prefs,
@@ -126,6 +129,7 @@ namespace message2 {
         public:
             void selectKey(FormattingContext& context,
                            FormattedValue&& val,
+                           FunctionOptions&& options,
                            const UnicodeString* keys,
                            int32_t keysLen,
                            UnicodeString* prefs,

@@ -221,15 +221,17 @@ FunctionRegistry::~FunctionRegistry() {}
 
 // --------- Number
 
-/* static */ number::LocalizedNumberFormatter StandardFunctions::formatterForOptions(Locale locale, const FormattingContext& context, UErrorCode& status) {
+/* static */ number::LocalizedNumberFormatter StandardFunctions::formatterForOptions(Locale locale,
+                                                                                     const FunctionOptions& opts,
+                                                                                     UErrorCode& status) {
     number::UnlocalizedNumberFormatter nf;
     if (U_SUCCESS(status)) {
         Formattable opt;
-        if (context.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == Formattable::Type::kString) {
+        if (opts.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == Formattable::Type::kString) {
             nf = number::NumberFormatter::forSkeleton(opt.getString(), status);
         } else {
             int64_t minFractionDigits = 0;
-            if (context.getFunctionOption(UnicodeString("minimumFractionDigits"), opt)) {
+            if (opts.getFunctionOption(UnicodeString("minimumFractionDigits"), opt)) {
                 if (!getInt64Value(locale, opt, minFractionDigits)) {
                     minFractionDigits = 0;
                 }
@@ -279,7 +281,10 @@ static FormattedValue stringAsNumber(Locale locale, const number::LocalizedNumbe
     return FormattedValue(std::move(result), input);
 }
 
-FormattedValue StandardFunctions::Number::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
+FormattedValue StandardFunctions::Number::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& opts, UErrorCode& errorCode) const {
+
+    (void) context; // Function doesn't record errors;
+
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -291,15 +296,15 @@ FormattedValue StandardFunctions::Number::format(FormattingContext& context, For
 
     int64_t offset;
     Formattable opt;
-    if (!(context.getFunctionOption(UnicodeString("offset"), opt) && getInt64Value(locale, opt, offset))) {
+    if (!(opts.getFunctionOption(UnicodeString("offset"), opt) && getInt64Value(locale, opt, offset))) {
         offset = 0;
     }
 
     number::LocalizedNumberFormatter realFormatter;
-    if (context.optionsCount() == 0) {
+    if (opts.optionsCount() == 0) {
         realFormatter = number::LocalizedNumberFormatter(icuFormatter);
     } else {
-        realFormatter = formatterForOptions(locale, context, errorCode);
+        realFormatter = formatterForOptions(locale, opts, errorCode);
     }
 
     number::FormattedNumber numberResult;
@@ -390,6 +395,7 @@ static void tryWithFormattable(const Locale& locale, const Formattable& value, d
 
 void StandardFunctions::Plural::selectKey(FormattingContext& context,
                                           FormattedValue&& toFormat,
+                                          FunctionOptions&& opts,
                                           const UnicodeString* keys,
                                           int32_t keysLen,
                                           UnicodeString* prefs,
@@ -405,7 +411,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context,
 
     int64_t offset;
     Formattable opt;
-    if (!(context.getFunctionOption(UnicodeString("offset"), opt) && getInt64Value(locale, opt, offset))) {
+    if (!(opts.getFunctionOption(UnicodeString("offset"), opt) && getInt64Value(locale, opt, offset))) {
         offset = 0;
     }
 
@@ -509,7 +515,10 @@ Formatter* StandardFunctions::DateTimeFactory::createFormatter(const Locale& loc
     return result;
 }
 
-FormattedValue StandardFunctions::DateTime::format(FormattingContext& context, FormattedValue&& toFormat, UErrorCode& errorCode) const {
+FormattedValue StandardFunctions::DateTime::format(FormattingContext& context,
+                                                   FormattedValue&& toFormat,
+                                                   FunctionOptions&& opts,
+                                                   UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -522,22 +531,22 @@ FormattedValue StandardFunctions::DateTime::format(FormattingContext& context, F
 
     LocalPointer<DateFormat> df;
     Formattable opt;
-    if (context.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == Formattable::Type::kString) {
+    if (opts.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == Formattable::Type::kString) {
         // Same as getInstanceForSkeleton(), see ICU 9029
         // Based on test/intltest/dtfmttst.cpp - TestPatterns()
         LocalPointer<DateTimePatternGenerator> generator(DateTimePatternGenerator::createInstance(locale, errorCode));
         UnicodeString pattern = generator->getBestPattern(opt.getString(), errorCode);
         df.adoptInstead(new SimpleDateFormat(pattern, locale, errorCode));
     } else {
-        if (context.getFunctionOption(UnicodeString("pattern"), opt) && opt.getType() == Formattable::Type::kString) {
+        if (opts.getFunctionOption(UnicodeString("pattern"), opt) && opt.getType() == Formattable::Type::kString) {
             df.adoptInstead(new SimpleDateFormat(opt.getString(), locale, errorCode));
         } else {
             DateFormat::EStyle dateStyle = DateFormat::NONE;
-            if (context.getFunctionOption(UnicodeString("datestyle"), opt) && opt.getType() == Formattable::Type::kString) {
+            if (opts.getFunctionOption(UnicodeString("datestyle"), opt) && opt.getType() == Formattable::Type::kString) {
                 dateStyle = stringToStyle(opt.getString(), errorCode);
             }
             DateFormat::EStyle timeStyle = DateFormat::NONE;
-            if (context.getFunctionOption(UnicodeString("timestyle"), opt) && opt.getType() == Formattable::Type::kString) {
+            if (opts.getFunctionOption(UnicodeString("timestyle"), opt) && opt.getType() == Formattable::Type::kString) {
                 timeStyle = stringToStyle(opt.getString(), errorCode);
             }
             if (dateStyle == DateFormat::NONE && timeStyle == DateFormat::NONE) {
@@ -578,11 +587,15 @@ Selector* StandardFunctions::TextFactory::createSelector(const Locale& locale, U
 
 void StandardFunctions::TextSelector::selectKey(FormattingContext& context,
                                                 FormattedValue&& toFormat,
+                                                FunctionOptions&& opts,
                                                 const UnicodeString* keys,
                                                 int32_t keysLen,
                                                 UnicodeString* prefs,
                                                 int32_t& prefsLen,
 						UErrorCode& errorCode) const {
+    // No options
+    (void) opts;
+
     CHECK_ERROR(errorCode);
 
     // Just compares the key and value as strings
@@ -625,7 +638,13 @@ Formatter* StandardFunctions::IdentityFactory::createFormatter(const Locale& loc
 
 }
 
-FormattedValue StandardFunctions::Identity::format(FormattingContext& context, FormattedValue&& toFormat, UErrorCode& errorCode) const {
+FormattedValue StandardFunctions::Identity::format(FormattingContext& context,
+                                                   FormattedValue&& toFormat,
+                                                   FunctionOptions&& opts,
+                                                   UErrorCode& errorCode) const {
+    // No options
+    (void) opts;
+
     if (U_FAILURE(errorCode)) {
         return {};
     }
