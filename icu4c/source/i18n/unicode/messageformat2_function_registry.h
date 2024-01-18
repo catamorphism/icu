@@ -15,10 +15,12 @@
 #include "unicode/datefmt.h"
 #include "unicode/format.h"
 #include "unicode/messageformat2_data_model.h"
-#include "unicode/messageformat2_formatting_context.h"
+#include "unicode/messageformat2_formattable.h"
 #include "unicode/numberformatter.h"
 #include "unicode/unistr.h"
 #include "unicode/upluralrules.h"
+
+#include <map>
 
 U_NAMESPACE_BEGIN
 
@@ -28,6 +30,84 @@ namespace message2 {
 
     class Formatter;
     class Selector;
+
+    // TODO: I think this should actually be private
+
+/**
+ *  A `ResolvedFunctionOption` represents the result of evaluating
+ * a single named function option. It pairs the given name with the `Formattable`
+ * value resulting from evaluating the option's value.
+ *
+ * `ResolvedFunctionOption` is immutable and is not copyable or movable.
+ *
+ * @internal ICU 75.0 technology preview
+ * @deprecated This API is for technology preview only.
+ */
+class U_I18N_API ResolvedFunctionOption : public UObject {
+  private:
+
+    // TODO
+    /* const */ UnicodeString name;
+    /* const */ Formattable value;
+
+  public:
+      const UnicodeString& getName() const { return name; }
+      const Formattable& getValue() const { return value; }
+      ResolvedFunctionOption(const UnicodeString& n, const Formattable& f) : name(n), value(f) {}
+      ResolvedFunctionOption() {}
+      ResolvedFunctionOption(ResolvedFunctionOption&&);
+      ResolvedFunctionOption& operator=(ResolvedFunctionOption&& other) noexcept {
+          name = std::move(other.name);
+          value = std::move(other.value);
+          return *this;
+    }
+    virtual ~ResolvedFunctionOption();
+}; // class ResolvedFunctionOption
+
+// TODO docs
+class U_I18N_API FunctionOptions : public UObject {
+ public:
+    using FunctionOptionsMap = std::map<UnicodeString, message2::Formattable>;
+    /**
+     * Returns a map of all name-value pairs provided as options to this function,
+     * except for any object-valued options (which must be accessed using
+     * `getObjectOption()`). The syntactic order of options is not guaranteed to
+     * be preserved.
+     *
+     * @return           A map from strings to `Formattable` values representing
+     *                   the results of resolving each option value.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    FunctionOptionsMap getOptions() const {
+        int32_t len;
+        const ResolvedFunctionOption* resolvedOptions = getResolvedFunctionOptions(len);
+        FunctionOptionsMap result;
+        for (int32_t i = 0; i < len; i++) {
+            const ResolvedFunctionOption& opt = resolvedOptions[i];
+            result[opt.getName()] = opt.getValue();
+        }
+        return result;
+    }
+    FunctionOptions() { options = nullptr; }
+ private:
+    friend class MessageFormatter;
+    friend class StandardFunctions;
+
+    explicit FunctionOptions(UVector&&, UErrorCode&);
+
+    const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const;
+    UBool getFunctionOption(const UnicodeString&, Formattable&) const;
+    int32_t optionsCount() const { return functionOptionsLen; }
+
+    // Named options passed to functions
+    // This is not a Hashtable in order to make it possible for code in a public header file
+    // to construct a std::map from it, on-the-fly. Otherwise, it would be impossible to put
+    // that code in the header because it would have to call internal Hashtable methods.
+    ResolvedFunctionOption* options;
+    int32_t functionOptionsLen = 0;
+};
 
     /**
      * Interface that factory classes for creating formatters must implement.
@@ -265,9 +345,6 @@ namespace message2 {
          * Formats the input passed in `context` by setting an output using one of the
          * `FormattingContext` methods or indicating an error.
          *
-         * @param context Formatting context; captures the unnamed function argument,
-         *        current output, named options, and output. See the `FormattingContext`
-         *        documentation for more details.
          * @param toFormat Formatted value; see `message2::FormattedValue` for details.
          *        Passed by move.
          * @param options The named function options. Passed by move
@@ -281,8 +358,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual FormattedValue format(FormattingContext& context,
-                                      FormattedValue&& toFormat,
+        virtual FormattedValue format(FormattedValue&& toFormat,
                                       FunctionOptions&& options,
                                       UErrorCode& status) const = 0;
         virtual ~Formatter();
@@ -300,8 +376,6 @@ namespace message2 {
          * Compares the input to an array of keys, and returns an array of matching
          * keys sorted by preference.
          *
-         * @param context Formatting context; provides error handling methods.
-         *        See the `FormattingContext` documentation for more details.
          * @param toFormat The unnamed function argument; passed by move.
          * @param options A reference to the named function options.
          * @param keys An array of strings that are compared to the input
@@ -320,8 +394,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual void selectKey(FormattingContext& context,
-                               FormattedValue&& toFormat,
+        virtual void selectKey(FormattedValue&& toFormat,
                                FunctionOptions&& options,
                                const UnicodeString* keys,
                                int32_t keysLen,

@@ -356,6 +356,9 @@ namespace message2 {
         bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
         bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
 
+        Selector* getSelector(const FunctionName&, UErrorCode&);
+        const Formatter& getFormatter(const FunctionName&, UErrorCode&);
+
         bool hasGlobal(const VariableName&) const;
         const Formattable& getGlobal(const VariableName&) const;
 

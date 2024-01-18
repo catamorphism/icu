@@ -24,36 +24,19 @@ namespace message2 {
     using namespace data_model;
 
     // The ExpressionContext contains everything needed to format a specific operand
-    // or expression.
-    class ExpressionContext : public FormattingContext {
+    // or expression (which is currently just the fallback string and a reference
+    // to the parent MessageContext, but could change in the future.)
+    class ExpressionContext {
     private:
-        Selector* getSelector(const FunctionName&, UErrorCode&) const;
-        const Formatter& getFormatter(const FunctionName&, UErrorCode&);
-
-        bool tryStringAsNumber(const Formattable&, double&) const;
-        UBool getInt64Value(const Formattable&, int64_t& result) const;
-        UBool getNumericOption(const UnicodeString&, Formattable&) const;
-
-        void doFormattingCall();
-        void doSelectorCall(const UnicodeString[], int32_t, UnicodeString[], int32_t&, UErrorCode&);
-        void returnFromFunction();
-
-        friend class MessageArguments;
         friend class MessageFormatter;
 
         MessageContext& context;
-
-        // Function name that has been set but not yet invoked on an argument
-        FunctionName pendingFunctionName;
-        bool hasPendingFunctionName = false;
 
         // Fallback string to use in case of errors
         UnicodeString fallback;
 
         MessageContext& messageContext() const { return context; }
 
-        // Resets contents and uses existing fallback
-        void setFallback();
         // Sets fallback string
         void setFallbackTo(const FunctionName&);
         void setFallbackTo(const VariableName&);
@@ -62,17 +45,7 @@ namespace message2 {
     public:
 
         const UnicodeString& getFallback() const { return fallback; }
-
         ExpressionContext create() const;
-
-        // Precondition: pending function name is set
-        bool hasSelector() const;
-        // Precondition: pending function name is set
-        bool hasFormatter() const;
-
-        void setSelectorError(const UnicodeString&, UErrorCode&) override;
-        void setFormattingError(const UnicodeString&, UErrorCode&) override;
-
         ExpressionContext(MessageContext&, const UnicodeString&);
         ExpressionContext(ExpressionContext&&);
         virtual ~ExpressionContext();
