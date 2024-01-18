@@ -12,6 +12,18 @@
 U_NAMESPACE_BEGIN
 
 namespace message2 {
+
+    // Fallback values are enclosed in curly braces;
+    // see https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#formatting-fallback-values
+
+    static UnicodeString fallbackToString(const UnicodeString& s) {
+        UnicodeString result;
+        result += LEFT_CURLY_BRACE;
+        result += s;
+        result += RIGHT_CURLY_BRACE;
+        return result;
+    }
+
     Formattable& Formattable::operator=(Formattable&& other) noexcept {
         type = other.type;
         isDecimal = other.isDecimal;
@@ -203,43 +215,41 @@ namespace message2 {
 
     FormattableObject::~FormattableObject() {}
 
-    FormattedValue::FormattedValue(UnicodeString&& s, const Formattable& input) {
-        type = kStringValue;
+    FormattedValue::FormattedValue(const UnicodeString& s) {
+        type = kString;
         stringOutput = std::move(s);
-        source = input;
     }
 
-    FormattedValue::FormattedValue(number::FormattedNumber&& n, const Formattable& input) {
-        type = kNumberValue;
+    FormattedValue::FormattedValue(number::FormattedNumber&& n) {
+        type = kNumber;
         numberOutput = std::move(n);
-        source = input;
     }
 
-    FormattedValue::FormattedValue(FormattedValue&& other) {
+    FormattedPlaceholder::FormattedPlaceholder(FormattedPlaceholder&& other) {
         type = other.type;
-        if (type == Type::kStringValue || type == Type::kFallbackValue) {
-            stringOutput = std::move(other.stringOutput);
-        } else if (isNumber()) {
-            numberOutput = std::move(other.numberOutput);
-        }
         source = other.source;
+        if (type == kEvaluated) {
+            formatted = std::move(other.formatted);
+        }
+        fallback = other.fallback;
     }
 
-    FormattedValue& FormattedValue::operator=(FormattedValue&& other) noexcept {
+    FormattedPlaceholder& FormattedPlaceholder::operator=(FormattedPlaceholder&& other) noexcept {
         type = other.type;
-        if (type == kStringValue || type == kFallbackValue) {
-            stringOutput = std::move(other.stringOutput);
-        } else if (type == kNumberValue) {
-            numberOutput = std::move(other.numberOutput);
-        }
         source = other.source;
-
+        if (type == kEvaluated) {
+            formatted = std::move(other.formatted);
+        }
+        fallback = other.fallback;
         return *this;
     }
 
-    Formattable FormattedValue::asFormattable() const {
-        if (type == kStringValue || type == kFallbackValue) {
-            return Formattable(stringOutput);
+    Formattable FormattedPlaceholder::asFormattable() const {
+        if (type == kEvaluated && formatted.isString()) {
+            return Formattable(formatted.getString());
+        }
+        if (type == kFallback) {
+            return Formattable(fallback);
         } else {
             return source;
         }
@@ -285,75 +295,73 @@ namespace message2 {
     // Called when output is required and the contents are an unevaluated `Formattable`;
     // formats the source `Formattable` to a string with defaults, if it can be
     // formatted with a default formatter
-    static FormattedValue formatWithDefaults(const Locale& locale, const Formattable& input, const UnicodeString& fallback, UErrorCode& status) {
+    static FormattedPlaceholder formatWithDefaults(const Locale& locale, const FormattedPlaceholder& input, UErrorCode& status) {
         if (U_FAILURE(status)) {
             return {};
         }
 
+        const Formattable& toFormat = input.asFormattable();
         // Try as decimal number first
-        if (input.isNumeric()) {
+        if (toFormat.isNumeric()) {
             // Note: the ICU Formattable has to be created here since the StringPiece
             // refers to state inside the Formattable; so otherwise we'll have a reference
             // to a temporary object
-            icu::Formattable icuFormattable = input.asICUFormattable();
+            icu::Formattable icuFormattable = toFormat.asICUFormattable();
             StringPiece asDecimal = icuFormattable.getDecimalNumber(status);
             if (U_FAILURE(status)) {
                 return {};
             }
             if (asDecimal != nullptr) {
-                return FormattedValue(formatNumberWithDefaults(locale, asDecimal, status), input);
+                return FormattedPlaceholder(FormattedValue(formatNumberWithDefaults(locale, asDecimal, status)), input);
             }
         }
 
-        switch (input.getType()) {
+        switch (toFormat.getType()) {
         case Formattable::Type::kDate: {
             UnicodeString result;
-            formatDateWithDefaults(locale, input.getDate(), result, status);
-            return FormattedValue(std::move(result), input);
+            formatDateWithDefaults(locale, toFormat.getDate(), result, status);
+            return FormattedPlaceholder(FormattedValue(std::move(result)), input);
         }
         case Formattable::Type::kDouble: {
-            return FormattedValue(formatNumberWithDefaults(locale, input.getDouble(), status), input);
+            return FormattedPlaceholder(FormattedValue(formatNumberWithDefaults(locale, toFormat.getDouble(), status)), input);
         }
         case Formattable::Type::kLong: {
-            return FormattedValue(formatNumberWithDefaults(locale, input.getLong(), status), input);
+            return FormattedPlaceholder(FormattedValue(formatNumberWithDefaults(locale, toFormat.getLong(), status)), input);
         }
         case Formattable::Type::kInt64: {
-            return FormattedValue(formatNumberWithDefaults(locale, input.getInt64(), status), input);
+            return FormattedPlaceholder(FormattedValue(formatNumberWithDefaults(locale, toFormat.getInt64(), status)), input);
         }
         case Formattable::Type::kString: {
-            return FormattedValue(UnicodeString(input.getString()), input);
+            return FormattedPlaceholder(FormattedValue(UnicodeString(toFormat.getString())), input);
         }
         default: {
             // No default formatters for other types; use fallback
-            return FormattedValue(UnicodeString(fallback), input);
+            return FormattedPlaceholder(FormattedValue(input.getFallback()), input);
         }
         }
     }
 
     // Called when string output is required; forces output to be produced
     // if none is present (including formatting number output as a string)
-    UnicodeString FormattedValue::formatToString(const Locale& locale, UErrorCode& status) const {
+    UnicodeString FormattedPlaceholder::formatToString(const Locale& locale, UErrorCode& status) const {
         if (U_FAILURE(status)) {
             return {};
         }
-        if (isFallback()) {
-            return getString();
-        }
-        if (isNullOperand()) {
-            return fallback;
+        if (isFallback() || isNullOperand()) {
+            return fallbackToString(fallback);
         }
 
         // Evaluated value: either just return the string, or format the number
         // as a string and return it
         if (isEvaluated()) {
-            if (isString()) {
-                return getString();
+            if (formatted.isString()) {
+                return formatted.getString();
             } else {
-                return getNumber().toString(status);
+                return formatted.getNumber().toString(status);
             }
         }
         // Unevaluated value: first evaluate it fully, then format
-        FormattedValue evaluated = formatWithDefaults(locale, source, fallback, status);
+        FormattedPlaceholder evaluated = formatWithDefaults(locale, *this, status);
         return evaluated.formatToString(locale, status);
     }
 

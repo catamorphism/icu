@@ -345,8 +345,9 @@ class U_I18N_API FunctionOptions : public UObject {
          * Formats the input passed in `context` by setting an output using one of the
          * `FormattingContext` methods or indicating an error.
          *
-         * @param toFormat Formatted value; see `message2::FormattedValue` for details.
-         *        Passed by move.
+         * @param toFormat Placeholder, including a source formattable value and possibly
+         *        the output of a previous formatter applied to it; see
+         *        `message2::FormattedPlaceholder` for details. Passed by move.
          * @param options The named function options. Passed by move
          * @param status    Input/output error code. Should not be set directly by the
          *        custom formatter, which should use `FormattingContext::setFormattingWarning()`
@@ -358,7 +359,7 @@ class U_I18N_API FunctionOptions : public UObject {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual FormattedValue format(FormattedValue&& toFormat,
+        virtual FormattedPlaceholder format(FormattedPlaceholder&& toFormat,
                                       FunctionOptions&& options,
                                       UErrorCode& status) const = 0;
         virtual ~Formatter();
@@ -394,7 +395,7 @@ class U_I18N_API FunctionOptions : public UObject {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual void selectKey(FormattedValue&& toFormat,
+        virtual void selectKey(FormattedPlaceholder&& toFormat,
                                FunctionOptions&& options,
                                const UnicodeString* keys,
                                int32_t keysLen,

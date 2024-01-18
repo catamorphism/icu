@@ -8,7 +8,6 @@
 #include "unicode/messageformat2_function_registry.h"
 #include "unicode/messageformat2.h"
 #include "messageformat2_context.h"
-#include "messageformat2_expression_context.h"
 #include "messageformat2_macros.h"
 #include "hash.h"
 #include "uvector.h" // U_ASSERT
@@ -23,47 +22,6 @@ U_NAMESPACE_BEGIN
 namespace message2 {
 
 using namespace data_model;
-
-// Context that's specific to formatting a single expression
-
-// Constructors
-// ------------
-
-ExpressionContext::ExpressionContext(MessageContext& c, const UnicodeString& fallBack) : context(c), fallback(fallBack)  {}
-
-ExpressionContext ExpressionContext::create() const {
-    return ExpressionContext(context, UnicodeString(REPLACEMENT));
-}
-
-ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.context) {
-    fallback = std::move(other.fallback);
-}
-
-// State
-// ---------
-
-// Fallback values are enclosed in curly braces;
-// see https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#formatting-fallback-values
-static void fallbackToString(const UnicodeString& s, UnicodeString& result) {
-    result += LEFT_CURLY_BRACE;
-    result += s;
-    result += RIGHT_CURLY_BRACE;
-}
-
-void ExpressionContext::setFallbackTo(const FunctionName& f) {
-    fallback.remove();
-    fallbackToString(f.toString(), fallback);
-}
-
-void ExpressionContext::setFallbackTo(const VariableName& v) {
-    fallback.remove();
-    fallbackToString(v.declaration(), fallback);
-}
-
-void ExpressionContext::setFallbackTo(const Literal& l) {
-    fallback.remove();
-    fallbackToString(l.quoted(), fallback);
-}
 
 // Functions
 // -------------
@@ -111,12 +69,12 @@ UBool FunctionOptions::getFunctionOption(const UnicodeString& key, Formattable& 
 ResolvedSelector::ResolvedSelector(const FunctionName& fn,
                                    Selector* sel,
                                    FunctionOptions&& opts,
-                                   FormattedValue&& val)
+                                   FormattedPlaceholder&& val)
     : selectorName(fn), selector(sel), options(std::move(opts)), value(std::move(val))  {
     U_ASSERT(sel != nullptr);
 }
 
-ResolvedSelector::ResolvedSelector(FormattedValue&& val) : value(std::move(val)) {}
+ResolvedSelector::ResolvedSelector(FormattedPlaceholder&& val) : value(std::move(val)) {}
 
 // Selector and formatter lookup
 // -----------------------------
@@ -143,8 +101,6 @@ const Formatter& MessageContext::getFormatter(const FunctionName& functionName, 
     U_ASSERT(isFormatter(functionName));
     return *maybeCachedFormatter(functionName, status);
 }
-
-ExpressionContext::~ExpressionContext() {}
 
 } // namespace message2
 U_NAMESPACE_END
