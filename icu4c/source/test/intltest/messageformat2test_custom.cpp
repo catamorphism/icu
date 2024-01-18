@@ -230,7 +230,7 @@ message2::FormattedPlaceholder PersonNameFormatter::format(FormattedPlaceholder&
     UnicodeString length = hasLength ? opt["length"].getString() : "short";
 
     const FormattableObject* fp = toFormat.getObject();
-    if (fp == nullptr || fp->tag() != "person") {
+    if (fp == nullptr || fp->tag() != u"person") {
         return errorVal;
     }
     const Person* p = static_cast<const Person*>(fp);
@@ -616,7 +616,7 @@ message2::FormattedPlaceholder ResourceManager::format(FormattedPlaceholder&& ar
     }
 
     FunctionOptions::FunctionOptionsMap opt = options.getOptions();
-    bool hasProperties = opt.count("resbundle") > 0 && opt["resbundle"].getType() == Formattable::Type::kObject && opt["resbundle"].getObject()->tag() == "properties";
+    bool hasProperties = opt.count("resbundle") > 0 && opt["resbundle"].getType() == Formattable::Type::kObject && opt["resbundle"].getObject()->tag() == u"properties";
     // If properties were provided, look up the given string in the properties,
     // yielding a message
     if (hasProperties) {
