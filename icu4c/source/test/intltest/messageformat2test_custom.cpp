@@ -210,10 +210,7 @@ Formatter* PersonNameFormatterFactory::createFormatter(const Locale& locale, UEr
     return result;
 }
 
-message2::FormattedValue PersonNameFormatter::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
-    // Does not signal errors
-    (void) context;
-
+message2::FormattedValue PersonNameFormatter::format(FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -317,14 +314,14 @@ Formatter* GrammarCasesFormatterFactory::createFormatter(const Locale& locale, U
     result += postfix;
 }
 
-message2::FormattedValue GrammarCasesFormatter::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
+message2::FormattedValue GrammarCasesFormatter::format(FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
 
     // Argument must be present
     if (!arg.canFormat()) {
-        context.setFormattingError("grammarBB", errorCode);
+        errorCode = U_FORMATTING_ERROR;
         return message2::FormattedValue("grammarBB");
     }
 
@@ -434,7 +431,7 @@ Formatter* ListFormatterFactory::createFormatter(const Locale& locale, UErrorCod
     return result;
 }
 
-message2::FormattedValue message2::ListFormatter::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
+message2::FormattedValue message2::ListFormatter::format(FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -443,7 +440,7 @@ message2::FormattedValue message2::ListFormatter::format(FormattingContext& cont
 
     // Argument must be present
     if (!arg.canFormat()) {
-        context.setFormattingError("listformat", errorCode);
+        errorCode = U_FORMATTING_ERROR;
         return errorVal;
     }
     // Assumes arg is not-yet-formatted
@@ -480,7 +477,7 @@ message2::FormattedValue message2::ListFormatter::format(FormattingContext& cont
             int32_t n_items;
             const Formattable* objs = toFormat.getArray(n_items);
             if (objs == nullptr) {
-                context.setFormattingError("listformatter", errorCode);
+                errorCode = U_FORMATTING_ERROR;
                 return errorVal;
             }
             LocalArray<UnicodeString> parts(new UnicodeString[n_items]);
@@ -591,7 +588,7 @@ static Arguments localToGlobal(const FunctionOptions::FunctionOptionsMap& opts, 
     return MessageArguments(opts, status);
 }
 
-message2::FormattedValue ResourceManager::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
+message2::FormattedValue ResourceManager::format(FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -600,7 +597,7 @@ message2::FormattedValue ResourceManager::format(FormattingContext& context, For
 
     // Argument must be present
     if (!arg.canFormat()) {
-        context.setFormattingError("msgref", errorCode);
+        errorCode = U_FORMATTING_ERROR;
         return errorVal;
     }
 
@@ -627,7 +624,7 @@ message2::FormattedValue ResourceManager::format(FormattingContext& context, For
         UnicodeString* msg = static_cast<UnicodeString*>(properties->properties->get(in));
         if (msg == nullptr) {
             // No message given for this key -- error out
-            context.setFormattingError("msgref", errorCode);
+            errorCode = U_FORMATTING_ERROR;
             return errorVal;
         }
 	MessageFormatter::Builder mfBuilder;
@@ -650,7 +647,7 @@ message2::FormattedValue ResourceManager::format(FormattingContext& context, For
         return FormattedValue(std::move(result), toFormat);
     } else {
         // Properties must be provided
-        context.setFormattingError("msgref", errorCode);
+        errorCode = U_FORMATTING_ERROR;
     }
     return errorVal;
 }

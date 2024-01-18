@@ -37,7 +37,7 @@ namespace message2 {
 
         class DateTime : public Formatter {
         public:
-            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
+            FormattedValue format(FormattedValue&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
             virtual ~DateTime();
 
         private:
@@ -55,7 +55,7 @@ namespace message2 {
 
         class Number : public Formatter {
         public:
-            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
+            FormattedValue format(FormattedValue&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
             virtual ~Number();
 
         private:
@@ -75,7 +75,7 @@ namespace message2 {
 
         class Identity : public Formatter {
         public:
-            FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
+            FormattedValue format(FormattedValue&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
             virtual ~Identity();
 
         private:
@@ -99,8 +99,7 @@ namespace message2 {
 
         class Plural : public Selector {
         public:
-            void selectKey(FormattingContext& context,
-                           FormattedValue&& val,
+            void selectKey(FormattedValue&& val,
                            FunctionOptions&& options,
                            const UnicodeString* keys,
                            int32_t keysLen,
@@ -127,8 +126,7 @@ namespace message2 {
 
         class TextSelector : public Selector {
         public:
-            void selectKey(FormattingContext& context,
-                           FormattedValue&& val,
+            void selectKey(FormattedValue&& val,
                            FunctionOptions&& options,
                            const UnicodeString* keys,
                            int32_t keysLen,

@@ -5,7 +5,6 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2_formatting_context.h"
 #include "unicode/messageformat2_function_registry.h"
 #include "unicode/messageformat2.h"
 #include "messageformat2_context.h"
@@ -123,41 +122,29 @@ ResolvedSelector::ResolvedSelector(FormattedValue&& val) : value(std::move(val))
 // -----------------------------
 
 // Postcondition: selector != nullptr || U_FAILURE(status)
-Selector* ExpressionContext::getSelector(const FunctionName& functionName, UErrorCode& status) const {
+Selector* MessageContext::getSelector(const FunctionName& functionName, UErrorCode& status) {
     NULL_ON_ERROR(status);
-    U_ASSERT(messageContext().isSelector(functionName));
+    U_ASSERT(isSelector(functionName));
 
-    const SelectorFactory* selectorFactory = context.lookupSelectorFactory(functionName, status);
+    const SelectorFactory* selectorFactory = lookupSelectorFactory(functionName, status);
     NULL_ON_ERROR(status);
     if (selectorFactory == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
     }
     // Create a specific instance of the selector
-    auto result = selectorFactory->createSelector(context.messageFormatter().getLocale(), status);
+    auto result = selectorFactory->createSelector(messageFormatter().getLocale(), status);
     NULL_ON_ERROR(status);
     return result;
 }
 
 // Precondition: formatter is defined
-const Formatter& ExpressionContext::getFormatter(const FunctionName& functionName, UErrorCode& status) {
-    U_ASSERT(context.isFormatter(functionName));
-    return *(context.maybeCachedFormatter(functionName, status));
-}
-
-// Errors
-// -------
-
-void ExpressionContext::setFormattingError(const UnicodeString& formatterName, UErrorCode& status) {
-    context.getErrors().setFormattingError(formatterName, status);
-}
-
-void ExpressionContext::setSelectorError(const UnicodeString& selectorName, UErrorCode& status) {
-    context.getErrors().setSelectorError(selectorName, status);
+const Formatter& MessageContext::getFormatter(const FunctionName& functionName, UErrorCode& status) {
+    U_ASSERT(isFormatter(functionName));
+    return *maybeCachedFormatter(functionName, status);
 }
 
 ExpressionContext::~ExpressionContext() {}
-FormattingContext::~FormattingContext() {}
 
 } // namespace message2
 U_NAMESPACE_END

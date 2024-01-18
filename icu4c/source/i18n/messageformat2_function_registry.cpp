@@ -7,7 +7,6 @@
 
 #include "unicode/dtptngen.h"
 #include "unicode/messageformat2.h"
-#include "unicode/messageformat2_formatting_context.h"
 #include "unicode/numberformatter.h"
 #include "unicode/smpdtfmt.h"
 #include "messageformat2_context.h"
@@ -281,10 +280,7 @@ static FormattedValue stringAsNumber(Locale locale, const number::LocalizedNumbe
     return FormattedValue(std::move(result), input);
 }
 
-FormattedValue StandardFunctions::Number::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& opts, UErrorCode& errorCode) const {
-
-    (void) context; // Function doesn't record errors;
-
+FormattedValue StandardFunctions::Number::format(FormattedValue&& arg, FunctionOptions&& opts, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -393,8 +389,7 @@ static void tryWithFormattable(const Locale& locale, const Formattable& value, d
     noMatch = false;
 }
 
-void StandardFunctions::Plural::selectKey(FormattingContext& context,
-                                          FormattedValue&& toFormat,
+void StandardFunctions::Plural::selectKey(FormattedValue&& toFormat,
                                           FunctionOptions&& opts,
                                           const UnicodeString* keys,
                                           int32_t keysLen,
@@ -405,7 +400,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context,
 
     // No argument => return "NaN"
     if (!toFormat.canFormat()) {
-        context.setSelectorError(UnicodeString("plural"), errorCode);
+        errorCode = U_SELECTOR_ERROR;
         return;
     }
 
@@ -432,7 +427,7 @@ void StandardFunctions::Plural::selectKey(FormattingContext& context,
 
     if (noMatch) {
         // Non-number => selector error
-        context.setSelectorError(UnicodeString("plural"), errorCode);
+        errorCode = U_SELECTOR_ERROR;
         return;
     }
 
@@ -515,8 +510,7 @@ Formatter* StandardFunctions::DateTimeFactory::createFormatter(const Locale& loc
     return result;
 }
 
-FormattedValue StandardFunctions::DateTime::format(FormattingContext& context,
-                                                   FormattedValue&& toFormat,
+FormattedValue StandardFunctions::DateTime::format(FormattedValue&& toFormat,
                                                    FunctionOptions&& opts,
                                                    UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
@@ -525,7 +519,7 @@ FormattedValue StandardFunctions::DateTime::format(FormattingContext& context,
 
     // Argument must be present
     if (!toFormat.canFormat()) {
-        context.setFormattingError(UnicodeString("datetime"), errorCode);
+        errorCode = U_FORMATTING_ERROR;
         return FormattedValue(UnicodeString("datetime")); // TODO: use correct fallback
     }
 
@@ -585,8 +579,7 @@ Selector* StandardFunctions::TextFactory::createSelector(const Locale& locale, U
     return result;
 }
 
-void StandardFunctions::TextSelector::selectKey(FormattingContext& context,
-                                                FormattedValue&& toFormat,
+void StandardFunctions::TextSelector::selectKey(FormattedValue&& toFormat,
                                                 FunctionOptions&& opts,
                                                 const UnicodeString* keys,
                                                 int32_t keysLen,
@@ -602,7 +595,7 @@ void StandardFunctions::TextSelector::selectKey(FormattingContext& context,
 
     // Argument must be present
     if (!toFormat.canFormat()) {
-        context.setSelectorError(UnicodeString("select"), errorCode);
+        errorCode = U_SELECTOR_ERROR;
         return;
     }
 
@@ -638,8 +631,7 @@ Formatter* StandardFunctions::IdentityFactory::createFormatter(const Locale& loc
 
 }
 
-FormattedValue StandardFunctions::Identity::format(FormattingContext& context,
-                                                   FormattedValue&& toFormat,
+FormattedValue StandardFunctions::Identity::format(FormattedValue&& toFormat,
                                                    FunctionOptions&& opts,
                                                    UErrorCode& errorCode) const {
     // No options
@@ -651,7 +643,7 @@ FormattedValue StandardFunctions::Identity::format(FormattingContext& context,
 
     // Argument must be present
     if (!toFormat.canFormat()) {
-        context.setFormattingError(UnicodeString("text"), errorCode);
+        errorCode = U_FORMATTING_ERROR;
         return FormattedValue(UnicodeString("text")); // TODO: use correct fallback
     }
 
