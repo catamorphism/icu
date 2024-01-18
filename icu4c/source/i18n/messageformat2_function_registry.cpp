@@ -253,7 +253,7 @@ Formatter* StandardFunctions::NumberFactory::createFormatter(const Locale& local
 }
 
 static FormattedPlaceholder notANumber(const FormattedPlaceholder& input) {
-    return FormattedPlaceholder(FormattedValue(UnicodeString("NaN")), input);
+    return FormattedPlaceholder(input, FormattedValue(UnicodeString("NaN")));
 }
 
 static FormattedPlaceholder stringAsNumber(Locale locale, const number::LocalizedNumberFormatter& nf, const FormattedPlaceholder& input, int64_t offset, UErrorCode& errorCode) {
@@ -275,7 +275,7 @@ static FormattedPlaceholder stringAsNumber(Locale locale, const number::Localize
     if (errorCode == U_USING_DEFAULT_WARNING) {
         errorCode = savedStatus;
     }
-    return FormattedPlaceholder(FormattedValue(std::move(result)), input);
+    return FormattedPlaceholder(input, FormattedValue(std::move(result)));
 }
 
 FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& arg, FunctionOptions&& opts, UErrorCode& errorCode) const {
@@ -327,7 +327,7 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
     }
     }
 
-    return FormattedPlaceholder(FormattedValue(std::move(numberResult)), arg);
+    return FormattedPlaceholder(arg, FormattedValue(std::move(numberResult)));
 }
 
 StandardFunctions::Number::~Number() {}
@@ -563,7 +563,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
     if (U_FAILURE(errorCode)) {
         return {};
     }
-    return FormattedPlaceholder(FormattedValue(std::move(result)), toFormat);
+    return FormattedPlaceholder(toFormat, FormattedValue(std::move(result)));
 }
 
 StandardFunctions::DateTimeFactory::~DateTimeFactory() {}
@@ -649,7 +649,7 @@ FormattedPlaceholder StandardFunctions::Identity::format(FormattedPlaceholder&& 
     }
 
     // Just returns the contents as a string
-    return FormattedPlaceholder(FormattedValue(toFormat.formatToString(locale, errorCode)), toFormat);
+    return FormattedPlaceholder(toFormat, FormattedValue(toFormat.formatToString(locale, errorCode)));
 }
 
 StandardFunctions::IdentityFactory::~IdentityFactory() {}

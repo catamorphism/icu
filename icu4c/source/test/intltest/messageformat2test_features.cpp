@@ -528,10 +528,10 @@ message2::FormattedPlaceholder TemperatureFormatter::format(FormattedPlaceholder
             break;
         }
         default: {
-            return message2::FormattedPlaceholder(FormattedValue(UnicodeString()), arg);
+            return message2::FormattedPlaceholder(arg, FormattedValue(UnicodeString()));
         }
     }
-    return message2::FormattedPlaceholder(FormattedValue(std::move(result)), arg);
+    return message2::FormattedPlaceholder(arg, FormattedValue(std::move(result)));
 }
 
 TemperatureFormatter::~TemperatureFormatter() { delete cachedFormatters; }

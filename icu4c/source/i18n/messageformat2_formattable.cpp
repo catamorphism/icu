@@ -318,7 +318,7 @@ namespace message2 {
                 return {};
             }
             if (asDecimal != nullptr) {
-                return FormattedPlaceholder(FormattedValue(formatNumberWithDefaults(locale, asDecimal, status)), input);
+                return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, asDecimal, status)));
             }
         }
 
@@ -326,23 +326,23 @@ namespace message2 {
         case Formattable::Type::kDate: {
             UnicodeString result;
             formatDateWithDefaults(locale, toFormat.getDate(), result, status);
-            return FormattedPlaceholder(FormattedValue(std::move(result)), input);
+            return FormattedPlaceholder(input, FormattedValue(std::move(result)));
         }
         case Formattable::Type::kDouble: {
-            return FormattedPlaceholder(FormattedValue(formatNumberWithDefaults(locale, toFormat.getDouble(), status)), input);
+            return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, toFormat.getDouble(), status)));
         }
         case Formattable::Type::kLong: {
-            return FormattedPlaceholder(FormattedValue(formatNumberWithDefaults(locale, toFormat.getLong(), status)), input);
+            return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, toFormat.getLong(), status)));
         }
         case Formattable::Type::kInt64: {
-            return FormattedPlaceholder(FormattedValue(formatNumberWithDefaults(locale, toFormat.getInt64(), status)), input);
+            return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, toFormat.getInt64(), status)));
         }
         case Formattable::Type::kString: {
-            return FormattedPlaceholder(FormattedValue(UnicodeString(toFormat.getString())), input);
+            return FormattedPlaceholder(input, FormattedValue(UnicodeString(toFormat.getString())));
         }
         default: {
             // No default formatters for other types; use fallback
-            return FormattedPlaceholder(FormattedValue(input.getFallback()), input);
+            return FormattedPlaceholder(input, FormattedValue(input.getFallback()));
         }
         }
     }

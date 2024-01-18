@@ -265,7 +265,7 @@ message2::FormattedPlaceholder PersonNameFormatter::format(FormattedPlaceholder&
         result += firstName;
     }
 
-    return FormattedPlaceholder(FormattedValue(std::move(result)), arg);
+    return FormattedPlaceholder(arg, FormattedValue(std::move(result)));
 }
 
 FormattableProperties::~FormattableProperties() {}
@@ -348,7 +348,7 @@ message2::FormattedPlaceholder GrammarCasesFormatter::format(FormattedPlaceholde
         }
     }
 
-    return message2::FormattedPlaceholder(FormattedValue(std::move(result)), arg);
+    return message2::FormattedPlaceholder(arg, FormattedValue(std::move(result)));
 }
 
 /* static */ FunctionRegistry GrammarCasesFormatter::customRegistry(UErrorCode& errorCode) {
@@ -497,7 +497,7 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
         }
     }
 
-    return FormattedPlaceholder(FormattedValue(std::move(result)), arg);
+    return FormattedPlaceholder(arg, FormattedValue(std::move(result)));
 }
 
 void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
@@ -644,7 +644,7 @@ message2::FormattedPlaceholder ResourceManager::format(FormattedPlaceholder&& ar
         if (U_FAILURE(errorCode)) {
             errorCode = savedStatus;
         }
-        return FormattedPlaceholder(FormattedValue(std::move(result)), arg);
+        return FormattedPlaceholder(arg, FormattedValue(std::move(result)));
     } else {
         // Properties must be provided
         errorCode = U_FORMATTING_ERROR;
