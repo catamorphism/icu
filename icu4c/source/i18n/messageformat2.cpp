@@ -380,9 +380,8 @@ void MessageFormatter::resolvePreferences(MessageContext& context, UVector& res,
             // Note: Here, `var` names the key list of `var`,
             // not a Variant itself
             const Key* var = selectorKeys.getKeysInternal();
-            int32_t len = selectorKeys.len;
             // 2ii(a). Let `key` be the `var` key at position i.
-            U_ASSERT(i < len); // established by semantic check in formatSelectors()
+            U_ASSERT(i < selectorKeys.len); // established by semantic check in formatSelectors()
             const Key& key = var[i];
             // 2ii(b). If `key` is not the catch-all key '*'
             if (!key.isWildcard()) {
@@ -526,8 +525,10 @@ void MessageFormatter::sortVariants(const UVector& pref, UVector& vars, UErrorCo
                 // 5iii(c)(b). Let `ks` be the resolved value of `key`.
                 UnicodeString ks = key.asLiteral().unquoted();
                 // 5iii(c)(c) Let matchpref be the integer position of ks in `matches`.
+                #ifdef _DEBUG
                 int32_t matchpref = vectorFind(matches, ks);
                 U_ASSERT(matchpref >= 0);
+                #endif
             }
             // 5iii(d) Set the `tuple` integer value as matchpref.
             tuple.priority = matchpref;
