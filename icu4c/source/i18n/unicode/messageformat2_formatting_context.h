@@ -100,6 +100,13 @@ class U_I18N_API FormattingContext : public UObject {
      * @deprecated This API is for technology preview only.
      */
     virtual void setFormattingError(const UnicodeString& name, UErrorCode& status) = 0;
+
+    virtual ~FormattingContext();
+};
+
+// TODO docs
+class U_I18N_API FunctionOptions : public UObject {
+ public:
     using FunctionOptionsMap = std::map<UnicodeString, message2::Formattable>;
     /**
      * Returns a map of all name-value pairs provided as options to this function,
@@ -123,23 +130,23 @@ class U_I18N_API FormattingContext : public UObject {
         }
         return result;
     }
-    /**
-     * Returns the number of function options.
-     *
-     * @return           The number of options, including object options.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual int32_t optionsCount() const = 0;
-
-    virtual ~FormattingContext();
-
+    FunctionOptions() { options = nullptr; }
  private:
+    friend class MessageFormatter;
     friend class StandardFunctions;
 
-    virtual const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const = 0;
-    virtual UBool getFunctionOption(const UnicodeString&, Formattable&) const = 0;
+    explicit FunctionOptions(UVector&&, UErrorCode&);
+
+    const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const;
+    UBool getFunctionOption(const UnicodeString&, Formattable&) const;
+    int32_t optionsCount() const { return functionOptionsLen; }
+
+    // Named options passed to functions
+    // This is not a Hashtable in order to make it possible for code in a public header file
+    // to construct a std::map from it, on-the-fly. Otherwise, it would be impossible to put
+    // that code in the header because it would have to call internal Hashtable methods.
+    ResolvedFunctionOption* options;
+    int32_t functionOptionsLen = 0;
 };
 
 } // namespace message2

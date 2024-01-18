@@ -270,6 +270,7 @@ namespace message2 {
          *        documentation for more details.
          * @param toFormat Formatted value; see `message2::FormattedValue` for details.
          *        Passed by move.
+         * @param options The named function options. Passed by move
          * @param status    Input/output error code. Should not be set directly by the
          *        custom formatter, which should use `FormattingContext::setFormattingWarning()`
          *        to signal errors. The custom formatter may pass `status` to other ICU functions
@@ -280,7 +281,10 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual FormattedValue format(FormattingContext& context, FormattedValue&& toFormat, UErrorCode& status) const = 0;
+        virtual FormattedValue format(FormattingContext& context,
+                                      FormattedValue&& toFormat,
+                                      FunctionOptions&& options,
+                                      UErrorCode& status) const = 0;
         virtual ~Formatter();
     }; // class Formatter
 
@@ -296,9 +300,10 @@ namespace message2 {
          * Compares the input to an array of keys, and returns an array of matching
          * keys sorted by preference.
          *
-         * @param context Formatting context; captures named options.
+         * @param context Formatting context; provides error handling methods.
          *        See the `FormattingContext` documentation for more details.
          * @param toFormat The unnamed function argument; passed by move.
+         * @param options A reference to the named function options.
          * @param keys An array of strings that are compared to the input
          *        (`context.getFormattableInput()`) in an implementation-specific way.
          * @param keysLen The length of `keys`.
@@ -317,6 +322,7 @@ namespace message2 {
          */
         virtual void selectKey(FormattingContext& context,
                                FormattedValue&& toFormat,
+                               FunctionOptions&& options,
                                const UnicodeString* keys,
                                int32_t keysLen,
                                UnicodeString* prefs,

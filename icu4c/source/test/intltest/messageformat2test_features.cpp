@@ -458,7 +458,7 @@ Formatter* TemperatureFormatterFactory::createFormatter(const Locale& locale, UE
     return result.orphan();
 }
 
-message2::FormattedValue TemperatureFormatter::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
+message2::FormattedValue TemperatureFormatter::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -475,7 +475,7 @@ message2::FormattedValue TemperatureFormatter::format(FormattingContext& context
 
     counter.formatCount++;
 
-    FormattingContext::FunctionOptionsMap opt = context.getOptions();
+    FunctionOptions::FunctionOptionsMap opt = options.getOptions();
     bool unitExists = opt.count("unit") >= 0 && opt["unit"].getType() == Formattable::Type::kString;
     if (!unitExists) {
         context.setFormattingError("temp", errorCode);

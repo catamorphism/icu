@@ -210,7 +210,10 @@ Formatter* PersonNameFormatterFactory::createFormatter(const Locale& locale, UEr
     return result;
 }
 
-message2::FormattedValue PersonNameFormatter::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
+message2::FormattedValue PersonNameFormatter::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
+    // Does not signal errors
+    (void) context;
+
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -222,7 +225,7 @@ message2::FormattedValue PersonNameFormatter::format(FormattingContext& context,
     }
     const Formattable& toFormat = arg.asFormattable();
 
-    FormattingContext::FunctionOptionsMap opt = context.getOptions();
+    FunctionOptions::FunctionOptionsMap opt = options.getOptions();
     bool hasFormality = opt.count("formality") > 0 && opt["formality"].getType() == Formattable::Type::kString;
     bool hasLength = opt.count("length") > 0 && opt["length"].getType() == Formattable::Type::kString;
 
@@ -314,7 +317,7 @@ Formatter* GrammarCasesFormatterFactory::createFormatter(const Locale& locale, U
     result += postfix;
 }
 
-message2::FormattedValue GrammarCasesFormatter::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
+message2::FormattedValue GrammarCasesFormatter::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -329,7 +332,7 @@ message2::FormattedValue GrammarCasesFormatter::format(FormattingContext& contex
     const Formattable& toFormat = arg.asFormattable();
     UnicodeString result;
 
-    FormattingContext::FunctionOptionsMap opt = context.getOptions();
+    FunctionOptions::FunctionOptionsMap opt = options.getOptions();
     switch (toFormat.getType()) {
         case Formattable::Type::kString: {
             const UnicodeString& in = toFormat.getString();
@@ -431,7 +434,7 @@ Formatter* ListFormatterFactory::createFormatter(const Locale& locale, UErrorCod
     return result;
 }
 
-message2::FormattedValue message2::ListFormatter::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
+message2::FormattedValue message2::ListFormatter::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -446,7 +449,7 @@ message2::FormattedValue message2::ListFormatter::format(FormattingContext& cont
     // Assumes arg is not-yet-formatted
     const Formattable& toFormat = arg.asFormattable();
 
-    FormattingContext::FunctionOptionsMap opt = context.getOptions();
+    FunctionOptions::FunctionOptionsMap opt = options.getOptions();
     bool hasType = opt.count("type") > 0 && opt["type"].getType() == Formattable::Type::kString;
     UListFormatterType type = UListFormatterType::ULISTFMT_TYPE_AND;
     if (hasType) {
@@ -581,14 +584,14 @@ Formatter* ResourceManagerFactory::createFormatter(const Locale& locale, UErrorC
 
 using Arguments = MessageArguments;
 
-static Arguments localToGlobal(const FormattingContext& context, UErrorCode& status) {
+static Arguments localToGlobal(const FunctionOptions::FunctionOptionsMap& opts, UErrorCode& status) {
     if (U_FAILURE(status)) {
         return {};
     }
-    return MessageArguments(context.getOptions(), status);
+    return MessageArguments(opts, status);
 }
 
-message2::FormattedValue ResourceManager::format(FormattingContext& context, FormattedValue&& arg, UErrorCode& errorCode) const {
+message2::FormattedValue ResourceManager::format(FormattingContext& context, FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -615,7 +618,7 @@ message2::FormattedValue ResourceManager::format(FormattingContext& context, For
         }
     }
 
-    FormattingContext::FunctionOptionsMap opt = context.getOptions();
+    FunctionOptions::FunctionOptionsMap opt = options.getOptions();
     bool hasProperties = opt.count("resbundle") > 0 && opt["resbundle"].getType() == Formattable::Type::kObject && opt["resbundle"].getObject()->tag() == "properties";
     // If properties were provided, look up the given string in the properties,
     // yielding a message
@@ -631,7 +634,7 @@ message2::FormattedValue ResourceManager::format(FormattingContext& context, For
         UParseError parseErr;
         // Any parse/data model errors will be propagated
 	MessageFormatter mf = mfBuilder.setPattern(*msg).build(parseErr, errorCode);
-        Arguments arguments = localToGlobal(context, errorCode);
+        Arguments arguments = localToGlobal(opt, errorCode);
         if (U_FAILURE(errorCode)) {
             return errorVal;
         }

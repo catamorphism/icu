@@ -30,6 +30,8 @@ namespace message2 {
     class Environment;
     class ExpressionContext;
     class MessageContext;
+    class ResolvedFunctionOptions;
+    class ResolvedSelector;
     class StaticErrors;
 
     // Arguments
@@ -306,8 +308,8 @@ namespace message2 {
         // Do not define default assignment operator
         const MessageFormatter &operator=(const MessageFormatter &) = delete;
 
-        FormattedValue resolveVariables(const Environment& env, const data_model::Operand&, ExpressionContext&, UErrorCode &) const;
-        FormattedValue resolveVariables(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode &) const;
+        ResolvedSelector resolveVariables(const Environment& env, const data_model::Operand&, ExpressionContext&, UErrorCode &) const;
+        ResolvedSelector resolveVariables(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode &) const;
 
         // Selection methods
 
@@ -318,7 +320,7 @@ namespace message2 {
         // Takes a vector of vectors of strings (input) and a vector of PrioritizedVariants (input/output)
         void sortVariants(const UVector&, UVector&, UErrorCode&) const;
         // Takes a vector of strings (input) and a vector of strings (output)
-        void matchSelectorKeys(const UVector&, ExpressionContext&, FormattedValue&& rv, UVector&, UErrorCode&) const;
+        void matchSelectorKeys(const UVector&, ExpressionContext&, ResolvedSelector&& rv, UVector&, UErrorCode&) const;
         // Takes a vector of ExpressionContexts (input/output), a vector of FormattedValues (input),
         // and a vector of vectors of strings (output)
         void resolvePreferences(UVector&, UVector&&, UVector&, UErrorCode&) const;
@@ -326,11 +328,17 @@ namespace message2 {
         // Formatting methods
         [[nodiscard]] FormattedValue formatLiteral(const data_model::Literal&, ExpressionContext&) const;
         void formatPattern(MessageContext&, const Environment&, const data_model::Pattern&, UErrorCode&, UnicodeString&) const;
+        // Formats a call to a formatting function
+        [[nodiscard]] FormattedValue evalFormatterCall(const FunctionName& functionName,
+                                                       FormattedValue&& argument,
+                                                       FunctionOptions&& options,
+                                                       ExpressionContext& context,
+                                                       UErrorCode& status) const;
         // Formats an expression that appears as a selector
-        FormattedValue formatSelectorExpression(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
+        ResolvedSelector formatSelectorExpression(const Environment& env, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
         // Formats an expression that appears in a pattern or as the definition of a local variable
         [[nodiscard]] FormattedValue formatExpression(const Environment&, const data_model::Expression&, ExpressionContext&, UErrorCode&) const;
-        void resolveOptions(const Environment& env, const OptionMap&, ExpressionContext&, UErrorCode&) const;
+        [[nodiscard]] FunctionOptions resolveOptions(const Environment& env, const OptionMap&, ExpressionContext&, UErrorCode&) const;
         [[nodiscard]] FormattedValue formatOperand(const Environment&, const data_model::Operand&, ExpressionContext&, UErrorCode&) const;
         [[nodiscard]] FormattedValue evalArgument(const data_model::VariableName&, ExpressionContext&) const;
         void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const;

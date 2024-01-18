@@ -27,16 +27,9 @@ namespace message2 {
     // or expression.
     class ExpressionContext : public FormattingContext {
     private:
-        bool hasFunctionName() const;
-        const FunctionName& getFunctionName();
-        void clearFunctionName();
-        // Precondition: hasSelector()
-        std::unique_ptr<Selector> getSelector(UErrorCode&) const;
-        // Precondition: hasFormatter()
-        const Formatter& getFormatter(UErrorCode&);
+        Selector* getSelector(const FunctionName&, UErrorCode&) const;
+        const Formatter& getFormatter(const FunctionName&, UErrorCode&);
 
-        void adoptFunctionOptions(UVector*, UErrorCode&);
-        void clearFunctionOptions();
         bool tryStringAsNumber(const Formattable&, double&) const;
         UBool getInt64Value(const Formattable&, int64_t& result) const;
         UBool getNumericOption(const UnicodeString&, Formattable&) const;
@@ -57,20 +50,6 @@ namespace message2 {
         // Fallback string to use in case of errors
         UnicodeString fallback;
 
-        /*
-          The item being formatted, which always has a `Formattable` source value
-          and may have a formatted result (if its type is not "fallback" or "unevaluated").
-          In this way, it represents both the input and the output of the current formatter.
-         */
-        FormattedValue contents;
-
-        // Named options passed to functions
-        // This is not a Hashtable in order to make it possible for code in a public header file
-        // to construct a std::map from it, on-the-fly. Otherwise, it would be impossible to put
-        // that code in the header because it would have to call internal Hashtable methods.
-        LocalArray<ResolvedFunctionOption> functionOptions;
-        int32_t functionOptionsLen = 0;
-
         MessageContext& messageContext() const { return context; }
 
         // Resets contents and uses existing fallback
@@ -80,24 +59,6 @@ namespace message2 {
         void setFallbackTo(const VariableName&);
         void setFallbackTo(const Literal&);
 
-        void setFunctionName(const FunctionName&);
-
-        void setNoOperand();
-        void setContents(FormattedValue&&);
-
-        // If there is a function name, clear it and
-        // call the function, returning its result.
-        // Precondition: hasFormatter()
-        [[nodiscard]] FormattedValue evalFormatterCall(const FunctionName&, FormattedValue&&, UErrorCode&);
-        // If there is a function name, clear it and
-        // call the function, setting the contents appropriately
-        // Precondition: hasSelector()
-        // Calls the pending selector
-        // `keys` and `keysOut` are both vectors of strings
-        void evalPendingSelectorCall(FormattedValue&&, const UVector&, UVector&, UErrorCode&);
-
-        const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const override;
-        UBool getFunctionOption(const UnicodeString&, Formattable&) const override;
     public:
 
         const UnicodeString& getFallback() const { return fallback; }
@@ -109,17 +70,41 @@ namespace message2 {
         // Precondition: pending function name is set
         bool hasFormatter() const;
 
-        // Note: this is provided separately from getOptions() so that internal
-        // code, which can't call getOptions(), can query the number of options
-        int32_t optionsCount() const override;
-
         void setSelectorError(const UnicodeString&, UErrorCode&) override;
         void setFormattingError(const UnicodeString&, UErrorCode&) override;
 
         ExpressionContext(MessageContext&, const UnicodeString&);
         ExpressionContext(ExpressionContext&&);
         virtual ~ExpressionContext();
-    };
+    }; // class ExpressionContext
+
+    // Encapsulates a value to be scrutinized by a `match` with its resolved
+    // options and the name of the selector
+    class ResolvedSelector {
+    public:
+        ResolvedSelector(const FunctionName& fn,
+                         Selector* selector,
+                         FunctionOptions&& options,
+                         FormattedValue&& value);
+        // Used either for errors, or when selector isn't yet known
+        explicit ResolvedSelector(FormattedValue&& value);
+        bool hasSelector() const { return selector.isValid(); }
+        const FormattedValue& argument() const { return value; }
+        FormattedValue&& takeArgument() { return std::move(value); }
+        const Selector* getSelector() {
+            U_ASSERT(selector.isValid());
+            return selector.getAlias();
+        }
+        FunctionOptions&& takeOptions() {
+            return std::move(options);
+        }
+        const FunctionName& getSelectorName() const { return selectorName; }
+    private:
+        FunctionName selectorName; // For error reporting
+        LocalPointer<Selector> selector;
+        FunctionOptions options;
+        FormattedValue value;
+    }; // class ResolvedSelector
 
 } // namespace message2
 

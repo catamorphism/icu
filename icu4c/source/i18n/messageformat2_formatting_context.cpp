@@ -30,30 +30,18 @@ using namespace data_model;
 // Constructors
 // ------------
 
-ExpressionContext::ExpressionContext(MessageContext& c, const UnicodeString& fallback)
-    : context(c), contents(FormattedValue(fallback)) {}
+ExpressionContext::ExpressionContext(MessageContext& c, const UnicodeString& fallBack) : context(c), fallback(fallBack)  {}
 
 ExpressionContext ExpressionContext::create() const {
     return ExpressionContext(context, UnicodeString(REPLACEMENT));
 }
 
 ExpressionContext::ExpressionContext(ExpressionContext&& other) : context(other.context) {
-    hasPendingFunctionName = other.hasPendingFunctionName;
-    if (hasPendingFunctionName) {
-	pendingFunctionName = std::move(other.pendingFunctionName);
-    }
     fallback = std::move(other.fallback);
-    contents = std::move(other.contents);
-    functionOptions = std::move(other.functionOptions);
-    functionOptionsLen = other.functionOptionsLen;
 }
 
 // State
 // ---------
-
-void ExpressionContext::setFallback() {
-    contents = FormattedValue(fallback);
-}
 
 // Fallback values are enclosed in curly braces;
 // see https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#formatting-fallback-values
@@ -78,81 +66,8 @@ void ExpressionContext::setFallbackTo(const Literal& l) {
     fallbackToString(l.quoted(), fallback);
 }
 
-void ExpressionContext::setContents(FormattedValue&& val) {
-    contents = std::move(val);
-}
-
-void ExpressionContext::clearFunctionName() {
-    U_ASSERT(hasPendingFunctionName);
-    hasPendingFunctionName = false;
-}
-
-const FunctionName& ExpressionContext::getFunctionName() {
-    U_ASSERT(hasPendingFunctionName);
-    return pendingFunctionName;
-}
-
-// Function options
-// ----------------
-
-int32_t ExpressionContext::optionsCount() const { return functionOptionsLen; }
-
-// Takes a vector of ResolvedFunctionOptions
-void ExpressionContext::adoptFunctionOptions(UVector* opt, UErrorCode& status) {
-    CHECK_ERROR(status);
-    U_ASSERT(opt != nullptr);
-
-    functionOptions.adoptInstead(moveVectorToArray<ResolvedFunctionOption>(*opt, functionOptionsLen));
-    if (!functionOptions.isValid()) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
-    delete opt;
-}
-
-const ResolvedFunctionOption* ExpressionContext::getResolvedFunctionOptions(int32_t& len) const {
-    len = functionOptionsLen;
-    U_ASSERT(functionOptions.isValid());
-    return functionOptions.getAlias();
-}
-
-UBool ExpressionContext::getFunctionOption(const UnicodeString& key, Formattable& option) const {
-    if (!functionOptions.isValid()) {
-        U_ASSERT(functionOptionsLen == 0);
-    }
-    for (int32_t i = 0; i < functionOptionsLen; i++) {
-        const ResolvedFunctionOption& opt = functionOptions[i];
-        if (opt.getName() == key) {
-            option = opt.getValue();
-            return true;
-        }
-    }
-    return false;
-}
-
 // Functions
 // -------------
-
-void ExpressionContext::setFunctionName(const FunctionName& fn) {
-    U_ASSERT(!hasFunctionName());
-    hasPendingFunctionName = true;
-    pendingFunctionName = fn;
-}
-
-bool ExpressionContext::hasFunctionName() const {
-    return hasPendingFunctionName;
-}
-
-void ExpressionContext::returnFromFunction() {
-    U_ASSERT(hasFunctionName());
-    clearFunctionName();
-    clearFunctionOptions();
-}
-
-void ExpressionContext::clearFunctionOptions() {
-    U_ASSERT(functionOptions.isValid() || functionOptionsLen == 0);
-    functionOptions.adoptInstead(nullptr);
-    functionOptionsLen = 0;
-}
 
 ResolvedFunctionOption::ResolvedFunctionOption(ResolvedFunctionOption&& other) {
     name = std::move(other.name);
@@ -161,157 +76,74 @@ ResolvedFunctionOption::ResolvedFunctionOption(ResolvedFunctionOption&& other) {
 
 ResolvedFunctionOption::~ResolvedFunctionOption() {}
 
-// Precondition: pending function name is set and selector is defined
-// Postcondition: selector != nullptr
-std::unique_ptr<Selector> ExpressionContext::getSelector(UErrorCode& status) const {
-    NULL_ON_ERROR(status);
 
-    U_ASSERT(hasFunctionName());
-    const SelectorFactory* selectorFactory = context.lookupSelectorFactory(pendingFunctionName, status);
+const ResolvedFunctionOption* FunctionOptions::getResolvedFunctionOptions(int32_t& len) const {
+    len = functionOptionsLen;
+    U_ASSERT(len == 0 || options != nullptr);
+    return options;
+}
+
+FunctionOptions::FunctionOptions(UVector&& optionsVector, UErrorCode& status) {
+    CHECK_ERROR(status);
+
+    options = moveVectorToArray<ResolvedFunctionOption>(optionsVector, functionOptionsLen);
+    if (options == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+    }
+}
+
+UBool FunctionOptions::getFunctionOption(const UnicodeString& key, Formattable& option) const {
+    if (options == nullptr) {
+        U_ASSERT(functionOptionsLen == 0);
+    }
+    for (int32_t i = 0; i < functionOptionsLen; i++) {
+        const ResolvedFunctionOption& opt = options[i];
+        if (opt.getName() == key) {
+            option = opt.getValue();
+            return true;
+        }
+    }
+    return false;
+}
+
+// ResolvedSelector
+// ----------------
+
+ResolvedSelector::ResolvedSelector(const FunctionName& fn,
+                                   Selector* sel,
+                                   FunctionOptions&& opts,
+                                   FormattedValue&& val)
+    : selectorName(fn), selector(sel), options(std::move(opts)), value(std::move(val))  {
+    U_ASSERT(sel != nullptr);
+}
+
+ResolvedSelector::ResolvedSelector(FormattedValue&& val) : value(std::move(val)) {}
+
+// Selector and formatter lookup
+// -----------------------------
+
+// Postcondition: selector != nullptr || U_FAILURE(status)
+Selector* ExpressionContext::getSelector(const FunctionName& functionName, UErrorCode& status) const {
+    NULL_ON_ERROR(status);
+    U_ASSERT(messageContext().isSelector(functionName));
+
+    const SelectorFactory* selectorFactory = context.lookupSelectorFactory(functionName, status);
+    NULL_ON_ERROR(status);
     if (selectorFactory == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
     }
     // Create a specific instance of the selector
-    std::unique_ptr<Selector> result(selectorFactory->createSelector(context.messageFormatter().getLocale(), status));
+    auto result = selectorFactory->createSelector(context.messageFormatter().getLocale(), status);
     NULL_ON_ERROR(status);
     return result;
 }
 
-// Precondition: pending function name is set and formatter is defined
-const Formatter& ExpressionContext::getFormatter(UErrorCode& status) {
-    U_ASSERT(hasFunctionName());
-    U_ASSERT(hasFormatter());
-    return *(context.maybeCachedFormatter(pendingFunctionName, status));
+// Precondition: formatter is defined
+const Formatter& ExpressionContext::getFormatter(const FunctionName& functionName, UErrorCode& status) {
+    U_ASSERT(context.isFormatter(functionName));
+    return *(context.maybeCachedFormatter(functionName, status));
 }
-
-bool ExpressionContext::hasFormatter() const {
-    U_ASSERT(hasFunctionName());
-    return context.isFormatter(pendingFunctionName);
-}
-
-bool ExpressionContext::hasSelector() const {
-    if (!hasFunctionName()) {
-        return false;
-    }
-    return context.isSelector(pendingFunctionName);
-}
-
-void ExpressionContext::evalPendingSelectorCall(FormattedValue&& val, const UVector& keys, UVector& keysOut, UErrorCode& status) {
-    U_ASSERT(hasSelector());
-    LocalPointer<Selector> selectorImpl(getSelector(status));
-    CHECK_ERROR(status);
-    UErrorCode savedStatus = status;
-
-    // Convert `keys` to an array
-    int32_t keysLen = keys.size();
-    UnicodeString* keysArr = new UnicodeString[keysLen];
-    if (keysArr == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-        return;
-    }
-    for (int32_t i = 0; i < keysLen; i++) {
-        const UnicodeString* k = static_cast<UnicodeString*>(keys[i]);
-        U_ASSERT(k != nullptr);
-        keysArr[i] = *k;
-    }
-    LocalArray<UnicodeString> adoptedKeys(keysArr);
-
-    // Create an array to hold the output
-    UnicodeString* prefsArr = new UnicodeString[keysLen];
-    if (prefsArr == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-        return;
-    }
-    LocalArray<UnicodeString> adoptedPrefs(prefsArr);
-    int32_t prefsLen = 0;
-
-    // Call the selector
-    selectorImpl->selectKey(*this, std::move(val), adoptedKeys.getAlias(), keysLen, adoptedPrefs.getAlias(), prefsLen, status);
-
-    // Update errors
-    if (savedStatus != status) {
-        if (U_FAILURE(status)) {
-            setFallback();
-            status = U_ZERO_ERROR;
-            setSelectorError(pendingFunctionName.toString(), status);
-        } else {
-            // Ignore warnings
-            status = savedStatus;
-        }
-    }
-
-    CHECK_ERROR(status);
-
-    // Copy the resulting keys (if there was no error)
-    keysOut.removeAllElements();
-    for (int32_t i = 0; i < prefsLen; i++) {
-        UnicodeString* k = message2::create<UnicodeString>(std::move(prefsArr[i]), status);
-        if (k == nullptr) {
-            status = U_MEMORY_ALLOCATION_ERROR;
-            return;
-        }
-        keysOut.adoptElement(k, status);
-        CHECK_ERROR(status);
-    }
-
-    // Clean up state
-    returnFromFunction();
-}
-
-// Calls the pending formatter
-FormattedValue ExpressionContext::evalFormatterCall(const FunctionName& functionName, FormattedValue&& argument, UErrorCode& status) {
-    if (U_FAILURE(status)) {
-        return {};
-    }
-
-    FunctionName savedFunctionName;
-    bool hadFunctionName = hasFunctionName();
-    if (hadFunctionName) {
-      savedFunctionName = pendingFunctionName;
-      clearFunctionName();
-    }
-    setFunctionName(functionName);
-    if (hasFormatter()) {
-        const Formatter& formatterImpl = getFormatter(status);
-        if (U_FAILURE(status)) {
-            return {};
-        }
-        UErrorCode savedStatus = status;
-        FormattedValue result = formatterImpl.format(*this, std::move(argument), status);
-        // Update errors
-        if (savedStatus != status) {
-            if (U_FAILURE(status)) {
-                // Convey any error generated by the formatter
-                // as a formatting error
-                setFallback();
-                status = U_ZERO_ERROR;
-                setFormattingError(functionName.toString(), status);
-            } else {
-                // Ignore warnings
-                status = savedStatus;
-            }
-        }
-        // Ignore the output if any errors occurred
-        if (context.getErrors().hasFormattingError()) {
-            result = FormattedValue(fallback);
-        }
-        returnFromFunction();
-        if (hadFunctionName) {
-            setFunctionName(savedFunctionName);
-        }
-        return result;
-    }
-    // No formatter with this name -- set error
-    if (context.isSelector(functionName)) {
-        setFormattingError(functionName.toString(), status);
-    } else {
-        context.getErrors().setUnknownFunction(functionName, status);
-    }
-    setFallback();
-    return FormattedValue(fallback);
-}
-
 
 // Errors
 // -------
