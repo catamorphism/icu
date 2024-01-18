@@ -518,7 +518,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
     // Argument must be present
     if (!toFormat.canFormat()) {
         errorCode = U_FORMATTING_ERROR;
-        return toFormat;
+        return std::move(toFormat);
     }
 
     LocalPointer<DateFormat> df;
