@@ -37,7 +37,7 @@ namespace message2 {
         // of any custom functions that rely on particular values of this tag
         // corresponding to particular classes that the object contents can be
         // downcast to, to ensure that the type tags are used soundly.
-        virtual const UnicodeString& tag() const = 0;
+        virtual std::u16string_view tag() const = 0;
         virtual ~FormattableObject();
     }; // class FormattableObject
 

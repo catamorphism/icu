@@ -127,9 +127,9 @@ class Person : public FormattableObject {
     UnicodeString lastName;
     Person(UnicodeString t, UnicodeString f, UnicodeString l) : title(t), firstName(f), lastName(l) {}
     ~Person();
-    const UnicodeString& tag() const override { return tagName; }
+    std::u16string_view tag() const override { return std::u16string_view(tagName); }
     private:
-    const UnicodeString tagName = "person";
+    static constexpr char16_t tagName[] = u"person";
 };
 
 class PersonNameFormatter : public Formatter {
@@ -139,14 +139,14 @@ class PersonNameFormatter : public Formatter {
 
 class FormattableProperties : public FormattableObject {
     public:
-    const UnicodeString& tag() const override { return tagName; }
+    std::u16string_view tag() const override { return tagName; }
     FormattableProperties(Hashtable* hash) : properties(hash) {
         U_ASSERT(hash != nullptr);
     }
     ~FormattableProperties();
     LocalPointer<Hashtable> properties;
 private:
-    const UnicodeString tagName = "properties";
+    static constexpr char16_t tagName[] = u"properties";
 };
 
 class GrammarCasesFormatterFactory : public FormatterFactory {
