@@ -69,9 +69,8 @@ class U_I18N_API FunctionOptions : public UObject {
  public:
     using FunctionOptionsMap = std::map<UnicodeString, message2::Formattable>;
     /**
-     * Returns a map of all name-value pairs provided as options to this function,
-     * except for any object-valued options (which must be accessed using
-     * `getObjectOption()`). The syntactic order of options is not guaranteed to
+     * Returns a map of all name-value pairs provided as options to this function.
+     * The syntactic order of options is not guaranteed to
      * be preserved.
      *
      * @return           A map from strings to `Formattable` values representing

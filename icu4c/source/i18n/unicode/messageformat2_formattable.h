@@ -449,7 +449,7 @@ namespace message2 {
     class U_I18N_API FormattedPlaceholder : public UObject {
     public:
         explicit FormattedPlaceholder(const UnicodeString& s) : fallback(s), type(kFallback) {} // Fallback constructor
-        FormattedPlaceholder(FormattedValue&& v, const FormattedPlaceholder& f) : fallback(f.fallback),
+        FormattedPlaceholder(const FormattedPlaceholder& f, FormattedValue&& v) : fallback(f.fallback),
                                                                                   source(f.source),
                                                                                   formatted(std::move(v)),
                                                                                   type(kEvaluated) {}
@@ -465,7 +465,8 @@ namespace message2 {
         const UnicodeString& getFallback() const { return fallback; }
         FormattedPlaceholder promote() const {
             // Return a non-error value with string contents `fallback`
-            return FormattedPlaceholder(FormattedValue(fallback), FormattedPlaceholder(Formattable(fallback), fallback));
+            return FormattedPlaceholder(FormattedPlaceholder(Formattable(fallback), fallback),
+                                        FormattedValue(fallback));
         }
         // Precondition: type is evaluated
         const FormattedValue& output() const { return formatted; }
