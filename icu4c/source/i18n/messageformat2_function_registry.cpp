@@ -559,7 +559,10 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
 
     UnicodeString result;
     const Formattable& source = toFormat.asFormattable();
-    df->format(source.asICUFormattable(), result, 0, errorCode);
+    df->format(source.asICUFormattable(errorCode), result, 0, errorCode);
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
     return FormattedPlaceholder(FormattedValue(std::move(result)), toFormat);
 }
 

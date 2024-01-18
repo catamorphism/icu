@@ -372,14 +372,16 @@ namespace message2 {
         virtual ~Formattable();
         /**
          * Converts the Formattable object to an ICU Formattable object.
-         * It must not have type kObject or kArray.
+         * If this has type kObject or kArray, then `status` is set to
+         * U_ILLEGAL_ARGUMENT_ERROR.
          *
+         * @param status Input/output error code.
          * @return An icu::Formattable value with the same value as this.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        icu::Formattable asICUFormattable() const;
+        icu::Formattable asICUFormattable(UErrorCode& status) const;
     private:
 
         // Ignored if type is kObject, kArray, or kString
