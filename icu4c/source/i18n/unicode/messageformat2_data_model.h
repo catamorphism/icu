@@ -969,7 +969,6 @@ namespace message2 {
             friend class Operator;
 
             bool bogus = false;
-            OptionMap(Option* p, int32_t l) : options(LocalArray<Option>(p)), len(l) {}
             OptionMap(const UVector&, UErrorCode&);
             LocalArray<Option> options;
             int32_t len;
