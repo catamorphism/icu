@@ -476,13 +476,13 @@ message2::FormattedPlaceholder TemperatureFormatter::format(FormattedPlaceholder
     counter.formatCount++;
 
     FunctionOptions::FunctionOptionsMap opt = options.getOptions();
-    bool unitExists = opt.count("unit") >= 0 && opt["unit"].getType() == Formattable::Type::kString;
+    bool unitExists = opt.count("unit") > 0 && opt["unit"].getType() == Formattable::Type::kString;
     if (!unitExists) {
         errorCode = U_FORMATTING_ERROR;
         return errorVal;
     }
     UnicodeString unit = opt["unit"].getString();
-    bool skeletonExists = opt.count("skeleton") >= 0 && opt["skeleton"].getType() == Formattable::Type::kString;
+    bool skeletonExists = opt.count("skeleton") > 0 && opt["skeleton"].getType() == Formattable::Type::kString;
 
     number::LocalizedNumberFormatter* realNfCached = (number::LocalizedNumberFormatter*) cachedFormatters->get(unit);
     number::LocalizedNumberFormatter realNf;
