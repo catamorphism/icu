@@ -665,7 +665,122 @@ namespace message2 {
             Type type;
         }; // class Operand
 
-        class Key;
+        /**
+         * The `Key` class corresponds to the `key` nonterminal in the MessageFormat 2 grammar,
+         * https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf .
+         * It also corresponds to
+         * the `Literal | CatchallKey` that is the
+         * element type of the `keys` array in the `Variant` interface
+         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
+         *
+         * A key is either a literal or the wildcard symbol (represented in messages as '*')
+         *
+         * `Key` is immutable, copyable and movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class U_I18N_API Key : public UObject {
+        public:
+            /**
+             * Determines if this is a wildcard key
+             *
+             * @return True if and only if this is the wildcard key
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            UBool isWildcard() const { return wildcard; }
+            /**
+             * Returns the contents of this key as a literal.
+             * Precondition: !isWildcard()
+             *
+             * @return The literal contents of the key
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const Literal& asLiteral() const;
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Key(const Key& other) : wildcard(other.wildcard), contents(other.contents) {}
+            /**
+             * Wildcard constructor.
+             *
+             * @return A Key representing the catchall or wildcard key, '*'.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Key() : wildcard(true), contents(Literal()) {}
+            /**
+             * Literal key constructor.
+             *
+             * @param lit A Literal to use for this key.
+             * @return A Key that matches the literal `lit`.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Key(const Literal& lit) : wildcard(false), contents(lit) {}
+            /**
+             * Move assignment operator:
+             * The source Key will be left in a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Key& operator=(Key&& other) noexcept;
+            /**
+             * Copy assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Key& operator=(const Key& other);
+            /**
+             * Less than operator. Compares the literal of `this` with the literal of `other`.
+             * This method is used in representing the mapping from key lists to patterns
+             * in a message with variants, and is not expected to be useful otherwise.
+             *
+             * @param other The Key to compare to this one.
+             * @return true if the two `Key`s are not wildcards and if `this.asLiteral()`
+             * < `other.asLiteral()`.
+             * Returns false otherwise.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            bool operator<(const Key& rhs) const;
+            /**
+             * Equality operator. Compares the literal of `this` with the literal of `other`.
+             * This method is used in representing the mapping from key lists to patterns
+             * in a message with variants, and is not expected to be useful otherwise.
+             *
+             * @param other The Key to compare to this one.
+             * @return true if either both `Key`s are wildcards, or `this.asLiteral()`
+             * == `other.asLiteral()`.
+             * Returns false otherwise.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            bool operator==(const Key& rhs) const;
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Key();
+        private:
+            /* const */ bool wildcard; // True if this represents the wildcard "*"
+            /* const */ Literal contents;
+        }; // class Key
 
         /**
          * The `SelectorKeys` class represents the key list for a single variant.
@@ -824,132 +939,74 @@ namespace message2 {
             SelectorKeys(const UVector& ks, UErrorCode& status);
         }; // class SelectorKeys
 
+
+    } // namespace data_model
+
+
+    namespace data_model {
+        class Operator;
+
         /**
-         * The `Key` class corresponds to the `key` nonterminal in the MessageFormat 2 grammar,
-         * https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf .
-         * It also corresponds to
-         * the `Literal | CatchallKey` that is the
-         * element type of the `keys` array in the `Variant` interface
-         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
+         *  An `Option` pairs an option name with an Operand.
          *
-         * A key is either a literal or the wildcard symbol (represented in messages as '*')
-         *
-         * `Key` is immutable, copyable and movable.
+         * `Option` is immutable, copyable and movable.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        class U_I18N_API Key : public UObject {
+        class U_I18N_API Option : public UObject {
         public:
             /**
-             * Determines if this is a wildcard key
+             * Accesses the right-hand side of the option.
              *
-             * @return True if and only if this is the wildcard key
+             * @return A reference to the operand.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            UBool isWildcard() const { return wildcard; }
+            const Operand& getValue() const { return rand; }
             /**
-             * Returns the contents of this key as a literal.
-             * Precondition: !isWildcard()
+             * Accesses the left-hand side of the option.
              *
-             * @return The literal contents of the key
+             * @return A reference to the option name.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            const Literal& asLiteral() const;
+            const UnicodeString& getName() const { return name; }
             /**
-             * Copy constructor.
+             * Constructor.
+             *
+             * @param name The name of the option.
+             * @param rand The value of the option.
+             * @return An Option, representing the named option "name=rand".
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Key(const Key& other) : wildcard(other.wildcard), contents(other.contents) {}
-            /**
-             * Wildcard constructor.
-             *
-             * @return A Key representing the catchall or wildcard key, '*'.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Key() : wildcard(true), contents(Literal()) {}
-            /**
-             * Literal key constructor.
-             *
-             * @param lit A Literal to use for this key.
-             * @return A Key that matches the literal `lit`.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Key(const Literal& lit) : wildcard(false), contents(lit) {}
-            /**
-             * Move assignment operator:
-             * The source Key will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Key& operator=(Key&& other) noexcept;
+            Option(const UnicodeString& n, Operand&& r) : name(n), rand(std::move(r)) {}
             /**
              * Copy assignment operator
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Key& operator=(const Key& other);
-            /**
-             * Less than operator. Compares the literal of `this` with the literal of `other`.
-             * This method is used in representing the mapping from key lists to patterns
-             * in a message with variants, and is not expected to be useful otherwise.
-             *
-             * @param other The Key to compare to this one.
-             * @return true if the two `Key`s are not wildcards and if `this.asLiteral()`
-             * < `other.asLiteral()`.
-             * Returns false otherwise.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            bool operator<(const Key& rhs) const;
-            /**
-             * Equality operator. Compares the literal of `this` with the literal of `other`.
-             * This method is used in representing the mapping from key lists to patterns
-             * in a message with variants, and is not expected to be useful otherwise.
-             *
-             * @param other The Key to compare to this one.
-             * @return true if either both `Key`s are wildcards, or `this.asLiteral()`
-             * == `other.asLiteral()`.
-             * Returns false otherwise.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            bool operator==(const Key& rhs) const;
+            Option& operator=(const Option& other);
+            // TODO
+            Option() = default;
+            Option(const Option& other);
+            Option& operator=(Option&& other) noexcept;
             /**
              * Destructor.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            virtual ~Key();
+            virtual ~Option();
         private:
-            friend class SelectorKeys::Builder;
-
-            UnicodeString toString() const;
-
-            /* const */ bool wildcard; // True if this represents the wildcard "*"
-            /* const */ Literal contents;
-        }; // class Key
-
-    } // namespace data_model
-
-    namespace data_model {
-        class Operator;
-        class Option;
+            /* const */ UnicodeString name;
+            /* const */ Operand rand;
+        }; // class Option
 
         // Internal only
         // Options
@@ -1679,70 +1736,84 @@ namespace message2 {
             /* const */ SelectorKeys k;
             /* const */ Pattern p;
         }; // class Variant
+    } // namespace data_model
 
+        namespace data_model {
         /**
-         *  An `Option` pairs an option name with an Operand.
+         *  A `Binding` pairs a variable name with an expression.
+         * It corresponds to the `Declaration` interface
+         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
          *
-         * `Option` is immutable, copyable and movable.
+         * `Binding` is immutable and copyable. It is not movable.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        class U_I18N_API Option : public UObject {
+        class U_I18N_API Binding : public UObject {
         public:
             /**
-             * Accesses the right-hand side of the option.
+             * Accesses the right-hand side of the binding.
              *
-             * @return A reference to the operand.
+             * @return A reference to the expression.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            const Operand& getValue() const { return rand; }
+            const Expression& getValue() const;
             /**
-             * Accesses the left-hand side of the option.
+             * Accesses the left-hand side of the binding.
              *
-             * @return A reference to the option name.
+             * @return A reference to the variable name.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            const UnicodeString& getName() const { return name; }
+            const VariableName& getVariable() const { return var; }
             /**
              * Constructor.
+             * Precondition: i < numParts()
              *
-             * @param name The name of the option.
-             * @param rand The value of the option.
-             * @return An Option, representing the named option "name=rand".
+             * @param v A variable name.
+             * @param e An expression.
+             * @return A Binding, representing the pair of `v` and `e`.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Option(const UnicodeString& n, Operand&& r) : name(n), rand(std::move(r)) {}
+            Binding(const VariableName& v, const Expression& e) : var(v), value(e){}
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Binding(const Binding& other);
             /**
              * Copy assignment operator
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Option& operator=(const Option& other);
-            // TODO
-            Option() = default;
-            Option(const Option& other);
-            Option& operator=(Option&& other) noexcept;
+            Binding& operator=(const Binding& other);
+            /**
+             * Default constructor.
+             * Puts the Binding into a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Binding() = default;
             /**
              * Destructor.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            virtual ~Option();
+            virtual ~Binding();
         private:
-            /* const */ UnicodeString name;
-            /* const */ Operand rand;
-        }; // class Option
-
-        class Binding;
+            /* const */ VariableName var;
+            /* const */ Expression value;
+        }; // class Binding
     } // namespace data_model
 
     using namespace data_model;
@@ -2073,85 +2144,6 @@ namespace message2 {
         MessageFormatDataModel(const Builder& builder, UErrorCode&) noexcept;
     }; // class MessageFormatDataModel
 
-    namespace data_model {
-        /**
-         *  A `Binding` pairs a variable name with an expression.
-         * It corresponds to the `Declaration` interface
-         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
-         *
-         * `Binding` is immutable and copyable. It is not movable.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        class U_I18N_API Binding : public UObject {
-        public:
-            /**
-             * Accesses the right-hand side of the binding.
-             *
-             * @return A reference to the expression.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            const Expression& getValue() const;
-            /**
-             * Accesses the left-hand side of the binding.
-             *
-             * @return A reference to the variable name.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            const VariableName& getVariable() const { return var; }
-            /**
-             * Constructor.
-             * Precondition: i < numParts()
-             *
-             * @param v A variable name.
-             * @param e An expression.
-             * @return A Binding, representing the pair of `v` and `e`.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Binding(const VariableName& v, const Expression& e) : var(v), value(e){}
-            /**
-             * Copy constructor.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Binding(const Binding& other);
-            /**
-             * Copy assignment operator
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Binding& operator=(const Binding& other);
-            /**
-             * Default constructor.
-             * Puts the Binding into a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Binding() = default;
-            /**
-             * Destructor.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            virtual ~Binding();
-        private:
-            friend class MessageFormatDataModel::Builder;
-
-            /* const */ VariableName var;
-            /* const */ Expression value;
-        }; // class Binding
-    } // namespace data_model
 } // namespace message2
 
 U_NAMESPACE_END

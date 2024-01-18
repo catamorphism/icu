@@ -300,13 +300,6 @@ bool Key::operator==(const Key& other) const {
     return (asLiteral() == other.asLiteral());
 }
 
-UnicodeString Key::toString() const {
-    if (isWildcard()) {
-        return UnicodeString(ASTERISK);
-    }
-    return contents.unquoted();
-}
-
 const Literal& Key::asLiteral() const {
     U_ASSERT(!isWildcard());
     return contents;
