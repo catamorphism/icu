@@ -554,6 +554,14 @@ Option& Option::operator=(const Option& other) {
     return *this;
 }
 
+Option::Option(const Option& other): name(other.name), rand(other.rand) {}
+
+Option& Option::operator=(Option&& other) noexcept {
+    name = other.name;
+    rand = std::move(other.rand);
+    return *this;
+}
+
 Option::~Option() {}
 
 static UBool stringsEqual(const UElement s1, const UElement s2) {
@@ -914,6 +922,14 @@ Variant& Variant::operator=(const Variant& other) {
         k = other.k;
         p = other.p;
     }
+    return *this;
+}
+
+Variant::Variant(const Variant& other) : k(other.k), p(other.p) {}
+
+Variant& Variant::operator=(Variant&& other) noexcept {
+    k = std::move(other.k);
+    p = std::move(other.p);
     return *this;
 }
 

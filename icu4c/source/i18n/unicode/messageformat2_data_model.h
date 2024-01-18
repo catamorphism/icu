@@ -1622,7 +1622,7 @@ namespace message2 {
          * It corresponds to the `Variant` interface
          * defined in https://github.com/unicode-org/message-format-wg/tree/main/spec/data-model
          *
-         * `Variant` is immutable and copyable. It is not movable.
+         * `Variant` is immutable, copyable and movable.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
@@ -1667,6 +1667,8 @@ namespace message2 {
             Variant& operator=(const Variant& other);
             // TODO
             Variant() = default;
+            Variant& operator=(Variant&&) noexcept;
+            Variant(const Variant&);
             /**
              * Destructor.
              *
@@ -1682,7 +1684,7 @@ namespace message2 {
         /**
          *  An `Option` pairs an option name with an Operand.
          *
-         * `Option` is immutable and copyable. It is not movable.
+         * `Option` is immutable, copyable and movable.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
@@ -1727,6 +1729,8 @@ namespace message2 {
             Option& operator=(const Option& other);
             // TODO
             Option() = default;
+            Option(const Option& other);
+            Option& operator=(Option&& other) noexcept;
             /**
              * Destructor.
              *

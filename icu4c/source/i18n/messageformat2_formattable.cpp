@@ -209,9 +209,8 @@ namespace message2 {
         case kString: {
             return icu::Formattable(fString);
         }
-        case kArray:
-        case kObject: {
-            // Already checked for
+        default: {
+            // Already checked for kArray and kObject
             return icu::Formattable();
         }
         }
