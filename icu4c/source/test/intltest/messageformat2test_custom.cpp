@@ -210,12 +210,12 @@ Formatter* PersonNameFormatterFactory::createFormatter(const Locale& locale, UEr
     return result;
 }
 
-message2::FormattedValue PersonNameFormatter::format(FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
+message2::FormattedPlaceholder PersonNameFormatter::format(FormattedPlaceholder&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
 
-    message2::FormattedValue errorVal = message2::FormattedValue("not a person");
+    message2::FormattedPlaceholder errorVal = message2::FormattedPlaceholder("not a person");
 
     if (!arg.canFormat() || arg.asFormattable().getType() != Formattable::Type::kObject) {
         return errorVal;
@@ -265,7 +265,7 @@ message2::FormattedValue PersonNameFormatter::format(FormattedValue&& arg, Funct
         result += firstName;
     }
 
-    return FormattedValue(std::move(result), toFormat);
+    return FormattedPlaceholder(FormattedValue(std::move(result)), arg);
 }
 
 FormattableProperties::~FormattableProperties() {}
@@ -314,7 +314,7 @@ Formatter* GrammarCasesFormatterFactory::createFormatter(const Locale& locale, U
     result += postfix;
 }
 
-message2::FormattedValue GrammarCasesFormatter::format(FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
+message2::FormattedPlaceholder GrammarCasesFormatter::format(FormattedPlaceholder&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -322,7 +322,7 @@ message2::FormattedValue GrammarCasesFormatter::format(FormattedValue&& arg, Fun
     // Argument must be present
     if (!arg.canFormat()) {
         errorCode = U_FORMATTING_ERROR;
-        return message2::FormattedValue("grammarBB");
+        return message2::FormattedPlaceholder("grammarBB");
     }
 
     // Assumes the argument is not-yet-formatted
@@ -348,7 +348,7 @@ message2::FormattedValue GrammarCasesFormatter::format(FormattedValue&& arg, Fun
         }
     }
 
-    return message2::FormattedValue(std::move(result), toFormat);
+    return message2::FormattedPlaceholder(FormattedValue(std::move(result)), arg);
 }
 
 /* static */ FunctionRegistry GrammarCasesFormatter::customRegistry(UErrorCode& errorCode) {
@@ -431,12 +431,12 @@ Formatter* ListFormatterFactory::createFormatter(const Locale& locale, UErrorCod
     return result;
 }
 
-message2::FormattedValue message2::ListFormatter::format(FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
+message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlaceholder&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
 
-    message2::FormattedValue errorVal = FormattedValue("listformat");
+    message2::FormattedPlaceholder errorVal = FormattedPlaceholder("listformat");
 
     // Argument must be present
     if (!arg.canFormat()) {
@@ -497,7 +497,7 @@ message2::FormattedValue message2::ListFormatter::format(FormattedValue&& arg, F
         }
     }
 
-    return FormattedValue(std::move(result), toFormat);
+    return FormattedPlaceholder(FormattedValue(std::move(result)), arg);
 }
 
 void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
@@ -588,12 +588,12 @@ static Arguments localToGlobal(const FunctionOptions::FunctionOptionsMap& opts, 
     return MessageArguments(opts, status);
 }
 
-message2::FormattedValue ResourceManager::format(FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
+message2::FormattedPlaceholder ResourceManager::format(FormattedPlaceholder&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
 
-    message2::FormattedValue errorVal = message2::FormattedValue("msgref");
+    message2::FormattedPlaceholder errorVal = message2::FormattedPlaceholder("msgref");
 
     // Argument must be present
     if (!arg.canFormat()) {
@@ -644,7 +644,7 @@ message2::FormattedValue ResourceManager::format(FormattedValue&& arg, FunctionO
         if (U_FAILURE(errorCode)) {
             errorCode = savedStatus;
         }
-        return FormattedValue(std::move(result), toFormat);
+        return FormattedPlaceholder(FormattedValue(std::move(result)), arg);
     } else {
         // Properties must be provided
         errorCode = U_FORMATTING_ERROR;

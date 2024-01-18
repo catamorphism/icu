@@ -34,7 +34,6 @@ static std::vector<T> toStdVector(const T* arr, int32_t len) {
 namespace message2 {
 
     class Checker;
-    class ExpressionContext;
     class MessageFormatDataModel;
     class MessageFormatter;
     class Serializer;

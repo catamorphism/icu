@@ -252,22 +252,20 @@ Formatter* StandardFunctions::NumberFactory::createFormatter(const Locale& local
     return result;
 }
 
-static FormattedValue notANumber(const Formattable& input) {
-    return FormattedValue(UnicodeString("NaN"), input);
+static FormattedPlaceholder notANumber(const FormattedPlaceholder& input) {
+    return FormattedPlaceholder(FormattedValue(UnicodeString("NaN")), input);
 }
 
-static FormattedValue notANumber() {
-    return FormattedValue(UnicodeString("NaN"), Formattable(UnicodeString("NaN")));
-}
-
-static FormattedValue stringAsNumber(Locale locale, const number::LocalizedNumberFormatter& nf, const Formattable& input, int64_t offset, UErrorCode& errorCode) {
+static FormattedPlaceholder stringAsNumber(Locale locale, const number::LocalizedNumberFormatter& nf, const FormattedPlaceholder& input, int64_t offset, UErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {
         return {};
     }
 
+    // Precondition: `input`'s source Formattable has type string
+
     double numberValue;
     UErrorCode localErrorCode = U_ZERO_ERROR;
-    strToDouble(input.getString(), locale, numberValue, localErrorCode);
+    strToDouble(input.asFormattable().getString(), locale, numberValue, localErrorCode);
     if (U_FAILURE(localErrorCode)) {
         return notANumber(input);
     }
@@ -277,17 +275,17 @@ static FormattedValue stringAsNumber(Locale locale, const number::LocalizedNumbe
     if (errorCode == U_USING_DEFAULT_WARNING) {
         errorCode = savedStatus;
     }
-    return FormattedValue(std::move(result), input);
+    return FormattedPlaceholder(FormattedValue(std::move(result)), input);
 }
 
-FormattedValue StandardFunctions::Number::format(FormattedValue&& arg, FunctionOptions&& opts, UErrorCode& errorCode) const {
+FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& arg, FunctionOptions&& opts, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
 
     // No argument => return "NaN"
     if (!arg.canFormat()) {
-        return notANumber();
+        return notANumber(arg);
     }
 
     int64_t offset;
@@ -321,15 +319,15 @@ FormattedValue StandardFunctions::Number::format(FormattedValue&& arg, FunctionO
     }
     case Formattable::Type::kString: {
         // Try to parse the string as a number
-        return stringAsNumber(locale, realFormatter, toFormat, offset, errorCode);
+        return stringAsNumber(locale, realFormatter, arg, offset, errorCode);
     }
     default: {
         // Other types can't be parsed as a number
-        return notANumber(toFormat);
+        return notANumber(arg);
     }
     }
 
-    return FormattedValue(std::move(numberResult), toFormat);;
+    return FormattedPlaceholder(FormattedValue(std::move(numberResult)), arg);
 }
 
 StandardFunctions::Number::~Number() {}
@@ -389,7 +387,7 @@ static void tryWithFormattable(const Locale& locale, const Formattable& value, d
     noMatch = false;
 }
 
-void StandardFunctions::Plural::selectKey(FormattedValue&& toFormat,
+void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
                                           FunctionOptions&& opts,
                                           const UnicodeString* keys,
                                           int32_t keysLen,
@@ -414,12 +412,12 @@ void StandardFunctions::Plural::selectKey(FormattedValue&& toFormat,
     double valToCheck;
     bool noMatch = true;
 
-    bool isFormattedString = toFormat.isEvaluated() && toFormat.isString();
-    bool isFormattedNumber = toFormat.isEvaluated() && toFormat.isNumber();
+    bool isFormattedString = toFormat.isEvaluated() && toFormat.output().isString();
+    bool isFormattedNumber = toFormat.isEvaluated() && toFormat.output().isNumber();
 
     if (isFormattedString) {
         // Formatted string: try parsing it as a number
-        tryAsString(locale, toFormat.getString(), valToCheck, noMatch);
+        tryAsString(locale, toFormat.output().getString(), valToCheck, noMatch);
     } else {
         // Already checked that contents can be formatted
         tryWithFormattable(locale, toFormat.asFormattable(), valToCheck, noMatch);
@@ -456,7 +454,7 @@ void StandardFunctions::Plural::selectKey(FormattedValue&& toFormat,
     // If there was no exact match, check for a match based on the plural category
     UnicodeString match;
     if (isFormattedNumber) {
-        match = rules->select(toFormat.getNumber(), errorCode);
+        match = rules->select(toFormat.output().getNumber(), errorCode);
     } else {
         match = rules->select(valToCheck - offset);
     }
@@ -510,7 +508,7 @@ Formatter* StandardFunctions::DateTimeFactory::createFormatter(const Locale& loc
     return result;
 }
 
-FormattedValue StandardFunctions::DateTime::format(FormattedValue&& toFormat,
+FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& toFormat,
                                                    FunctionOptions&& opts,
                                                    UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
@@ -520,7 +518,7 @@ FormattedValue StandardFunctions::DateTime::format(FormattedValue&& toFormat,
     // Argument must be present
     if (!toFormat.canFormat()) {
         errorCode = U_FORMATTING_ERROR;
-        return FormattedValue(UnicodeString("datetime")); // TODO: use correct fallback
+        return toFormat;
     }
 
     LocalPointer<DateFormat> df;
@@ -562,7 +560,7 @@ FormattedValue StandardFunctions::DateTime::format(FormattedValue&& toFormat,
     UnicodeString result;
     const Formattable& source = toFormat.asFormattable();
     df->format(source.asICUFormattable(), result, 0, errorCode);
-    return FormattedValue(std::move(result), source);
+    return FormattedPlaceholder(FormattedValue(std::move(result)), toFormat);
 }
 
 StandardFunctions::DateTimeFactory::~DateTimeFactory() {}
@@ -579,7 +577,7 @@ Selector* StandardFunctions::TextFactory::createSelector(const Locale& locale, U
     return result;
 }
 
-void StandardFunctions::TextSelector::selectKey(FormattedValue&& toFormat,
+void StandardFunctions::TextSelector::selectKey(FormattedPlaceholder&& toFormat,
                                                 FunctionOptions&& opts,
                                                 const UnicodeString* keys,
                                                 int32_t keysLen,
@@ -631,7 +629,7 @@ Formatter* StandardFunctions::IdentityFactory::createFormatter(const Locale& loc
 
 }
 
-FormattedValue StandardFunctions::Identity::format(FormattedValue&& toFormat,
+FormattedPlaceholder StandardFunctions::Identity::format(FormattedPlaceholder&& toFormat,
                                                    FunctionOptions&& opts,
                                                    UErrorCode& errorCode) const {
     // No options
@@ -644,11 +642,11 @@ FormattedValue StandardFunctions::Identity::format(FormattedValue&& toFormat,
     // Argument must be present
     if (!toFormat.canFormat()) {
         errorCode = U_FORMATTING_ERROR;
-        return FormattedValue(UnicodeString("text")); // TODO: use correct fallback
+        return std::move(toFormat);
     }
 
     // Just returns the contents as a string
-    return FormattedValue(toFormat.formatToString(locale, errorCode), toFormat.asFormattable());
+    return FormattedPlaceholder(FormattedValue(toFormat.formatToString(locale, errorCode)), toFormat);
 }
 
 StandardFunctions::IdentityFactory::~IdentityFactory() {}

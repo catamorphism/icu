@@ -458,12 +458,12 @@ Formatter* TemperatureFormatterFactory::createFormatter(const Locale& locale, UE
     return result.orphan();
 }
 
-message2::FormattedValue TemperatureFormatter::format(FormattedValue&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
+message2::FormattedPlaceholder TemperatureFormatter::format(FormattedPlaceholder&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
 
-    message2::FormattedValue errorVal("temp");
+    message2::FormattedPlaceholder errorVal("temp");
 
     // Argument must be present
     if (!arg.canFormat()) {
@@ -528,10 +528,10 @@ message2::FormattedValue TemperatureFormatter::format(FormattedValue&& arg, Func
             break;
         }
         default: {
-            return message2::FormattedValue(UnicodeString(), toFormat);
+            return message2::FormattedPlaceholder(FormattedValue(UnicodeString()), arg);
         }
     }
-    return message2::FormattedValue(std::move(result), toFormat);
+    return message2::FormattedPlaceholder(FormattedValue(std::move(result)), arg);
 }
 
 TemperatureFormatter::~TemperatureFormatter() { delete cachedFormatters; }

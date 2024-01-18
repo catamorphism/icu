@@ -410,55 +410,65 @@ namespace message2 {
         Type type;
     }; // class Formattable
 
-    /*
-      Really more like a possibly-evaluated thunk than a "formatted value",
-      since it may not be formatted yet
-     */
+    // TODO doc comments
+    // Encapsulates either a formatted string or formatted number;
+    // more output types could be added in the future.
     class U_I18N_API FormattedValue : public UObject {
     public:
-        explicit FormattedValue(const UnicodeString& s) : stringOutput(s), type(kFallbackValue) {} // Fallback constructor
-        FormattedValue(UnicodeString&&, const Formattable&);
-        FormattedValue(number::FormattedNumber&&, const Formattable&);
-        FormattedValue() : source(Formattable()), type(kNullValue) {}
-        FormattedValue(const Formattable& input) : source(input), type(kUnevaluatedValue) {}
+        explicit FormattedValue(const UnicodeString&);
+        explicit FormattedValue(number::FormattedNumber&&);
+        FormattedValue() : type(kString) {}
+        bool isString() const { return type == kString; }
+        bool isNumber() const { return type == kNumber; }
+        // Precondition: type == kString
+        const UnicodeString& getString() const { return stringOutput; }
+        // Precondition: type == kNumber
+        const number::FormattedNumber& getNumber() const { return numberOutput; }
+    private:
+        enum Type {
+            kString,
+            kNumber
+        };
+        Type type;
+        UnicodeString stringOutput;
+        number::FormattedNumber numberOutput;
+    }; // class FormattedValue
+
+    /*
+      As in the equivalent ICU4J class, a FormattedPlaceholder encapsulates
+      an input value (here, a `Formattable` to correspond to Java's `Object`)
+      and an output value (here, our own `FormattedValue` class, different from
+      the existing `FormattedValue` class of the same name as it can encapsulate
+      either a string or number value.)
+      More information, such as source line/column numbers, could be added in
+      the future.
+     */
+    // TODO doc comments
+    class U_I18N_API FormattedPlaceholder : public UObject {
+    public:
+        explicit FormattedPlaceholder(const UnicodeString& s) : fallback(s), type(kFallback) {} // Fallback constructor
+        FormattedPlaceholder(FormattedValue&& v, const FormattedPlaceholder& f) : fallback(f.fallback),
+                                                                                  source(f.source),
+                                                                                  formatted(std::move(v)),
+                                                                                  type(kEvaluated) {}
+        FormattedPlaceholder() : type(kNull) {}
+        FormattedPlaceholder(const Formattable& input, const UnicodeString& fb) : fallback(fb), source(input), type(kUnevaluated) {}
         message2::Formattable asFormattable() const;
-        bool isString() const { return type == kStringValue; }
-        bool isFallback() const { return type == kFallbackValue; }
-        bool isNullOperand() const { return type == kNullValue; }
-        bool isNumber() const { return type == kNumberValue; }
-        bool isEvaluated() const { return (type == kStringValue || type == kNumberValue); }
+        bool isFallback() const { return type == kFallback; }
+        bool isNullOperand() const { return type == kNull; }
+        bool isEvaluated() const { return (type == kEvaluated); }
         // Returns true if this is a valid argument to the formatter
         // (it's not null and is not a fallback value)
         bool canFormat() const { return !(isFallback() || isNullOperand()); }
-        FormattedValue promote() {
+        const UnicodeString& getFallback() const { return fallback; }
+        FormattedPlaceholder promote() const {
             // Return a non-error value with string contents `fallback`
-            return FormattedValue(std::move(fallback), Formattable(fallback));
+            return FormattedPlaceholder(FormattedValue(fallback), FormattedPlaceholder(Formattable(fallback), fallback));
         }
-        const UnicodeString& getString() const {
-            switch (type) {
-            case kFallbackValue:
-            case kStringValue: {
-                return stringOutput;
-            }
-            case kUnevaluatedValue: {
-                if (source.getType() == Formattable::Type::kString) {
-                    return source.getString();
-                }
-                break;
-            }
-            default: {
-                break;
-            }
-            }
-            // Should be unreachable
-            U_ASSERT(false);
-        }
-        const number::FormattedNumber& getNumber() const {
-            U_ASSERT(type == kNumberValue);
-            return numberOutput;
-        }
-        FormattedValue(FormattedValue&&);
-        FormattedValue& operator=(FormattedValue&&) noexcept;
+        // Precondition: type is evaluated
+        const FormattedValue& output() const { return formatted; }
+        FormattedPlaceholder(FormattedPlaceholder&&);
+        FormattedPlaceholder& operator=(FormattedPlaceholder&&) noexcept;
 
         /**
          * Formats this as a string, using defaults.  If this is
@@ -477,19 +487,19 @@ namespace message2 {
         UnicodeString formatToString(const Locale& locale, UErrorCode& status) const;
 
     private:
+        friend class MessageFormatter;
+
         enum Type {
-            kFallbackValue,    // Represents the result of formatting that encountered an error
-            kNullValue,        // Represents the absence of both an output and an input (not necessarily an error)
-            kUnevaluatedValue, // `source` should be valid, but there's no result yet
-            kStringValue,
-            kNumberValue
+            kFallback,    // Represents the result of formatting that encountered an error
+            kNull,        // Represents the absence of both an output and an input (not necessarily an error)
+            kUnevaluated, // `source` should be valid, but there's no result yet
+            kEvaluated,   // `formatted` exists
         };
         UnicodeString fallback;
-        UnicodeString stringOutput;
-        number::FormattedNumber numberOutput;
         Formattable source;
+        FormattedValue formatted;
         Type type;
-    }; // class FormattedValue
+    }; // class FormattedPlaceholder
 
 } // namespace message2
 
