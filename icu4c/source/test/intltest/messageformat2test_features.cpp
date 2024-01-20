@@ -475,7 +475,7 @@ message2::FormattedPlaceholder TemperatureFormatter::format(FormattedPlaceholder
 
     counter.formatCount++;
 
-    FunctionOptions::FunctionOptionsMap opt = options.getOptions();
+    FunctionOptionsMap opt = options.getOptions();
     bool unitExists = opt.count("unit") > 0 && opt["unit"].getType() == Formattable::Type::kString;
     if (!unitExists) {
         errorCode = U_FORMATTING_ERROR;

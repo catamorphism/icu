@@ -311,7 +311,7 @@ namespace message2 {
                  * Adds a single literal to the reserved sequence.
                  *
                  * @param part The literal to be added. Passed by move.
-                 * param status Input/output error code
+                 * @param status Input/output error code
                  * @return A reference to the builder.
                  *
                  * @internal ICU 75.0 technology preview
@@ -605,8 +605,8 @@ namespace message2 {
             /**
              * Variable operand constructor.
              *
-             * @param v The variable name.
-             * @return A variable operand with variable `v`.
+             * @param v The variable name; an operand corresponding
+             *        to a reference to `v` is returned.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
@@ -615,8 +615,8 @@ namespace message2 {
             /**
              * Literal operand constructor.
              *
-             * @param l The variable name.
-             * @return A literal operand with literal `l`.
+             * @param l The literal to use for this operand; an operand
+             *        corresponding to `l` is returned.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
@@ -709,9 +709,8 @@ namespace message2 {
              */
             Key(const Key& other) : wildcard(other.wildcard), contents(other.contents) {}
             /**
-             * Wildcard constructor.
-             *
-             * @return A Key representing the catchall or wildcard key, '*'.
+             * Wildcard constructor; constructs a Key representing the
+             * catchall or wildcard key, '*'.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
@@ -720,8 +719,8 @@ namespace message2 {
             /**
              * Literal key constructor.
              *
-             * @param lit A Literal to use for this key.
-             * @return A Key that matches the literal `lit`.
+             * @param lit A Literal to use for this key. The result matches the
+             *        literal `lit`.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
@@ -755,7 +754,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            bool operator<(const Key& rhs) const;
+            bool operator<(const Key& other) const;
             /**
              * Equality operator. Compares the literal of `this` with the literal of `other`.
              * This method is used in representing the mapping from key lists to patterns
@@ -769,7 +768,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            bool operator==(const Key& rhs) const;
+            bool operator==(const Key& other) const;
             /**
              * Destructor.
              *
@@ -975,11 +974,11 @@ namespace message2 {
              */
             const UnicodeString& getName() const { return name; }
             /**
-             * Constructor.
+             * Constructor. Returns an `Option` representing the
+             * named option "name=rand".
              *
-             * @param name The name of the option.
-             * @param rand The value of the option.
-             * @return An Option, representing the named option "name=rand".
+             * @param n The name of the option.
+             * @param r The value of the option.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
@@ -992,9 +991,27 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Option& operator=(const Option& other);
-            // TODO
+            /**
+             * Default constructor.
+             * Returns an Option in a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
             Option() = default;
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
             Option(const Option& other);
+            /**
+             * Move assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
             Option& operator=(Option&& other) noexcept;
             /**
              * Destructor.
@@ -1009,6 +1026,7 @@ namespace message2 {
         }; // class Option
 
         // Internal only
+        #ifndef U_IN_DOXYGEN
         // Options
         // This is a wrapper class around a vector of options that provides lookup operations
         class OptionMap : public UObject {
@@ -1030,6 +1048,7 @@ namespace message2 {
             LocalArray<Option> options;
             int32_t len;
         }; // class OptionMap
+        #endif
 
         /**
          * The `Operator` class corresponds to the `FunctionRef | Reserved` type in the
@@ -1484,6 +1503,7 @@ namespace message2 {
                  * Adds a single part to the pattern. Copies `part`.
                  *
                  * @param part The part to be added.
+                 * @param status Input/output error code.
                  * @return A reference to the builder.
                  *
                  * @internal ICU 75.0 technology preview
@@ -1512,7 +1532,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Builder(UErrorCode&);
+                Builder(UErrorCode& status);
                 /**
                  * Destructor.
                  *
@@ -1636,20 +1656,20 @@ namespace message2 {
              */
             virtual ~PatternPart();
             /**
-             * Text part constructor.
+             * Text part constructor. Returns a text pattern part
+             * with text `t`.
              *
              * @param t A text string.
-             * @return A text pattern part with text `t`.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             PatternPart(const UnicodeString& t) : isRawText(true), text(t) {}
             /**
-             * Expression part constructor.
+             * Expression part constructor. Returns an Expression pattern
+             * part with expression `e`.
              *
              * @param e An Expression.
-             * @return An Expression pattern part with expression `e`.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
@@ -1704,11 +1724,12 @@ namespace message2 {
              */
             const SelectorKeys& getKeys() const { return k; }
             /**
-             * Constructor.
+             * Constructor. Returns a variant that formats to `pattern`
+             * when `keys` match the selector expressions in the enclosing
+             * `match` construct.
              *
              * @param keys A reference to a `SelectorKeys`.
              * @param pattern A pattern (passed by move)
-             * @return A Variant, representing the variant keyed on `keys` that represents `pattern`
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
@@ -1721,9 +1742,27 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Variant& operator=(const Variant& other);
-            // TODO
+            /**
+             * Default constructor.
+             * Returns a Variant in a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
             Variant() = default;
+            /**
+             * Move assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
             Variant& operator=(Variant&&) noexcept;
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
             Variant(const Variant&);
             /**
              * Destructor.
@@ -1775,7 +1814,6 @@ namespace message2 {
              *
              * @param v A variable name.
              * @param e An expression.
-             * @return A Binding, representing the pair of `v` and `e`.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.

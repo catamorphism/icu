@@ -26,32 +26,52 @@ namespace message2 {
 // Formattable
 // ----------
 
-    // TODO add doc comments here
-
-    // Abstract class used to represent object variants in a
-    // Formattable
+    /**
+     * `FormattableObject` is an abstract class that can be implemented in order to define
+     * an arbitrary class that can be passed to a custom formatter or selector function.
+     * To be passed in such a way, it must be wrapped in a `Formattable` object.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
     class U_I18N_API FormattableObject : public UObject {
     public:
-        // Returns an arbitrary string representing the type of this object.
-        // It's up to the implementor of this class, as well as the implementors
-        // of any custom functions that rely on particular values of this tag
-        // corresponding to particular classes that the object contents can be
-        // downcast to, to ensure that the type tags are used soundly.
+        /**
+         * Returns an arbitrary string representing the type of this object.
+         * It's up to the implementor of this class, as well as the implementors
+         * of any custom functions that rely on particular values of this tag
+         * corresponding to particular classes that the object contents can be
+         * downcast to, to ensure that the type tags are used soundly.
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         virtual std::u16string_view tag() const = 0;
+        /**
+         * Destructor.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         virtual ~FormattableObject();
     }; // class FormattableObject
 
-    /*
-      ICU's Formattable class is not used because it's unsafe to copy a
-      Formattable value that contains an object.
-
-      This class is immutable (not deeply immutable) and
-      is movable and copyable; and allows for type-safe casting.
-      (Copying does not do a deep copy of the object value, if applicable.)
+    /**
+     * The `Formattable` class represents a typed value that can be formatted,
+     * originating either from a message argument or a literal in the code.
+     * ICU's Formattable class is not used in MessageFormat 2 because it's unsafe to copy an
+     * icu::Formattable value that contains an object. (See ICU-20275).
+     *
+     * `Formattable` is immutable (not deeply immutable) and
+     * is movable and copyable.
+     * (Copying does not do a deep copy when the wrapped value is an array or
+     * object. Likewise, while a pointer to a wrapped array or object is `const`,
+     * the referents of the pointers may be mutated by other code.)
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
      */
     class U_I18N_API Formattable : public UObject {
     public:
-
         /**
          * See icu::Formattable for explanation
          * @internal ICU 75.0 technology preview
@@ -415,16 +435,71 @@ namespace message2 {
     // TODO doc comments
     // Encapsulates either a formatted string or formatted number;
     // more output types could be added in the future.
+
+    /**
+     * A `FormattedValue` represents the result of formatting a `message2::Formattable`.
+     * It contains either a string or a formatted number. (More types could be added
+     * in the future.)
+     *
+     * `FormattedValue` is immutable and movable. It is not copyable.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
     class U_I18N_API FormattedValue : public UObject {
     public:
+        /**
+         * Formatted string constructor.
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         explicit FormattedValue(const UnicodeString&);
+        /**
+         * Formatted number constructor.
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         explicit FormattedValue(number::FormattedNumber&&);
+        /**
+         * Default constructor. Leaves the FormattedValue in
+         * a valid but undefined state.
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         FormattedValue() : type(kString) {}
+        /**
+         * Returns true iff this is a formatted string.
+         *
+         * @return True if and only if this value is a formatted string.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         bool isString() const { return type == kString; }
+        /**
+         * Returns true iff this is a formatted number.
+         *
+         * @return True if and only if this value is a formatted number.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         bool isNumber() const { return type == kNumber; }
-        // Precondition: type == kString
+        /**
+         * Gets the string contents of this value. If !isString(), then
+         * the result is undefined.
+         * @return          A reference to a formatted string.
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         const UnicodeString& getString() const { return stringOutput; }
-        // Precondition: type == kNumber
+        /**
+         * Gets the number contents of this value. If !isNumber(), then
+         * the result is undefined.
+         * @return          A reference to a formatted number.
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         const number::FormattedNumber& getNumber() const { return numberOutput; }
     private:
         enum Type {
@@ -436,53 +511,170 @@ namespace message2 {
         number::FormattedNumber numberOutput;
     }; // class FormattedValue
 
-    /*
-      As in the equivalent ICU4J class, a FormattedPlaceholder encapsulates
-      an input value (here, a `Formattable` to correspond to Java's `Object`)
-      and an output value (here, our own `FormattedValue` class, different from
-      the existing `FormattedValue` class of the same name as it can encapsulate
-      either a string or number value.)
-      More information, such as source line/column numbers, could be added in
-      the future.
+    /**
+     * A `FormattablePlaceholder` encapsulates an input value (a `message2::Formattable`)
+     * together with an optional output value (a `message2::FormattedValue`).
+     *  More information, such as source line/column numbers, could be added to the class
+     * in the future.
+     *
+     * `FormattablePlaceholder` is immutable (not deeply immutable) and movable.
+     * It is not copyable.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
      */
-    // TODO doc comments
     class U_I18N_API FormattedPlaceholder : public UObject {
     public:
-        explicit FormattedPlaceholder(const UnicodeString& s) : fallback(s), type(kFallback) {} // Fallback constructor
-        FormattedPlaceholder(const FormattedPlaceholder& f, FormattedValue&& v) : fallback(f.fallback),
-                                                                                  source(f.source),
-                                                                                  formatted(std::move(v)),
-                                                                                  type(kEvaluated) {}
+        /**
+         * Fallback constructor. Constructs a value that represents a formatting error,
+         * without recording an input `Formattable` as the source.
+         *
+         * @param s An error string. (See the MessageFormat specification for details
+         *        on fallback strings.)
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        explicit FormattedPlaceholder(const UnicodeString& s) : fallback(s), type(kFallback) {}
+        /**
+         * Constructor for fully formatted placeholders.
+         *
+         * @param input A `FormattedPlaceholder` containing the fallback string and source
+         *        `Formattable` used to construct the formatted value.
+         * @param output A `FormattedValue` representing the formatted output of `input`.
+         *        Passed by move.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        FormattedPlaceholder(const FormattedPlaceholder& input, FormattedValue&& output)
+            : fallback(input.fallback), source(input.source), formatted(std::move(output)), type(kEvaluated) {}
+        /**
+         * Constructor for unformatted placeholders.
+         *
+         * @param input A `Formattable` object.
+         * @param fb Fallback string to use if an error occurs while formatting the input.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        FormattedPlaceholder(const Formattable& input, const UnicodeString& fb)
+            : fallback(fb), source(input), type(kUnevaluated) {}
+        /**
+         * Default constructor. Leaves the FormattedPlaceholder in a
+         * valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         FormattedPlaceholder() : type(kNull) {}
-        FormattedPlaceholder(const Formattable& input, const UnicodeString& fb) : fallback(fb), source(input), type(kUnevaluated) {}
+        /**
+         * Returns a `Formattable` value corresponding to this placeholder.
+         * If this is a fallback value, a `Formattable` value wrapping the fallback string is returned.onverts the Formattable object to an ICU Formattable object.
+         * The result is undefined if this is a null operand.
+         * If this has no formatting output, then the source `Formattable` is returned.
+         * If this has a string-typed `FormattedValue` output, then a `Formattable` wrapping the formatted string is returned.
+         * If this has any other type of `FormattedValue` output, then the source `Formattable` is returned.
+         *
+         * @return A message2::Formattable value.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         message2::Formattable asFormattable() const;
+        /**
+         * Returns true iff this is a fallback placeholder.
+         *
+         * @return True if and only if this placeholder was constructed from a fallback string,
+         *         with no `Formattable` source or formatting output.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         bool isFallback() const { return type == kFallback; }
+        /**
+         * Returns true iff this is a null placeholder.
+         *
+         * @return True if and only if this placeholder represents the absent argument to a formatter
+         *         that was invoked without an argument.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         bool isNullOperand() const { return type == kNull; }
+        /**
+         * Returns true iff this has formatting output.
+         *
+         * @return True if and only if this was constructed from both an input `Formattable` and
+         *         output `FormattedValue`.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         bool isEvaluated() const { return (type == kEvaluated); }
-        // Returns true if this is a valid argument to the formatter
-        // (it's not null and is not a fallback value)
+        /**
+         * Returns true iff this represents a valid argument to the formatter.
+         *
+         * @return True if and only if this is neither the null argument nor a fallback placeholder.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         bool canFormat() const { return !(isFallback() || isNullOperand()); }
+        /**
+         * Gets the fallback value of this placeholder, to be used in its place if an error occurs while
+         * formatting it.
+         * @return          A reference to this placeholder's fallback string.
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         const UnicodeString& getFallback() const { return fallback; }
+        /**
+         * Returns a regular (fully formatted) value whose formatted string value is the fallback string
+         * of this placeholder.
+         * @return          A fully formatted `FormattedPlaceholder`.
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         FormattedPlaceholder promote() const {
             // Return a non-error value with string contents `fallback`
             return FormattedPlaceholder(FormattedPlaceholder(Formattable(fallback), fallback),
                                         FormattedValue(fallback));
         }
-        // Precondition: type is evaluated
+        /**
+         * Returns the formatted output of this placeholder. The result is undefined if !isEvaluated().
+         * @return          A fully formatted `FormattedPlaceholder`.
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         const FormattedValue& output() const { return formatted; }
+        /**
+         * Move constructor:
+         * The source FormattedPlaceholder will be left in a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         FormattedPlaceholder(FormattedPlaceholder&&);
+        /**
+         * Move assignment operator:
+         * The source FormattedPlaceholder will be left in a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         FormattedPlaceholder& operator=(FormattedPlaceholder&&) noexcept;
-
         /**
          * Formats this as a string, using defaults.  If this is
          * either the null operand or is a fallback value, the return value is the result of formatting the
          * fallback value (which is the default fallback string if this is the null operand).
-         * If this is object- or array-typed, then the argument is treated as a
-         * fallback value, since there is no default formatter for objects or arrays.
+         * If there is no formatted output and the input is object- or array-typed,
+         * then the argument is treated as a fallback value, since there is no default formatter
+         * for objects or arrays.
          *
          * @param locale The locale to use for formatting numbers or dates
          * @param status Input/output error code
-         * @return The result of formatting the input.
+         * @return The result of formatting this placeholder.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.

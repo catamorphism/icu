@@ -46,6 +46,17 @@ namespace message2 {
      */
     class U_I18N_API MessageArguments : public UObject {
     public:
+        /**
+         * Message arguments constructor, which takes a map and returns a container
+         * of arguments that can be passed to a `MessageFormatter`.
+         *
+         * @param args A reference to a map from strings (argument names) to `message2::Formattable`
+         *        objects (argument values). The keys and values of the map are copied into the result.
+         * @param status Input/output error code.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         MessageArguments(const std::map<UnicodeString, Formattable>& args, UErrorCode& status) {
             if (U_FAILURE(status)) {
                 return;
@@ -63,8 +74,29 @@ namespace message2 {
                 i++;
             }
         }
+        /**
+         * Move operator:
+         * The source MessageArguments will be left in a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         MessageArguments& operator=(MessageArguments&&) noexcept;
+        /**
+         * Move constructor.
+         * The source MessageArguments will be left in a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         MessageArguments(MessageArguments&&);
+        /**
+         * Default constructor.
+         * Returns an empty arguments mapping.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
         MessageArguments() = default;
         /**
          * Destructor.
