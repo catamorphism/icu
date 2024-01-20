@@ -222,7 +222,7 @@ message2::FormattedPlaceholder PersonNameFormatter::format(FormattedPlaceholder&
     }
     const Formattable& toFormat = arg.asFormattable();
 
-    FunctionOptions::FunctionOptionsMap opt = options.getOptions();
+    FunctionOptionsMap opt = options.getOptions();
     bool hasFormality = opt.count("formality") > 0 && opt["formality"].getType() == Formattable::Type::kString;
     bool hasLength = opt.count("length") > 0 && opt["length"].getType() == Formattable::Type::kString;
 
@@ -329,7 +329,7 @@ message2::FormattedPlaceholder GrammarCasesFormatter::format(FormattedPlaceholde
     const Formattable& toFormat = arg.asFormattable();
     UnicodeString result;
 
-    FunctionOptions::FunctionOptionsMap opt = options.getOptions();
+    FunctionOptionsMap opt = options.getOptions();
     switch (toFormat.getType()) {
         case Formattable::Type::kString: {
             const UnicodeString& in = toFormat.getString();
@@ -446,7 +446,7 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
     // Assumes arg is not-yet-formatted
     const Formattable& toFormat = arg.asFormattable();
 
-    FunctionOptions::FunctionOptionsMap opt = options.getOptions();
+    FunctionOptionsMap opt = options.getOptions();
     bool hasType = opt.count("type") > 0 && opt["type"].getType() == Formattable::Type::kString;
     UListFormatterType type = UListFormatterType::ULISTFMT_TYPE_AND;
     if (hasType) {
@@ -581,7 +581,7 @@ Formatter* ResourceManagerFactory::createFormatter(const Locale& locale, UErrorC
 
 using Arguments = MessageArguments;
 
-static Arguments localToGlobal(const FunctionOptions::FunctionOptionsMap& opts, UErrorCode& status) {
+static Arguments localToGlobal(const FunctionOptionsMap& opts, UErrorCode& status) {
     if (U_FAILURE(status)) {
         return {};
     }
@@ -615,7 +615,7 @@ message2::FormattedPlaceholder ResourceManager::format(FormattedPlaceholder&& ar
         }
     }
 
-    FunctionOptions::FunctionOptionsMap opt = options.getOptions();
+    FunctionOptionsMap opt = options.getOptions();
     bool hasProperties = opt.count("resbundle") > 0 && opt["resbundle"].getType() == Formattable::Type::kObject && opt["resbundle"].getObject()->tag() == u"properties";
     // If properties were provided, look up the given string in the properties,
     // yielding a message

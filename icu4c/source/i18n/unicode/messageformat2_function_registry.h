@@ -31,9 +31,10 @@ namespace message2 {
     class Formatter;
     class Selector;
 
-    // TODO: I think this should actually be private
-
 /**
+ * Internal use only, but has to be included here as part of the implementation
+ * of the header-only `FunctionOptions::getOptions()` method
+ *
  *  A `ResolvedFunctionOption` represents the result of evaluating
  * a single named function option. It pairs the given name with the `Formattable`
  * value resulting from evaluating the option's value.
@@ -43,10 +44,10 @@ namespace message2 {
  * @internal ICU 75.0 technology preview
  * @deprecated This API is for technology preview only.
  */
+#ifndef U_IN_DOXYGEN
 class U_I18N_API ResolvedFunctionOption : public UObject {
   private:
 
-    // TODO
     /* const */ UnicodeString name;
     /* const */ Formattable value;
 
@@ -63,17 +64,31 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
     }
     virtual ~ResolvedFunctionOption();
 }; // class ResolvedFunctionOption
+#endif
 
-// TODO docs
+/**
+ * Mapping from option names to `message2::Formattable` objects, obtained
+ * by calling `getOptions()` on a `FunctionOptions` object.
+ *
+ * @internal ICU 75.0 technology preview
+ * @deprecated This API is for technology preview only.
+ */
+using FunctionOptionsMap = std::map<UnicodeString, message2::Formattable>;
+
+/**
+ * Structure encapsulating named options passed to a custom selector or formatter.
+ *
+ * @internal ICU 75.0 technology preview
+ * @deprecated This API is for technology preview only.
+ */
 class U_I18N_API FunctionOptions : public UObject {
  public:
-    using FunctionOptionsMap = std::map<UnicodeString, message2::Formattable>;
     /**
      * Returns a map of all name-value pairs provided as options to this function.
      * The syntactic order of options is not guaranteed to
      * be preserved.
      *
-     * @return           A map from strings to `Formattable` values representing
+     * @return           A map from strings to `message2::Formattable` objects representing
      *                   the results of resolving each option value.
      *
      * @internal ICU 75.0 technology preview
@@ -89,6 +104,13 @@ class U_I18N_API FunctionOptions : public UObject {
         }
         return result;
     }
+    /**
+     * Default constructor.
+     * Returns an empty mapping.
+     *     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
     FunctionOptions() { options = nullptr; }
  private:
     friend class MessageFormatter;
@@ -195,10 +217,8 @@ class U_I18N_API FunctionOptions : public UObject {
          * rather than by reference since `FormatterFactory` is an abstract class.)
          *
          * @param selectorName Name of the desired selector.
-         * @param result A reference that will be initialized to the selector factory registered
-         *               under `selectorName` if the return value is true. If the return value is
-         *               false, this reference is undefined.
-         * @return True if and only if a selector factory was registered under `selectorName`.
+         * @return A pointer to the `SelectorFactory` registered under `selectorName`, or null
+         *         if no formatter was registered under that name.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
