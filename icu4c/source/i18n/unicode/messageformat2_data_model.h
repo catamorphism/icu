@@ -461,14 +461,6 @@ namespace message2 {
              */
             Literal& operator=(const Literal&);
             /**
-             * Move constructor.
-             * The source Literal will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Literal(Literal&& other) noexcept;
-            /**
              * Move assignment operator.
              * The source Literal will be left in a valid but undefined state.
              *
@@ -894,14 +886,6 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             SelectorKeys(const SelectorKeys& other);
-            /**
-             * Move constructor.
-             * The source SelectorKeys will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            SelectorKeys(SelectorKeys&&) noexcept;
             /**
              * Move assignment operator:
              * The source SelectorKeys will be left in a valid but undefined state.
@@ -1999,14 +1983,6 @@ namespace message2 {
          */
         MessageFormatDataModel();
         /**
-         * Move constructor.
-         * The source MessageFormatDataModel will be left in a valid but undefined state.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        MessageFormatDataModel(MessageFormatDataModel&&) noexcept;
-        /**
          * Move assignment operator:
          * The source MessageFormatDataModel will be left in a valid but undefined state.
          *
@@ -2021,7 +1997,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatDataModel &operator=(const MessageFormatDataModel &) noexcept;
+        MessageFormatDataModel &operator=(const MessageFormatDataModel &);
         /**
          * Destructor.
          *

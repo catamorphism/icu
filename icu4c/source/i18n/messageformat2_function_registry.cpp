@@ -212,8 +212,6 @@ FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept
     return *this;
 }
 
-FunctionRegistry::FunctionRegistry(FunctionRegistry&& other) noexcept : formatters(std::move(other.formatters)), selectors(std::move(other.selectors)) {}
-
 FunctionRegistry::~FunctionRegistry() {}
 
 // Specific formatter implementations

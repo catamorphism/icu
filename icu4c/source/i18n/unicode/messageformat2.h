@@ -83,14 +83,6 @@ namespace message2 {
          */
         MessageArguments& operator=(MessageArguments&&) noexcept;
         /**
-         * Move constructor.
-         * The source MessageArguments will be left in a valid but undefined state.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        MessageArguments(MessageArguments&&);
-        /**
          * Default constructor.
          * Returns an empty arguments mapping.
          *
@@ -146,15 +138,6 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         MessageFormatter& operator=(MessageFormatter&&) noexcept;
-        /**
-         * Move constructor.
-         * The source MessageFormatter will be left in a valid but undefined state.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        MessageFormatter(MessageFormatter&&) noexcept;
-
         /**
          * Destructor.
          *

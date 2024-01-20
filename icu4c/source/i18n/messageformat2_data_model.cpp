@@ -113,12 +113,6 @@ SelectorKeys& SelectorKeys::operator=(SelectorKeys&& other) noexcept {
     return *this;
 }
 
-SelectorKeys::SelectorKeys(SelectorKeys&& other) noexcept {
-    len = other.len;
-    keys = LocalArray<Key>(other.keys.orphan());
-    other.len = 0;
-}
-
 SelectorKeys::SelectorKeys(const SelectorKeys& other) {
     if (other.keys == nullptr) {
         len = 0;
@@ -189,11 +183,6 @@ Literal& Literal::operator=(const Literal& other) {
         contents = other.contents;
     }
     return *this;
-}
-
-Literal::Literal(Literal&& other) noexcept {
-    thisIsQuoted = other.thisIsQuoted;
-    contents = std::move(other.contents);
 }
 
 Literal::~Literal() {
@@ -1049,15 +1038,6 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
     bogus &= bindings.isValid();
 }
 
-MessageFormatDataModel::MessageFormatDataModel(MessageFormatDataModel&& other) noexcept
-    : numVariants(other.numVariants),
-      numSelectors(other.numSelectors),
-      selectors(hasPattern() ? LocalArray<Expression>() : LocalArray<Expression>(other.selectors.orphan())),
-      variants(hasPattern() ? LocalArray<Variant>() : LocalArray<Variant>(other.variants.orphan())),
-      pattern(hasPattern() ? other.pattern : Pattern()),
-      bindings(other.bindings.orphan()),
-      bindingsLen(other.bindingsLen) {}
-
 MessageFormatDataModel::MessageFormatDataModel() {}
 
 MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel&& other) noexcept {
@@ -1075,7 +1055,7 @@ MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel
     return *this;
 }
 
-MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDataModel& other) noexcept {
+MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDataModel& other) {
     if (this != &other) {
         U_ASSERT(!other.bogus);
 
@@ -1100,9 +1080,8 @@ MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDat
 }
 
 MessageFormatDataModel MessageFormatDataModel::Builder::build(UErrorCode& errorCode) const noexcept {
-    MessageFormatDataModel result;
     if (U_FAILURE(errorCode)) {
-        return result;
+        return {};
     }
     if (!hasPattern && !hasSelectors) {
         errorCode = U_INVALID_STATE_ERROR;

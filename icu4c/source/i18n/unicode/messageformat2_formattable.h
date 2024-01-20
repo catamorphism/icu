@@ -271,14 +271,6 @@ namespace message2 {
          */
         Formattable(const Formattable&);
         /**
-         * Move constructor:
-         * The source Formattable will be left in a valid but undefined state.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        Formattable(Formattable&&);
-        /**
          * Copy assignment operator
          *
          * @internal ICU 75.0 technology preview
@@ -501,6 +493,22 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         const number::FormattedNumber& getNumber() const { return numberOutput; }
+        /**
+         * Move assignment operator:
+         * The source FormattedValue will be left in a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        FormattedValue& operator=(FormattedValue&&) noexcept;
+        /**
+         * Move constructor:
+         * The source FormattedValue will be left in a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        FormattedValue(FormattedValue&& other) { *this = std::move(other); }
     private:
         enum Type {
             kString,
@@ -649,14 +657,6 @@ namespace message2 {
          */
         const FormattedValue& output() const { return formatted; }
         /**
-         * Move constructor:
-         * The source FormattedPlaceholder will be left in a valid but undefined state.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        FormattedPlaceholder(FormattedPlaceholder&&);
-        /**
          * Move assignment operator:
          * The source FormattedPlaceholder will be left in a valid but undefined state.
          *
@@ -664,6 +664,14 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         FormattedPlaceholder& operator=(FormattedPlaceholder&&) noexcept;
+        /**
+         * Move constructor:
+         * The source FormattedPlaceholder will be left in a valid but undefined state.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        FormattedPlaceholder(FormattedPlaceholder&& other) { *this = std::move(other); }
         /**
          * Formats this as a string, using defaults.  If this is
          * either the null operand or is a fallback value, the return value is the result of formatting the
