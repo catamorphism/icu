@@ -131,18 +131,6 @@ namespace message2 {
         return *this;
     }
 
-    MessageFormatter::MessageFormatter(MessageFormatter&& other) noexcept {
-        if (this != &other) {
-            locale = std::move(other.locale);
-            standardFunctionRegistry = std::move(other.standardFunctionRegistry);
-            customFunctionRegistry = other.customFunctionRegistry;
-            dataModel = std::move(other.dataModel);
-            normalizedInput = std::move(other.normalizedInput);
-            cachedFormatters = std::move(other.cachedFormatters);
-            errors = std::move(other.errors);
-        }
-    }
-
     const MessageFormatDataModel& MessageFormatter::getDataModel() const { return dataModel; }
 
     MessageFormatter::~MessageFormatter() {}

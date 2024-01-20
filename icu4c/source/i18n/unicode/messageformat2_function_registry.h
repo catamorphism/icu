@@ -312,13 +312,13 @@ class U_I18N_API FunctionOptions : public UObject {
          */
         FunctionRegistry& operator=(FunctionRegistry&&) noexcept;
         /**
-         * Move constructor.
+         * Move constructor:
          * The source FunctionRegistry will be left in a valid but undefined state.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FunctionRegistry(FunctionRegistry&&) noexcept;
+        FunctionRegistry(FunctionRegistry&& other) { *this = std::move(other); }
         /**
          * Destructor.
          *

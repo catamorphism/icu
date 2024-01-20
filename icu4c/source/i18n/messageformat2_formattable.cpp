@@ -230,13 +230,14 @@ namespace message2 {
         numberOutput = std::move(n);
     }
 
-    FormattedPlaceholder::FormattedPlaceholder(FormattedPlaceholder&& other) {
+    FormattedValue& FormattedValue::operator=(FormattedValue&& other) noexcept {
         type = other.type;
-        source = other.source;
-        if (type == kEvaluated) {
-            formatted = std::move(other.formatted);
+        if (type == kString) {
+            stringOutput = std::move(other.stringOutput);
+        } else {
+            numberOutput = std::move(other.numberOutput);
         }
-        fallback = other.fallback;
+        return *this;
     }
 
     FormattedPlaceholder& FormattedPlaceholder::operator=(FormattedPlaceholder&& other) noexcept {
