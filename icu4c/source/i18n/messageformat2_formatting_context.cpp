@@ -76,6 +76,20 @@ ResolvedSelector::ResolvedSelector(const FunctionName& fn,
 
 ResolvedSelector::ResolvedSelector(FormattedPlaceholder&& val) : value(std::move(val)) {}
 
+ResolvedSelector& ResolvedSelector::operator=(ResolvedSelector&& other) noexcept {
+    selectorName = std::move(other.selectorName);
+    selector.adoptInstead(other.selector.orphan());
+    options = std::move(other.options);
+    value = std::move(other.value);
+    return *this;
+}
+
+ResolvedSelector::ResolvedSelector(ResolvedSelector&& other) {
+    *this = std::move(other);
+}
+
+ResolvedSelector::~ResolvedSelector() {}
+
 // Selector and formatter lookup
 // -----------------------------
 

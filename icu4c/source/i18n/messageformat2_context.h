@@ -388,7 +388,7 @@ namespace message2 {
 
     // Encapsulates a value to be scrutinized by a `match` with its resolved
     // options and the name of the selector
-    class ResolvedSelector {
+    class ResolvedSelector : public UObject {
     public:
         ResolvedSelector() {}
         ResolvedSelector(const FunctionName& fn,
@@ -408,6 +408,9 @@ namespace message2 {
             return std::move(options);
         }
         const FunctionName& getSelectorName() const { return selectorName; }
+        virtual ~ResolvedSelector();
+        ResolvedSelector& operator=(ResolvedSelector&&) noexcept;
+        ResolvedSelector(ResolvedSelector&&);
     private:
         FunctionName selectorName; // For error reporting
         LocalPointer<Selector> selector;
