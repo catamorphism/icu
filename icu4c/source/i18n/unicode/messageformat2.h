@@ -212,7 +212,8 @@ namespace message2 {
             // Ignored if hasPattern
             MessageFormatDataModel dataModel;
             Locale locale;
-            std::shared_ptr<FunctionRegistry> customFunctionRegistry;
+            // Not owned
+            const FunctionRegistry* customFunctionRegistry;
 
         public:
             /**
@@ -241,17 +242,16 @@ namespace message2 {
             /**
              * Sets a custom function registry.
              *
-             * @param functionRegistry Function registry to use; this argument is
-             *        a shared pointer, and the caller must ensure its lifetime contains
+             * @param functionRegistry Function registry to use. `functionRegistry` is not
+             *        adopted, and the caller must ensure its lifetime contains
              *        the lifetime of the `MessageFormatter` object built by this
-             *        builder. The argument is non-const because the values in the FunctionRegistry
-             *        (specifically `FormatterFactory` arguments) may have mutable state.
+             *        builder.
              * @return       A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setFunctionRegistry(std::shared_ptr<FunctionRegistry> functionRegistry);
+            Builder& setFunctionRegistry(const FunctionRegistry* functionRegistry);
             /**
              * Sets a data model. If a pattern was previously set, it is removed.
              *
@@ -367,7 +367,7 @@ namespace message2 {
         // Precondition: custom function registry exists
         // Note: this is non-const because the values in the FunctionRegistry are mutable
         // (a FormatterFactory can have mutable state)
-        FunctionRegistry& getCustomFunctionRegistry() const;
+        const FunctionRegistry& getCustomFunctionRegistry() const;
 
         // Checking for resolution errors
         void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;
@@ -391,10 +391,9 @@ namespace message2 {
         // of the FormatterFactory and SelectorFactory interfaces to implement a custom
         // clone() method, which is necessary to avoid sharing between copies of the
         // function registry (and thus double-frees)
-
-        // It's also non-const, because the values in the function registry are mutable
-        // (a FormatterFactory can have mutable state)
-        std::shared_ptr<FunctionRegistry> customFunctionRegistry;
+        // Not deeply immutable (the values in the function registry are mutable,
+        // as a FormatterFactory can have mutable state
+        const FunctionRegistry* customFunctionRegistry;
 
         // Data model, representing the parsed message
         MessageFormatDataModel dataModel;
@@ -403,13 +402,17 @@ namespace message2 {
         UnicodeString normalizedInput;
 
         // Formatter cache
-        // Must be a pointer to avoid including the internal header file
+        // Must be a raw pointer to avoid including the internal header file
         // defining CachedFormatters
-        std::unique_ptr<CachedFormatters> cachedFormatters;
+        // Owned by `this`
+        CachedFormatters* cachedFormatters;
 
         // Errors -- only used while parsing and checking for data model errors; then
         // the MessageContext keeps track of errors
-        std::shared_ptr<StaticErrors> errors;
+        // Must be a raw pointer to avoid including the internal header file
+        // defining StaticErrors
+        // Owned by `this`
+        StaticErrors* errors;
     }; // class MessageFormatter
 
 } // namespace message2

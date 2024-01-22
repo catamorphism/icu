@@ -30,7 +30,7 @@ namespace message2 {
 
     // Precondition: `reg` is non-null
     // Does not adopt `reg`
-    MessageFormatter::Builder& MessageFormatter::Builder::setFunctionRegistry(std::shared_ptr<FunctionRegistry> reg) {
+    MessageFormatter::Builder& MessageFormatter::Builder::setFunctionRegistry(const FunctionRegistry* reg) {
         U_ASSERT(reg != nullptr);
         customFunctionRegistry = reg;
         return *this;
@@ -92,16 +92,16 @@ namespace message2 {
 
         MessageFormatDataModel::Builder tree(success);
         // Initialize errors
-        errors = std::make_shared<StaticErrors>(StaticErrors(success));
+        LocalPointer<StaticErrors> errorsNew(new StaticErrors(success));
         CHECK_ERROR(success);
+        errors = errorsNew.orphan();
 
         // Initialize formatter cache
-        CachedFormatters* cachedFormattersPtr = new CachedFormatters();
-        if (cachedFormattersPtr == nullptr) {
+        cachedFormatters = new CachedFormatters();
+        if (cachedFormatters == nullptr) {
             success = U_MEMORY_ALLOCATION_ERROR;
             return;
         }
-        cachedFormatters = std::unique_ptr<CachedFormatters>(cachedFormattersPtr);
 
         // Parse the pattern
         Parser(builder.pattern, tree, *errors, normalizedInput).parse(parseError, success);
@@ -125,15 +125,24 @@ namespace message2 {
         customFunctionRegistry = other.customFunctionRegistry;
         dataModel = std::move(other.dataModel);
         normalizedInput = std::move(other.normalizedInput);
-        cachedFormatters = std::move(other.cachedFormatters);
-        errors = std::move(other.errors);
+        cachedFormatters = other.cachedFormatters;
+        other.cachedFormatters = nullptr;
+        errors = other.errors;
+        other.errors = nullptr;
 
         return *this;
     }
 
     const MessageFormatDataModel& MessageFormatter::getDataModel() const { return dataModel; }
 
-    MessageFormatter::~MessageFormatter() {}
+    MessageFormatter::~MessageFormatter() {
+        if (cachedFormatters != nullptr) {
+            delete cachedFormatters;
+        }
+        if (errors != nullptr) {
+            delete errors;
+        }
+    }
     MessageFormatter::Builder::~Builder() {}
 
 } // namespace message2

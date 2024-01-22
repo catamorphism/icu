@@ -30,7 +30,7 @@ class TestCase : public UMemory {
     /* const */ bool ignoreError;
 
     // Function registry is not owned by the TestCase object
-    /* const */ std::shared_ptr<FunctionRegistry> functionRegistry = nullptr;
+    const FunctionRegistry* functionRegistry = nullptr;
 
     public:
     const UnicodeString& getPattern() const { return pattern; }
@@ -70,7 +70,7 @@ class TestCase : public UMemory {
         return offset;
     }
     bool hasCustomRegistry() const { return functionRegistry != nullptr; }
-    const std::shared_ptr<FunctionRegistry> getCustomRegistry() const {
+    const FunctionRegistry* getCustomRegistry() const {
         U_ASSERT(hasCustomRegistry());
         return functionRegistry;
     }
@@ -157,7 +157,7 @@ class TestCase : public UMemory {
             ignoreError = false;
             return *this;
         }
-        Builder& setFunctionRegistry(std::shared_ptr<FunctionRegistry> reg) {
+        Builder& setFunctionRegistry(const FunctionRegistry* reg) {
             U_ASSERT(reg != nullptr);
             functionRegistry = reg;
             return *this;
@@ -180,7 +180,7 @@ class TestCase : public UMemory {
         uint32_t lineNumber;
         uint32_t offset;
         bool ignoreError;
-        std::shared_ptr<FunctionRegistry> functionRegistry  = nullptr; // Not owned
+        const FunctionRegistry* functionRegistry  = nullptr; // Not owned
 
         public:
         Builder() : pattern(""), locale(Locale::getDefault()), hasExpectedOutput(false), expected(""), expectedError(U_ZERO_ERROR), expectNoSyntaxError(false), hasLineNumberAndOffset(false), ignoreError(false) {}
@@ -220,7 +220,7 @@ class TestUtils {
         mfBuilder.setPattern(testCase.getPattern()).setLocale(testCase.getLocale());
 
         if (testCase.hasCustomRegistry()) {
-            mfBuilder.setFunctionRegistry(std::shared_ptr<FunctionRegistry>(testCase.getCustomRegistry()));
+            mfBuilder.setFunctionRegistry(testCase.getCustomRegistry());
         }
         UParseError parseError;
 	MessageFormatter mf = mfBuilder.build(parseError, errorCode);
