@@ -1,21 +1,22 @@
 // © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 
+#include "unicode/uconfig.h"
+
 #ifndef U_HIDE_DEPRECATED_API
 
 #ifndef MESSAGEFORMAT2_H
 #define MESSAGEFORMAT2_H
 
-#include "unicode/utypes.h"
-
 #if U_SHOW_CPLUSPLUS_API
+
+#if !UCONFIG_NO_FORMATTING
 
 /**
  * \file
  * \brief C++ API: Formats messages using the draft MessageFormat 2.0.
  */
 
-#if !UCONFIG_NO_FORMATTING
 
 #include "unicode/messageformat2_data_model.h"
 #include "unicode/messageformat2_formattable.h"

@@ -1,12 +1,12 @@
 // © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 
+#include "unicode/uconfig.h"
+
 #ifndef U_HIDE_DEPRECATED_API
 
 #ifndef MESSAGEFORMAT2_FUNCTION_REGISTRY_H
 #define MESSAGEFORMAT2_FUNCTION_REGISTRY_H
-
-#include "unicode/utypes.h"
 
 #if U_SHOW_CPLUSPLUS_API
 
@@ -439,4 +439,5 @@ U_NAMESPACE_END
 #endif // MESSAGEFORMAT2_FUNCTION_REGISTRY_H
 
 #endif // U_HIDE_DEPRECATED_API
+
 // eof

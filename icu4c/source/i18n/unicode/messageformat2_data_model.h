@@ -1,12 +1,12 @@
 // © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 
+#include "unicode/uconfig.h"
+
 #ifndef U_HIDE_DEPRECATED_API
 
 #ifndef MESSAGEFORMAT_DATA_MODEL_H
 #define MESSAGEFORMAT_DATA_MODEL_H
-
-#include "unicode/utypes.h"
 
 #if U_SHOW_CPLUSPLUS_API
 
