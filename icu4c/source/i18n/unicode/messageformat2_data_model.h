@@ -22,8 +22,12 @@ U_NAMESPACE_BEGIN
 class UVector;
 
 // Helpers
+
+// Note: this _must_ be declared `inline` or else gcc will generate code
+// for its instantiations, which needs to be avoided because it returns
+// a std::vector
 template<typename T>
-static std::vector<T> toStdVector(const T* arr, int32_t len) {
+static inline std::vector<T> toStdVector(const T* arr, int32_t len) {
     std::vector<T> result;
     for (int32_t i = 0; i < len; i++) {
         result.push_back(arr[i]);
