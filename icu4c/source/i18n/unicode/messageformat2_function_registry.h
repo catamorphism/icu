@@ -236,8 +236,9 @@ class U_I18N_API FunctionOptions : public UObject {
          */
         class U_I18N_API Builder : public UObject {
         private:
-            LocalPointer<FormatterMap> formatters;
-            LocalPointer<SelectorMap> selectors;
+            // Must use raw pointers to avoid instantiating `LocalPointer` on an internal type
+            FormatterMap* formatters;
+            SelectorMap* selectors;
 
             // Do not define copy constructor/assignment operator
             Builder& operator=(const Builder&) = delete;
@@ -348,8 +349,9 @@ class U_I18N_API FunctionOptions : public UObject {
         bool hasFormatter(const data_model::FunctionName& f) const;
         bool hasSelector(const data_model::FunctionName& s) const;
 
-        LocalPointer<FormatterMap> formatters;
-        LocalPointer<SelectorMap> selectors;
+        // Must use raw pointers to avoid instantiating `LocalPointer` on an internal type
+        FormatterMap* formatters;
+        SelectorMap* selectors;
     }; // class FunctionRegistry
 
     /**
