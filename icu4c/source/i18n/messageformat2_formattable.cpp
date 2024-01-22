@@ -8,6 +8,8 @@
 #include "unicode/messageformat2_formattable.h"
 #include "unicode/numberformatter.h"
 #include "unicode/smpdtfmt.h"
+#include "messageformat2_macros.h"
+#include "number_decimalquantity.h"
 
 U_NAMESPACE_BEGIN
 
