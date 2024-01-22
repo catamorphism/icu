@@ -106,7 +106,7 @@ namespace message2 {
             return nullptr;
         }
         if (parent.hasCustomFunctionRegistry()) {
-            FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
+            const FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
             const SelectorFactory* selectorFactory = customFunctionRegistry.getSelector(functionName);
             if (selectorFactory != nullptr) {
                 return selectorFactory;
@@ -133,7 +133,7 @@ namespace message2 {
             return nullptr;
         }
         if (parent.hasCustomFunctionRegistry()) {
-            FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
+            const FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
             FormatterFactory* formatterFactory = customFunctionRegistry.getFormatter(functionName);
             if (formatterFactory != nullptr) {
                 return formatterFactory;

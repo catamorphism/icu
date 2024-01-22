@@ -713,7 +713,7 @@ UnicodeString MessageFormatter::getPattern() const {
 }
 
 // Precondition: custom function registry exists
-FunctionRegistry& MessageFormatter::getCustomFunctionRegistry() const {
+const FunctionRegistry& MessageFormatter::getCustomFunctionRegistry() const {
     U_ASSERT(hasCustomFunctionRegistry());
     return *customFunctionRegistry;
 }
