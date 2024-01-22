@@ -26,14 +26,17 @@ FormatterFactory::~FormatterFactory() {}
 SelectorFactory::~SelectorFactory() {}
 
 FunctionRegistry FunctionRegistry::Builder::build() {
-    U_ASSERT(formatters.isValid() && selectors.isValid());
-    return FunctionRegistry(formatters.orphan(), selectors.orphan());
+    U_ASSERT(formatters != nullptr && selectors != nullptr);
+    FunctionRegistry result = FunctionRegistry(formatters, selectors);
+    formatters = nullptr;
+    selectors = nullptr;
+    return result;
 }
 
 // Does not adopt its argument
 FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
-        U_ASSERT(selectors.isValid());
+        U_ASSERT(selectors != nullptr);
         selectors->put(selectorName.toString(), selectorFactory, errorCode);
     }
     return *this;
@@ -42,7 +45,7 @@ FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const Function
 // Does not adopt its argument
 FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
-        U_ASSERT(formatters.isValid());
+        U_ASSERT(formatters != nullptr);
         formatters->put(formatterName.toString(), formatterFactory, errorCode);
     }
     return *this;
@@ -52,22 +55,29 @@ FunctionRegistry::Builder::Builder(UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
     // Maps don't own their values
-    formatters.adoptInstead(new Hashtable());
-    selectors.adoptInstead(new Hashtable());
-    if (!formatters.isValid() || !selectors.isValid()) {
+    formatters = new Hashtable();
+    selectors = new Hashtable();
+    if (!(formatters != nullptr && selectors != nullptr)) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
 }
 
-FunctionRegistry::Builder::~Builder() {}
+FunctionRegistry::Builder::~Builder() {
+    if (formatters != nullptr) {
+        delete formatters;
+    }
+    if (selectors != nullptr) {
+        delete selectors;
+    }
+}
 
 FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterName) const {
-    U_ASSERT(formatters.isValid());
+    U_ASSERT(formatters != nullptr);
     return static_cast<FormatterFactory*>(formatters->get(formatterName.toString()));
 }
 
 const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selectorName) const {
-    U_ASSERT(selectors.isValid());
+    U_ASSERT(selectors != nullptr);
     return static_cast<const SelectorFactory*>(selectors->get(selectorName.toString()));
 }
 
@@ -206,13 +216,22 @@ FunctionRegistry::FunctionRegistry(FormatterMap* f, SelectorMap* s) : formatters
 }
 
 FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept {
-    formatters = std::move(other.formatters);
-    selectors = std::move(other.selectors);
+    formatters = other.formatters;
+    selectors = other.selectors;
+    other.formatters = nullptr;
+    other.selectors = nullptr;
 
     return *this;
 }
 
-FunctionRegistry::~FunctionRegistry() {}
+FunctionRegistry::~FunctionRegistry() {
+    if (formatters != nullptr) {
+        delete formatters;
+    }
+    if (selectors != nullptr) {
+        delete selectors;
+    }
+}
 
 // Specific formatter implementations
 
