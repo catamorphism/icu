@@ -111,26 +111,26 @@ ResolvedSelector::~ResolvedSelector() {}
 // -----------------------------
 
 // Postcondition: selector != nullptr || U_FAILURE(status)
-Selector* MessageContext::getSelector(const FunctionName& functionName, UErrorCode& status) {
+Selector* MessageFormatter::getSelector(MessageContext& context, const FunctionName& functionName, UErrorCode& status) const {
     NULL_ON_ERROR(status);
     U_ASSERT(isSelector(functionName));
 
-    const SelectorFactory* selectorFactory = lookupSelectorFactory(functionName, status);
+    const SelectorFactory* selectorFactory = lookupSelectorFactory(context, functionName, status);
     NULL_ON_ERROR(status);
     if (selectorFactory == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
     }
     // Create a specific instance of the selector
-    auto result = selectorFactory->createSelector(messageFormatter().getLocale(), status);
+    auto result = selectorFactory->createSelector(getLocale(), status);
     NULL_ON_ERROR(status);
     return result;
 }
 
 // Precondition: formatter is defined
-const Formatter& MessageContext::getFormatter(const FunctionName& functionName, UErrorCode& status) {
+const Formatter& MessageFormatter::getFormatter(MessageContext& context, const FunctionName& functionName, UErrorCode& status) const {
     U_ASSERT(isFormatter(functionName));
-    return *maybeCachedFormatter(functionName, status);
+    return *maybeCachedFormatter(context, functionName, status);
 }
 
 } // namespace message2
