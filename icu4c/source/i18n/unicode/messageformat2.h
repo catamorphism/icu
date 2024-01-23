@@ -378,6 +378,7 @@ namespace message2 {
 
         void initErrors(UErrorCode&);
         void clearErrors() const;
+        void cleanup() noexcept;
 
         // The locale this MessageFormatter was created with
         /* const */ Locale locale;
@@ -414,6 +415,10 @@ namespace message2 {
         // defining StaticErrors
         // Owned by `this`
         StaticErrors* errors;
+
+        // Tracks built-in formatter objects for deletion, as the FunctionRegistry
+        // does not own its values
+        UVector* standardFormatters;
     }; // class MessageFormatter
 
 } // namespace message2

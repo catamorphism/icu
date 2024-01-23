@@ -661,7 +661,11 @@ Operator::Operator(const FunctionName& f, const UVector& optsVector, UErrorCode&
     options = OptionMap(optsVector, status);
 }
 
-Operator::Builder::~Builder() {}
+Operator::Builder::~Builder() {
+    if (options != nullptr) {
+        delete options;
+    }
+}
 
 Operator::~Operator() {}
 
@@ -878,7 +882,11 @@ Pattern& Pattern::operator=(const Pattern& other) noexcept {
 }
 
 
-Pattern::Builder::~Builder() {}
+Pattern::Builder::~Builder() {
+    if (parts != nullptr) {
+        delete parts;
+    }
+}
 
 // ---------------- Binding
 

@@ -74,6 +74,7 @@ namespace message2 {
                 dest[i] = std::move(*static_cast<T*>(source.elementAt(i)));
             }
         }
+        source.removeAllElements();
         return dest;
     }
 

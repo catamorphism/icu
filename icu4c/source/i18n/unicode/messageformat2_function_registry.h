@@ -88,6 +88,8 @@ class U_I18N_API FunctionOptions : public UObject {
      * The syntactic order of options is not guaranteed to
      * be preserved.
      *
+     * This class is immutable and movable but not copyable.
+     *
      * @return           A map from strings to `message2::Formattable` objects representing
      *                   the results of resolving each option value.
      *
@@ -107,11 +109,35 @@ class U_I18N_API FunctionOptions : public UObject {
     /**
      * Default constructor.
      * Returns an empty mapping.
-     *     *
+     *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
     FunctionOptions() { options = nullptr; }
+    /**
+     * Destructor.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    virtual ~FunctionOptions();
+    /**
+     * Move assignment operator:
+     * The source FunctionOptions will be left in a valid but undefined state.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    FunctionOptions& operator=(FunctionOptions&&) noexcept;
+    /**
+     * Move constructor:
+     * The source FunctionOptions will be left in a valid but undefined state.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    FunctionOptions(FunctionOptions&&);
+    FunctionOptions& operator=(const FunctionOptions&) = delete;
  private:
     friend class MessageFormatter;
     friend class StandardFunctions;
@@ -246,7 +272,7 @@ class U_I18N_API FunctionOptions : public UObject {
 
         public:
             /**
-             * Registers a formatter factory to a given formatter name. Adopts `formatterFactory`.
+             * Registers a formatter factory to a given formatter name. Does not adopt `formatterFactory`.
              *
              * @param formatterName Name of the formatter being registered.
              * @param formatterFactory A FormatterFactory object to use for creating `formatterName`
@@ -348,10 +374,11 @@ class U_I18N_API FunctionOptions : public UObject {
 
         bool hasFormatter(const data_model::FunctionName& f) const;
         bool hasSelector(const data_model::FunctionName& s) const;
+        void cleanup() noexcept;
 
         // Must use raw pointers to avoid instantiating `LocalPointer` on an internal type
-        FormatterMap* formatters;
-        SelectorMap* selectors;
+        FormatterMap* formatters = nullptr;
+        SelectorMap* selectors = nullptr;
     }; // class FunctionRegistry
 
     /**

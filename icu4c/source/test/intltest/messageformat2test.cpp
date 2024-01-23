@@ -331,8 +331,9 @@ void TestMessageFormat2::testAPICustomFunctions() {
     // Set up custom function registry
     FunctionRegistry::Builder builder(errorCode);
     // Note that this doesn't use `setDefaultFormatterNameForType()`; not implemented yet
+    LocalPointer<PersonNameFormatterFactory> personFormatterFactory(new PersonNameFormatterFactory());
     FunctionRegistry functionRegistry =
-        builder.setFormatter(data_model::FunctionName("person"), new PersonNameFormatterFactory(), errorCode)
+        builder.setFormatter(data_model::FunctionName("person"), personFormatterFactory.getAlias(), errorCode)
                .build();
 
     Person* person = new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe"));

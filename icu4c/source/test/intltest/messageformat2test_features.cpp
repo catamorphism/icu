@@ -535,6 +535,7 @@ message2::FormattedPlaceholder TemperatureFormatter::format(FormattedPlaceholder
 }
 
 TemperatureFormatter::~TemperatureFormatter() { delete cachedFormatters; }
+TemperatureFormatterFactory::~TemperatureFormatterFactory() {}
 
 void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode) {
     using Formattable = message2::Formattable;
