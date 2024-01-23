@@ -17,6 +17,8 @@
 #include "unicode/numberformatter.h"
 #include "unicode/unistr.h"
 
+#include <string_view>
+
 U_NAMESPACE_BEGIN
 
 namespace message2 {
