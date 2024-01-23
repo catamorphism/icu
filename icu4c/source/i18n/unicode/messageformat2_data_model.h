@@ -274,7 +274,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        class Reserved : public UMemory {
+        class U_I18N_API Reserved : public UMemory {
         public:
             /**
              * A `Reserved` is a sequence of literals.
@@ -1017,7 +1017,7 @@ namespace message2 {
         #ifndef U_IN_DOXYGEN
         // Options
         // This is a wrapper class around a vector of options that provides lookup operations
-        class OptionMap : public UObject {
+        class U_I18N_API OptionMap : public UObject {
         public:
             int32_t size() const;
             // Needs to take an error code b/c an earlier copy might have failed
