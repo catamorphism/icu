@@ -370,6 +370,19 @@ namespace message2 {
         // (a FormatterFactory can have mutable state)
         const FunctionRegistry& getCustomFunctionRegistry() const;
 
+        bool isCustomFormatter(const FunctionName&) const;
+        FormatterFactory* lookupFormatterFactory(MessageContext&, const FunctionName&, UErrorCode& status) const;
+        bool isBuiltInSelector(const FunctionName&) const;
+        bool isBuiltInFormatter(const FunctionName&) const;
+        bool isCustomSelector(const FunctionName&) const;
+        const SelectorFactory* lookupSelectorFactory(MessageContext&, const FunctionName&, UErrorCode&) const;
+        bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
+        bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
+        const Formatter* maybeCachedFormatter(MessageContext&, const FunctionName&, UErrorCode&);
+
+        Selector* getSelector(MessageContext&, const FunctionName&, UErrorCode&) const;
+        const Formatter& getFormatter(MessageContext&, const FunctionName&, UErrorCode&) const;
+
         // Checking for resolution errors
         void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;
         void check(MessageContext&, const Environment&, const data_model::Expression&, UErrorCode&) const;

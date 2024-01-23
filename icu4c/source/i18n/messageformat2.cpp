@@ -137,8 +137,8 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
 
     UnicodeString fallback = argument.isNullOperand() ? functionName.toString() : argument.fallback;
 
-    if (context.isFormatter(functionName)) {
-        const Formatter& formatterImpl = context.getFormatter(functionName, status);
+    if (isFormatter(functionName)) {
+        const Formatter& formatterImpl = getFormatter(context, functionName, status);
         if (U_FAILURE(status)) {
             return {};
         }
@@ -164,7 +164,7 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
         return result;
     }
     // No formatter with this name -- set error
-    if (context.isSelector(functionName)) {
+    if (isSelector(functionName)) {
         errs.setFormattingError(functionName.toString(), status);
     } else {
         errs.setUnknownFunction(functionName, status);
@@ -600,15 +600,15 @@ ResolvedSelector MessageFormatter::resolveVariables(const Environment& env,
         const Operator& rator = expr.getOperator();
         // Already checked that rator is non-reserved
         const FunctionName& selectorName = rator.getFunctionName();
-        if (context.isSelector(selectorName)) {
-            auto selector = context.getSelector(selectorName, status);
+        if (isSelector(selectorName)) {
+            auto selector = getSelector(context, selectorName, status);
             if (U_SUCCESS(status)) {
                 FunctionOptions resolvedOptions = resolveOptions(env, rator.getOptionsInternal(), context, status);
                 // Operand may be the null argument, but resolveVariables() handles that
                 FormattedPlaceholder argument = formatOperand(env, expr.getOperand(), context, status);
                 return ResolvedSelector(selectorName, selector, std::move(resolvedOptions), std::move(argument));
             }
-        } else if (context.isFormatter(selectorName)) {
+        } else if (isFormatter(selectorName)) {
             context.getErrors().setSelectorError(selectorName, status);
         } else {
             context.getErrors().setUnknownFunction(selectorName, status);
@@ -728,7 +728,7 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
     // Create a new environment that will store closures for all local variables
     Environment* env = Environment::create(status);
     // Create a new context with the given arguments and the `errors` structure
-    MessageContext context(*this, arguments, *errors, status);
+    MessageContext context(arguments, *errors, status);
 
     // Check for unresolved variable errors
     checkDeclarations(context, env, status);

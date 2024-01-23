@@ -16,8 +16,8 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/dtptngen.h"
-#include "unicode/messageformat2.h"
 #include "unicode/messageformat2_data_model.h"
+#include "unicode/messageformat2_function_registry.h"
 #include "unicode/numberformatter.h"
 #include "unicode/utypes.h"
 
@@ -322,6 +322,9 @@ namespace message2 {
     // Formatter cache
     // --------------
 
+    class MessageArguments;
+    class MessageFormatter;
+
     // Map from function names to Formatters
     class CachedFormatters : public UObject {
     private:
@@ -345,20 +348,9 @@ namespace message2 {
     // The context contains all the information needed to process
     // an entire message: arguments, formatter cache, and error list
 
-    class MessageFormatter;
-
     class MessageContext : public UMemory {
     public:
-        MessageContext(MessageFormatter&, const MessageArguments&, const StaticErrors&, UErrorCode&);
-
-        bool isCustomFormatter(const FunctionName&) const;
-        const Formatter* maybeCachedFormatter(const FunctionName&, UErrorCode&);
-        const SelectorFactory* lookupSelectorFactory(const FunctionName&, UErrorCode&);
-        bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
-        bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
-
-        Selector* getSelector(const FunctionName&, UErrorCode&);
-        const Formatter& getFormatter(const FunctionName&, UErrorCode&);
+        MessageContext(const MessageArguments&, const StaticErrors&, UErrorCode&);
 
         bool hasGlobal(const VariableName&) const;
         const Formattable& getGlobal(const VariableName&) const;
@@ -367,21 +359,10 @@ namespace message2 {
         void checkErrors(UErrorCode& status) const;
         DynamicErrors& getErrors() { return errors; }
 
-        const MessageFormatter& messageFormatter() const { return parent; }
-
         virtual ~MessageContext();
 
     private:
 
-        FormatterFactory* lookupFormatterFactory(const FunctionName&, UErrorCode& status);
-        bool isBuiltInSelector(const FunctionName&) const;
-        bool isBuiltInFormatter(const FunctionName&) const;
-        bool isCustomSelector(const FunctionName&) const;
-
-        // Note: this is a non-const reference because the function registry is mutable
-        // (only the values -- `FormatterFactory` objects -- in the mapping, not the
-        // registry itself).
-        MessageFormatter& parent;
         const MessageArguments& arguments; // External message arguments
         // Errors accumulated during parsing/formatting
         DynamicErrors errors;

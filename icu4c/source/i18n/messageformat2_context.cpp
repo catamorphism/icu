@@ -6,6 +6,7 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/messageformat2_function_registry.h"
+#include "unicode/messageformat2.h"
 #include "messageformat2_context.h"
 #include "messageformat2_macros.h"
 #include "uvector.h" // U_ASSERT
@@ -87,34 +88,36 @@ namespace message2 {
     // Function registry
 
 
-    bool MessageContext::isBuiltInSelector(const FunctionName& functionName) const {
-        return parent.standardFunctionRegistry.hasSelector(functionName);
+    bool MessageFormatter::isBuiltInSelector(const FunctionName& functionName) const {
+        return standardFunctionRegistry.hasSelector(functionName);
     }
 
-    bool MessageContext::isBuiltInFormatter(const FunctionName& functionName) const {
-        return parent.standardFunctionRegistry.hasFormatter(functionName);
+    bool MessageFormatter::isBuiltInFormatter(const FunctionName& functionName) const {
+        return standardFunctionRegistry.hasFormatter(functionName);
     }
 
     // https://github.com/unicode-org/message-format-wg/issues/409
     // Unknown function = unknown function error
     // Formatter used as selector  = selector error
     // Selector used as formatter = formatting error
-    const SelectorFactory* MessageContext::lookupSelectorFactory(const FunctionName& functionName, UErrorCode& status) {
+    const SelectorFactory* MessageFormatter::lookupSelectorFactory(MessageContext& context, const FunctionName& functionName, UErrorCode& status) const {
+        DynamicErrors& err = context.getErrors();
+
         if (isBuiltInSelector(functionName)) {
-            return parent.standardFunctionRegistry.getSelector(functionName);
+            return standardFunctionRegistry.getSelector(functionName);
         }
         if (isBuiltInFormatter(functionName)) {
-            errors.setSelectorError(functionName, status);
+            err.setSelectorError(functionName, status);
             return nullptr;
         }
-        if (parent.hasCustomFunctionRegistry()) {
-            const FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
+        if (hasCustomFunctionRegistry()) {
+            const FunctionRegistry& customFunctionRegistry = getCustomFunctionRegistry();
             const SelectorFactory* selectorFactory = customFunctionRegistry.getSelector(functionName);
             if (selectorFactory != nullptr) {
                 return selectorFactory;
             }
             if (customFunctionRegistry.getFormatter(functionName) != nullptr) {
-                errors.setSelectorError(functionName, status);
+                err.setSelectorError(functionName, status);
                 return nullptr;
             }
         }
@@ -122,26 +125,28 @@ namespace message2 {
         // isn't built-in, or the function doesn't exist in either the built-in
         // or custom registry.
         // Unknown function error
-        errors.setUnknownFunction(functionName, status);
+        err.setUnknownFunction(functionName, status);
         return nullptr;
     }
 
-    FormatterFactory* MessageContext::lookupFormatterFactory(const FunctionName& functionName, UErrorCode& status) {
+    FormatterFactory* MessageFormatter::lookupFormatterFactory(MessageContext& context, const FunctionName& functionName, UErrorCode& status) const {
+        DynamicErrors& err = context.getErrors();
+
         if (isBuiltInFormatter(functionName)) {
-            return parent.standardFunctionRegistry.getFormatter(functionName);
+            return standardFunctionRegistry.getFormatter(functionName);
         }
         if (isBuiltInSelector(functionName)) {
-            errors.setFormattingError(functionName, status);
+            err.setFormattingError(functionName, status);
             return nullptr;
         }
-        if (parent.hasCustomFunctionRegistry()) {
-            const FunctionRegistry& customFunctionRegistry = parent.getCustomFunctionRegistry();
+        if (hasCustomFunctionRegistry()) {
+            const FunctionRegistry& customFunctionRegistry = getCustomFunctionRegistry();
             FormatterFactory* formatterFactory = customFunctionRegistry.getFormatter(functionName);
             if (formatterFactory != nullptr) {
                 return formatterFactory;
             }
             if (customFunctionRegistry.getSelector(functionName) != nullptr) {
-                errors.setFormattingError(functionName, status);
+                err.setFormattingError(functionName, status);
                 return nullptr;
             }
         }
@@ -149,29 +154,29 @@ namespace message2 {
         // isn't built-in, or the function doesn't exist in either the built-in
         // or custom registry.
         // Unknown function error
-        errors.setUnknownFunction(functionName, status);
+        err.setUnknownFunction(functionName, status);
         return nullptr;
     }
 
-    bool MessageContext::isCustomFormatter(const FunctionName& fn) const {
-        return parent.hasCustomFunctionRegistry() && parent.getCustomFunctionRegistry().getFormatter(fn) != nullptr;
+    bool MessageFormatter::isCustomFormatter(const FunctionName& fn) const {
+        return hasCustomFunctionRegistry() && getCustomFunctionRegistry().getFormatter(fn) != nullptr;
     }
 
 
-    bool MessageContext::isCustomSelector(const FunctionName& fn) const {
-        return parent.hasCustomFunctionRegistry() && parent.getCustomFunctionRegistry().getSelector(fn) != nullptr;
+    bool MessageFormatter::isCustomSelector(const FunctionName& fn) const {
+        return hasCustomFunctionRegistry() && getCustomFunctionRegistry().getSelector(fn) != nullptr;
     }
 
-    const Formatter* MessageContext::maybeCachedFormatter(const FunctionName& f, UErrorCode& errorCode) {
+    const Formatter* MessageFormatter::maybeCachedFormatter(MessageContext& context, const FunctionName& f, UErrorCode& errorCode) const {
         NULL_ON_ERROR(errorCode);
-        U_ASSERT(parent.cachedFormatters != nullptr);
+        U_ASSERT(cachedFormatters != nullptr);
 
-        const Formatter* result = parent.cachedFormatters->getFormatter(f);
+        const Formatter* result = cachedFormatters->getFormatter(f);
         if (result == nullptr) {
             // Create the formatter
 
             // First, look up the formatter factory for this function
-            FormatterFactory* formatterFactory = lookupFormatterFactory(f, errorCode);
+            FormatterFactory* formatterFactory = lookupFormatterFactory(context, f, errorCode);
             NULL_ON_ERROR(errorCode);
 
             // If the formatter factory was null, there must have been
@@ -182,13 +187,13 @@ namespace message2 {
             }
 
             // Create a specific instance of the formatter
-            Formatter* formatter = formatterFactory->createFormatter(parent.locale, errorCode);
+            Formatter* formatter = formatterFactory->createFormatter(locale, errorCode);
             NULL_ON_ERROR(errorCode);
             if (formatter == nullptr) {
                 errorCode = U_MEMORY_ALLOCATION_ERROR;
                 return nullptr;
             }
-            parent.cachedFormatters->adoptFormatter(f, formatter, errorCode);
+            cachedFormatters->adoptFormatter(f, formatter, errorCode);
             return formatter;
         } else {
             return result;
@@ -198,10 +203,9 @@ namespace message2 {
     // -------------------------------------------------------
     // MessageContext accessors and constructors
 
-    MessageContext::MessageContext(MessageFormatter& mf,
-                                   const MessageArguments& args,
+    MessageContext::MessageContext(const MessageArguments& args,
                                    const StaticErrors& e,
-                                   UErrorCode& status) : parent(mf), arguments(args), errors(e, status) {}
+                                   UErrorCode& status) : arguments(args), errors(e, status) {}
 
     // Errors
     // -----------
