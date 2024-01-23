@@ -63,9 +63,19 @@ namespace message2 {
         // Set up the standard function registry
         FunctionRegistry::Builder standardFunctionsBuilder(success);
 
-        standardFunctionsBuilder.setFormatter(UnicodeString("datetime"), new StandardFunctions::DateTimeFactory(), success)
-            .setFormatter(UnicodeString("number"), new StandardFunctions::NumberFactory(), success)
-            .setFormatter(UnicodeString("identity"), new StandardFunctions::IdentityFactory(), success)
+        // FunctionRegistry does not own its formatter elements, so we keep a separate vector to ensure
+        // the elements are deleted
+        standardFormatters = createUVector(success);
+        CHECK_ERROR(success);
+        FormatterFactory* dateTime = new StandardFunctions::DateTimeFactory();
+        FormatterFactory* number = new StandardFunctions::NumberFactory();
+        FormatterFactory* identity = new StandardFunctions::IdentityFactory();
+        standardFormatters->adoptElement(dateTime, success);
+        standardFormatters->adoptElement(number, success);
+        standardFormatters->adoptElement(identity, success);
+        standardFunctionsBuilder.setFormatter(UnicodeString("datetime"), dateTime, success)
+            .setFormatter(UnicodeString("number"), number, success)
+            .setFormatter(UnicodeString("identity"), identity, success)
             .setSelector(UnicodeString("plural"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
             .setSelector(UnicodeString("selectordinal"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL), success)
             .setSelector(UnicodeString("select"), new StandardFunctions::TextFactory(), success)
@@ -119,7 +129,21 @@ namespace message2 {
         Checker(dataModel, *errors).check(success);
     }
 
+    void MessageFormatter::cleanup() noexcept {
+        if (cachedFormatters != nullptr) {
+            delete cachedFormatters;
+        }
+        if (errors != nullptr) {
+            delete errors;
+        }
+        if (standardFormatters != nullptr) {
+            delete standardFormatters;
+        }
+    }
+
     MessageFormatter& MessageFormatter::operator=(MessageFormatter&& other) noexcept {
+        cleanup();
+
         locale = std::move(other.locale);
         standardFunctionRegistry = std::move(other.standardFunctionRegistry);
         customFunctionRegistry = other.customFunctionRegistry;
@@ -129,6 +153,8 @@ namespace message2 {
         other.cachedFormatters = nullptr;
         errors = other.errors;
         other.errors = nullptr;
+        standardFormatters = other.standardFormatters;
+        other.standardFormatters = nullptr;
 
         return *this;
     }
@@ -136,12 +162,7 @@ namespace message2 {
     const MessageFormatDataModel& MessageFormatter::getDataModel() const { return dataModel; }
 
     MessageFormatter::~MessageFormatter() {
-        if (cachedFormatters != nullptr) {
-            delete cachedFormatters;
-        }
-        if (errors != nullptr) {
-            delete errors;
-        }
+        cleanup();
     }
     MessageFormatter::Builder::~Builder() {}
 

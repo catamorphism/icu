@@ -77,7 +77,9 @@ namespace message2 {
         cache.put(f.toString(), val, status);
     }
 
-    CachedFormatters::CachedFormatters() {}
+    CachedFormatters::CachedFormatters() {
+        cache.setValueDeleter(uprv_deleteUObject);
+    }
 
     CachedFormatters::~CachedFormatters() {}
 

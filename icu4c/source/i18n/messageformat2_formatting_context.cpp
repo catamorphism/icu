@@ -63,6 +63,23 @@ UBool FunctionOptions::getFunctionOption(const UnicodeString& key, Formattable& 
     return false;
 }
 
+FunctionOptions& FunctionOptions::operator=(FunctionOptions&& other) noexcept {
+    functionOptionsLen = other.functionOptionsLen;
+    options = other.options;
+    other.functionOptionsLen = 0;
+    other.options = nullptr;
+    return *this;
+}
+
+FunctionOptions::FunctionOptions(FunctionOptions&& other) {
+    *this = std::move(other);
+}
+
+FunctionOptions::~FunctionOptions() {
+    if (options != nullptr) {
+        delete[] options;
+    }
+}
 // ResolvedSelector
 // ----------------
 

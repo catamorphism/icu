@@ -200,6 +200,7 @@ class TemperatureFormatterFactory : public FormatterFactory {
     public:
     Formatter* createFormatter(const Locale&, UErrorCode&) override;
     TemperatureFormatterFactory() : constructCount(0), formatCount(0), fFormatterCount(0), cFormatterCount(0) {}
+    ~TemperatureFormatterFactory();
 
     int32_t constructCount;
     int32_t formatCount;

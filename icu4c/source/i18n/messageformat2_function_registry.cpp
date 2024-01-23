@@ -54,12 +54,17 @@ FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const Functio
 FunctionRegistry::Builder::Builder(UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    // Maps don't own their values
     formatters = new Hashtable();
     selectors = new Hashtable();
     if (!(formatters != nullptr && selectors != nullptr)) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
+    /*
+      The `formatters` hash doesn't own its values. For motivation,
+      see the TemperatureFormatter class and testFormatterIsCreatedOnce() test case,
+      in messageformat2test_features.cpp
+     */
+    selectors->setValueDeleter(uprv_deleteUObject);
 }
 
 FunctionRegistry::Builder::~Builder() {
@@ -216,6 +221,8 @@ FunctionRegistry::FunctionRegistry(FormatterMap* f, SelectorMap* s) : formatters
 }
 
 FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept {
+    cleanup();
+
     formatters = other.formatters;
     selectors = other.selectors;
     other.formatters = nullptr;
@@ -224,13 +231,18 @@ FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept
     return *this;
 }
 
-FunctionRegistry::~FunctionRegistry() {
+void FunctionRegistry::cleanup() noexcept {
     if (formatters != nullptr) {
         delete formatters;
     }
     if (selectors != nullptr) {
         delete selectors;
     }
+}
+
+
+FunctionRegistry::~FunctionRegistry() {
+    cleanup();
 }
 
 // Specific formatter implementations
