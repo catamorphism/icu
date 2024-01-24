@@ -533,31 +533,34 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
 /* static */ Hashtable* message2::ResourceManager::properties(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
-    LocalPointer<UnicodeString> firefox(new UnicodeString("match {$gcase :select} when genitive {Firefoxin} when * {Firefox}"));
-    if (!firefox.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-    LocalPointer<UnicodeString> chrome(new UnicodeString("match {$gcase :select} when genitive {Chromen} when * {Chrome}"));
-    if (!chrome.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-    LocalPointer<UnicodeString> safari(new UnicodeString("match {$gcase :select} when genitive {Safarin} when * {Safari}"));
-    if (!safari.isValid()) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
+    UnicodeString* firefox = new UnicodeString("match {$gcase :select} when genitive {Firefoxin} when * {Firefox}");
+    UnicodeString* chrome = new UnicodeString("match {$gcase :select} when genitive {Chromen} when * {Chrome}");
+    UnicodeString* safari = new UnicodeString("match {$gcase :select} when genitive {Safarin} when * {Safari}");
+
+    if (firefox != nullptr && chrome != nullptr && safari != nullptr) {
+        Hashtable* result = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
+        if (result == nullptr) {
+            return nullptr;
+        }
+        result->setValueDeleter(uprv_deleteUObject);
+        result->put("safari", safari, errorCode);
+        result->put("firefox", firefox, errorCode);
+        result->put("chrome", chrome, errorCode);
+        return result;
     }
 
-    Hashtable* result = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
-    if (result == nullptr) {
-        return nullptr;
+    // Allocation failed
+    errorCode = U_MEMORY_ALLOCATION_ERROR;
+    if (firefox != nullptr) {
+        delete firefox;
     }
-    result->setValueDeleter(uprv_deleteUObject);
-    result->put("safari", safari.orphan(), errorCode);
-    result->put("firefox", firefox.orphan(), errorCode);
-    result->put("chrome", chrome.orphan(), errorCode);
-    return result;
+    if (chrome != nullptr) {
+        delete chrome;
+    }
+    if (safari != nullptr) {
+        delete safari;
+    }
+    return nullptr;
 }
 
 Formatter* ResourceManagerFactory::createFormatter(const Locale& locale, UErrorCode& errorCode) {
