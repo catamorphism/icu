@@ -182,7 +182,7 @@ namespace message2 {
             // If the formatter factory was null, there must have been
             // an earlier error/warning
             if (formatterFactory == nullptr) {
-                U_ASSERT(errors.hasUnknownFunctionError() || errors.hasFormattingError());
+                U_ASSERT(context.getErrors().hasUnknownFunctionError() || context.getErrors().hasFormattingError());
                 return nullptr;
             }
 
