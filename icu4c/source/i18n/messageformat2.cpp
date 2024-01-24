@@ -270,10 +270,10 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
             // Append nomatch as the last element of the list res.
             // Emit a Selection Error.
             // (Note: in this case, rv, being a fallback, serves as `nomatch`)
-            #ifdef _DEBUG
-            const Errors& err = context.getErrors();
-            U_ASSERT(err.hasUnknownFunctionError() || err.hasSelectorError());
-            U_ASSERT(rv.isFallback());
+            #ifdef U_DEBUG
+            const DynamicErrors& err = context.getErrors();
+            U_ASSERT(err.hasError());
+            U_ASSERT(rv.argument().isFallback());
             #endif
         }
         // 2ii(a). Append rv as the last element of the list res.
@@ -525,7 +525,7 @@ void MessageFormatter::sortVariants(const UVector& pref, UVector& vars, UErrorCo
                 // 5iii(c)(b). Let `ks` be the resolved value of `key`.
                 UnicodeString ks = key.asLiteral().unquoted();
                 // 5iii(c)(c) Let matchpref be the integer position of ks in `matches`.
-                #ifdef _DEBUG
+                #ifdef U_DEBUG
                 int32_t matchpref = vectorFind(matches, ks);
                 U_ASSERT(matchpref >= 0);
                 #endif
