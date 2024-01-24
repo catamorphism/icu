@@ -41,7 +41,7 @@ U_NAMESPACE_BEGIN
 // for similar examples.)
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
 template class U_I18N_API LocalArray<UnicodeString>;
-template class U_I18N_API LocalArray<Formattable>;
+template class U_I18N_API LocalArray<message2::Formattable>;
 #endif
 /// @endcond
 
