@@ -112,7 +112,7 @@ bool FunctionRegistry::hasSelector(const FunctionName& s) const {
 }
 
 void FunctionRegistry::checkFormatter(const char* s) const {
-#ifdef U_DEBUG
+#if U_DEBUG
     U_ASSERT(hasFormatter(FunctionName(UnicodeString(s))));
 #else
    (void) s;
@@ -120,7 +120,7 @@ void FunctionRegistry::checkFormatter(const char* s) const {
 }
 
 void FunctionRegistry::checkSelector(const char* s) const {
-#ifdef U_DEBUG
+#if U_DEBUG
     U_ASSERT(hasSelector(FunctionName(UnicodeString(s))));
 #else
     (void) s;
