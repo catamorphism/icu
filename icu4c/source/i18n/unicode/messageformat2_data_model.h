@@ -12,6 +12,15 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+// This has to be here  (before the includes) otherwise we get error 4661 in files that include this header
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+#endif
+
 #include "unicode/fmtable.h"
 #include "unicode/unistr.h"
 
@@ -262,7 +271,28 @@ namespace message2 {
         }; // class FunctionName
 
         class Literal;
+    } // namespace data_model
 
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalArray<message2::data_model::Literal>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+  namespace data_model {
         /**
          * The `Reserved` class represents a `reserved` annotation, as in the `reserved` nonterminal
          * in the MessageFormat 2 grammar or the `Reserved` interface
@@ -776,7 +806,28 @@ namespace message2 {
             /* const */ bool wildcard; // True if this represents the wildcard "*"
             /* const */ Literal contents;
         }; // class Key
+  } // namespace data_model
 
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalArray<message2::data_model::Key>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+  namespace data_model {
         /**
          * The `SelectorKeys` class represents the key list for a single variant.
          * It corresponds to the `keys` array in the `Variant` interface
@@ -1012,7 +1063,28 @@ namespace message2 {
             /* const */ UnicodeString name;
             /* const */ Operand rand;
         }; // class Option
+    } // namespace data_model
 
+  /// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalArray<message2::data_model::Option>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+  namespace data_model {
         // Internal only
         #ifndef U_IN_DOXYGEN
         // Options
@@ -1437,7 +1509,28 @@ namespace message2 {
         }; // class Expression
 
         class PatternPart;
+  } // namespace data_model
 
+  /// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalArray<message2::data_model::PatternPart>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+  namespace data_model {
         /**
          *  A `Pattern` is a sequence of formattable parts.
          * It corresponds to the `Pattern` interface
@@ -1844,6 +1937,27 @@ namespace message2 {
 
     using namespace data_model;
 
+  /// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalArray<message2::data_model::Expression>;
+template class U_I18N_API LocalArray<message2::data_model::Variant>;
+template class U_I18N_API LocalArray<message2::data_model::Binding>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
     // -----------------------------------------------------------------------
     // Public MessageFormatDataModel class
 
@@ -2165,6 +2279,12 @@ namespace message2 {
 } // namespace message2
 
 U_NAMESPACE_END
+
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
 

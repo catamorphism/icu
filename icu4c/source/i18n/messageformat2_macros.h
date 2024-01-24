@@ -12,6 +12,16 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+// If the following is moved after the three includes that follow it,
+// everything that includes this file fails to compile on Windows
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+#endif
+
 #include "unicode/format.h"
 #include "unicode/unistr.h"
 #include "plurrule_impl.h"
@@ -94,6 +104,12 @@ static constexpr UChar32 ID_MATCH[] = {
 
 } // namespace message2
 U_NAMESPACE_END
+
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
 

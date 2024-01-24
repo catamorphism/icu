@@ -5,10 +5,27 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+
+// I don't know why this is necessary
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+#endif
+
 #include "unicode/dtptngen.h"
-#include "unicode/messageformat2.h"
+
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+
 #include "unicode/numberformatter.h"
 #include "unicode/smpdtfmt.h"
+#include "unicode/messageformat2.h"
 #include "messageformat2_context.h"
 #include "messageformat2_function_registry_internal.h"
 #include "messageformat2_macros.h"
