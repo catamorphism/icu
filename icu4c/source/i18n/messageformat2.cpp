@@ -644,7 +644,7 @@ ResolvedSelector MessageFormatter::formatSelectorExpression(const Environment& g
             if (err.hasSyntaxError() || err.hasDataModelError()) {
                 return ResolvedSelector(FormattedPlaceholder()); // Null operand
             } else {
-                return ResolvedSelector(exprResult.takeArgument().promote());
+                return ResolvedSelector(exprResult.takeArgument());
             }
         }
         return exprResult;
