@@ -472,15 +472,16 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
                 errorCode = U_FORMATTING_ERROR;
                 return errorVal;
             }
-            LocalArray<UnicodeString> parts(new UnicodeString[n_items]);
-            if (!parts.isValid()) {
+            UnicodeString* parts = new UnicodeString[n_items];
+            if (parts == nullptr) {
                 errorCode = U_MEMORY_ALLOCATION_ERROR;
                 return {};
             }
             for (int32_t i = 0; i < n_items; i++) {
                 parts[i] = objs[i].getString();
             }
-            lf->format(parts.getAlias(), n_items, result, errorCode);
+            lf->format(parts, n_items, result, errorCode);
+            delete[] parts;
             break;
         }
         default: {
