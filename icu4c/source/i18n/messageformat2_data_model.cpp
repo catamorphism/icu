@@ -1043,7 +1043,7 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
         pattern = builder.pattern;
     }
     bindings.adoptInstead(copyVectorToArray<Binding>(*builder.locals, bindingsLen));
-    bogus &= bindings.isValid();
+    bogus &= (bool) bindings.isValid();
 }
 
 MessageFormatDataModel::MessageFormatDataModel() {}
