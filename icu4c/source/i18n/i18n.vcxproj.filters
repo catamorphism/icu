@@ -228,6 +228,9 @@
     <ClCompile Include="messageformat2_data_model.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
+    <ClCompile Include="messageformat2_formattable.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
     <ClCompile Include="messageformat2_formatting_context.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
@@ -238,9 +241,6 @@
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="messageformat2_serializer.cpp">
-      <Filter>formatting</Filter>
-    </ClCompile>
-    <ClCompile Include="messageformat2_utils.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="msgfmt.cpp">
