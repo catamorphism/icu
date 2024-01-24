@@ -272,6 +272,7 @@ namespace message2 {
 
         class Literal;
     } // namespace data_model
+} // namespace message2
 
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
@@ -292,6 +293,7 @@ template class U_I18N_API LocalArray<message2::data_model::Literal>;
 #endif
 /// @endcond
 
+namespace message2 {
   namespace data_model {
         /**
          * The `Reserved` class represents a `reserved` annotation, as in the `reserved` nonterminal
@@ -807,6 +809,7 @@ template class U_I18N_API LocalArray<message2::data_model::Literal>;
             /* const */ Literal contents;
         }; // class Key
   } // namespace data_model
+} // namespace message2
 
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
@@ -827,6 +830,7 @@ template class U_I18N_API LocalArray<message2::data_model::Key>;
 #endif
 /// @endcond
 
+namespace message2 {
   namespace data_model {
         /**
          * The `SelectorKeys` class represents the key list for a single variant.
@@ -1064,6 +1068,7 @@ template class U_I18N_API LocalArray<message2::data_model::Key>;
             /* const */ Operand rand;
         }; // class Option
     } // namespace data_model
+} // namespace message2
 
   /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
@@ -1084,6 +1089,7 @@ template class U_I18N_API LocalArray<message2::data_model::Option>;
 #endif
 /// @endcond
 
+namespace message2 {
   namespace data_model {
         // Internal only
         #ifndef U_IN_DOXYGEN
@@ -1510,6 +1516,7 @@ template class U_I18N_API LocalArray<message2::data_model::Option>;
 
         class PatternPart;
   } // namespace data_model
+} // namespace message2
 
   /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
@@ -1530,6 +1537,7 @@ template class U_I18N_API LocalArray<message2::data_model::PatternPart>;
 #endif
 /// @endcond
 
+namespace message2 {
   namespace data_model {
         /**
          *  A `Pattern` is a sequence of formattable parts.
@@ -1934,8 +1942,7 @@ template class U_I18N_API LocalArray<message2::data_model::PatternPart>;
             /* const */ Expression value;
         }; // class Binding
     } // namespace data_model
-
-    using namespace data_model;
+} // namespace message2
 
   /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
@@ -1957,6 +1964,9 @@ template class U_I18N_API LocalArray<message2::data_model::Binding>;
 #endif
 #endif
 /// @endcond
+
+namespace message2 {
+    using namespace data_model;
 
     // -----------------------------------------------------------------------
     // Public MessageFormatDataModel class
