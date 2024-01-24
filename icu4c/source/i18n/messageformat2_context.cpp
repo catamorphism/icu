@@ -5,7 +5,6 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2_function_registry.h"
 #include "unicode/messageformat2.h"
 #include "messageformat2_context.h"
 #include "messageformat2_macros.h"
