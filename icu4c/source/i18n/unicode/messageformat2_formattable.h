@@ -639,18 +639,6 @@ namespace message2 {
          */
         const UnicodeString& getFallback() const { return fallback; }
         /**
-         * Returns a regular (fully formatted) value whose formatted string value is the fallback string
-         * of this placeholder.
-         * @return          A fully formatted `FormattedPlaceholder`.
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        FormattedPlaceholder promote() const {
-            // Return a non-error value with string contents `fallback`
-            return FormattedPlaceholder(FormattedPlaceholder(Formattable(fallback), fallback),
-                                        FormattedValue(fallback));
-        }
-        /**
          * Returns the formatted output of this placeholder. The result is undefined if !isEvaluated().
          * @return          A fully formatted `FormattedPlaceholder`.
          * @internal ICU 75.0 technology preview
