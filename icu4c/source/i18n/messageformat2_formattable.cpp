@@ -222,6 +222,8 @@ namespace message2 {
 
     FormattableObject::~FormattableObject() {}
 
+    FormattedMessage::~FormattedMessage() {}
+
     FormattedValue::FormattedValue(const UnicodeString& s) {
         type = kString;
         stringOutput = std::move(s);
