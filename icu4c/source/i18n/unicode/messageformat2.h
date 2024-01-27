@@ -184,6 +184,29 @@ namespace message2 {
         UnicodeString formatToString(const MessageArguments& arguments, UErrorCode &status);
 
         /**
+         * Not yet implemented; formats the message to a `FormattedMessage` object,
+         * using the data model that was previously set or parsed,
+         * and the given `arguments` object.
+         *
+         * @param arguments Reference to message arguments
+         * @param status    Input/output error code used to indicate syntax errors, data model
+         *                  errors, resolution errors, formatting errors, selection errors, as well
+         *                  as other errors (such as memory allocation failures). Partial output
+         *                  is still provided in the presence of most error types.
+         * @return          The `FormattedMessage` representing the formatted message.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        FormattedMessage formatToParts(const MessageArguments& arguments, UErrorCode &status) {
+            (void) arguments;
+            if (U_SUCCESS(status)) {
+                status = U_UNSUPPORTED_ERROR;
+            }
+            return FormattedMessage(status);
+        }
+
+        /**
          * Accesses the locale that this `MessageFormatter` object was created with.
          *
          * @return A reference to the locale.
