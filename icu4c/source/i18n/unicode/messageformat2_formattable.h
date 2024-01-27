@@ -12,6 +12,7 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+#include "unicode/chariter.h"
 #include "unicode/fmtable.h"
 #include "unicode/formattedvalue.h"
 #include "unicode/numberformatter.h"
@@ -703,6 +704,138 @@ namespace message2 {
         FormattedValue formatted;
         Type type;
     }; // class FormattedPlaceholder
+
+    /**
+     * Not yet implemented: The result of a message formatting operation. Based on
+     * ICU4J's FormattedMessage.java.
+     *
+     * The class will contain information allowing the result to be viewed as a string,
+     * iterator, etc. (TBD)
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    class U_I18N_API FormattedMessage : public icu::FormattedValue {
+    public:
+        /**
+         * Not yet implemented.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        FormattedMessage(UErrorCode& status) {
+            if (U_SUCCESS(status)) {
+                status = U_UNSUPPORTED_ERROR;
+            }
+        }
+        /**
+         * Not yet implemented.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        int32_t length(UErrorCode& status) const {
+            if (U_SUCCESS(status)) {
+                status = U_UNSUPPORTED_ERROR;
+            }
+            return -1;
+        }
+        /**
+         * Not yet implemented.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        char16_t charAt(int32_t index, UErrorCode& status) const {
+            (void) index;
+            if (U_SUCCESS(status)) {
+                status = U_UNSUPPORTED_ERROR;
+            }
+            return 0;
+        }
+        /**
+         * Not yet implemented.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        StringPiece subSequence(int32_t start, int32_t end, UErrorCode& status) const {
+            (void) start;
+            (void) end;
+            if (U_SUCCESS(status)) {
+                status = U_UNSUPPORTED_ERROR;
+            }
+            return "";
+        }
+        /**
+         * Not yet implemented.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        UnicodeString toString(UErrorCode& status) const override {
+            if (U_SUCCESS(status)) {
+                status = U_UNSUPPORTED_ERROR;
+            }
+            return {};
+        }
+        /**
+         * Not yet implemented.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        UnicodeString toTempString(UErrorCode& status) const override {
+            if (U_SUCCESS(status)) {
+                status = U_UNSUPPORTED_ERROR;
+            }
+            return {};
+        }
+        /**
+         * Not yet implemented.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        Appendable& appendTo(Appendable& appendable, UErrorCode& status) const override {
+            if (U_SUCCESS(status)) {
+                status = U_UNSUPPORTED_ERROR;
+            }
+            return appendable;
+        }
+        /**
+         * Not yet implemented.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        UBool nextPosition(ConstrainedFieldPosition& cfpos, UErrorCode& status) const override {
+            (void) cfpos;
+            if (U_SUCCESS(status)) {
+                status = U_UNSUPPORTED_ERROR;
+            }
+            return false;
+        }
+        /**
+         * Not yet implemented.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        CharacterIterator* toCharacterIterator(UErrorCode& status) {
+            if (U_SUCCESS(status)) {
+                status = U_UNSUPPORTED_ERROR;
+            }
+            return nullptr;
+        }
+        /**
+         * Destructor.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        virtual ~FormattedMessage();
+    }; // class FormattedMessage
 
 } // namespace message2
 
