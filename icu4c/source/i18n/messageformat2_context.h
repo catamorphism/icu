@@ -311,6 +311,8 @@ namespace message2 {
         void setUnresolvedVariable(const VariableName&, UErrorCode&);
         void setUnknownFunction(const FunctionName&, UErrorCode&);
         void setFormattingError(const FunctionName&, UErrorCode&);
+        // Used when the name of the offending formatter is unknown
+        void setFormattingError(UErrorCode&);
         bool hasDataModelError() const { return staticErrors.hasDataModelError(); }
         bool hasFormattingError() const { return formattingError; }
         bool hasSelectorError() const { return selectorError; }

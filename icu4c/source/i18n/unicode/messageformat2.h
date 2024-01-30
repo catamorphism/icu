@@ -387,6 +387,11 @@ namespace message2 {
         [[nodiscard]] FormattedPlaceholder formatLiteral(const data_model::Literal&) const;
         void formatPattern(MessageContext&, const Environment&, const data_model::Pattern&, UErrorCode&, UnicodeString&) const;
         // Formats a call to a formatting function
+        // Dispatches on argument type
+        [[nodiscard]] FormattedPlaceholder evalFormatterCall(FormattedPlaceholder&& argument,
+                                                       MessageContext& context,
+                                                       UErrorCode& status) const;
+        // Dispatches on function name
         [[nodiscard]] FormattedPlaceholder evalFormatterCall(const FunctionName& functionName,
                                                        FormattedPlaceholder&& argument,
                                                        FunctionOptions&& options,
@@ -402,8 +407,6 @@ namespace message2 {
         void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const;
 
         // Function registry methods
-        const Formatter* maybeCachedFormatter(MessageContext&, const data_model::FunctionName&, UErrorCode& errorCode) const;
-
         bool hasCustomFunctionRegistry() const {
             return (customFunctionRegistry != nullptr);
         }
@@ -421,10 +424,11 @@ namespace message2 {
         const SelectorFactory* lookupSelectorFactory(MessageContext&, const FunctionName&, UErrorCode&) const;
         bool isSelector(const FunctionName& fn) const { return isBuiltInSelector(fn) || isCustomSelector(fn); }
         bool isFormatter(const FunctionName& fn) const { return isBuiltInFormatter(fn) || isCustomFormatter(fn); }
-        const Formatter* maybeCachedFormatter(MessageContext&, const FunctionName&, UErrorCode&);
+        const Formatter* maybeCachedFormatter(MessageContext&, const FunctionName&, UErrorCode&) const;
 
         Selector* getSelector(MessageContext&, const FunctionName&, UErrorCode&) const;
         const Formatter& getFormatter(MessageContext&, const FunctionName&, UErrorCode&) const;
+        bool getFormatterByType(const UnicodeString&, FunctionName&) const;
 
         // Checking for resolution errors
         void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;

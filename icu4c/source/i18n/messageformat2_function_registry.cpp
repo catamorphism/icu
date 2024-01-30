@@ -43,10 +43,11 @@ FormatterFactory::~FormatterFactory() {}
 SelectorFactory::~SelectorFactory() {}
 
 FunctionRegistry FunctionRegistry::Builder::build() {
-    U_ASSERT(formatters != nullptr && selectors != nullptr);
-    FunctionRegistry result = FunctionRegistry(formatters, selectors);
+    U_ASSERT(formatters != nullptr && selectors != nullptr && formattersByType != nullptr);
+    FunctionRegistry result = FunctionRegistry(formatters, selectors, formattersByType);
     formatters = nullptr;
     selectors = nullptr;
+    formattersByType = nullptr;
     return result;
 }
 
@@ -68,12 +69,22 @@ FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const Functio
     return *this;
 }
 
+FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatterByType(const UnicodeString& type, const FunctionName& functionName, UErrorCode& errorCode) {
+    if (U_SUCCESS(errorCode)) {
+        U_ASSERT(formattersByType != nullptr);
+        FunctionName* f = create<FunctionName>(FunctionName(functionName), errorCode);
+        formattersByType->put(type, f, errorCode);
+    }
+    return *this;
+}
+
 FunctionRegistry::Builder::Builder(UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
     formatters = new Hashtable();
     selectors = new Hashtable();
-    if (!(formatters != nullptr && selectors != nullptr)) {
+    formattersByType = new Hashtable();
+    if (!(formatters != nullptr && selectors != nullptr && formattersByType != nullptr)) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
     /*
@@ -82,6 +93,7 @@ FunctionRegistry::Builder::Builder(UErrorCode& errorCode) {
       in messageformat2test_features.cpp
      */
     selectors->setValueDeleter(uprv_deleteUObject);
+    formattersByType->setValueDeleter(uprv_deleteUObject);
 }
 
 FunctionRegistry::Builder::~Builder() {
@@ -91,11 +103,24 @@ FunctionRegistry::Builder::~Builder() {
     if (selectors != nullptr) {
         delete selectors;
     }
+    if (formattersByType != nullptr) {
+        delete formattersByType;
+    }
 }
 
 FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterName) const {
     U_ASSERT(formatters != nullptr);
     return static_cast<FormatterFactory*>(formatters->get(formatterName.toString()));
+}
+
+    UBool FunctionRegistry::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
+    U_ASSERT(formatters != nullptr);
+    const FunctionName* f = static_cast<FunctionName*>(formattersByType->get(type));
+    if (f != nullptr) {
+        name = *f;
+        return true;
+    }
+    return false;
 }
 
 const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selectorName) const {
@@ -233,8 +258,8 @@ static UBool getInt64Value(const Locale& locale, const Formattable& value, int64
 }
 
 // Adopts its arguments
-FunctionRegistry::FunctionRegistry(FormatterMap* f, SelectorMap* s) : formatters(f), selectors(s) {
-    U_ASSERT(f != nullptr && s != nullptr);
+FunctionRegistry::FunctionRegistry(FormatterMap* f, SelectorMap* s, Hashtable* byType) : formatters(f), selectors(s), formattersByType(byType) {
+    U_ASSERT(f != nullptr && s != nullptr && byType != nullptr);
 }
 
 FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept {
@@ -242,8 +267,10 @@ FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept
 
     formatters = other.formatters;
     selectors = other.selectors;
+    formattersByType = other.formattersByType;
     other.formatters = nullptr;
     other.selectors = nullptr;
+    other.formattersByType = nullptr;
 
     return *this;
 }
@@ -254,6 +281,9 @@ void FunctionRegistry::cleanup() noexcept {
     }
     if (selectors != nullptr) {
         delete selectors;
+    }
+    if (formattersByType != nullptr) {
+        delete formattersByType;
     }
 }
 

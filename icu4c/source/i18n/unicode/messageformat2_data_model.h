@@ -81,7 +81,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            VariableName(const UnicodeString& s) : variableName(s) {}
+            explicit VariableName(const UnicodeString& s) : variableName(s) {}
             /**
              * Default constructor. (Needed for representing null operands)
              * Puts the VariableName into a valid but undefined state.
@@ -186,7 +186,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            FunctionName(UnicodeString s) : functionName(s), functionSigil(Sigil::DEFAULT) {}
+            explicit FunctionName(UnicodeString s) : functionName(s), functionSigil(Sigil::DEFAULT) {}
             /**
              * Constructor.
              *
@@ -639,7 +639,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operand(const VariableName& v) : var(v), type(Type::VARIABLE) {}
+            explicit Operand(const VariableName& v) : var(v), type(Type::VARIABLE) {}
             /**
              * Literal operand constructor.
              *
@@ -649,7 +649,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operand(const Literal& l) : lit(l), type(Type::LITERAL) {}
+            explicit Operand(const Literal& l) : lit(l), type(Type::LITERAL) {}
             /**
              * Copy assignment operator.
              *
@@ -753,7 +753,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Key(const Literal& lit) : wildcard(false), contents(lit) {}
+            explicit Key(const Literal& lit) : wildcard(false), contents(lit) {}
             /**
              * Move assignment operator:
              * The source Key will be left in a valid but undefined state.
@@ -1753,7 +1753,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            PatternPart(const UnicodeString& t) : isRawText(true), text(t) {}
+            explicit PatternPart(const UnicodeString& t) : isRawText(true), text(t) {}
             /**
              * Expression part constructor. Returns an Expression pattern
              * part with expression `e`.
@@ -1763,7 +1763,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            PatternPart(Expression&& e) : isRawText(false), expression(e) {}
+            explicit PatternPart(Expression&& e) : isRawText(false), expression(e) {}
             /**
              * Default constructor.
              * Puts the PatternPart into a valid but undefined state.
