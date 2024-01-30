@@ -46,7 +46,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual std::u16string_view tag() const = 0;
+        virtual const UnicodeString& tag() const = 0;
         /**
          * Destructor.
          *
@@ -676,7 +676,8 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        UnicodeString formatToString(const Locale& locale, UErrorCode& status) const;
+        UnicodeString formatToString(const Locale& locale,
+                                     UErrorCode& status) const;
 
     private:
         friend class MessageFormatter;

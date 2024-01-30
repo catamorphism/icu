@@ -251,6 +251,20 @@ class U_I18N_API FunctionOptions : public UObject {
          */
         const SelectorFactory* getSelector(const data_model::FunctionName& selectorName) const;
         /**
+         * Looks up a formatter factory by a type tag. This method gets the name of the default formatter registered
+         * for that type. If no formatter was explicitly registered for this type, it returns false.
+         *
+         * @param formatterType Type tag for the desired `FormattableObject` type to be formatted.
+         * @param Output parameter; initialized to the name of the default formatter for `formatterType`
+         *        if one has been registered. Its value is undefined otherwise.
+         * @return True if and only if the function registry contains a default formatter for `formatterType`.
+         *         If the return value is false, then the value of `name` is undefined.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        UBool getFormatterByType(const UnicodeString& formatterType, FunctionName& name) const;
+        /**
          * The mutable Builder class allows each formatter and selector factory
          * to be initialized separately; calling its `build()` method yields an
          * immutable FunctionRegistry object.
@@ -265,6 +279,7 @@ class U_I18N_API FunctionOptions : public UObject {
             // Must use raw pointers to avoid instantiating `LocalPointer` on an internal type
             FormatterMap* formatters;
             SelectorMap* selectors;
+            Hashtable* formattersByType;
 
             // Do not define copy constructor/assignment operator
             Builder& operator=(const Builder&) = delete;
@@ -284,6 +299,21 @@ class U_I18N_API FunctionOptions : public UObject {
              * @deprecated This API is for technology preview only.
              */
             Builder& setFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode);
+            /**
+             * Registers a formatter factory to a given type tag.
+             * (See `FormattableObject` for details on type tags.)
+             *
+             * @param formatterType Tag for objects to be formatted with this formatter.
+             * @param functionName A reference to the name of the function to use for
+             *        creating formatters for `formatterType` objects.
+             * @param errorCode Input/output error code
+             * @return A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& setFormatterByType(const UnicodeString& type, const FunctionName& functionName, UErrorCode& errorCode);
+
             /**
              * Registers a selector factory to a given selector name. Adopts `selectorFactory`.
              *
@@ -362,7 +392,7 @@ class U_I18N_API FunctionOptions : public UObject {
         FunctionRegistry& operator=(const FunctionRegistry&) = delete;
         FunctionRegistry(const FunctionRegistry&) = delete;
 
-        FunctionRegistry(FormatterMap* f, SelectorMap* s);
+        FunctionRegistry(FormatterMap* f, SelectorMap* s, Hashtable* byType);
 
         FunctionRegistry() {}
 
@@ -379,6 +409,8 @@ class U_I18N_API FunctionOptions : public UObject {
         // Must use raw pointers to avoid instantiating `LocalPointer` on an internal type
         FormatterMap* formatters = nullptr;
         SelectorMap* selectors = nullptr;
+        // Mapping from strings (type tags) to FunctionNames
+        Hashtable* formattersByType = nullptr;
     }; // class FunctionRegistry
 
     /**

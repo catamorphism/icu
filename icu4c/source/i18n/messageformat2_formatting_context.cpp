@@ -133,6 +133,12 @@ const Formatter& MessageFormatter::getFormatter(MessageContext& context, const F
     return *maybeCachedFormatter(context, functionName, status);
 }
 
+bool MessageFormatter::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
+    U_ASSERT(hasCustomFunctionRegistry());
+    const FunctionRegistry& reg = getCustomFunctionRegistry();
+    return reg.getFormatterByType(type, name);
+}
+
 } // namespace message2
 U_NAMESPACE_END
 

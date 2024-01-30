@@ -369,6 +369,26 @@ void TestMessageFormat2::testAPICustomFunctions() {
     result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello Mr. John Doe", result);
 
+    // By type
+    FunctionRegistry::Builder builderByType(errorCode);
+    FunctionName personFormatterName("person");
+    FunctionRegistry functionRegistryByType =
+        builderByType.setFormatter(personFormatterName,
+                                   personFormatterFactory.getAlias(),
+                                   errorCode)
+                     .setFormatterByType("person",
+                                         personFormatterName,
+                                         errorCode)
+                     .build();
+    mfBuilder.setFunctionRegistry(&functionRegistryByType);
+    mf = mfBuilder.setPattern("{Hello {$name}}")
+        .setLocale(locale)
+        .build(parseError, errorCode);
+    result = mf.formatToString(arguments, errorCode);
+    assertEquals("testAPICustomFunctions", U_ZERO_ERROR, errorCode);
+    // Expect "Hello John" because in the custom function we registered,
+    // "informal" is the default formality and "length" is the default length
+    assertEquals("testAPICustomFunctions", "Hello John", result);
     delete person;
 }
 

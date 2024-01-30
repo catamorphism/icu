@@ -166,16 +166,16 @@ namespace message2 {
         return hasCustomFunctionRegistry() && getCustomFunctionRegistry().getSelector(fn) != nullptr;
     }
 
-    const Formatter* MessageFormatter::maybeCachedFormatter(MessageContext& context, const FunctionName& f, UErrorCode& errorCode) const {
+    const Formatter* MessageFormatter::maybeCachedFormatter(MessageContext& context, const FunctionName& functionName, UErrorCode& errorCode) const {
         NULL_ON_ERROR(errorCode);
         U_ASSERT(cachedFormatters != nullptr);
 
-        const Formatter* result = cachedFormatters->getFormatter(f);
+        const Formatter* result = cachedFormatters->getFormatter(functionName);
         if (result == nullptr) {
             // Create the formatter
 
             // First, look up the formatter factory for this function
-            FormatterFactory* formatterFactory = lookupFormatterFactory(context, f, errorCode);
+            FormatterFactory* formatterFactory = lookupFormatterFactory(context, functionName, errorCode);
             NULL_ON_ERROR(errorCode);
 
             // If the formatter factory was null, there must have been
@@ -192,7 +192,7 @@ namespace message2 {
                 errorCode = U_MEMORY_ALLOCATION_ERROR;
                 return nullptr;
             }
-            cachedFormatters->adoptFormatter(f, formatter, errorCode);
+            cachedFormatters->adoptFormatter(functionName, formatter, errorCode);
             return formatter;
         } else {
             return result;
@@ -220,6 +220,10 @@ namespace message2 {
 
     void DynamicErrors::setFormattingError(const FunctionName& formatterName, UErrorCode& status) {
         addError(DynamicError(DynamicErrorType::FormattingError, formatterName.toString()), status);
+    }
+
+    void DynamicErrors::setFormattingError(UErrorCode& status) {
+        addError(DynamicError(DynamicErrorType::FormattingError, UnicodeString("unknown formatter")), status);
     }
 
     void StaticErrors::setDuplicateOptionName(UErrorCode& status) {

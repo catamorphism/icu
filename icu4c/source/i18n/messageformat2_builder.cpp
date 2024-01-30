@@ -73,13 +73,13 @@ namespace message2 {
         standardFormatters->adoptElement(dateTime, success);
         standardFormatters->adoptElement(number, success);
         standardFormatters->adoptElement(identity, success);
-        standardFunctionsBuilder.setFormatter(UnicodeString("datetime"), dateTime, success)
-            .setFormatter(UnicodeString("number"), number, success)
-            .setFormatter(UnicodeString("identity"), identity, success)
-            .setSelector(UnicodeString("plural"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
-            .setSelector(UnicodeString("selectordinal"), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL), success)
-            .setSelector(UnicodeString("select"), new StandardFunctions::TextFactory(), success)
-            .setSelector(UnicodeString("gender"), new StandardFunctions::TextFactory(), success);
+        standardFunctionsBuilder.setFormatter(FunctionName(UnicodeString("datetime")), dateTime, success)
+            .setFormatter(FunctionName(UnicodeString("number")), number, success)
+            .setFormatter(FunctionName(UnicodeString("identity")), identity, success)
+            .setSelector(FunctionName(UnicodeString("plural")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
+            .setSelector(FunctionName(UnicodeString("selectordinal")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL), success)
+            .setSelector(FunctionName(UnicodeString("select")), new StandardFunctions::TextFactory(), success)
+            .setSelector(FunctionName(UnicodeString("gender")), new StandardFunctions::TextFactory(), success);
         CHECK_ERROR(success);
         standardFunctionRegistry = standardFunctionsBuilder.build();
         CHECK_ERROR(success);

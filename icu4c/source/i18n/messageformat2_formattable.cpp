@@ -8,6 +8,7 @@
 #include "unicode/messageformat2_formattable.h"
 #include "unicode/numberformatter.h"
 #include "unicode/smpdtfmt.h"
+#include "messageformat2_context.h"
 #include "messageformat2_macros.h"
 #include "number_decimalquantity.h"
 
@@ -326,7 +327,8 @@ namespace message2 {
             }
         }
 
-        switch (toFormat.getType()) {
+        Formattable::Type type = toFormat.getType();
+        switch (type) {
         case Formattable::Type::kDate: {
             UnicodeString result;
             formatDateWithDefaults(locale, toFormat.getDate(), result, status);
@@ -346,14 +348,19 @@ namespace message2 {
         }
         default: {
             // No default formatters for other types; use fallback
-            return FormattedPlaceholder(input, FormattedValue(input.getFallback()));
+            status = U_FORMATTING_ERROR;
+            // Note: it would be better to set an internal formatting error so that a string
+            // (e.g. the type tag) can be provided. However, this  method is called by the
+            // public method formatToString() and thus can't take a MessageContext
+            return FormattedPlaceholder(input.getFallback());
         }
         }
     }
 
     // Called when string output is required; forces output to be produced
     // if none is present (including formatting number output as a string)
-    UnicodeString FormattedPlaceholder::formatToString(const Locale& locale, UErrorCode& status) const {
+    UnicodeString FormattedPlaceholder::formatToString(const Locale& locale,
+                                                       UErrorCode& status) const {
         if (U_FAILURE(status)) {
             return {};
         }
@@ -372,6 +379,10 @@ namespace message2 {
         }
         // Unevaluated value: first evaluate it fully, then format
         FormattedPlaceholder evaluated = formatWithDefaults(locale, *this, status);
+        if (status == U_FORMATTING_ERROR) {
+            U_ASSERT(evaluated.isFallback());
+            return evaluated.getFallback();
+        }
         return evaluated.formatToString(locale, status);
     }
 
