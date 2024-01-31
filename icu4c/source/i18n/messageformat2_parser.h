@@ -6,7 +6,7 @@
 #ifndef MESSAGEFORMAT_PARSER_H
 #define MESSAGEFORMAT_PARSER_H
 
-#include "unicode/messageformat2.h"
+#include "unicode/messageformat2_data_model.h"
 
 #if U_SHOW_CPLUSPLUS_API
 

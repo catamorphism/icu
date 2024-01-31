@@ -1,7 +1,7 @@
 // © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 
-#include "unicode/uconfig.h"
+#include "unicode/utypes.h"
 
 #ifndef U_HIDE_DEPRECATED_API
 
@@ -17,9 +17,8 @@
  * \brief C++ API: Formats messages using the draft MessageFormat 2.0.
  */
 
-
+#include "unicode/messageformat2_arguments.h"
 #include "unicode/messageformat2_data_model.h"
-#include "unicode/messageformat2_formattable.h"
 #include "unicode/messageformat2_function_registry.h"
 #include "unicode/unistr.h"
 
@@ -50,87 +49,8 @@ namespace message2 {
     class CachedFormatters;
     class Environment;
     class MessageContext;
-    class ResolvedFunctionOptions;
     class ResolvedSelector;
     class StaticErrors;
-
-    // Arguments
-    // ----------
-
-    /**
-     *
-     * The `MessageArguments` class represents the named arguments to a message.
-     * It is immutable and movable. It is not copyable.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    class U_I18N_API MessageArguments : public UObject {
-    public:
-        /**
-         * Message arguments constructor, which takes a map and returns a container
-         * of arguments that can be passed to a `MessageFormatter`.
-         *
-         * @param args A reference to a map from strings (argument names) to `message2::Formattable`
-         *        objects (argument values). The keys and values of the map are copied into the result.
-         * @param status Input/output error code.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        MessageArguments(const std::map<UnicodeString, Formattable>& args, UErrorCode& status) {
-            if (U_FAILURE(status)) {
-                return;
-            }
-            argumentNames = LocalArray<UnicodeString>(new UnicodeString[argsLen = (int32_t) args.size()]);
-            arguments = LocalArray<Formattable>(new Formattable[argsLen]);
-            if (!argumentNames.isValid() || !arguments.isValid()) {
-                status = U_MEMORY_ALLOCATION_ERROR;
-                return;
-            }
-            int32_t i = 0;
-            for (auto iter = args.begin(); iter != args.end(); ++iter) {
-                argumentNames[i] = iter->first;
-                arguments[i] = iter->second;
-                i++;
-            }
-        }
-        /**
-         * Move operator:
-         * The source MessageArguments will be left in a valid but undefined state.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        MessageArguments& operator=(MessageArguments&&) noexcept;
-        /**
-         * Default constructor.
-         * Returns an empty arguments mapping.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        MessageArguments() = default;
-        /**
-         * Destructor.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        virtual ~MessageArguments();
-    private:
-        friend class MessageContext;
-
-        int32_t findArg(const data_model::VariableName&) const;
-        bool hasArgument(const data_model::VariableName&) const;
-        const Formattable& getArgument(const data_model::VariableName&) const;
-
-        // Avoids using Hashtable so that code constructing a Hashtable
-        // doesn't have to appear in this header file
-        LocalArray<UnicodeString> argumentNames;
-        LocalArray<Formattable> arguments;
-        int32_t argsLen = 0;
-    }; // class MessageArguments
 
     /**
      * <p>MessageFormatter is a Technical Preview API implementing MessageFormat 2.0.

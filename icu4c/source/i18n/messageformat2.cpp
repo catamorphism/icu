@@ -5,15 +5,15 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+#include "unicode/messageformat2_arguments.h"
 #include "unicode/messageformat2_data_model.h"
+#include "unicode/messageformat2_formattable.h"
 #include "unicode/messageformat2.h"
-#include "messageformat2_checker.h"
-#include "messageformat2_context.h"
+#include "unicode/unistr.h"
+#include "messageformat2_allocation.h"
+#include "messageformat2_evaluation.h"
 #include "messageformat2_macros.h"
-#include "messageformat2_serializer.h"
-#include "uvector.h" // U_ASSERT
 
-#include <algorithm>
 
 U_NAMESPACE_BEGIN
 
@@ -512,18 +512,6 @@ void MessageFormatter::filterVariants(const UVector& pref, UVector& vars, UError
     }
 }
 
-static int32_t comparePrioritizedVariants(UElement left, UElement right) {
-    const PrioritizedVariant& tuple1 = *(static_cast<const PrioritizedVariant*>(left.pointer));
-    const PrioritizedVariant& tuple2 = *(static_cast<const PrioritizedVariant*>(right.pointer));
-    if (tuple1 < tuple2) {
-        return -1;
-    }
-    if (tuple1.priority == tuple2.priority) {
-        return 0;
-    }
-    return 1;
-}
-
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#sort-variants
 // Leaves the preferred variant as element 0 in `sortable`
 // Note: this sorts in-place, so `sortable` is just `vars`
@@ -734,29 +722,6 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
 
     // Format the pattern
     formatPattern(context, env, pat, status, result);
-}
-
-UBool PrioritizedVariant::operator<(const PrioritizedVariant& other) const {
-  if (priority < other.priority) {
-      return true;
-  }
-  return false;
-}
-
-PrioritizedVariant::~PrioritizedVariant() {}
-
-UnicodeString MessageFormatter::getPattern() const {
-    // Converts the current data model back to a string
-    UnicodeString result;
-    Serializer serializer(getDataModel(), result);
-    serializer.serialize();
-    return result;
-}
-
-// Precondition: custom function registry exists
-const FunctionRegistry& MessageFormatter::getCustomFunctionRegistry() const {
-    U_ASSERT(hasCustomFunctionRegistry());
-    return *customFunctionRegistry;
 }
 
 // Note: this is non-const due to the function registry being non-const, which is in turn

@@ -5,11 +5,10 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2_function_registry.h"
-#include "unicode/messageformat2.h"
-#include "messageformat2_context.h"
+#include "messageformat2_allocation.h"
+#include "messageformat2_cached_formatters.h"
+#include "messageformat2_evaluation.h"
 #include "messageformat2_macros.h"
-#include "hash.h"
 #include "uvector.h" // U_ASSERT
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
@@ -18,6 +17,8 @@
 #endif
 
 U_NAMESPACE_BEGIN
+
+// Auxiliary data structures used during formatting a message
 
 namespace message2 {
 
@@ -107,37 +108,93 @@ ResolvedSelector::ResolvedSelector(ResolvedSelector&& other) {
 
 ResolvedSelector::~ResolvedSelector() {}
 
-// Selector and formatter lookup
-// -----------------------------
+// PrioritizedVariant
+// ------------------
 
-// Postcondition: selector != nullptr || U_FAILURE(status)
-Selector* MessageFormatter::getSelector(MessageContext& context, const FunctionName& functionName, UErrorCode& status) const {
-    NULL_ON_ERROR(status);
-    U_ASSERT(isSelector(functionName));
+UBool PrioritizedVariant::operator<(const PrioritizedVariant& other) const {
+  if (priority < other.priority) {
+      return true;
+  }
+  return false;
+}
 
-    const SelectorFactory* selectorFactory = lookupSelectorFactory(context, functionName, status);
-    NULL_ON_ERROR(status);
-    if (selectorFactory == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
+PrioritizedVariant::~PrioritizedVariant() {}
+
+    // ---------------- Environments and closures
+
+    Environment* Environment::create(const VariableName& var, Closure&& c, Environment* parent, UErrorCode& errorCode) {
+        NULL_ON_ERROR(errorCode);
+        Environment* result = new NonEmptyEnvironment(var, std::move(c), parent);
+        if (result == nullptr) {
+            errorCode = U_MEMORY_ALLOCATION_ERROR;
+            return nullptr;
+        }
+        return result;
     }
-    // Create a specific instance of the selector
-    auto result = selectorFactory->createSelector(getLocale(), status);
-    NULL_ON_ERROR(status);
-    return result;
-}
 
-// Precondition: formatter is defined
-const Formatter& MessageFormatter::getFormatter(MessageContext& context, const FunctionName& functionName, UErrorCode& status) const {
-    U_ASSERT(isFormatter(functionName));
-    return *maybeCachedFormatter(context, functionName, status);
-}
+    Environment* Environment::create(UErrorCode& errorCode) {
+        NULL_ON_ERROR(errorCode);
+        Environment* result = new EmptyEnvironment();
+        if (result == nullptr) {
+            errorCode = U_MEMORY_ALLOCATION_ERROR;
+            return nullptr;
+        }
+        return result;
+    }
 
-bool MessageFormatter::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
-    U_ASSERT(hasCustomFunctionRegistry());
-    const FunctionRegistry& reg = getCustomFunctionRegistry();
-    return reg.getFormatterByType(type, name);
-}
+    const Closure& EmptyEnvironment::lookup(const VariableName& v) const {
+        (void) v;
+        U_ASSERT(false);
+        UPRV_UNREACHABLE_EXIT;
+    }
+
+    const Closure& NonEmptyEnvironment::lookup(const VariableName& v) const {
+        if (v == var) {
+            return rhs;
+        }
+        return parent->lookup(v);
+    }
+
+    bool EmptyEnvironment::has(const VariableName& v) const {
+        (void) v;
+        return false;
+    }
+
+    bool NonEmptyEnvironment::has(const VariableName& v) const {
+        if (v == var) {
+            return true;
+        }
+        return parent->has(v);
+    }
+
+    Environment::~Environment() {}
+    NonEmptyEnvironment::~NonEmptyEnvironment() {}
+    EmptyEnvironment::~EmptyEnvironment() {}
+
+    Closure::~Closure() {}
+
+    CachedFormatters::~CachedFormatters() {}
+
+    // MessageContext methods
+
+    void MessageContext::checkErrors(UErrorCode& status) const {
+        CHECK_ERROR(status);
+        errors.checkErrors(status);
+    }
+
+    bool MessageContext::hasGlobal(const VariableName& v) const {
+        return arguments.hasArgument(v);
+    }
+
+    const Formattable& MessageContext::getGlobal(const VariableName& v) const {
+        U_ASSERT(hasGlobal(v));
+        return arguments.getArgument(v);
+    }
+
+    MessageContext::MessageContext(const MessageArguments& args,
+                                   const StaticErrors& e,
+                                   UErrorCode& status) : arguments(args), errors(e, status) {}
+    MessageContext::~MessageContext() {}
 
 } // namespace message2
 U_NAMESPACE_END

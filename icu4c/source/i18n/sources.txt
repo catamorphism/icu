@@ -95,12 +95,13 @@ measunit_extra.cpp
 measure.cpp
 msgfmt.cpp
 messageformat2.cpp
-messageformat2_builder.cpp
+messageformat2_arguments.cpp
 messageformat2_checker.cpp
-messageformat2_context.cpp
 messageformat2_data_model.cpp
+messageformat2_errors.cpp
+messageformat2_evaluation.cpp
+messageformat2_formatter.cpp
 messageformat2_formattable.cpp
-messageformat2_formatting_context.cpp
 messageformat2_function_registry.cpp
 messageformat2_parser.cpp
 messageformat2_serializer.cpp

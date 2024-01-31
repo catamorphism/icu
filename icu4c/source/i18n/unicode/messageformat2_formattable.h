@@ -1,7 +1,7 @@
 // © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 
-#include "unicode/uconfig.h"
+#include "unicode/utypes.h"
 
 #ifndef U_HIDE_DEPRECATED_API
 
@@ -13,10 +13,7 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/chariter.h"
-#include "unicode/fmtable.h"
-#include "unicode/formattedvalue.h"
 #include "unicode/numberformatter.h"
-#include "unicode/unistr.h"
 
 U_NAMESPACE_BEGIN
 

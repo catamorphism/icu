@@ -1,7 +1,7 @@
 // © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 
-#include "unicode/uconfig.h"
+#include "unicode/utypes.h"
 
 #ifndef U_HIDE_DEPRECATED_API
 
@@ -12,24 +12,23 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/datefmt.h"
-#include "unicode/format.h"
-#include "unicode/messageformat2_data_model.h"
+#include "unicode/messageformat2_data_model_names.h"
 #include "unicode/messageformat2_formattable.h"
-#include "unicode/numberformatter.h"
-#include "unicode/unistr.h"
-#include "unicode/upluralrules.h"
 
 #include <map>
 
 U_NAMESPACE_BEGIN
 
 class Hashtable;
+class UVector;
 
 namespace message2 {
 
     class Formatter;
+    class MessageContext;
     class Selector;
+
+    using namespace data_model;
 
 /**
  * Internal use only, but has to be included here as part of the implementation

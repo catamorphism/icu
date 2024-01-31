@@ -5,9 +5,7 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/messageformat2.h"
 #include "messageformat2_checker.h"
-#include "messageformat2_context.h"
 #include "messageformat2_macros.h"
 #include "uvector.h" // U_ASSERT
 
