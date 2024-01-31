@@ -12,15 +12,6 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-// This has to be here  (before the includes) otherwise we get error 4661 in files that include this header
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-#endif
-
 #include "unicode/unistr.h"
 
 U_NAMESPACE_BEGIN
@@ -250,12 +241,6 @@ namespace message2 {
 } // namespace message2
 
 U_NAMESPACE_END
-
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
 
