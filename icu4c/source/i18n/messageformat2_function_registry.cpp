@@ -23,12 +23,12 @@
 #endif
 #endif
 
-#include "unicode/numberformatter.h"
+#include "unicode/messageformat2_function_registry.h"
 #include "unicode/smpdtfmt.h"
-#include "unicode/messageformat2.h"
-#include "messageformat2_context.h"
+#include "messageformat2_allocation.h"
 #include "messageformat2_function_registry_internal.h"
 #include "messageformat2_macros.h"
+#include "hash.h"
 #include "uvector.h" // U_ASSERT
 
 U_NAMESPACE_BEGIN

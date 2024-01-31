@@ -18,6 +18,7 @@
 #endif
 #endif
 
+#include "unicode/datefmt.h"
 #include "unicode/messageformat2_function_registry.h"
 
 U_NAMESPACE_BEGIN
@@ -152,6 +153,13 @@ namespace message2 {
             TextSelector(const Locale& l) : locale(l) {}
         };
     };
+
+    extern void formatDateWithDefaults(const Locale& locale, UDate date, UnicodeString&, UErrorCode& errorCode);
+    extern number::FormattedNumber formatNumberWithDefaults(const Locale& locale, double toFormat, UErrorCode& errorCode);
+    extern number::FormattedNumber formatNumberWithDefaults(const Locale& locale, int32_t toFormat, UErrorCode& errorCode);
+    extern number::FormattedNumber formatNumberWithDefaults(const Locale& locale, int64_t toFormat, UErrorCode& errorCode);
+    extern number::FormattedNumber formatNumberWithDefaults(const Locale& locale, StringPiece toFormat, UErrorCode& errorCode);
+    extern DateFormat* defaultDateTimeInstance(const Locale&, UErrorCode&);
 
 } // namespace message2
 

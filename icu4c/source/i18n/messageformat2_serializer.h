@@ -10,6 +10,8 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+#include "unicode/messageformat2_data_model.h"
+
 U_NAMESPACE_BEGIN
 
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN

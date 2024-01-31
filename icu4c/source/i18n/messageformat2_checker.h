@@ -10,9 +10,8 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/unistr.h"
-#include "unicode/utypes.h"
 #include "unicode/messageformat2_data_model.h"
+#include "messageformat2_errors.h"
 
 U_NAMESPACE_BEGIN
 
