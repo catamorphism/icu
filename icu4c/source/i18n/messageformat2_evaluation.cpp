@@ -11,11 +11,6 @@
 #include "messageformat2_macros.h"
 #include "uvector.h" // U_ASSERT
 
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN && defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(disable: 4661)
-#endif
-
 U_NAMESPACE_BEGIN
 
 // Auxiliary data structures used during formatting a message

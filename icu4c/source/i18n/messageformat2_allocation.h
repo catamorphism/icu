@@ -14,14 +14,6 @@
 
 U_NAMESPACE_BEGIN
 
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-#endif
-
 namespace message2 {
 
     // Helpers
@@ -99,12 +91,6 @@ namespace message2 {
     }
 
 } // namespace message2
-
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
 
 U_NAMESPACE_END
 
