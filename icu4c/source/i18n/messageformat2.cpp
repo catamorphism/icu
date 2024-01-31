@@ -161,7 +161,7 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
     }
     // No formatter for this type, or it's a primitive type (which will be formatted later)
     // -- just return the argument itself
-    return argument;
+    return std::move(argument);
 }
 
 // Overload that dispatches on function name
