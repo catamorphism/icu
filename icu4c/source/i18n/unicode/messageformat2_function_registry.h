@@ -254,7 +254,7 @@ class U_I18N_API FunctionOptions : public UObject {
          * for that type. If no formatter was explicitly registered for this type, it returns false.
          *
          * @param formatterType Type tag for the desired `FormattableObject` type to be formatted.
-         * @param Output parameter; initialized to the name of the default formatter for `formatterType`
+         * @param name Output parameter; initialized to the name of the default formatter for `formatterType`
          *        if one has been registered. Its value is undefined otherwise.
          * @return True if and only if the function registry contains a default formatter for `formatterType`.
          *         If the return value is false, then the value of `name` is undefined.
@@ -302,7 +302,7 @@ class U_I18N_API FunctionOptions : public UObject {
              * Registers a formatter factory to a given type tag.
              * (See `FormattableObject` for details on type tags.)
              *
-             * @param formatterType Tag for objects to be formatted with this formatter.
+             * @param type Tag for objects to be formatted with this formatter.
              * @param functionName A reference to the name of the function to use for
              *        creating formatters for `formatterType` objects.
              * @param errorCode Input/output error code
