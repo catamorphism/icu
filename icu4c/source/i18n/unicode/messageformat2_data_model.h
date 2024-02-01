@@ -54,6 +54,7 @@ namespace message2 {
 #pragma warning(push)
 #pragma warning(disable: 4661)
 #endif
+template class U_I18N_API LocalPointerBase<message2::data_model::Literal>;
 template class U_I18N_API LocalArray<message2::data_model::Literal>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -597,6 +598,7 @@ namespace message2 {
 #pragma warning(push)
 #pragma warning(disable: 4661)
 #endif
+template class U_I18N_API LocalPointerBase<message2::data_model::Key>;
 template class U_I18N_API LocalArray<message2::data_model::Key>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -856,6 +858,7 @@ namespace message2 {
 #pragma warning(push)
 #pragma warning(disable: 4661)
 #endif
+template class U_I18N_API LocalPointerBase<message2::data_model::Option>;
 template class U_I18N_API LocalArray<message2::data_model::Option>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -1304,6 +1307,7 @@ namespace message2 {
 #pragma warning(push)
 #pragma warning(disable: 4661)
 #endif
+template class U_I18N_API LocalPointerBase<message2::data_model::PatternPart>;
 template class U_I18N_API LocalArray<message2::data_model::PatternPart>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -1730,6 +1734,9 @@ namespace message2 {
 #pragma warning(push)
 #pragma warning(disable: 4661)
 #endif
+template class U_I18N_API LocalPointerBase<message2::data_model::Expression>;
+template class U_I18N_API LocalPointerBase<message2::data_model::Variant>;
+template class U_I18N_API LocalPointerBase<message2::data_model::Binding>;
 template class U_I18N_API LocalArray<message2::data_model::Expression>;
 template class U_I18N_API LocalArray<message2::data_model::Variant>;
 template class U_I18N_API LocalArray<message2::data_model::Binding>;
