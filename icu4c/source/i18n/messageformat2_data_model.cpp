@@ -110,14 +110,14 @@ SelectorKeys& SelectorKeys::operator=(SelectorKeys&& other) noexcept {
 SelectorKeys::SelectorKeys(const SelectorKeys& other) {
     if (other.keys == nullptr) {
         len = 0;
-        keys = nullptr;
+        keys.adoptInstead(nullptr);
         return;
     }
     len = other.len;
     Key* result = new Key[len];
     if (result == nullptr) {
         len = 0;
-        keys = nullptr;
+        keys.adoptInstead(nullptr);
         return;
     }
     for (int32_t i = 0; i < len; i++) {
