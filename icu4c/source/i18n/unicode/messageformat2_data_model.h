@@ -161,6 +161,20 @@ namespace message2 {
                 virtual ~Builder();
             }; // class Reserved::Builder
             /**
+             * Non-member swap function.
+             * @param r1 will get r2's contents
+             * @param r2 will get r1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(Reserved& r1, Reserved& r2) noexcept {
+                using std::swap;
+
+                swap(r1.parts, r2.parts);
+                swap(r1.len, r2.len);
+            }
+            /**
              * Copy constructor.
              *
              * @internal ICU 75.0 technology preview
@@ -168,20 +182,12 @@ namespace message2 {
              */
             Reserved(const Reserved& other);
             /**
-             * Copy assignment operator
+             * Assignment operator
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Reserved& operator=(const Reserved& other);
-            /**
-             * Move assignment operator:
-             * The source Reserved will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Reserved& operator=(Reserved&& other) noexcept;
+            Reserved& operator=(Reserved) noexcept;
             /**
              * Default constructor.
              * Puts the Reserved into a valid but undefined state.
@@ -190,6 +196,13 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Reserved() { parts = LocalArray<Literal>(); }
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Reserved();
         private:
             friend class Builder;
             friend class Operator;
@@ -265,20 +278,26 @@ namespace message2 {
              */
             Literal(const Literal& other) : thisIsQuoted(other.thisIsQuoted), contents(other.contents) {}
             /**
-             * Copy assignment operator.
+             * Non-member swap function.
+             * @param l1 will get l2's contents
+             * @param l2 will get l1's contents
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Literal& operator=(const Literal&);
+            friend inline void swap(Literal& l1, Literal& l2) noexcept {
+                using std::swap;
+
+                swap(l1.thisIsQuoted, l2.thisIsQuoted);
+                swap(l1.contents, l2.contents);
+            }
             /**
-             * Move assignment operator.
-             * The source Literal will be left in a valid but undefined state.
+             * Assignment operator.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Literal& operator=(Literal&&) noexcept;
+            Literal& operator=(Literal) noexcept;
             /**
              * Default constructor.
              * Puts the Literal into a valid but undefined state.
@@ -426,12 +445,27 @@ namespace message2 {
              */
             explicit Operand(const Literal& l) : lit(l), type(Type::LITERAL) {}
             /**
-             * Copy assignment operator.
+             * Non-member swap function.
+             * @param o1 will get o2's contents
+             * @param o2 will get o1's contents
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operand& operator=(const Operand&);
+            friend inline void swap(Operand& o1, Operand& o2) noexcept {
+                using std::swap;
+
+                swap(o1.type, o2.type);
+                swap(o1.var, o2.var);
+                swap(o1.lit, o2.lit);
+            }
+            /**
+             * Assignment operator.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Operand& operator=(Operand) noexcept;
             /**
              * Copy constructor.
              *
@@ -439,14 +473,6 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Operand(const Operand&);
-            /**
-             * Move assignment operator:
-             * The source Operand will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Operand& operator=(Operand&&) noexcept;
             /**
              * Destructor.
              *
@@ -460,6 +486,13 @@ namespace message2 {
                 LITERAL,
                 NULL_OPERAND
             };
+
+            friend inline void swap(Type& l1, Type& l2) noexcept {
+                Type temp = l1;
+                l1 = l2;
+                l2 = temp;
+            }
+
             // This wastes some space, but it's simpler than defining a copy
             // constructor for a union
             // Should be const, but declared non-const to make the move assignment operator work
@@ -530,20 +563,26 @@ namespace message2 {
              */
             explicit Key(const Literal& lit) : wildcard(false), contents(lit) {}
             /**
-             * Move assignment operator:
-             * The source Key will be left in a valid but undefined state.
+             * Non-member swap function.
+             * @param k1 will get k2's contents
+             * @param k2 will get k1's contents
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Key& operator=(Key&& other) noexcept;
+            friend inline void swap(Key& k1, Key& k2) noexcept {
+                using std::swap;
+
+                swap(k1.wildcard, k2.wildcard);
+                swap(k1.contents, k2.contents);
+            }
             /**
-             * Copy assignment operator
+             * Assignment operator
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Key& operator=(const Key& other);
+            Key& operator=(Key) noexcept;
             /**
              * Less than operator. Compares the literal of `this` with the literal of `other`.
              * This method is used in representing the mapping from key lists to patterns
@@ -715,6 +754,20 @@ namespace message2 {
              */
             SelectorKeys() : len(0) {}
             /**
+             * Non-member swap function.
+             * @param s1 will get s2's contents
+             * @param s2 will get s1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(SelectorKeys& s1, SelectorKeys& s2) noexcept {
+                using std::swap;
+
+                swap(s1.len, s2.len);
+                swap(s1.keys, s2.keys);
+            }
+            /**
              * Copy constructor.
              *
              * @internal ICU 75.0 technology preview
@@ -722,20 +775,12 @@ namespace message2 {
              */
             SelectorKeys(const SelectorKeys& other);
             /**
-             * Move assignment operator:
-             * The source SelectorKeys will be left in a valid but undefined state.
+             * Assignment operator.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            SelectorKeys& operator=(SelectorKeys&&) noexcept;
-            /**
-             * Copy assignment operator.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            SelectorKeys& operator=(const SelectorKeys& other);
+            SelectorKeys& operator=(SelectorKeys other) noexcept;
             /**
              * Destructor.
              *
@@ -804,13 +849,6 @@ namespace message2 {
              */
             Option(const UnicodeString& n, Operand&& r) : name(n), rand(std::move(r)) {}
             /**
-             * Copy assignment operator
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Option& operator=(const Option& other);
-            /**
              * Default constructor.
              * Returns an Option in a valid but undefined state.
              *
@@ -819,6 +857,20 @@ namespace message2 {
              */
             Option() = default;
             /**
+             * Non-member swap function.
+             * @param o1 will get o2's contents
+             * @param o2 will get o1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(Option& o1, Option& o2) noexcept {
+                using std::swap;
+
+                swap(o1.name, o2.name);
+                swap(o1.rand, o2.rand);
+            }
+            /**
              * Copy constructor.
              *
              * @internal ICU 75.0 technology preview
@@ -826,12 +878,12 @@ namespace message2 {
              */
             Option(const Option& other);
             /**
-             * Move assignment operator
+             * Assignment operator
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Option& operator=(Option&& other) noexcept;
+            Option& operator=(Option other) noexcept;
             /**
              * Destructor.
              *
@@ -878,10 +930,15 @@ namespace message2 {
             // Needs to take an error code b/c an earlier copy might have failed
             Option getOption(int32_t, UErrorCode&) const;
 
+            friend inline void swap(OptionMap& m1, OptionMap& m2) noexcept {
+                using std::swap;
+
+                swap(m1.options, m2.options);
+                swap(m1.len, m2.len);
+            }
             OptionMap() : len(0) {}
             OptionMap(const OptionMap&);
-            OptionMap& operator=(OptionMap&&);
-            OptionMap& operator=(const OptionMap&);
+            OptionMap& operator=(OptionMap);
         private:
             friend class message2::Serializer;
             friend class Operator;
@@ -1050,20 +1107,28 @@ namespace message2 {
              */
             Operator(const Operator& other) noexcept;
             /**
-             * Copy assignment operator.
+             * Non-member swap function.
+             * @param o1 will get o2's contents
+             * @param o2 will get o1's contents
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operator& operator=(const Operator&) noexcept;
+            friend inline void swap(Operator& o1, Operator& o2) noexcept {
+                using std::swap;
+
+                swap(o1.isReservedSequence, o2.isReservedSequence);
+                swap(o1.functionName, o2.functionName);
+                swap(o1.options, o2.options);
+                swap(o1.reserved, o2.reserved);
+            }
             /**
-             * Move assignment operator:
-             * The source Operator will be left in a valid but undefined state.
+             * Assignment operator.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operator& operator=(Operator&& other) noexcept;
+            Operator& operator=(Operator) noexcept;
             /**
              * Default constructor.
              * Puts the Operator into a valid but undefined state.
@@ -1236,7 +1301,21 @@ namespace message2 {
                  */
                 virtual ~Builder();
             }; // class Expression::Builder
+            /**
+             * Non-member swap function.
+             * @param e1 will get e2's contents
+             * @param e2 will get e1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(Expression& e1, Expression& e2) noexcept {
+                using std::swap;
 
+                swap(e1.hasOperator, e2.hasOperator);
+                swap(e1.rator, e2.rator);
+                swap(e1.rand, e2.rand);
+            }
             /**
              * Copy constructor.
              *
@@ -1245,20 +1324,12 @@ namespace message2 {
              */
             Expression(const Expression& other);
             /**
-             * Copy assignment operator.
+             * Assignment operator.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Expression& operator=(const Expression&);
-            /**
-             * Move assignment operator:
-             * The source Expression will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Expression& operator=(Expression&&) noexcept;
+            Expression& operator=(Expression) noexcept;
             /**
              * Default constructor.
              * Puts the Expression into a valid but undefined state.
@@ -1418,6 +1489,20 @@ namespace message2 {
              */
             Pattern() : parts(LocalArray<PatternPart>()) {}
             /**
+             * Non-member swap function.
+             * @param p1 will get p2's contents
+             * @param p2 will get p1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(Pattern& p1, Pattern& p2) noexcept {
+                using std::swap;
+
+                swap(p1.len, p2.len);
+                swap(p1.parts, p2.parts);
+            }
+            /**
              * Copy constructor.
              *
              * @internal ICU 75.0 technology preview
@@ -1425,21 +1510,12 @@ namespace message2 {
              */
             Pattern(const Pattern& other) noexcept;
             /**
-             * Copy assignment operator
+             * Assignment operator
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Pattern& operator=(const Pattern& other) noexcept;
-            /**
-             * Move assignment operator:
-             * The source Pattern will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Pattern& operator=(Pattern&& other) noexcept;
-
+            Pattern& operator=(Pattern) noexcept;
         private:
             friend class Builder;
 
@@ -1452,7 +1528,7 @@ namespace message2 {
             static void initParts(Pattern&, const Pattern&);
         }; // class Pattern
 
-                /**
+       /**
          *  A `PatternPart` is a single element (text or expression) in a `Pattern`.
          * It corresponds to the `body` field of the `Pattern` interface
          *  defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#patterns
@@ -1494,6 +1570,21 @@ namespace message2 {
              */
             const UnicodeString& asText() const;
             /**
+             * Non-member swap function.
+             * @param p1 will get p2's contents
+             * @param p2 will get p1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(PatternPart& p1, PatternPart& p2) noexcept {
+                using std::swap;
+
+                swap(p1.isRawText, p2.isRawText);
+                swap(p1.text, p2.text);
+                swap(p1.expression, p2.expression);
+            }
+            /**
              * Copy constructor.
              *
              * @internal ICU 75.0 technology preview
@@ -1501,20 +1592,12 @@ namespace message2 {
              */
             PatternPart(const PatternPart& other);
             /**
-             * Copy assignment operator.
+             * Assignment operator.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            PatternPart& operator=(const PatternPart& other);
-            /**
-             * Move assignment operator:
-             * The source PatternPart will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            PatternPart& operator=(PatternPart&&) noexcept;
+            PatternPart& operator=(PatternPart) noexcept;
             /**
              * Destructor.
              *
@@ -1603,12 +1686,26 @@ namespace message2 {
              */
             Variant(const SelectorKeys& keys, Pattern&& pattern) : k(keys), p(std::move(pattern)) {}
             /**
-             * Copy assignment operator
+             * Non-member swap function.
+             * @param v1 will get v2's contents
+             * @param v2 will get v1's contents
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Variant& operator=(const Variant& other);
+            friend inline void swap(Variant& v1, Variant& v2) noexcept {
+                using std::swap;
+
+                swap(v1.k, v2.k);
+                swap(v1.p, v2.p);
+            }
+            /**
+             * Assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Variant& operator=(Variant other) noexcept;
             /**
              * Default constructor.
              * Returns a Variant in a valid but undefined state.
@@ -1617,13 +1714,6 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Variant() = default;
-            /**
-             * Move assignment operator
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Variant& operator=(Variant&&) noexcept;
             /**
              * Copy constructor.
              *
@@ -1687,6 +1777,20 @@ namespace message2 {
              */
             Binding(const VariableName& v, const Expression& e) : var(v), value(e){}
             /**
+             * Non-member swap function.
+             * @param b1 will get b2's contents
+             * @param b2 will get b1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(Binding& b1, Binding& b2) noexcept {
+                using std::swap;
+
+                swap(b1.var, b2.var);
+                swap(b1.value, b2.value);
+            }
+            /**
              * Copy constructor.
              *
              * @internal ICU 75.0 technology preview
@@ -1699,7 +1803,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Binding& operator=(const Binding& other);
+            Binding& operator=(Binding) noexcept;
             /**
              * Default constructor.
              * Puts the Binding into a valid but undefined state.
@@ -1892,21 +1996,46 @@ namespace message2 {
          */
         MessageFormatDataModel();
         /**
-         * Move assignment operator:
-         * The source MessageFormatDataModel will be left in a valid but undefined state.
+         * Non-member swap function.
+         * @param m1 will get m2's contents
+         * @param m2 will get m1's contents
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatDataModel& operator=(MessageFormatDataModel&&) noexcept;
+        friend inline void swap(MessageFormatDataModel& m1, MessageFormatDataModel& m2) noexcept {
+            using std::swap;
+
+            if (m1.bogus) {
+                m2.bogus = true;
+                return;
+            }
+            if (m2.bogus) {
+                m1.bogus = true;
+                return;
+            }
+            swap(m1.numVariants, m2.numVariants);
+            swap(m1.numSelectors, m2.numSelectors);
+            swap(m1.selectors, m2.selectors);
+            swap(m1.variants, m2.variants);
+            swap(m1.pattern, m2.pattern);
+            swap(m1.bindings, m2.bindings);
+            swap(m1.bindingsLen, m2.bindingsLen);
+        }
         /**
-         * Copy assignment operator:
-         * The source MessageFormatDataModel will be left in a valid but undefined state.
+         * Assignment operator
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatDataModel &operator=(const MessageFormatDataModel &);
+        MessageFormatDataModel& operator=(MessageFormatDataModel) noexcept;
+        /**
+         * Copy constructor.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        MessageFormatDataModel(const MessageFormatDataModel& other);
         /**
          * Destructor.
          *

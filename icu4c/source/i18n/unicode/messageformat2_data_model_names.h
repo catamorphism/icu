@@ -84,20 +84,25 @@ namespace message2 {
              */
             virtual ~VariableName();
             /**
-             * Move assignment operator:
-             * The source VariableName will be left in a valid but undefined state.
+             * Non-member swap function.
+             * @param v1 will get v2's contents
+             * @param v2 will get v1's contents
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            VariableName& operator=(VariableName&&) noexcept = default;
+            friend inline void swap(VariableName& v1, VariableName& v2) noexcept {
+                using std::swap;
+
+                swap(v1.variableName, v2.variableName);
+            }
             /**
-             * Copy assignment operator
+             * Assignment operator.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            VariableName& operator=(const VariableName&) = default;
+            VariableName& operator=(VariableName) noexcept;
             /**
              * Copy constructor.
              *
@@ -136,6 +141,11 @@ namespace message2 {
                 CLOSE,
                 DEFAULT
             };
+            friend inline void swap(Sigil& l1, Sigil& l2) noexcept {
+                Sigil temp = l1;
+                l1 = l2;
+                l2 = temp;
+            }
             /**
              * Converts the function name to a string that includes the sigil.
              *
@@ -172,6 +182,20 @@ namespace message2 {
              */
             virtual ~FunctionName();
             /**
+             * Non-member swap function.
+             * @param f1 will get f2's contents
+             * @param f2 will get f1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(FunctionName& f1, FunctionName& f2) noexcept {
+                using std::swap;
+
+                swap(f1.functionName, f2.functionName);
+                swap(f1.functionSigil, f2.functionSigil);
+            }
+            /**
              * Copy constructor.
              *
              * @internal ICU 75.0 technology preview
@@ -179,20 +203,12 @@ namespace message2 {
              */
             FunctionName(const FunctionName& other) : functionName(other.functionName), functionSigil(other.functionSigil) {}
             /**
-             * Copy assignment operator.
+             * Assignment operator.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            FunctionName& operator=(const FunctionName&) = default;
-            /**
-             * Move assignment operator:
-             * The source FunctionName will be left in a valid but undefined state.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            FunctionName& operator=(FunctionName&& other) noexcept;
+            FunctionName& operator=(FunctionName) noexcept;
             /**
              * Default constructor.
              * Puts the FunctionName into a valid but undefined state.

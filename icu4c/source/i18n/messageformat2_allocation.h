@@ -20,11 +20,15 @@ namespace message2 {
 
     template<typename T>
     static T* copyArray(const T* source, int32_t& len) { // `len` is an in/out param
+        if (source == nullptr) {
+            len = 0;
+            return nullptr;
+        }
         T* dest = new T[len];
         if (dest == nullptr) {
             // Set length to 0 to prevent the
             // array from being accessed
-        len = 0;
+            len = 0;
         } else {
             for (int32_t i = 0; i < len; i++) {
                 dest[i] = source[i];
