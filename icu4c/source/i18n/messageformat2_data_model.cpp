@@ -78,55 +78,22 @@ SelectorKeys::SelectorKeys(const UVector& ks, UErrorCode& status) : len(ks.size(
     if (U_FAILURE(status)) {
         return;
     }
-    Key* result = new Key[len];
+    Key* result = copyVectorToArray<Key>(ks, len);
     if (result == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
         len = 0;
         return;
     }
-    for (int32_t i = 0; i < len; i++) {
-        U_ASSERT(ks[i] != nullptr);
-        result[i] = *(static_cast<Key*>(ks[i]));
-    }
-    keys = LocalArray<Key>(result);
+    keys.adoptInstead(result);
 }
 
-SelectorKeys& SelectorKeys::operator=(const SelectorKeys& other) {
-    if (this != &other) {
-        len = other.len;
-        keys.adoptInstead(copyArray<Key>(other.keys.getAlias(), len));
-    }
+SelectorKeys& SelectorKeys::operator=(SelectorKeys other) noexcept {
+    swap(*this, other);
     return *this;
 }
 
-SelectorKeys& SelectorKeys::operator=(SelectorKeys&& other) noexcept {
-    len = other.len;
-    keys = LocalArray<Key>(other.keys.orphan());
-    other.len = 0;
-
-    return *this;
-}
-
-SelectorKeys::SelectorKeys(const SelectorKeys& other) {
-    if (other.keys == nullptr) {
-        len = 0;
-        keys.adoptInstead(nullptr);
-        return;
-    }
-    len = other.len;
-    Key* result = new Key[len];
-    if (result == nullptr) {
-        len = 0;
-        keys.adoptInstead(nullptr);
-        return;
-    }
-    for (int32_t i = 0; i < len; i++) {
-        result[i] = other.keys[i];
-    }
-    keys = LocalArray<Key>(result);
-    if (!keys.isValid()) {
-        len = 0;
-    }
+SelectorKeys::SelectorKeys(const SelectorKeys& other) : len(other.len) {
+    keys.adoptInstead(copyArray(other.keys.getAlias(), len));
 }
 
 SelectorKeys::~SelectorKeys() {
@@ -139,6 +106,12 @@ UnicodeString VariableName::declaration() const {
     UnicodeString result(DOLLAR);
     result += variableName;
     return result;
+}
+
+VariableName& VariableName::operator=(VariableName other) noexcept {
+    swap(*this, other);
+
+    return *this;
 }
 
 VariableName::~VariableName() {}
@@ -164,18 +137,9 @@ UnicodeString Literal::quoted() const {
 
 const UnicodeString& Literal::unquoted() const { return contents; }
 
-Literal& Literal::operator=(Literal&& other) noexcept {
-    thisIsQuoted = other.thisIsQuoted;
-    contents = std::move(other.contents);
+Literal& Literal::operator=(Literal other) noexcept {
+    swap(*this, other);
 
-    return *this;
-}
-
-Literal& Literal::operator=(const Literal& other) {
-    if (this != &other) {
-        thisIsQuoted = other.thisIsQuoted;
-        contents = other.contents;
-    }
     return *this;
 }
 
@@ -187,41 +151,9 @@ Literal::~Literal() {
 
 Operand::Operand(const Operand& other) : var(other.var), lit(other.lit), type(other.type) {}
 
-Operand& Operand::operator=(Operand&& other) noexcept {
-    switch (other.type) {
-        case Type::VARIABLE: {
-            var = std::move(other.var);
-            break;
-        }
-        case Type::LITERAL: {
-            lit = std::move(other.lit);
-            break;
-        }
-        default: {
-            break;
-        }
-    }
-    type = other.type;
-    return *this;
-}
+Operand& Operand::operator=(Operand other) noexcept {
+    swap(*this, other);
 
-Operand& Operand::operator=(const Operand& other) {
-    if (this != &other) {
-        switch (other.type) {
-        case Type::VARIABLE: {
-            var = other.var;
-            break;
-        }
-        case Type::LITERAL: {
-            lit = other.lit;
-            break;
-        }
-        default: {
-            break;
-        }
-        }
-        type = other.type;
-    }
     return *this;
 }
 
@@ -243,25 +175,8 @@ Operand::~Operand() {}
 
 //---------------- Key
 
-Key& Key::operator=(Key&& other) noexcept {
-    wildcard = other.wildcard;
-    if (!other.wildcard) {
-        contents = std::move(other.contents);
-        other.contents = Literal();
-        other.wildcard = true;
-    } else {
-        contents = Literal();
-    }
-    return *this;
-}
-
-Key& Key::operator=(const Key& other) {
-    if (this != &other) {
-        wildcard = other.wildcard;
-        if (!other.wildcard) {
-            contents = other.contents;
-        }
-    }
+Key& Key::operator=(Key other) noexcept {
+    swap(*this, other);
     return *this;
 }
 
@@ -292,36 +207,14 @@ Key::~Key() {}
 
 // ------------ Reserved
 
-void Reserved::initLiterals(Reserved& resrved, const Reserved& other) {
-    Literal* result = new Literal[resrved.len];
-    if (result == nullptr) {
-        // Set length to 0 to prevent the
-        // parts array from being accessed
-        resrved.len = 0;
-    } else {
-        for (int32_t i = 0; i < resrved.len; i++) {
-            result[i] = other.parts[i];
-        }
-        resrved.parts = LocalArray<Literal>(result);
-        if (!resrved.parts.isValid()) {
-            // Set length to 0 to prevent
-            // the parts array from being accessed
-            resrved.len = 0;
-        }
-    }
-}
-
 // Copy constructor
 Reserved::Reserved(const Reserved& other) {
     len = other.len;
-    initLiterals(*this, other);
+    parts.adoptInstead(copyArray(other.parts.getAlias(), len));
 }
 
-Reserved& Reserved::operator=(const Reserved& other) {
-    if (this != &other) {
-        len = other.len;
-        initLiterals(*this, other);
-    }
+Reserved& Reserved::operator=(Reserved other) noexcept {
+    swap(*this, other);
     return *this;
 }
 
@@ -329,17 +222,7 @@ Reserved::Reserved(const UVector& ps, UErrorCode& status) noexcept : len(ps.size
     if (U_FAILURE(status)) {
         return;
     }
-    Literal* result = new Literal[len];
-    if (result == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-        len = 0;
-        return;
-    }
-    for (int32_t i = 0; i < len; i++) {
-        U_ASSERT(ps[i] != nullptr);
-        result[i] = *(static_cast<Literal*>(ps[i]));
-    }
-    parts = LocalArray<Literal>(result);
+    parts = LocalArray<Literal>(copyVectorToArray<Literal>(ps, len));
 }
 
 int32_t Reserved::numParts() const {
@@ -372,16 +255,14 @@ Reserved::Builder& Reserved::Builder::add(Literal&& part, UErrorCode& status) no
     return *this;
 }
 
-Reserved& Reserved::operator=(Reserved&& other) noexcept {
-    parts = std::move(other.parts);
-
-    return *this;
-}
-
 Reserved::Builder::~Builder() {
     if (parts != nullptr) {
         delete parts;
     }
+}
+
+Reserved::~Reserved() {
+    len = 0;
 }
 
 //------------------------ Operator
@@ -400,9 +281,8 @@ OptionMap::OptionMap(const UVector& opts, UErrorCode& status) {
     bogus = false;
 }
 
-OptionMap::OptionMap(const OptionMap& other) {
+OptionMap::OptionMap(const OptionMap& other) : len(other.len) {
     U_ASSERT(!other.bogus);
-    len = other.len;
     Option* result = copyArray(other.options.getAlias(), len);
     if (result == nullptr) {
         bogus = true;
@@ -412,26 +292,8 @@ OptionMap::OptionMap(const OptionMap& other) {
     options.adoptInstead(result);
 }
 
-OptionMap& OptionMap::operator=(const OptionMap& other) {
-    if (this != &other) {
-        U_ASSERT(!other.bogus);
-        len = other.len;
-        Option* result = copyArray(other.options.getAlias(), len);
-        if (result == nullptr) {
-            bogus = true;
-        } else {
-            bogus = false;
-            options.adoptInstead(result);
-        }
-    }
-    return *this;
-}
-
-OptionMap& OptionMap::operator=(OptionMap&& other) {
-    U_ASSERT(!other.bogus);
-    len = other.len;
-    U_ASSERT(other.options.isValid());
-    options.adoptInstead(other.options.orphan());
+OptionMap& OptionMap::operator=(OptionMap other) {
+    swap(*this, other);
     return *this;
 }
 
@@ -474,9 +336,8 @@ UnicodeString FunctionName::toString() const {
 
 FunctionName::~FunctionName() {}
 
-FunctionName& FunctionName::operator=(FunctionName&& other) noexcept {
-    functionName = other.functionName;
-    functionSigil = other.functionSigil;
+FunctionName& FunctionName::operator=(FunctionName other) noexcept {
+    swap(*this, other);
 
     return *this;
 }
@@ -522,19 +383,10 @@ const OptionMap& Operator::getOptionsInternal() const {
     return options;
 }
 
-Option& Option::operator=(const Option& other) {
-    if (this != &other) {
-        name = other.name;
-        rand = other.rand;
-    }
-    return *this;
-}
-
 Option::Option(const Option& other): name(other.name), rand(other.rand) {}
 
-Option& Option::operator=(Option&& other) noexcept {
-    name = other.name;
-    rand = std::move(other.rand);
+Option& Option::operator=(Option other) noexcept {
+    swap(*this, other);
     return *this;
 }
 
@@ -620,33 +472,14 @@ Operator Operator::Builder::build(UErrorCode& errorCode) const noexcept {
 }
 
 Operator::Operator(const Operator& other) noexcept : isReservedSequence(other.isReservedSequence),
-                                            functionName(other.functionName),
-                                            options(isReservedSequence ? OptionMap()
-                                                    : OptionMap(other.options)),
-                                            reserved(isReservedSequence ? Reserved(other.reserved)
-                                                     : Reserved()) {}
+                                                     functionName(other.functionName),
+                                                     options(isReservedSequence ? OptionMap()
+                                                             : OptionMap(other.options)),
+                                                     reserved(isReservedSequence ? Reserved(other.reserved)
+                                                              : Reserved()) {}
 
-Operator& Operator::operator=(Operator&& other) noexcept {
-    isReservedSequence = other.isReservedSequence;
-    if (!other.isReservedSequence) {
-        functionName = std::move(other.functionName);
-        options = std::move(other.options);
-    } else {
-        reserved = std::move(other.reserved);
-    }
-    return *this;
-}
-
-Operator& Operator::operator=(const Operator& other) noexcept {
-    if (this != &other) {
-        isReservedSequence = other.isReservedSequence;
-        if (!other.isReservedSequence) {
-            functionName = other.functionName;
-            options = other.options;
-        } else {
-            reserved = other.reserved;
-        }
-    }
+Operator& Operator::operator=(Operator other) noexcept {
+    swap(*this, other);
     return *this;
 }
 
@@ -728,24 +561,8 @@ Expression::Expression() : hasOperator(false) {}
 
 Expression::Expression(const Expression& other) : hasOperator(other.hasOperator), rator(other.rator), rand(other.rand) {}
 
-Expression& Expression::operator=(Expression&& other) noexcept {
-    hasOperator = other.hasOperator;
-    if (other.hasOperator) {
-        rator = std::move(other.rator);
-    }
-    rand = std::move(other.rand);
-
-    return *this;
-}
-
-Expression& Expression::operator=(const Expression& other) {
-    if (this != &other) {
-        hasOperator = other.hasOperator;
-        if (other.hasOperator) {
-            rator = other.rator;
-        }
-        rand = other.rand;
-    }
+Expression& Expression::operator=(Expression other) noexcept {
+    swap(*this, other);
     return *this;
 }
 
@@ -769,23 +586,8 @@ const UnicodeString& PatternPart::asText() const {
     return text;
 }
 
-PatternPart& PatternPart::operator=(PatternPart&& other) noexcept {
-    isRawText = other.isRawText;
-    text = other.text;
-    if (!isRawText) {
-        expression = std::move(other.expression);
-    }
-    return *this;
-}
-
-PatternPart& PatternPart::operator=(const PatternPart& other) {
-    if (this != &other) {
-        isRawText = other.isRawText;
-        text = other.text;
-        if (!isRawText) {
-            expression = other.expression;
-        }
-    }
+PatternPart& PatternPart::operator=(PatternPart other) noexcept {
+    swap(*this, other);
     return *this;
 }
 
@@ -797,41 +599,17 @@ Pattern::Pattern(const UVector& ps, UErrorCode& status) : len(ps.size()) {
     if (U_FAILURE(status)) {
         return;
     }
-    PatternPart* result = new PatternPart[len];
+    PatternPart* result = copyVectorToArray<PatternPart>(ps, len);
     if (result == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
-        len = 0;
         return;
     }
-    for (int32_t i = 0; i < len; i++) {
-        U_ASSERT(ps[i] != nullptr);
-        result[i] = *(static_cast<PatternPart*>(ps[i]));
-    }
-    parts = LocalArray<PatternPart>(result);
-}
-
-void Pattern::initParts(Pattern& pattern, const Pattern& other) {
-    PatternPart* result = new PatternPart[pattern.len];
-    if (result == nullptr) {
-        // Set length to 0 to prevent the
-        // parts array from being accessed
-        pattern.len = 0;
-    } else {
-        for (int32_t i = 0; i < pattern.len; i++) {
-            result[i] = other.parts[i];
-        }
-        pattern.parts = LocalArray<PatternPart>(result);
-        if (!pattern.parts.isValid()) {
-            // Set length to 0 to prevent
-            // the parts array from being accessed
-            pattern.len = 0;
-        }
-    }
+    parts.adoptInstead(result);
 }
 
 // Copy constructor
 Pattern::Pattern(const Pattern& other) noexcept : len(other.len) {
-    initParts(*this, other);
+    parts.adoptInstead(copyArray(other.parts.getAlias(), len));
 }
 
 const PatternPart& Pattern::getPart(int32_t i) const {
@@ -860,21 +638,11 @@ Pattern::Builder& Pattern::Builder::add(PatternPart&& part, UErrorCode& status) 
     return *this;
 }
 
-Pattern& Pattern::operator=(Pattern&& other) noexcept {
-    len = other.len;
-    parts = std::move(other.parts);
+Pattern& Pattern::operator=(Pattern other) noexcept {
+    swap(*this, other);
 
     return *this;
 }
-
-Pattern& Pattern::operator=(const Pattern& other) noexcept {
-    if (this != &other) {
-        len = other.len;
-        initParts(*this, other);
-    }
-    return *this;
-}
-
 
 Pattern::Builder::~Builder() {
     if (parts != nullptr) {
@@ -888,12 +656,8 @@ const Expression& Binding::getValue() const { return value; }
 
 Binding::Binding(const Binding& other) : var(other.var), value(other.value) {}
 
-Binding& Binding::operator=(const Binding& other) {
-    if (this != &other) {
-        var = other.var;
-        value = other.value;
-    }
-
+Binding& Binding::operator=(Binding other) noexcept {
+    swap(*this, other);
     return *this;
 }
 
@@ -901,21 +665,12 @@ Binding::~Binding() {}
 
 // --------------- Variant
 
-Variant& Variant::operator=(const Variant& other) {
-    if (this != &other) {
-        k = other.k;
-        p = other.p;
-    }
+Variant& Variant::operator=(Variant other) noexcept {
+    swap(*this, other);
     return *this;
 }
 
 Variant::Variant(const Variant& other) : k(other.k), p(other.p) {}
-
-Variant& Variant::operator=(Variant&& other) noexcept {
-    k = std::move(other.k);
-    p = std::move(other.p);
-    return *this;
-}
 
 Variant::~Variant() {}
 
@@ -1019,6 +774,27 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::setPattern(Pat
     return *this;
 }
 
+MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel& other) {
+    U_ASSERT(!other.bogus);
+
+    numVariants = other.numVariants;
+    numSelectors = other.numSelectors;
+    bindingsLen = other.bindingsLen;
+    if (hasPattern()) {
+        pattern = other.pattern;
+    } else {
+        selectors.adoptInstead(copyArray(other.selectors.getAlias(), numSelectors));
+        variants.adoptInstead(copyArray(other.variants.getAlias(), numVariants));
+        if (!(selectors.isValid() && variants.isValid())) {
+            bogus = true;
+        }
+    }
+    bindings.adoptInstead(copyArray(other.bindings.getAlias(), bindingsLen));
+    if (!bindings.isValid()) {
+        bogus = true;
+    }
+}
+
 MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder, UErrorCode& errorCode) noexcept {
     CHECK_ERROR(errorCode);
 
@@ -1042,42 +818,8 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
 
 MessageFormatDataModel::MessageFormatDataModel() {}
 
-MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel&& other) noexcept {
-    U_ASSERT(!other.bogus);
-    numVariants = other.numVariants;
-    numSelectors = other.numSelectors;
-    if (hasPattern()) {
-        pattern = std::move(other.pattern);
-    } else {
-        selectors = std::move(other.selectors);
-        variants = std::move(other.variants);
-    }
-    bindingsLen = other.bindingsLen;
-    bindings = std::move(other.bindings);
-    return *this;
-}
-
-MessageFormatDataModel& MessageFormatDataModel::operator=(const MessageFormatDataModel& other) {
-    if (this != &other) {
-        U_ASSERT(!other.bogus);
-
-        numVariants = other.numVariants;
-        numSelectors = other.numSelectors;
-        bindingsLen = other.bindingsLen;
-        if (hasPattern()) {
-            pattern = other.pattern;
-        } else {
-            selectors.adoptInstead(copyArray(other.selectors.getAlias(), numSelectors));
-            variants.adoptInstead(copyArray(other.variants.getAlias(), numVariants));
-            if (!(selectors.isValid() && variants.isValid())) {
-                bogus = true;
-            }
-        }
-        bindings.adoptInstead(copyArray(other.bindings.getAlias(), bindingsLen));
-        if (!bindings.isValid()) {
-            bogus = true;
-        }
-    }
+MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel other) noexcept {
+    swap(*this, other);
     return *this;
 }
 
