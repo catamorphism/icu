@@ -15,6 +15,9 @@
 #include "unicode/localpointer.h"
 #include "unicode/messageformat2_data_model_names.h"
 
+#include <algorithm>
+#include <optional>
+#include <variant>
 #include <vector>
 
 U_NAMESPACE_BEGIN
@@ -39,6 +42,7 @@ namespace message2 {
 
     namespace data_model {
         class Literal;
+        class Operator;
     } // namespace data_model
 } // namespace message2
 
@@ -217,7 +221,7 @@ namespace message2 {
             static void initLiterals(Reserved&, const Reserved&);
         };
 
-        /**
+      /**
          * The `Literal` class corresponds to the `literal` nonterminal in the MessageFormat 2 grammar,
          * https://github.com/unicode-org/message-format-wg/blob/main/spec/message.abnf and the
          * `Literal` interface defined in
@@ -395,7 +399,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            UBool isNull() const;
+            virtual UBool isNull() const;
             /**
              * Returns a reference to this operand's variable name.
              * Precondition: isVariable()
@@ -423,7 +427,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operand() : type(Type::NULL_OPERAND) {}
+            Operand() : contents(std::nullopt) {}
             /**
              * Variable operand constructor.
              *
@@ -433,7 +437,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            explicit Operand(const VariableName& v) : var(v), type(Type::VARIABLE) {}
+            explicit Operand(const VariableName& v) : contents(v) {}
             /**
              * Literal operand constructor.
              *
@@ -443,7 +447,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            explicit Operand(const Literal& l) : lit(l), type(Type::LITERAL) {}
+            explicit Operand(const Literal& l) : contents(l) {}
             /**
              * Non-member swap function.
              * @param o1 will get o2's contents
@@ -454,10 +458,9 @@ namespace message2 {
              */
             friend inline void swap(Operand& o1, Operand& o2) noexcept {
                 using std::swap;
-
-                swap(o1.type, o2.type);
-                swap(o1.var, o2.var);
-                swap(o1.lit, o2.lit);
+                (void) o1;
+                (void) o2;
+                swap(o1.contents, o2.contents);
             }
             /**
              * Assignment operator.
@@ -465,7 +468,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operand& operator=(Operand) noexcept;
+            virtual Operand& operator=(Operand) noexcept;
             /**
              * Copy constructor.
              *
@@ -481,24 +484,7 @@ namespace message2 {
              */
             virtual ~Operand();
         private:
-            enum Type {
-                VARIABLE,
-                LITERAL,
-                NULL_OPERAND
-            };
-
-            friend inline void swap(Type& l1, Type& l2) noexcept {
-                Type temp = l1;
-                l1 = l2;
-                l2 = temp;
-            }
-
-            // This wastes some space, but it's simpler than defining a copy
-            // constructor for a union
-            // Should be const, but declared non-const to make the move assignment operator work
-            VariableName var;
-            Literal lit;
-            Type type;
+            std::optional<std::variant<VariableName, Literal>> contents;
         }; // class Operand
 
         /**
@@ -526,7 +512,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            UBool isWildcard() const { return wildcard; }
+            UBool isWildcard() const { return !contents.has_value(); }
             /**
              * Returns the contents of this key as a literal.
              * Precondition: !isWildcard()
@@ -543,7 +529,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Key(const Key& other) : wildcard(other.wildcard), contents(other.contents) {}
+            Key(const Key& other) : contents(other.contents) {}
             /**
              * Wildcard constructor; constructs a Key representing the
              * catchall or wildcard key, '*'.
@@ -551,7 +537,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Key() : wildcard(true), contents(Literal()) {}
+            Key() : contents(std::nullopt) {}
             /**
              * Literal key constructor.
              *
@@ -561,7 +547,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            explicit Key(const Literal& lit) : wildcard(false), contents(lit) {}
+            explicit Key(const Literal& lit) : contents(lit) {}
             /**
              * Non-member swap function.
              * @param k1 will get k2's contents
@@ -573,7 +559,6 @@ namespace message2 {
             friend inline void swap(Key& k1, Key& k2) noexcept {
                 using std::swap;
 
-                swap(k1.wildcard, k2.wildcard);
                 swap(k1.contents, k2.contents);
             }
             /**
@@ -619,8 +604,7 @@ namespace message2 {
              */
             virtual ~Key();
         private:
-            /* const */ bool wildcard; // True if this represents the wildcard "*"
-            /* const */ Literal contents;
+            /* const */ std::optional<Literal> contents;
         }; // class Key
   } // namespace data_model
 } // namespace message2
@@ -855,7 +839,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Option() = default;
+            Option() {}
             /**
              * Non-member swap function.
              * @param o1 will get o2's contents
@@ -950,7 +934,10 @@ namespace message2 {
         }; // class OptionMap
         #endif
 
-        /**
+      // Internal use only
+      typedef std::pair<FunctionName, OptionMap> Callable;
+
+      /**
          * The `Operator` class corresponds to the `FunctionRef | Reserved` type in the
          * `Expression` interface defined in
          * https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#patterns
@@ -975,7 +962,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            UBool isReserved() const { return isReservedSequence; }
+            UBool isReserved() const { return std::holds_alternative<Reserved>(contents); }
             /**
              * Accesses the function name.
              * Precondition: !isReserved()
@@ -1006,7 +993,11 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             std::vector<Option> getOptions() const {
-                return toStdVector<Option>(options.options.getAlias(), options.len);
+                const Callable* f = std::get_if<Callable>(&contents);
+                // This case should never happen, as the precondition is !isReserved()
+                if (f == nullptr) { return {}; }
+                const OptionMap& opts = f->second;
+                return toStdVector<Option>(opts.options.getAlias(), opts.len);
             }
             /**
              * The mutable `Operator::Builder` class allows the operator to be constructed
@@ -1117,10 +1108,7 @@ namespace message2 {
             friend inline void swap(Operator& o1, Operator& o2) noexcept {
                 using std::swap;
 
-                swap(o1.isReservedSequence, o2.isReservedSequence);
-                swap(o1.functionName, o2.functionName);
-                swap(o1.options, o2.options);
-                swap(o1.reserved, o2.reserved);
+                swap(o1.contents, o2.contents);
             }
             /**
              * Assignment operator.
@@ -1136,7 +1124,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Operator() : isReservedSequence(true) {}
+            Operator() : contents(Reserved()) {}
             /**
              * Destructor.
              *
@@ -1151,14 +1139,11 @@ namespace message2 {
             // Function call constructor
             Operator(const FunctionName& f, const UVector& options, UErrorCode&);
             // Reserved sequence constructor
-            Operator(const Reserved& r) : isReservedSequence(true), functionName(FunctionName(UnicodeString(""))), reserved(Reserved(r)) {}
+            Operator(const Reserved& r) : contents(r) {}
 
             const OptionMap& getOptionsInternal() const;
 
-            /* const */ bool isReservedSequence;
-            /* const */ FunctionName functionName;
-            /* const */ OptionMap options;
-            /* const */ Reserved reserved;
+            /* const */ std::variant<Reserved, Callable> contents;
         }; // class Operator
 
         /**
@@ -1312,7 +1297,6 @@ namespace message2 {
             friend inline void swap(Expression& e1, Expression& e2) noexcept {
                 using std::swap;
 
-                swap(e1.hasOperator, e2.hasOperator);
                 swap(e1.rator, e2.rator);
                 swap(e1.rand, e2.rand);
             }
@@ -1353,12 +1337,10 @@ namespace message2 {
               options={opt: value})  | NullOperand()
             */
 
-            bool hasOperator;
-
-            Expression(const Operator &rAtor, const Operand &rAnd) : hasOperator(true), rator(Operator(rAtor)), rand(Operand(rAnd)) {}
-            Expression(const Operand &rAnd) : hasOperator(false), rator(), rand(Operand(rAnd)) {}
-            Expression(const Operator &rAtor) : hasOperator(true), rator(Operator(rAtor)), rand(Operand()) {}
-            /* const */ Operator rator; // Ignored if !hasOperator
+            Expression(const Operator &rAtor, const Operand &rAnd) : rator(rAtor), rand(rAnd) {}
+            Expression(const Operand &rAnd) : rator(std::nullopt), rand(Operand(rAnd)) {}
+            Expression(const Operator &rAtor) : rator(rAtor), rand() {}
+            /* const */ std::optional<Operator> rator;
             /* const */ Operand rand;
         }; // class Expression
 
@@ -1548,7 +1530,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            UBool isText() const { return isRawText; }
+            UBool isText() const { return std::holds_alternative<UnicodeString>(piece); }
             /**
              * Accesses the expression of the part.
              * Precondition: !isText()
@@ -1580,9 +1562,7 @@ namespace message2 {
             friend inline void swap(PatternPart& p1, PatternPart& p2) noexcept {
                 using std::swap;
 
-                swap(p1.isRawText, p2.isRawText);
-                swap(p1.text, p2.text);
-                swap(p1.expression, p2.expression);
+                swap(p1.piece, p2.piece);
             }
             /**
              * Copy constructor.
@@ -1614,7 +1594,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            explicit PatternPart(const UnicodeString& t) : isRawText(true), text(t) {}
+            explicit PatternPart(const UnicodeString& t) : piece(t) {}
             /**
              * Expression part constructor. Returns an Expression pattern
              * part with expression `e`.
@@ -1624,7 +1604,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            explicit PatternPart(Expression&& e) : isRawText(false), expression(e) {}
+            explicit PatternPart(Expression&& e) : piece(e) {}
             /**
              * Default constructor.
              * Puts the PatternPart into a valid but undefined state.
@@ -1636,11 +1616,7 @@ namespace message2 {
         private:
             friend class Pattern::Builder;
 
-            /* const */ bool isRawText = true;
-            // Not used if !isRawText
-            /* const */ UnicodeString text;
-            // Not used if isRawText
-            /* const */ Expression expression;
+            std::variant<UnicodeString, Expression> piece;
         }; // class PatternPart
 
         /**
@@ -1853,6 +1829,35 @@ template class U_I18N_API LocalArray<message2::data_model::Binding>;
 namespace message2 {
     using namespace data_model;
 
+
+    // Internal only
+
+    class MessageFormatDataModel;
+
+    class Matcher {
+    private:
+
+        friend class MessageFormatDataModel;
+
+        Matcher(Expression* ss, int32_t ns, Variant* vs, int32_t nv) : selectors(ss), numSelectors(ns), variants(vs), numVariants(nv) {
+            if (selectors == nullptr) {
+                numSelectors = 0;
+            }
+            if (variants == nullptr) {
+                numVariants = 0;
+            }
+        }
+        Matcher() {}
+        // The expressions that are being matched on.
+        LocalArray<Expression> selectors;
+        // The number of selectors
+        int32_t numSelectors = 0;
+        // The list of `when` clauses (case arms).
+        LocalArray<Variant> variants;
+        // The number of variants
+        int32_t numVariants = 0;
+    }; // class Matcher
+
     // -----------------------------------------------------------------------
     // Public MessageFormatDataModel class
 
@@ -1946,7 +1951,12 @@ namespace message2 {
             if (!hasSelectors()) {
                 return {};
             }
-            return toStdVector<Expression>(selectors.getAlias(), numSelectors);
+            const Matcher* match = std::get_if<Matcher>(&body);
+            // Should never happen, given the check for hasSelectors()
+            if (match == nullptr) {
+                return {};
+            }
+            return toStdVector<Expression>(match->selectors.getAlias(), match->numSelectors);
         }
         /**
          * Accesses the variants.
@@ -1958,14 +1968,15 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         std::vector<Variant> getVariants() const {
-            std::vector<Variant> result;
-
             if (hasSelectors()) {
-                for (int32_t i = 0; i < numVariants; i++) {
-                    result.push_back(variants[i]);
+                const Matcher* match = std::get_if<Matcher>(&body);
+                // Should never happen, given the check for hasSelectors()
+                if (match == nullptr) {
+                    return {};
                 }
+                return toStdVector<Variant>(match->variants.getAlias(), match->numVariants);
             }
-            return result;
+            return {};
         }
         /**
          * Accesses the pattern (in a message without selectors).
@@ -2014,11 +2025,7 @@ namespace message2 {
                 m1.bogus = true;
                 return;
             }
-            swap(m1.numVariants, m2.numVariants);
-            swap(m1.numSelectors, m2.numSelectors);
-            swap(m1.selectors, m2.selectors);
-            swap(m1.variants, m2.variants);
-            swap(m1.pattern, m2.pattern);
+            swap(m1.body, m2.body);
             swap(m1.bindings, m2.bindings);
             swap(m1.bindingsLen, m2.bindingsLen);
         }
@@ -2163,24 +2170,13 @@ namespace message2 {
         friend class MessageFormatter;
         friend class Serializer;
 
-        bool hasPattern() const { return (numVariants == 0); }
+        bool hasPattern() const { return std::holds_alternative<Pattern>(body); }
 
         bool bogus = false; // Set if a copy constructor fails
 
-        int32_t numVariants = 0;
-        int32_t numSelectors = 0;
-
-        // The expressions that are being matched on.
-        // Ignored if `hasPattern`
-        /* const */ LocalArray<Expression> selectors;
-
-        // The list of `when` clauses (case arms).
-        // Ignored if `hasPattern`
-        /* const */ LocalArray<Variant> variants;
-
-        // The pattern forming the body of the message.
-        // Ignored if !hasPattern
-        /* const */ Pattern pattern;
+        // A message body is either a matcher (selector list and variant list),
+        // or a single pattern
+        std::variant<Matcher, Pattern> body;
 
         // Bindings for local variables
         /* const */ LocalArray<Binding> bindings;
@@ -2189,6 +2185,14 @@ namespace message2 {
         const Binding* getLocalVariablesInternal() const;
         const Expression* getSelectorsInternal() const;
         const Variant* getVariantsInternal() const;
+        int32_t numSelectors() const {
+            const Matcher* matcher = std::get_if<Matcher>(&body);
+            return (matcher == nullptr ? 0 : matcher->numSelectors);
+        }
+        int32_t numVariants() const {
+            const Matcher* matcher = std::get_if<Matcher>(&body);
+            return (matcher == nullptr ? 0 : matcher->numVariants);
+        }
 
         // Helper
         void initBindings(const Binding*);

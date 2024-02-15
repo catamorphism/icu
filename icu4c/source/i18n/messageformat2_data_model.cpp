@@ -149,7 +149,7 @@ Literal::~Literal() {
 
 //------------------ Operand
 
-Operand::Operand(const Operand& other) : var(other.var), lit(other.lit), type(other.type) {}
+Operand::Operand(const Operand& other) : contents(other.contents) {}
 
 Operand& Operand::operator=(Operand other) noexcept {
     swap(*this, other);
@@ -157,18 +157,22 @@ Operand& Operand::operator=(Operand other) noexcept {
     return *this;
 }
 
-UBool Operand::isVariable() const { return type == Type::VARIABLE; }
-UBool Operand::isLiteral() const { return type == Type::LITERAL; }
-UBool Operand::isNull() const { return type == Type::NULL_OPERAND; }
+UBool Operand::isVariable() const {
+    return (contents.has_value() && std::holds_alternative<VariableName>(*contents));
+}
+UBool Operand::isLiteral() const {
+    return (contents.has_value() && std::holds_alternative<Literal>(*contents));
+}
+UBool Operand::isNull() const { return !contents.has_value(); }
 
 const Literal& Operand::asLiteral() const {
     U_ASSERT(isLiteral());
-    return lit;
+    return *(std::get_if<Literal>(&(*contents)));
 }
 
 const VariableName& Operand::asVariable() const {
     U_ASSERT(isVariable());
-    return var;
+    return *(std::get_if<VariableName>(&(*contents)));
 }
 
 Operand::~Operand() {}
@@ -182,25 +186,25 @@ Key& Key::operator=(Key other) noexcept {
 
 bool Key::operator<(const Key& other) const {
     // Arbitrarily treat * as greater than all concrete keys
-    if (wildcard) {
+    if (isWildcard()) {
         return false;
     }
-    if (other.wildcard) {
+    if (other.isWildcard()) {
         return true;
     }
     return (asLiteral() < other.asLiteral());
 }
 
 bool Key::operator==(const Key& other) const {
-    if (wildcard) {
-        return other.wildcard;
+    if (isWildcard()) {
+        return other.isWildcard();
     }
     return (asLiteral() == other.asLiteral());
 }
 
 const Literal& Key::asLiteral() const {
     U_ASSERT(!isWildcard());
-    return contents;
+    return *contents;
 }
 
 Key::~Key() {}
@@ -316,7 +320,7 @@ int32_t OptionMap::size() const {
 
 const FunctionName& Operator::getFunctionName() const {
     U_ASSERT(!isReserved());
-    return functionName;
+    return std::get_if<Callable>(&contents)->first;
 }
 
 UChar FunctionName::sigilChar() const {
@@ -375,12 +379,12 @@ bool FunctionName::operator<(const FunctionName& other) const {
 
 const Reserved& Operator::asReserved() const {
     U_ASSERT(isReserved());
-    return reserved;
+    return *(std::get_if<Reserved>(&contents));
 }
 
 const OptionMap& Operator::getOptionsInternal() const {
     U_ASSERT(!isReserved());
-    return options;
+    return std::get_if<Callable>(&contents)->second;
 }
 
 Option::Option(const Option& other): name(other.name), rand(other.rand) {}
@@ -471,22 +475,15 @@ Operator Operator::Builder::build(UErrorCode& errorCode) const noexcept {
     return result;
 }
 
-Operator::Operator(const Operator& other) noexcept : isReservedSequence(other.isReservedSequence),
-                                                     functionName(other.functionName),
-                                                     options(isReservedSequence ? OptionMap()
-                                                             : OptionMap(other.options)),
-                                                     reserved(isReservedSequence ? Reserved(other.reserved)
-                                                              : Reserved()) {}
+Operator::Operator(const Operator& other) noexcept : contents(other.contents) {}
 
 Operator& Operator::operator=(Operator other) noexcept {
     swap(*this, other);
     return *this;
 }
 
-// Function call constructor
-Operator::Operator(const FunctionName& f, const UVector& optsVector, UErrorCode& status) : isReservedSequence(false), functionName(f) {
-    options = OptionMap(optsVector, status);
-}
+// Function call
+Operator::Operator(const FunctionName& f, const UVector& optsVector, UErrorCode& status) : contents(Callable(f, OptionMap(optsVector, status))) {}
 
 Operator::Builder::~Builder() {
     if (options != nullptr) {
@@ -507,16 +504,16 @@ UBool Expression::isStandaloneAnnotation() const {
 // standalone annotations.
 // Reserved sequences are not function calls
 UBool Expression::isFunctionCall() const {
-    return (hasOperator && !rator.isReserved());
+    return (rator.has_value() && !rator->isReserved());
 }
 
 UBool Expression::isReserved() const {
-    return (hasOperator && rator.isReserved());
+    return (rator.has_value() && rator->isReserved());
 }
 
 const Operator& Expression::getOperator() const {
-    U_ASSERT(hasOperator);
-    return rator;
+    U_ASSERT(rator);
+    return *rator;
 }
 
 // May return null operand
@@ -557,9 +554,9 @@ Expression Expression::Builder::build(UErrorCode& errorCode) const {
     return result;
 }
 
-Expression::Expression() : hasOperator(false) {}
+Expression::Expression() : rator(std::nullopt) {}
 
-Expression::Expression(const Expression& other) : hasOperator(other.hasOperator), rator(other.rator), rand(other.rand) {}
+Expression::Expression(const Expression& other) : rator(other.rator), rand(other.rand) {}
 
 Expression& Expression::operator=(Expression other) noexcept {
     swap(*this, other);
@@ -573,17 +570,17 @@ Expression::Builder::~Builder() {}
 // PatternPart needs a copy constructor in order to make Pattern deeply copyable
 // If !isRawText and the copy of the other expression fails,
 // then isBogus() will be true for this PatternPart
-PatternPart::PatternPart(const PatternPart& other) : isRawText(other.isText()), text(other.text), expression(other.expression) {}
+PatternPart::PatternPart(const PatternPart& other) : piece(other.piece) {}
 
 const Expression& PatternPart::contents() const {
     U_ASSERT(!isText());
-    return expression;
+    return *std::get_if<Expression>(&piece);
 }
 
 // Precondition: isText();
 const UnicodeString& PatternPart::asText() const {
     U_ASSERT(isText());
-    return text;
+    return *std::get_if<UnicodeString>(&piece);
 }
 
 PatternPart& PatternPart::operator=(PatternPart other) noexcept {
@@ -682,7 +679,7 @@ Variant::~Variant() {}
 UBool MessageFormatDataModel::hasSelectors() const {
     U_ASSERT(!bogus);
     if (!hasPattern()) {
-        U_ASSERT(selectors.isValid());
+        U_ASSERT(std::get_if<Matcher>(&body)->selectors.isValid());
         return true;
     }
     return false;
@@ -690,7 +687,7 @@ UBool MessageFormatDataModel::hasSelectors() const {
 
 const Pattern& MessageFormatDataModel::getPattern() const {
     U_ASSERT(!hasSelectors());
-    return pattern;
+    return *(std::get_if<Pattern>(&body));
 }
 
 const Binding* MessageFormatDataModel::getLocalVariablesInternal() const {
@@ -702,13 +699,13 @@ const Binding* MessageFormatDataModel::getLocalVariablesInternal() const {
 const Expression* MessageFormatDataModel::getSelectorsInternal() const {
     U_ASSERT(!bogus);
     U_ASSERT(hasSelectors());
-    return selectors.getAlias();
+    return std::get_if<Matcher>(&body)->selectors.getAlias();
 }
 
 const Variant* MessageFormatDataModel::getVariantsInternal() const {
     U_ASSERT(!bogus);
     U_ASSERT(hasSelectors());
-    return variants.getAlias();
+    return std::get_if<Matcher>(&body)->variants.getAlias();
 }
 
 
@@ -774,49 +771,52 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::setPattern(Pat
     return *this;
 }
 
-MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel& other) {
+MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel& other) : body(Pattern()) {
     U_ASSERT(!other.bogus);
 
-    numVariants = other.numVariants;
-    numSelectors = other.numSelectors;
-    bindingsLen = other.bindingsLen;
-    if (hasPattern()) {
-        pattern = other.pattern;
+    if (other.hasPattern()) {
+        body.emplace<Pattern>(Pattern(*std::get_if<Pattern>(&other.body)));
     } else {
-        selectors.adoptInstead(copyArray(other.selectors.getAlias(), numSelectors));
-        variants.adoptInstead(copyArray(other.variants.getAlias(), numVariants));
-        if (!(selectors.isValid() && variants.isValid())) {
+        const Expression* otherSelectors = other.getSelectorsInternal();
+        const Variant* otherVariants = other.getVariantsInternal();
+        int32_t numSelectors = other.numSelectors();
+        int32_t numVariants = other.numVariants();
+        Expression* copiedSelectors = copyArray(otherSelectors, numSelectors);
+        Variant* copiedVariants = copyArray(otherVariants, numVariants);
+        if (!(copiedSelectors != nullptr && copiedVariants != nullptr)) {
             bogus = true;
         }
+        body.emplace<Matcher>(Matcher(copiedSelectors, numSelectors, copiedVariants, numVariants));
     }
+
+    bindingsLen = other.bindingsLen;
     bindings.adoptInstead(copyArray(other.bindings.getAlias(), bindingsLen));
     if (!bindings.isValid()) {
         bogus = true;
     }
 }
 
-MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder, UErrorCode& errorCode) noexcept {
+MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder, UErrorCode& errorCode) noexcept : body(Pattern()) {
     CHECK_ERROR(errorCode);
 
-    numVariants = builder.variants == nullptr ? 0 : builder.variants->size();
-    numSelectors = builder.selectors == nullptr ? 0 : builder.selectors->size();
+    if (builder.hasPattern) {
+        body.emplace<Pattern>(builder.pattern);
+    } else {
+        int32_t numVariants = builder.variants == nullptr ? 0 : builder.variants->size();
+        int32_t numSelectors = builder.selectors == nullptr ? 0 : builder.selectors->size();
+        Variant* variants = copyVectorToArray<Variant>(*builder.variants, numVariants);
+        Expression* selectors = copyVectorToArray<Expression>(*builder.selectors, numSelectors);
+        bogus &= (variants != nullptr && selectors != nullptr);
+        body.emplace<Matcher>(Matcher(selectors, numSelectors, variants, numVariants));
+    }
+
     U_ASSERT(builder.locals != nullptr);
     bindingsLen = builder.locals->size();
-    if (!hasPattern()) {
-        U_ASSERT(numVariants != 0 && numSelectors != 0);
-        variants.adoptInstead(copyVectorToArray<Variant>(*builder.variants, numVariants));
-        selectors.adoptInstead(copyVectorToArray<Expression>(*builder.selectors, numSelectors));
-        pattern = Pattern();
-        bogus &= (variants.isValid() && selectors.isValid());
-    } else {
-        selectors = LocalArray<Expression>();
-        pattern = builder.pattern;
-    }
     bindings.adoptInstead(copyVectorToArray<Binding>(*builder.locals, bindingsLen));
     bogus &= (bool) bindings.isValid();
 }
 
-MessageFormatDataModel::MessageFormatDataModel() {}
+MessageFormatDataModel::MessageFormatDataModel() : body(Pattern()) {}
 
 MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel other) noexcept {
     swap(*this, other);
