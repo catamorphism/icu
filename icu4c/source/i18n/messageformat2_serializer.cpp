@@ -114,9 +114,9 @@ void Serializer::emit(const OptionMap& options) {
         // No need to check error code, since we already checked
         // that !bogus
         whitespace();
-        emit(opt.getName());
+        emit(opt.first);
         emit(EQUALS);
-        emit(opt.getValue());
+        emit(opt.second);
     }
 }
 
@@ -210,15 +210,14 @@ void Serializer::serializeDeclarations() {
     U_ASSERT(locals != nullptr);
 
     for (int32_t i = 0; i < dataModel.bindingsLen; i++) {
-        const Binding& b = locals[i];
         // No whitespace needed here -- see `message` in the grammar
         emit(ID_LET);
         whitespace();
-        emit(b.getVariable());
+        emit(locals[i].first);
         // No whitespace needed here -- see `declaration` in the grammar
         emit(EQUALS);
         // No whitespace needed here -- see `declaration` in the grammar
-        emit(b.getValue());
+        emit(locals[i].second);
    }
 }
 
