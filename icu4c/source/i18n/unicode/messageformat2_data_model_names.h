@@ -20,7 +20,8 @@ namespace message2 {
 
     namespace data_model {
 
-        /**
+
+      /**
          * The `VariableName` class represents the name of a variable in a message.
          *
          * `VariableName` is immutable, copyable and movable.
@@ -113,7 +114,6 @@ namespace message2 {
         private:
             /* const */ UnicodeString variableName;
         }; // class VariableName
-
 
         /**
          * The `FunctionName` class represents the name of a function referred to

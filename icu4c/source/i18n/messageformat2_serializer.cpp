@@ -227,7 +227,7 @@ void Serializer::serializeSelectors() {
     const Expression* selectors = dataModel.getSelectorsInternal();
 
     emit(ID_MATCH);
-    for (int32_t i = 0; i < dataModel.numVariants; i++) {
+    for (int32_t i = 0; i < dataModel.numVariants(); i++) {
         // No whitespace needed here -- see `selectors` in the grammar
         emit(selectors[i]);
     }
@@ -236,7 +236,7 @@ void Serializer::serializeSelectors() {
 void Serializer::serializeVariants() {
     U_ASSERT(dataModel.hasSelectors());
     const Variant* variants = dataModel.getVariantsInternal();
-    for (int32_t i = 0; i < dataModel.numVariants; i++) {
+    for (int32_t i = 0; i < dataModel.numVariants(); i++) {
         const Variant& v = variants[i];
         emit(ID_WHEN);
         whitespace();

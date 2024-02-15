@@ -295,11 +295,11 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
     CHECK_ERROR(status);
     U_ASSERT(dataModel.hasSelectors());
 
-    const Expression* selectors = dataModel.selectors.getAlias();
+    const Expression* selectors = dataModel.getSelectorsInternal();
     // 1. Let res be a new empty list of resolved values that support selection.
     // (Implicit, since `res` is an out-parameter)
     // 2. For each expression exp of the message's selectors
-    for (int32_t i = 0; i < dataModel.numSelectors; i++) {
+    for (int32_t i = 0; i < dataModel.numSelectors(); i++) {
         // 2i. Let rv be the resolved value of exp.
         ResolvedSelector rv = formatSelectorExpression(env, selectors[i], context, status);
         if (rv.hasSelector()) {
@@ -407,8 +407,8 @@ void MessageFormatter::resolvePreferences(MessageContext& context, UVector& res,
     // (Implicit, since `pref` is an out-parameter)
     UnicodeString ks;
     LocalPointer<UnicodeString> ksP;
-    int32_t numVariants = dataModel.numVariants;
-    const Variant* variants = dataModel.variants.getAlias();
+    int32_t numVariants = dataModel.numVariants();
+    const Variant* variants = dataModel.getVariantsInternal();
     // 2. For each index i in res
     for (int32_t i = 0; i < (int32_t) res.size(); i++) {
         // 2i. Let keys be a new empty list of strings.
@@ -464,12 +464,12 @@ static UBool vectorContains(const UVector& v, const UnicodeString& k) {
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#filter-variants
 // `pref` is a vector of vectors of strings. `vars` is a vector of PrioritizedVariants
 void MessageFormatter::filterVariants(const UVector& pref, UVector& vars, UErrorCode& status) const {
-    const Variant* variants = dataModel.variants.getAlias();
+    const Variant* variants = dataModel.getVariantsInternal();
 
     // 1. Let `vars` be a new empty list of variants.
     // (Not needed since `vars` is an out-parameter)
     // 2. For each variant `var` of the message:
-    for (int32_t j = 0; j < dataModel.numVariants; j++) {
+    for (int32_t j = 0; j < dataModel.numVariants(); j++) {
         const SelectorKeys& selectorKeys = variants[j].getKeys();
         const Pattern& p = variants[j].getPattern();
 

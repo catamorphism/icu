@@ -88,11 +88,11 @@ void Checker::checkVariants(UErrorCode& status) {
     // Check that one variant includes only wildcards
     bool defaultExists = false;
 
-    for (int32_t i = 0; i < dataModel.numVariants; i++) {
+    for (int32_t i = 0; i < dataModel.numVariants(); i++) {
         const SelectorKeys& k = variants[i].getKeys();
         const Key* keys = k.getKeysInternal();
         int32_t len = k.len;
-        if (len != dataModel.numSelectors) {
+        if (len != dataModel.numSelectors()) {
             // Variant key mismatch
             errors.addError(StaticErrorType::VariantKeyMismatchError, status);
             return;
@@ -128,8 +128,9 @@ void Checker::checkSelectors(const TypeEnvironment& t, UErrorCode& status) {
 
     // Check each selector; if it's not annotated, emit a
     // "missing selector annotation" error
-    for (int32_t i = 0; i < dataModel.numSelectors; i++) {
-        requireAnnotated(t, dataModel.selectors[i], status);
+    const Expression* selectors = dataModel.getSelectorsInternal();
+    for (int32_t i = 0; i < dataModel.numSelectors(); i++) {
+        requireAnnotated(t, selectors[i], status);
     }
 }
 
