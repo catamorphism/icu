@@ -30,90 +30,69 @@ namespace message2 {
     }
 
     Formattable::Formattable(const Formattable& other) {
-        type = other.type;
-        isDecimal = other.isDecimal;
-
-        U_ASSERT(type != UFMT_COUNT);
-
-        switch (type) {
-        case UFMT_DATE:
-        case UFMT_DOUBLE:
-        case UFMT_LONG:
-        case UFMT_INT64: {
-            scalar = other.scalar;
-            if (other.isDecimal) {
-                icuFormattable = other.icuFormattable;
-            }
-            break;
-        }
-        case UFMT_STRING: {
-            fString = other.fString;
-            break;
-        }
-        case UFMT_ARRAY: {
-            array = other.array;
-            arrayLen = other.arrayLen;
-            break;
-        }
-        case UFMT_OBJECT: {
-            object = other.object;
-            break;
-        }
-        default: {
-            break;
-        }
-        }
+        contents = other.contents;
+        holdsDate = other.holdsDate;
     }
 
     Formattable::Formattable(StringPiece number, UErrorCode &status) {
-        CHECK_ERROR(status);
-
-        isDecimal = true;
-        icuFormattable = icu::Formattable(number, status);
-        switch (icuFormattable.getType()) {
-        case icu::Formattable::Type::kLong: {
-            type = UFMT_LONG;
-            break;
-        }
-        case icu::Formattable::Type::kInt64: {
-            type = UFMT_INT64;
-            break;
-        }
-        case icu::Formattable::Type::kDouble: {
-            type = UFMT_DOUBLE;
-            break;
-        }
-        default: {
-            U_ASSERT(false); // Decimals should have a numeric type
-            status = U_INVALID_STATE_ERROR;
-            break;
-        }
-        }
+        contents = icu::Formattable(number, status);
     }
 
     UFormattableType Formattable::getType() const {
-        return type;
+        if (std::holds_alternative<double>(contents)) {
+            return holdsDate ? UFMT_DATE : UFMT_DOUBLE;
+        }
+        if (std::holds_alternative<int64_t>(contents)) {
+            return UFMT_INT64;
+        }
+        if (std::holds_alternative<UnicodeString>(contents)) {
+            return UFMT_STRING;
+        }
+        if (isDecimal()) {
+            switch (std::get_if<icu::Formattable>(&contents)->getType()) {
+            case icu::Formattable::Type::kLong: {
+                return UFMT_LONG;
+            }
+            case icu::Formattable::Type::kDouble: {
+                return UFMT_DOUBLE;
+            }
+            default: {
+                return UFMT_INT64;
+            }
+            }
+        }
+        if (std::holds_alternative<const FormattableObject*>(contents)) {
+            return UFMT_OBJECT;
+        }
+        return UFMT_ARRAY;
     }
 
-    const Formattable* Formattable::getArray(int32_t& len) const {
-        U_ASSERT(type == UFMT_ARRAY);
-        U_ASSERT(array != nullptr);
-        len = arrayLen;
-        return array;
+    const Formattable* Formattable::getArray(int32_t& len, UErrorCode& status) const {
+        NULL_ON_ERROR(status);
+
+        if (getType() != UFMT_ARRAY) {
+            len = 0;
+            status = U_ILLEGAL_ARGUMENT_ERROR;
+            return nullptr;
+        }
+        const std::pair<const Formattable*, int32_t>& p = *std::get_if<std::pair<const Formattable*, int32_t>>(&contents);
+        U_ASSERT(p.first != nullptr);
+        len = p.second;
+        return p.first;
     }
 
     int64_t Formattable::getInt64(UErrorCode& status) const {
-        if (isDecimal && isNumeric()) {
-            return icuFormattable.getInt64(status);
+        if (isDecimal() && isNumeric()) {
+            return std::get_if<icu::Formattable>(&contents)->getInt64(status);
         }
 
-        switch (type) {
+        switch (getType()) {
         case UFMT_LONG:
         case UFMT_INT64: {
-            return scalar.fInt64;
+            return *std::get_if<int64_t>(&contents);
         }
         case UFMT_DOUBLE: {
-            return (icu::Formattable(scalar.fDouble)).getInt64(status);
+            return icu::Formattable(*std::get_if<double>(&contents)).getInt64(status);
         }
         default: {
             status = U_INVALID_FORMAT_ERROR;
@@ -127,30 +106,30 @@ namespace message2 {
             return {};
         }
         // Type must not be UFMT_ARRAY or UFMT_OBJECT
-        if (type == UFMT_ARRAY || type == UFMT_OBJECT) {
+        if (getType() == UFMT_ARRAY || getType() == UFMT_OBJECT) {
             status = U_ILLEGAL_ARGUMENT_ERROR;
             return {};
         }
 
-        if (isDecimal) {
-            return icuFormattable;
+        if (isDecimal()) {
+            return *std::get_if<icu::Formattable>(&contents);
         }
 
-        switch (type) {
+        switch (getType()) {
         case UFMT_DATE: {
-            return icu::Formattable(scalar.fDate, icu::Formattable::kIsDate);
+            return icu::Formattable(*std::get_if<double>(&contents), icu::Formattable::kIsDate);
         }
         case UFMT_DOUBLE: {
-            return icu::Formattable(scalar.fDouble);
+            return icu::Formattable(*std::get_if<double>(&contents));
         }
         case UFMT_LONG: {
-            return icu::Formattable((int32_t) scalar.fInt64);
+            return icu::Formattable(static_cast<int32_t>(*std::get_if<double>(&contents)));
         }
         case UFMT_INT64: {
-            return icu::Formattable(scalar.fInt64);
+            return icu::Formattable(*std::get_if<int64_t>(&contents));
         }
         case UFMT_STRING: {
-            return icu::Formattable(fString);
+            return icu::Formattable(*std::get_if<UnicodeString>(&contents));
         }
         default: {
             // Already checked for UFMT_ARRAY and UFMT_OBJECT
@@ -271,20 +250,30 @@ namespace message2 {
         switch (type) {
         case UFMT_DATE: {
             UnicodeString result;
-            formatDateWithDefaults(locale, toFormat.getDate(), result, status);
+            UDate d = toFormat.getDate(status);
+            U_ASSERT(U_SUCCESS(status));
+            formatDateWithDefaults(locale, d, result, status);
             return FormattedPlaceholder(input, FormattedValue(std::move(result)));
         }
         case UFMT_DOUBLE: {
-            return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, toFormat.getDouble(), status)));
+            double d = toFormat.getDouble(status);
+            U_ASSERT(U_SUCCESS(status));
+            return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, d, status)));
         }
         case UFMT_LONG: {
-            return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, toFormat.getLong(), status)));
+            int32_t l = toFormat.getLong(status);
+            U_ASSERT(U_SUCCESS(status));
+            return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, l, status)));
         }
         case UFMT_INT64: {
-            return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, toFormat.getInt64(), status)));
+            int64_t i = toFormat.getInt64Value(status);
+            U_ASSERT(U_SUCCESS(status));
+            return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, i, status)));
         }
         case UFMT_STRING: {
-            return FormattedPlaceholder(input, FormattedValue(UnicodeString(toFormat.getString())));
+            const UnicodeString& s = toFormat.getString(status);
+            U_ASSERT(U_SUCCESS(status));
+            return FormattedPlaceholder(input, FormattedValue(UnicodeString(s)));
         }
         default: {
             // No default formatters for other types; use fallback

@@ -15,6 +15,8 @@
 #include "unicode/chariter.h"
 #include "unicode/numberformatter.h"
 
+#include <variant>
+
 U_NAMESPACE_BEGIN
 
 namespace message2 {
@@ -79,44 +81,69 @@ namespace message2 {
 
         /**
          * Gets the double value of this object. If this object is not of type
-         * kDouble then the result is undefined.
+         * UFMT_DOUBLE, then the result is undefined and the error code is set.
+         *
+         * @param status Input/output error code.
          * @return    the double value of this object.
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        double getDouble() const {
-            if (isDecimal && type == UFMT_DOUBLE) {
-                return icuFormattable.getDouble();
+        double getDouble(UErrorCode& status) const {
+            if (U_SUCCESS(status)) {
+                if (isDecimal() && getType() == UFMT_DOUBLE) {
+                    return (std::get_if<icu::Formattable>(&contents))->getDouble();
+                }
+                if (std::holds_alternative<double>(contents)) {
+                    return *(std::get_if<double>(&contents));
+                }
+                status = U_ILLEGAL_ARGUMENT_ERROR;
             }
-            return scalar.fDouble;
+            return 0;
         }
 
         /**
          * Gets the long value of this object. If this object is not of type
-         * kLong then the result is undefined.
+         * UFMT_LONG then the result is undefined and the error code is set.
+         *
+         * @param status Input/output error code.
          * @return    the long value of this object.
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        int32_t getLong() const {
-            if (isDecimal && type == UFMT_LONG) {
-                return icuFormattable.getLong();
+        int32_t getLong(UErrorCode& status) const {
+            if (U_SUCCESS(status)) {
+                if (isDecimal() && getType() == UFMT_LONG) {
+                    return std::get_if<icu::Formattable>(&contents)->getLong();
+                }
+                if (std::holds_alternative<int64_t>(contents)) {
+                    return static_cast<int32_t>(*(std::get_if<int64_t>(&contents)));
+                }
+                status = U_ILLEGAL_ARGUMENT_ERROR;
             }
-            return (int32_t) scalar.fInt64;
+            return 0;
         }
 
         /**
          * Gets the int64 value of this object. If this object is not of type
-         * kInt64 then the result is undefined.
+         * kInt64 then the result is undefined and the error code is set.
+         * If conversion to int64 is desired, call getInt64()
+         *
+         * @param status Input/output error code.
          * @return    the int64 value of this object.
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        int64_t getInt64() const {
-            if (isDecimal && type == UFMT_INT64) {
-                return icuFormattable.getInt64();
+        int64_t getInt64Value(UErrorCode& status) const {
+            if (U_SUCCESS(status)) {
+                if (isDecimal() && getType() == UFMT_INT64) {
+                    return std::get_if<icu::Formattable>(&contents)->getInt64();
+                }
+                if (std::holds_alternative<int64_t>(contents)) {
+                    return *(std::get_if<int64_t>(&contents));
+                }
+                status = U_ILLEGAL_ARGUMENT_ERROR;
             }
-            return scalar.fInt64;
+            return 0;
         }
 
         /**
@@ -135,23 +162,41 @@ namespace message2 {
         int64_t         getInt64(UErrorCode& status) const;
         /**
          * Gets the string value of this object. If this object is not of type
-         * kString then the result is undefined.
+         * kString then the result is undefined and the error code is set.
+         *
+         * @param status Input/output error code.
          * @return          A reference to the string value of this object.
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const UnicodeString&  getString() const {
-            return fString;
+        const UnicodeString& getString(UErrorCode& status) const {
+            if (U_SUCCESS(status)) {
+                if (std::holds_alternative<UnicodeString>(contents)) {
+                    return *std::get_if<UnicodeString>(&contents);
+                }
+                status = U_ILLEGAL_ARGUMENT_ERROR;
+            }
+            return bogusString;
         }
 
         /**
          * Gets the Date value of this object. If this object is not of type
-         * kDate then the result is undefined.
+         * kDate then the result is undefined and the error code is set.
+         *
+         * @param status Input/output error code.
          * @return    the Date value of this object.
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        UDate getDate() const { return scalar.fDate; }
+        UDate getDate(UErrorCode& status) const {
+            if (U_SUCCESS(status)) {
+                if (isDate()) {
+                    return *std::get_if<double>(&contents);
+                }
+                status = U_ILLEGAL_ARGUMENT_ERROR;
+            }
+            return 0;
+        }
 
         /**
          * Returns true if the data type of this Formattable object
@@ -160,33 +205,41 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        UBool isNumeric() const { return (type == UFMT_DOUBLE || type == UFMT_LONG || type == UFMT_INT64); }
+        UBool isNumeric() const { return (getType() == UFMT_DOUBLE || getType() == UFMT_LONG || getType() == UFMT_INT64); }
 
         /**
          * Gets the array value and count of this object. If this object
-         * is not of type kArray then the result is undefined.
+         * is not of type kArray then the result is undefined and the error code is set.
+         *
          * @param count    fill-in with the count of this object.
+         * @param status Input/output error code.
          * @return         the array value of this object.
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const Formattable* getArray(int32_t& count) const;
+        const Formattable* getArray(int32_t& count, UErrorCode& status) const;
 
         /**
          * Returns a pointer to the FormattableObject contained within this
-         * formattable, or nullptr if this object does not contain a FormattableObject.
+         * formattable, or if this object does not contain a FormattableObject,
+         * returns nullptr and sets the error code.
+         *
+         * @param status Input/output error code.
          * @return a FormattableObject pointer, or nullptr
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const FormattableObject* getObject() const {
-            // Can't return a reference since FormattableObject
-            // is an abstract class
-            if (type != UFMT_OBJECT) {
-                // TODO: should assert that if type is object, object is non-null
-                return nullptr;
+        const FormattableObject* getObject(UErrorCode& status) const {
+            if (U_SUCCESS(status)) {
+                // Can't return a reference since FormattableObject
+                // is an abstract class
+                if (getType() == UFMT_OBJECT) {
+                    return *std::get_if<const FormattableObject*>(&contents);
+                    // TODO: should assert that if type is object, object is non-null
+                }
+                status = U_ILLEGAL_ARGUMENT_ERROR;
             }
-            return object;
+            return nullptr;
         }
         /**
          * Non-member swap function.
@@ -199,14 +252,8 @@ namespace message2 {
         friend inline void swap(Formattable& f1, Formattable& f2) noexcept {
             using std::swap;
 
-            swap(f1.scalar, f2.scalar);
-            swap(f1.isDecimal, f2.isDecimal);
-            swap(f1.icuFormattable, f2.icuFormattable);
-            swap(f1.fString, f2.fString);
-            swap(f1.object, f2.object);
-            swap(f1.array, f2.array);
-            swap(f1.arrayLen, f2.arrayLen);
-            swap(f1.type, f2.type);
+            swap(f1.contents, f2.contents);
+            swap(f1.holdsDate, f2.holdsDate);
         }
         /**
          * Copy constructor.
@@ -229,9 +276,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable() : type(UFMT_DOUBLE) {
-            scalar.fDouble = 0.0;
-        }
+        Formattable() : contents(0.0) {}
         /**
          * String constructor.
          *
@@ -240,7 +285,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable(const UnicodeString& s) : fString(s), type(UFMT_STRING) {}
+        Formattable(const UnicodeString& s) : contents(s) {}
         /**
          * Double constructor.
          *
@@ -249,10 +294,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable(double d) {
-            scalar.fDouble = d;
-            type = UFMT_DOUBLE;
-        }
+        Formattable(double d) : contents(d) {}
         /**
          * Int64 constructor.
          *
@@ -261,10 +303,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable(int64_t i) {
-            scalar.fInt64 = i;
-            type = UFMT_INT64;
-        }
+        Formattable(int64_t i) : contents(i) {}
         /**
          * Date factory method.
          *
@@ -274,8 +313,8 @@ namespace message2 {
          */
         static Formattable forDate(UDate d) {
             Formattable f;
-            f.scalar.fDate = d;
-            f.type = UFMT_DATE;
+            f.contents = d;
+            f.holdsDate = true;
             return f;
         }
         /**
@@ -302,7 +341,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable(const Formattable* arr, int32_t len) : array(arr), arrayLen(len), type(UFMT_ARRAY) {}
+        Formattable(const Formattable* arr, int32_t len) : contents(std::pair(arr, len)) {}
         /**
          * Object constructor.
          *
@@ -311,7 +350,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable(const FormattableObject* obj) : object(obj), type(UFMT_OBJECT) {}
+        Formattable(const FormattableObject* obj) : contents(obj) {}
         /**
          * Destructor.
          *
@@ -333,34 +372,21 @@ namespace message2 {
         icu::Formattable asICUFormattable(UErrorCode& status) const;
     private:
 
-        // Ignored if type is UFMT_OBJECT, kArray, or kString
-        union FormattableContents {
-            double          fDouble;
-            int64_t         fInt64;
-            UDate           fDate;
-            bool            fDecimal;
-        } scalar;
+        std::variant<double,
+                     int64_t,
+                     UnicodeString,
+                     icu::Formattable, // represents a Decimal
+                     const FormattableObject*,
+                     std::pair<const Formattable*, int32_t>> contents;
+        bool holdsDate = false; // otherwise, we get type errors about UDate being a duplicate type
+        UnicodeString bogusString; // :((((
 
-        // TODO: use variant
-
-        // True iff this was constructed with the decimal constructor
-        bool isDecimal = false;
-        // Ignored unless isDecimal = true
-        icu::Formattable icuFormattable;
-
-        // Ignored if type != kString
-        UnicodeString   fString;
-
-        // Null if type != UFMT_OBJECT; not owned
-        const FormattableObject* object;
-
-        // Null if type != UFMT_ARRAY; not owned
-        const Formattable* array;
-
-        // Ignored if type != UFMT_ARRAY
-        int32_t arrayLen;
-
-        UFormattableType type;
+        UBool isDecimal() const {
+            return std::holds_alternative<icu::Formattable>(contents);
+        }
+        UBool isDate() const {
+            return std::holds_alternative<double>(contents) && holdsDate;
+        }
     }; // class Formattable
 
     // TODO doc comments
