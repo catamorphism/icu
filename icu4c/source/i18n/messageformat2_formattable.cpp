@@ -24,81 +24,8 @@ namespace message2 {
         return result;
     }
 
-    Formattable& Formattable::operator=(Formattable&& other) noexcept {
-        type = other.type;
-        isDecimal = other.isDecimal;
-
-        U_ASSERT(type != UFMT_COUNT);
-
-        switch (type) {
-        case UFMT_DATE:
-        case UFMT_DOUBLE:
-        case UFMT_LONG:
-        case UFMT_INT64: {
-            scalar = other.scalar;
-            if (isDecimal) {
-                icuFormattable = std::move(other.icuFormattable);
-            }
-            break;
-        }
-        case UFMT_STRING: {
-            fString = std::move(other.fString);
-            break;
-        }
-        case UFMT_ARRAY: {
-            array = other.array;
-            arrayLen = other.arrayLen;
-            break;
-        }
-        case UFMT_OBJECT: {
-            object = other.object;
-            break;
-        }
-        default: {
-            // Should be unreachable
-            break;
-        }
-        }
-
-        return *this;
-    }
-
-    Formattable& Formattable::operator=(const Formattable& other)  {
-        if (this != &other) {
-            type = other.type;
-            isDecimal = other.isDecimal;
-
-            U_ASSERT(type != UFMT_COUNT);
-
-            switch (type) {
-            case UFMT_DATE:
-            case UFMT_DOUBLE:
-            case UFMT_LONG:
-            case UFMT_INT64: {
-                scalar = other.scalar;
-                if (other.isDecimal) {
-                    icuFormattable = other.icuFormattable;
-                }
-                break;
-            }
-            case UFMT_STRING: {
-                fString = other.fString;
-                break;
-            }
-            case UFMT_ARRAY: {
-                array = other.array;
-                arrayLen = other.arrayLen;
-                break;
-            }
-            case UFMT_OBJECT: {
-                object = other.object;
-                break;
-            }
-            default: {
-                break;
-            }
-            }
-        }
+    Formattable& Formattable::operator=(Formattable other) noexcept {
+        swap(*this, other);
         return *this;
     }
 
