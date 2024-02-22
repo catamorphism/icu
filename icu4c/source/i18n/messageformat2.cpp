@@ -136,7 +136,7 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
 
     const Formattable& toFormat = argument.asFormattable();
     switch (toFormat.getType()) {
-    case Formattable::Type::kObject: {
+    case UFMT_OBJECT: {
         const FormattableObject* obj = toFormat.getObject();
         U_ASSERT(obj != nullptr);
         const UnicodeString& type = obj->tag();
