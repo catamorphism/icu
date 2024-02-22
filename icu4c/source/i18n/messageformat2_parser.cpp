@@ -494,7 +494,7 @@ FunctionName Parser::parseFunction(UErrorCode& errorCode) {
         ERROR(parseError, errorCode, index);
         return FunctionName();
     }
-    return FunctionName(parseName(errorCode), sigil);
+    return FunctionName(sigil, parseName(errorCode));
 }
 
 

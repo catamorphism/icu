@@ -81,13 +81,13 @@ namespace message2 {
             /**
              * Constructor.
              *
-             * @param n   The function name, as a string.
              * @param s   The function sigil to use.
+             * @param n   The function name, as a string.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            FunctionName(UnicodeString n, Sigil s) : functionName(n), functionSigil(s) {}
+            FunctionName(Sigil s, UnicodeString n) : functionName(n), functionSigil(s) {}
             /**
              * Destructor.
              *
