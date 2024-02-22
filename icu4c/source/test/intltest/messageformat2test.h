@@ -48,6 +48,7 @@ public:
     void testDataModelErrors(void);
     void testResolutionErrors(void);
     // Test the data model API
+    void testDataModelAPI(void);
     void testAPI(void);
     void testInvalidPatterns(void);
     void testAPISimple(void);

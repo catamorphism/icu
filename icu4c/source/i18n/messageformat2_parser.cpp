@@ -1340,12 +1340,12 @@ Pattern Parser::parsePattern(UErrorCode& status) {
             case LEFT_CURLY_BRACE: {
                 // Must be expression
                 bool rhsError = false;
-                result.add(PatternPart(parseExpression(rhsError, status)), status);
+                result.add(parseExpression(rhsError, status), status);
                 break;
             }
             default: {
                 // Must be text
-                result.add(PatternPart(parseText(status)), status);
+                result.add(parseText(status), status);
                 break;
             }
             }
@@ -1478,7 +1478,7 @@ void Parser::errorPattern(UErrorCode& status) {
     }
     // Add curly braces around the entire output (same comment as above)
     partStr += RIGHT_CURLY_BRACE;
-    result.add(PatternPart(partStr), status);
+    result.add(std::move(partStr), status);
     dataModel.setPattern(result.build(status));
 }
 
