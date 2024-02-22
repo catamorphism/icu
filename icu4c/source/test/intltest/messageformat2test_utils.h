@@ -102,7 +102,7 @@ class TestCase : public UMemory {
             return *this;
         }
         Builder& setDateArgument(const UnicodeString& k, UDate date) {
-            arguments[k] = Formattable(date, Formattable::kIsDate);
+            arguments[k] = Formattable::forDate(date);
             return *this;
         }
         Builder& setDecimalArgument(const UnicodeString& k, StringPiece decimal, UErrorCode& errorCode) {

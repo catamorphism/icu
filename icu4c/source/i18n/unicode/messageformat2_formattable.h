@@ -68,12 +68,6 @@ namespace message2 {
      */
     class U_I18N_API Formattable : public UObject {
     public:
-        /**
-         * See icu::Formattable for explanation
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        enum ISDATE { kIsDate };
 
         /**
          * Selector for flavor of data type contained within a
@@ -325,17 +319,17 @@ namespace message2 {
             type = Type::kInt64;
         }
         /**
-         * Date constructor.
+         * Date factory method.
          *
          * @param d A UDate value to wrap as a Formattable.
-         * @param isDate Flag that specifies this argument should be treated as a UDate.
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable(UDate d, ISDATE isDate) {
-            (void) isDate;
-            scalar.fDate = d;
-            type = Type::kDate;
+        static Formattable forDate(UDate d) {
+            Formattable f;
+            f.scalar.fDate = d;
+            f.type = Type::kDate;
+            return f;
         }
         /**
          * Creates a Formattable object of an appropriate numeric type from a

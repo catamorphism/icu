@@ -225,7 +225,7 @@ void TestMessageFormat2::testAPISimple() {
     UDate date = cal->getTime(errorCode);
 
     argsBuilder.clear();
-    argsBuilder["today"] = message2::Formattable(date, message2::Formattable::kIsDate);
+    argsBuilder["today"] = message2::Formattable::forDate(date);
     args = MessageArguments(argsBuilder, errorCode);
     result = mf.formatToString(args, errorCode);
     assertEquals("testAPI", "Today is Sun, Oct 28, 2136.", result);
