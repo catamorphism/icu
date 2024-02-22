@@ -226,10 +226,12 @@ message2::FormattedPlaceholder PersonNameFormatter::format(FormattedPlaceholder&
     bool hasFormality = opt.count("formality") > 0 && opt["formality"].getType() == UFMT_STRING;
     bool hasLength = opt.count("length") > 0 && opt["length"].getType() == UFMT_STRING;
 
-    bool useFormal = hasFormality && opt["formality"].getString() == "formal";
-    UnicodeString length = hasLength ? opt["length"].getString() : "short";
+    bool useFormal = hasFormality && opt["formality"].getString(errorCode) == "formal";
+    UnicodeString length = hasLength ? opt["length"].getString(errorCode) : "short";
 
-    const FormattableObject* fp = toFormat.getObject();
+    const FormattableObject* fp = toFormat.getObject(errorCode);
+    U_ASSERT(U_SUCCESS(errorCode));
+
     if (fp == nullptr || fp->tag() != u"person") {
         return errorVal;
     }
@@ -332,18 +334,19 @@ message2::FormattedPlaceholder GrammarCasesFormatter::format(FormattedPlaceholde
     FunctionOptionsMap opt = options.getOptions();
     switch (toFormat.getType()) {
         case UFMT_STRING: {
-            const UnicodeString& in = toFormat.getString();
+            const UnicodeString& in = toFormat.getString(errorCode);
             bool hasCase = opt.count("case") > 0;
             bool caseIsString = opt["case"].getType() == UFMT_STRING;
-            if (hasCase && caseIsString && (opt["case"].getString() == "dative" || opt["case"].getString() == "genitive")) {
+            if (hasCase && caseIsString && (opt["case"].getString(errorCode) == "dative" || opt["case"].getString(errorCode) == "genitive")) {
                 getDativeAndGenitive(in, result);
             } else {
                 result += in;
             }
+            U_ASSERT(U_SUCCESS(errorCode));
             break;
         }
         default: {
-            result += toFormat.getString();
+            result += toFormat.getString(errorCode);
             break;
         }
     }
@@ -442,21 +445,22 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
     bool hasType = opt.count("type") > 0 && opt["type"].getType() == UFMT_STRING;
     UListFormatterType type = UListFormatterType::ULISTFMT_TYPE_AND;
     if (hasType) {
-        if (opt["type"].getString() == "OR") {
+        if (opt["type"].getString(errorCode) == "OR") {
             type = UListFormatterType::ULISTFMT_TYPE_OR;
-        } else if (opt["type"].getString() == "UNITS") {
+        } else if (opt["type"].getString(errorCode) == "UNITS") {
             type = UListFormatterType::ULISTFMT_TYPE_UNITS;
         }
     }
     bool hasWidth = opt.count("width") > 0 && opt["width"].getType() == UFMT_STRING;
     UListFormatterWidth width = UListFormatterWidth::ULISTFMT_WIDTH_WIDE;
     if (hasWidth) {
-        if (opt["width"].getString() == "SHORT") {
+        if (opt["width"].getString(errorCode) == "SHORT") {
             width = UListFormatterWidth::ULISTFMT_WIDTH_SHORT;
-        } else if (opt["width"].getString() == "NARROW") {
+        } else if (opt["width"].getString(errorCode) == "NARROW") {
             width = UListFormatterWidth::ULISTFMT_WIDTH_NARROW;
         }
     }
+    U_ASSERT(U_SUCCESS(errorCode));
     LocalPointer<icu::ListFormatter> lf(icu::ListFormatter::createInstance(locale, type, width, errorCode));
     if (U_FAILURE(errorCode)) {
         return {};
@@ -467,8 +471,8 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
     switch (toFormat.getType()) {
         case UFMT_ARRAY: {
             int32_t n_items;
-            const Formattable* objs = toFormat.getArray(n_items);
-            if (objs == nullptr) {
+            const Formattable* objs = toFormat.getArray(n_items, errorCode);
+            if (U_FAILURE(errorCode)) {
                 errorCode = U_FORMATTING_ERROR;
                 return errorVal;
             }
@@ -478,14 +482,16 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
                 return {};
             }
             for (int32_t i = 0; i < n_items; i++) {
-                parts[i] = objs[i].getString();
+                parts[i] = objs[i].getString(errorCode);
             }
+            U_ASSERT(U_SUCCESS(errorCode));
             lf->format(parts, n_items, result, errorCode);
             delete[] parts;
             break;
         }
         default: {
-            result += toFormat.getString();
+            result += toFormat.getString(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
             break;
         }
     }
@@ -603,7 +609,7 @@ message2::FormattedPlaceholder ResourceManager::format(FormattedPlaceholder&& ar
     UnicodeString in;
     switch (toFormat.getType()) {
         case UFMT_STRING: {
-            in = toFormat.getString();
+            in = toFormat.getString(errorCode);
             break;
         }
         default: {
@@ -611,13 +617,14 @@ message2::FormattedPlaceholder ResourceManager::format(FormattedPlaceholder&& ar
             return errorVal;
         }
     }
-
     FunctionOptionsMap opt = options.getOptions();
-    bool hasProperties = opt.count("resbundle") > 0 && opt["resbundle"].getType() == UFMT_OBJECT && opt["resbundle"].getObject()->tag() == u"properties";
+    bool hasProperties = opt.count("resbundle") > 0 && opt["resbundle"].getType() == UFMT_OBJECT && opt["resbundle"].getObject(errorCode)->tag() == u"properties";
+
     // If properties were provided, look up the given string in the properties,
     // yielding a message
     if (hasProperties) {
-        const FormattableProperties* properties = reinterpret_cast<const FormattableProperties*>(opt["resbundle"].getObject());
+        const FormattableProperties* properties = reinterpret_cast<const FormattableProperties*>(opt["resbundle"].getObject(errorCode));
+        U_ASSERT(U_SUCCESS(errorCode));
         UnicodeString* msg = static_cast<UnicodeString*>(properties->properties->get(in));
         if (msg == nullptr) {
             // No message given for this key -- error out

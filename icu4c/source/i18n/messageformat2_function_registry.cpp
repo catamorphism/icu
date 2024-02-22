@@ -148,28 +148,6 @@ void FunctionRegistry::checkStandard() const {
 
 // Formatter/selector helpers
 
-// Converts `s` to an int64 value if possible, returning false
-// if it can't be parsed
-static bool tryStringToNumber(const UnicodeString& s, int64_t& result) {
-    UErrorCode localErrorCode = U_ZERO_ERROR;
-    // Try to parse string as int
-
-    LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(localErrorCode));
-    if (U_FAILURE(localErrorCode)) {
-        return false;
-    }
-    numberFormat->setParseIntegerOnly(true);
-    icu::Formattable asNumber;
-    numberFormat->parse(s, asNumber, localErrorCode);
-    if (U_SUCCESS(localErrorCode)) {
-        result = asNumber.getInt64(localErrorCode);
-        if (U_SUCCESS(localErrorCode)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 // Converts `s` to a double, indicating failure via `errorCode`
 static void strToDouble(const UnicodeString& s, const Locale& loc, double& result, UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
@@ -182,62 +160,37 @@ static void strToDouble(const UnicodeString& s, const Locale& loc, double& resul
     result = asNumber.getDouble(errorCode);
 }
 
-// Converts `optionValue` to an int64 value if possible, returning false
-// if it can't be parsed
-bool tryFormattableAsNumber(const Formattable& optionValue, int64_t& result) {
-    UErrorCode localErrorCode = U_ZERO_ERROR;
-    if (optionValue.isNumeric()) {
-        result = optionValue.getInt64(localErrorCode);
-        if (U_SUCCESS(localErrorCode)) {
-            return true;
-        }
-    } else {
-        if (tryStringToNumber(optionValue.getString(), result)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-static bool tryStringAsNumber(const Locale& locale, const Formattable& val, double& value) {
+static int64_t tryStringAsNumber(const Locale& locale, const Formattable& val, UErrorCode& errorCode) {
     // Check for a string option, try to parse it as a number if present
-    if (val.getType() != UFMT_STRING) {
-        return false;
+    UnicodeString tempString = val.getString(errorCode);
+    LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(locale, errorCode));
+    if (U_SUCCESS(errorCode)) {
+        icu::Formattable asNumber;
+        numberFormat->parse(tempString, asNumber, errorCode);
+        if (U_SUCCESS(errorCode)) {
+            return asNumber.getDouble(errorCode);
+        }
     }
-    UnicodeString tempString = val.getString();
-    UErrorCode localErrorCode = U_ZERO_ERROR;
-    LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(locale, localErrorCode));
-    if (U_FAILURE(localErrorCode)) {
-        return false;
-    }
-    icu::Formattable asNumber;
-    numberFormat->parse(tempString, asNumber, localErrorCode);
-    if (U_FAILURE(localErrorCode)) {
-        return false;
-    }
-    value = asNumber.getDouble(localErrorCode);
-    if (U_FAILURE(localErrorCode)) {
-        return false;
-    }
-    return true;
+    return 0;
 }
 
-static UBool getInt64Value(const Locale& locale, const Formattable& value, int64_t& result) {
-    if (!value.isNumeric()) {
-        double doubleResult;
-        if (tryStringAsNumber(locale, value, doubleResult)) {
-            result = (int64_t) doubleResult;
-            return true;
+static int64_t getInt64Value(const Locale& locale, const Formattable& value, UErrorCode& errorCode) {
+    if (U_SUCCESS(errorCode)) {
+        if (!value.isNumeric()) {
+            double doubleResult = tryStringAsNumber(locale, value, errorCode);
+            if (U_SUCCESS(errorCode)) {
+                return static_cast<int64_t>(doubleResult);
+            }
         }
-        return false;
-    }
-    UErrorCode localErrorCode = U_ZERO_ERROR;
-    result = value.getInt64(localErrorCode);
-    if (U_SUCCESS(localErrorCode)) {
-        return true;
+        else {
+            int64_t result = value.getInt64(errorCode);
+            if (U_SUCCESS(errorCode)) {
+                return result;
+            }
+        }
     }
     // Option was numeric but couldn't be converted to int64_t -- could be overflow
-    return false;
+    return 0;
 }
 
 // Adopts its arguments
@@ -286,11 +239,15 @@ FunctionRegistry::~FunctionRegistry() {
     if (U_SUCCESS(status)) {
         Formattable opt;
         if (opts.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == UFMT_STRING) {
-            nf = number::NumberFormatter::forSkeleton(opt.getString(), status);
+            const UnicodeString& skeletonStr = opt.getString(status);
+            U_ASSERT(U_SUCCESS(status));
+            nf = number::NumberFormatter::forSkeleton(skeletonStr, status);
         } else {
             int64_t minFractionDigits = 0;
             if (opts.getFunctionOption(UnicodeString("minimumFractionDigits"), opt)) {
-                if (!getInt64Value(locale, opt, minFractionDigits)) {
+                UErrorCode localErrorCode = U_ZERO_ERROR;
+                minFractionDigits = getInt64Value(locale, opt, localErrorCode);
+                if (U_FAILURE(localErrorCode)) {
                     minFractionDigits = 0;
                 }
             }
@@ -320,11 +277,14 @@ static FormattedPlaceholder stringAsNumber(Locale locale, const number::Localize
         return {};
     }
 
-    // Precondition: `input`'s source Formattable has type string
-
     double numberValue;
+    const UnicodeString& inputStr = input.asFormattable().getString(errorCode);
+    // Precondition: `input`'s source Formattable has type string
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
     UErrorCode localErrorCode = U_ZERO_ERROR;
-    strToDouble(input.asFormattable().getString(), locale, numberValue, localErrorCode);
+    strToDouble(inputStr, locale, numberValue, localErrorCode);
     if (U_FAILURE(localErrorCode)) {
         return notANumber(input);
     }
@@ -347,10 +307,14 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
         return notANumber(arg);
     }
 
-    int64_t offset;
+    int64_t offset = 0;
     Formattable opt;
-    if (!(opts.getFunctionOption(UnicodeString("offset"), opt) && getInt64Value(locale, opt, offset))) {
-        offset = 0;
+    if (opts.getFunctionOption(UnicodeString("offset"), opt)) {
+        UErrorCode localErrorCode = U_ZERO_ERROR;
+        offset = getInt64Value(locale, opt, localErrorCode);
+        if (U_FAILURE(localErrorCode)) {
+            offset = 0;
+        }
     }
 
     number::LocalizedNumberFormatter realFormatter;
@@ -361,29 +325,37 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
     }
 
     number::FormattedNumber numberResult;
-    // Already checked that contents can be formatted
-    const Formattable& toFormat = arg.asFormattable();
-    switch (toFormat.getType()) {
-    case UFMT_DOUBLE: {
-        numberResult = realFormatter.formatDouble(toFormat.getDouble() - offset, errorCode);
-        break;
-    }
-    case UFMT_LONG: {
-        numberResult = realFormatter.formatInt(toFormat.getLong() - offset, errorCode);
-        break;
-    }
-    case UFMT_INT64: {
-        numberResult = realFormatter.formatInt(toFormat.getInt64() - offset, errorCode);
-        break;
-    }
-    case UFMT_STRING: {
-        // Try to parse the string as a number
-        return stringAsNumber(locale, realFormatter, arg, offset, errorCode);
-    }
-    default: {
-        // Other types can't be parsed as a number
-        return notANumber(arg);
-    }
+    if (U_SUCCESS(errorCode)) {
+        // Already checked that contents can be formatted
+        const Formattable& toFormat = arg.asFormattable();
+        switch (toFormat.getType()) {
+        case UFMT_DOUBLE: {
+            double d = toFormat.getDouble(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            numberResult = realFormatter.formatDouble(d - offset, errorCode);
+            break;
+        }
+        case UFMT_LONG: {
+            int32_t l = toFormat.getLong(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            numberResult = realFormatter.formatInt(l - offset, errorCode);
+            break;
+        }
+        case UFMT_INT64: {
+            int64_t i = toFormat.getInt64(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            numberResult = realFormatter.formatInt(i - offset, errorCode);
+            break;
+        }
+        case UFMT_STRING: {
+            // Try to parse the string as a number
+            return stringAsNumber(locale, realFormatter, arg, offset, errorCode);
+        }
+        default: {
+            // Other types can't be parsed as a number
+            return notANumber(arg);
+        }
+        }
     }
 
     return FormattedPlaceholder(arg, FormattedValue(std::move(numberResult)));
@@ -408,42 +380,46 @@ Selector* StandardFunctions::PluralFactory::createSelector(const Locale& locale,
     return result;
 }
 
-static void tryAsString(const Locale& locale, const UnicodeString& s, double& valToCheck, bool& noMatch) {
-    // Try parsing the inputString as a double
-    UErrorCode localErrorCode = U_ZERO_ERROR;
-    strToDouble(s, locale, valToCheck, localErrorCode);
-    // Invalid format error => value is not a number; no match
-    if (U_FAILURE(localErrorCode)) {
-        noMatch = true;
-        return;
+static double tryAsString(const Locale& locale, const UnicodeString& s, UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return 0;
     }
-    noMatch = false;
+    // Try parsing the inputString as a double
+    double valToCheck;
+    strToDouble(s, locale, valToCheck, errorCode);
+    return valToCheck;
 }
 
-static void tryWithFormattable(const Locale& locale, const Formattable& value, double& valToCheck, bool& noMatch) {
+static double tryWithFormattable(const Locale& locale, const Formattable& value, UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return 0;
+    }
+    double valToCheck;
     switch (value.getType()) {
         case UFMT_DOUBLE: {
-            valToCheck = value.getDouble();
+            valToCheck = value.getDouble(errorCode);
             break;
         }
         case UFMT_LONG: {
-            valToCheck = (double) value.getLong();
+            valToCheck = (double) value.getLong(errorCode);
             break;
         }
         case UFMT_INT64: {
-            valToCheck = (double) value.getInt64();
+            valToCheck = (double) value.getInt64(errorCode);
             break;
         }
         case UFMT_STRING: {
-            tryAsString(locale, value.getString(), valToCheck, noMatch);
-            return;
+            const UnicodeString& s = value.getString(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            return tryAsString(locale, s, errorCode);
         }
         default: {
-            noMatch = true;
-            return;
+            errorCode = U_ILLEGAL_ARGUMENT_ERROR;
+            return 0;
         }
     }
-    noMatch = false;
+    U_ASSERT(U_SUCCESS(errorCode));
+    return valToCheck;
 }
 
 void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
@@ -461,28 +437,31 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
         return;
     }
 
-    int64_t offset;
+    int64_t offset = 0;
     Formattable opt;
-    if (!(opts.getFunctionOption(UnicodeString("offset"), opt) && getInt64Value(locale, opt, offset))) {
-        offset = 0;
+    if (opts.getFunctionOption(UnicodeString("offset"), opt)) {
+        UErrorCode localErrorCode = U_ZERO_ERROR;
+        offset = getInt64Value(locale, opt, localErrorCode);
+        if (U_FAILURE(localErrorCode)) {
+            offset = 0;
+        }
     }
 
     // Only doubles and integers can match
     double valToCheck;
-    bool noMatch = true;
 
     bool isFormattedString = toFormat.isEvaluated() && toFormat.output().isString();
     bool isFormattedNumber = toFormat.isEvaluated() && toFormat.output().isNumber();
 
     if (isFormattedString) {
         // Formatted string: try parsing it as a number
-        tryAsString(locale, toFormat.output().getString(), valToCheck, noMatch);
+        valToCheck = tryAsString(locale, toFormat.output().getString(), errorCode);
     } else {
         // Already checked that contents can be formatted
-        tryWithFormattable(locale, toFormat.asFormattable(), valToCheck, noMatch);
+        valToCheck = tryWithFormattable(locale, toFormat.asFormattable(), errorCode);
     }
 
-    if (noMatch) {
+    if (U_FAILURE(errorCode)) {
         // Non-number => selector error
         errorCode = U_SELECTOR_ERROR;
         return;
@@ -586,19 +565,27 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
         // Same as getInstanceForSkeleton(), see ICU 9029
         // Based on test/intltest/dtfmttst.cpp - TestPatterns()
         LocalPointer<DateTimePatternGenerator> generator(DateTimePatternGenerator::createInstance(locale, errorCode));
-        UnicodeString pattern = generator->getBestPattern(opt.getString(), errorCode);
+        const UnicodeString& s = opt.getString(errorCode);
+        U_ASSERT(U_SUCCESS(errorCode));
+        UnicodeString pattern = generator->getBestPattern(s, errorCode);
         df.adoptInstead(new SimpleDateFormat(pattern, locale, errorCode));
     } else {
         if (opts.getFunctionOption(UnicodeString("pattern"), opt) && opt.getType() == UFMT_STRING) {
-            df.adoptInstead(new SimpleDateFormat(opt.getString(), locale, errorCode));
+            const UnicodeString& s = opt.getString(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            df.adoptInstead(new SimpleDateFormat(s, locale, errorCode));
         } else {
             DateFormat::EStyle dateStyle = DateFormat::NONE;
             if (opts.getFunctionOption(UnicodeString("datestyle"), opt) && opt.getType() == UFMT_STRING) {
-                dateStyle = stringToStyle(opt.getString(), errorCode);
+                const UnicodeString& s = opt.getString(errorCode);
+                U_ASSERT(U_SUCCESS(errorCode));
+                dateStyle = stringToStyle(s, errorCode);
             }
             DateFormat::EStyle timeStyle = DateFormat::NONE;
             if (opts.getFunctionOption(UnicodeString("timestyle"), opt) && opt.getType() == UFMT_STRING) {
-                timeStyle = stringToStyle(opt.getString(), errorCode);
+                const UnicodeString& s = opt.getString(errorCode);
+                U_ASSERT(U_SUCCESS(errorCode));
+                timeStyle = stringToStyle(s, errorCode);
             }
             if (dateStyle == DateFormat::NONE && timeStyle == DateFormat::NONE) {
                 df.adoptInstead(defaultDateTimeInstance(locale, errorCode));

@@ -481,16 +481,21 @@ message2::FormattedPlaceholder TemperatureFormatter::format(FormattedPlaceholder
         errorCode = U_FORMATTING_ERROR;
         return errorVal;
     }
-    UnicodeString unit = opt["unit"].getString();
+    UnicodeString unit = opt["unit"].getString(errorCode);
+    U_ASSERT(U_SUCCESS(errorCode));
     bool skeletonExists = opt.count("skeleton") > 0 && opt["skeleton"].getType() == UFMT_STRING;
 
     number::LocalizedNumberFormatter* realNfCached = (number::LocalizedNumberFormatter*) cachedFormatters->get(unit);
     number::LocalizedNumberFormatter realNf;
     if (realNfCached == nullptr) {
-        number::LocalizedNumberFormatter nf = skeletonExists
-            ? number::NumberFormatter::forSkeleton(opt["skeleton"].getString(), errorCode).locale(locale)
-                    : number::NumberFormatter::withLocale(locale);
-
+        number::LocalizedNumberFormatter nf;
+        if (skeletonExists) {
+            const UnicodeString& s = opt["skeleton"].getString(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            nf = number::NumberFormatter::forSkeleton(s, errorCode).locale(locale);
+        } else {
+            nf = number::NumberFormatter::withLocale(locale);
+        }
         if (unit == "C") {
             counter.cFormatterCount++;
             realNf = nf.unit(MeasureUnit::getCelsius());
@@ -513,18 +518,20 @@ message2::FormattedPlaceholder TemperatureFormatter::format(FormattedPlaceholder
     number::FormattedNumber result;
     switch (toFormat.getType()) {
         case UFMT_DOUBLE: {
-            result = realNf.formatDouble(toFormat.getDouble(),
-                                                errorCode);
+            double d = toFormat.getDouble(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            result = realNf.formatDouble(d, errorCode);
             break;
         }
         case UFMT_LONG: {
-            result = realNf.formatInt(toFormat.getLong(),
-                                             errorCode);
+            long l = toFormat.getLong(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            result = realNf.formatInt(l, errorCode);
             break;
         }
         case UFMT_INT64: {
-            result = realNf.formatInt(toFormat.getInt64(),
-                                             errorCode);
+            int64_t i = toFormat.getInt64(errorCode);
+            result = realNf.formatInt(i, errorCode);
             break;
         }
         default: {
