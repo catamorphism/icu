@@ -216,14 +216,14 @@ class TestUtils {
                             IcuTestErrorCode& errorCode) {
         CHECK_ERROR(errorCode);
 
-	MessageFormatter::Builder mfBuilder;
-        mfBuilder.setPattern(testCase.getPattern()).setLocale(testCase.getLocale());
+        UParseError parseError;
+	MessageFormatter::Builder mfBuilder(errorCode);
+        mfBuilder.setPattern(testCase.getPattern(), parseError, errorCode).setLocale(testCase.getLocale());
 
         if (testCase.hasCustomRegistry()) {
             mfBuilder.setFunctionRegistry(*testCase.getCustomRegistry());
         }
-        UParseError parseError;
-	MessageFormatter mf = mfBuilder.build(parseError, errorCode);
+	MessageFormatter mf = mfBuilder.build(errorCode);
         UnicodeString result;
 
         if (U_SUCCESS(errorCode)) {

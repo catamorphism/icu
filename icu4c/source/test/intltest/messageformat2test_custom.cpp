@@ -624,10 +624,10 @@ message2::FormattedPlaceholder ResourceManager::format(FormattedPlaceholder&& ar
             errorCode = U_FORMATTING_ERROR;
             return errorVal;
         }
-	MessageFormatter::Builder mfBuilder;
+	MessageFormatter::Builder mfBuilder(errorCode);
         UParseError parseErr;
         // Any parse/data model errors will be propagated
-	MessageFormatter mf = mfBuilder.setPattern(*msg).build(parseErr, errorCode);
+	MessageFormatter mf = mfBuilder.setPattern(*msg, parseErr, errorCode).build(errorCode);
         Arguments arguments = localToGlobal(opt, errorCode);
         if (U_FAILURE(errorCode)) {
             return errorVal;

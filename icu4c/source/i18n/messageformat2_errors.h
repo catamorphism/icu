@@ -96,6 +96,7 @@ namespace message2 {
         void checkErrors(UErrorCode&);
 
         const StaticError& first() const;
+        StaticErrors(const StaticErrors&, UErrorCode&);
         StaticErrors(StaticErrors&&) noexcept;
         virtual ~StaticErrors();
     }; // class StaticErrors

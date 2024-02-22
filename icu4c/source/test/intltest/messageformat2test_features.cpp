@@ -551,13 +551,13 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
 
     UnicodeString message = "{Testing {$count :temp unit=$unit skeleton=|.00/w|}.}";
 
-    MessageFormatter::Builder mfBuilder;
+    MessageFormatter::Builder mfBuilder(errorCode);
     FunctionRegistry reg = frBuilder.setFormatter(FunctionName("temp"), counter.getAlias(), errorCode)
         .build();
     CHECK_ERROR(errorCode);
-    mfBuilder.setPattern(message).setFunctionRegistry(reg);
     UParseError parseError;
-    MessageFormatter mf = mfBuilder.build(parseError, errorCode);
+    mfBuilder.setPattern(message, parseError, errorCode).setFunctionRegistry(reg);
+    MessageFormatter mf = mfBuilder.build(errorCode);
     UnicodeString result;
     UnicodeString countKey("count");
     UnicodeString unitKey("unit");
@@ -614,8 +614,8 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
 
     // Check skeleton
     message = "{Testing {$count :temp unit=$unit skeleton=|.0/w|}.}";
-    mfBuilder.setPattern(message);
-    mf = mfBuilder.build(parseError, errorCode);
+    mfBuilder.setPattern(message, parseError, errorCode);
+    mf = mfBuilder.build(errorCode);
 
     argumentsBuilder[countKey] = Formattable(12.0);
     argumentsBuilder[unitKey] = Formattable("C");

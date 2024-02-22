@@ -153,8 +153,15 @@ namespace message2 {
             bool hasPattern = false;
             bool hasDataModel = false;
             // The data model to be used to generate the formatted message
-            // Ignored if hasPattern
+            // Initialized either by `setDataModel()`, or by the parser
+            // through a call to `setPattern()`
             MessageFormatDataModel dataModel;
+            // Normalized representation of the pattern;
+            // ignored if `setPattern()` wasn't called
+            UnicodeString normalizedInput;
+            // Errors (internal representation of parse errors)
+            // Ignored if `setPattern()` wasn't called
+            StaticErrors* errors;
             Locale locale;
             // Not owned
             const FunctionRegistry* customFunctionRegistry;
@@ -171,18 +178,21 @@ namespace message2 {
              */
             Builder& setLocale(const Locale& locale);
             /**
-             * Sets the pattern to be parsed into a data model. (Parsing is
-             * delayed until `build()` is called.) If a data model was
-             * previously set, the reference to it held by this builder
-             * is removed.
+             * Sets the pattern (contents of the message) and parses it
+             * into a data model. If a data model was
+             * previously set, it is removed.
              *
              * @param pattern A string in MessageFormat 2.0 syntax.
+             * @param parseError Struct to receive information on the position
+             *                   of an error within the pattern.
+             * @param status    Input/output error code. If the
+             *                  pattern cannot be parsed, set to failure code.
              * @return       A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setPattern(const UnicodeString& pattern);
+            Builder& setPattern(const UnicodeString& pattern, UParseError& parseError, UErrorCode& status);
             /**
              * Sets a custom function registry.
              *
@@ -214,28 +224,26 @@ namespace message2 {
              *
              * The builder object (`this`) can still be used after calling `build()`.
              *
-             * @param parseError Struct to receive information on the position
-             *                   of an error within the pattern (not used if
-             *                   the data model is set).
-             * @param status    Input/output error code.  If the
-             *                  pattern cannot be parsed, or if neither the pattern
+             * @param status    Input/output error code.  If neither the pattern
              *                  nor the data model is set, set to failure code.
              * @return          The new MessageFormatter object
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            MessageFormatter build(UParseError& parseError, UErrorCode& status) const;
+            MessageFormatter build(UErrorCode& status) const;
             /**
              * Default constructor.
              * Returns a Builder with the default locale and with no
              * data model or pattern set. Either `setPattern()`
              * or `setDataModel()` has to be called before calling `build()`.
              *
+             * @param status    Input/output error code.
+             *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder() : locale(Locale::getDefault()), customFunctionRegistry(nullptr) {}
+            Builder(UErrorCode& status);
             /**
              * Destructor.
              *
@@ -260,7 +268,7 @@ namespace message2 {
         friend class Builder;
         friend class MessageContext;
 
-        MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError, UErrorCode &status);
+        MessageFormatter(const MessageFormatter::Builder& builder, UErrorCode &status);
 
         MessageFormatter() = delete; // default constructor not implemented
 
