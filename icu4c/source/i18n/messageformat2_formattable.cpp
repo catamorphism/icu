@@ -34,8 +34,10 @@ namespace message2 {
         holdsDate = other.holdsDate;
     }
 
-    Formattable::Formattable(StringPiece number, UErrorCode &status) {
-        contents = icu::Formattable(number, status);
+    Formattable Formattable::forDecimal(StringPiece number, UErrorCode &status) {
+        Formattable f;
+        f.contents = icu::Formattable(number, status);
+        return f;
     }
 
     UFormattableType Formattable::getType() const {

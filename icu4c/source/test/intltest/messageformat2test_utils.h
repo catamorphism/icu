@@ -107,7 +107,7 @@ class TestCase : public UMemory {
         }
         Builder& setDecimalArgument(const UnicodeString& k, StringPiece decimal, UErrorCode& errorCode) {
             THIS_ON_ERROR(errorCode);
-            arguments[k] = Formattable(decimal, errorCode);
+            arguments[k] = Formattable::forDecimal(decimal, errorCode);
             return *this;
         }
         Builder& setArgument(const UnicodeString& k, const FormattableObject* val) {

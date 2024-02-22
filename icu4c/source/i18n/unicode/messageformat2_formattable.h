@@ -331,7 +331,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable(StringPiece number, UErrorCode &status);
+        static Formattable forDecimal(StringPiece number, UErrorCode& status);
         /**
          * Array constructor.
          *
