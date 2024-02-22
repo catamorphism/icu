@@ -26,9 +26,16 @@ namespace message2 {
         // -------------------------------------
     // Creates a MessageFormat instance based on the pattern.
 
-    MessageFormatter::Builder& MessageFormatter::Builder::setPattern(const UnicodeString& pat) {
+    MessageFormatter::Builder& MessageFormatter::Builder::setPattern(const UnicodeString& pat, UParseError& parseError, UErrorCode& errorCode) {
+        normalizedInput.remove();
+        // Parse the pattern
+        MessageFormatDataModel::Builder tree(errorCode);
+        Parser(pat, tree, *errors, normalizedInput).parse(parseError, errorCode);
+
+        // Build the data model based on what was parsed
+        dataModel = tree.build(errorCode);
+        hasDataModel = true;
         hasPattern = true;
-        hasDataModel = false;
         pattern = pat;
 
         return *this;
@@ -47,6 +54,9 @@ namespace message2 {
     }
 
     MessageFormatter::Builder& MessageFormatter::Builder::setDataModel(MessageFormatDataModel&& newDataModel) {
+        normalizedInput.remove();
+        delete errors;
+        errors = nullptr;
         hasPattern = false;
         hasDataModel = true;
         dataModel = std::move(newDataModel);
@@ -59,16 +69,28 @@ namespace message2 {
       its borrowed FunctionRegistry and (if the setDataModel() method was called)
       MessageFormatDataModel pointers could become invalidated.
     */
-    MessageFormatter MessageFormatter::Builder::build(UParseError& parseError, UErrorCode& errorCode) const {
-        return MessageFormatter(*this, parseError, errorCode);
+    MessageFormatter MessageFormatter::Builder::build(UErrorCode& errorCode) const {
+        return MessageFormatter(*this, errorCode);
     }
 
-    MessageFormatter::Builder::~Builder() {}
+    MessageFormatter::Builder::Builder(UErrorCode& errorCode) : locale(Locale::getDefault()), customFunctionRegistry(nullptr) {
+        // Initialize errors
+        errors = new StaticErrors(errorCode);
+        CHECK_ERROR(errorCode);
+        if (errors == nullptr) {
+            errorCode = U_MEMORY_ALLOCATION_ERROR;
+        }
+    }
+
+    MessageFormatter::Builder::~Builder() {
+        if (errors != nullptr) {
+            delete errors;
+        }
+    }
 
     // MessageFormatter
 
-    MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UParseError &parseError,
-                                       UErrorCode &success) : locale(builder.locale), customFunctionRegistry(builder.customFunctionRegistry) {
+    MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UErrorCode &success) : locale(builder.locale), customFunctionRegistry(builder.customFunctionRegistry) {
         // Set up the standard function registry
         FunctionRegistry::Builder standardFunctionsBuilder(success);
 
@@ -95,25 +117,24 @@ namespace message2 {
         standardFunctionRegistry.checkStandard();
 
         // Validate pattern and build data model
-        // First, check that exactly one of the pattern and data model are set, but not both
+        // First, check that there is a data model
+        // (which might have been set by setDataModel(), or to
+        // the data model parsed from the pattern by setPattern())
 
-        if ((!builder.hasPattern && !builder.hasDataModel)
-            || (builder.hasPattern && builder.hasDataModel)) {
+        if (!builder.hasDataModel) {
             success = U_INVALID_STATE_ERROR;
             return;
         }
 
-        // If data model was set, just assign it
-        if (builder.hasDataModel) {
-            dataModel = builder.dataModel;
-            return;
+        dataModel = builder.dataModel;
+        if (builder.errors != nullptr) {
+            errors = new StaticErrors(*builder.errors, success);
+        } else {
+            // Initialize errors
+            LocalPointer<StaticErrors> errorsNew(new StaticErrors(success));
+            CHECK_ERROR(success);
+            errors = errorsNew.orphan();
         }
-
-        MessageFormatDataModel::Builder tree(success);
-        // Initialize errors
-        LocalPointer<StaticErrors> errorsNew(new StaticErrors(success));
-        CHECK_ERROR(success);
-        errors = errorsNew.orphan();
 
         // Initialize formatter cache
         cachedFormatters = new CachedFormatters();
@@ -121,12 +142,6 @@ namespace message2 {
             success = U_MEMORY_ALLOCATION_ERROR;
             return;
         }
-
-        // Parse the pattern
-        Parser(builder.pattern, tree, *errors, normalizedInput).parse(parseError, success);
-
-        // Build the data model based on what was parsed
-        dataModel = tree.build(success);
 
         // Note: we currently evaluate variables lazily,
         // without memoization. This call is still necessary

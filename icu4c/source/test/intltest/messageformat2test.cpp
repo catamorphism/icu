@@ -203,9 +203,9 @@ void TestMessageFormat2::testAPISimple() {
     // design doc, it elides null checks and error checks.
     // To be used in the test suite, it should include those checks
     // Null checks and error checks elided
-    MessageFormatter::Builder builder;
-    MessageFormatter mf = builder.setPattern(u"{Hello, {$userName}!}")
-        .build(parseError, errorCode);
+    MessageFormatter::Builder builder(errorCode);
+    MessageFormatter mf = builder.setPattern(u"{Hello, {$userName}!}", parseError, errorCode)
+        .build(errorCode);
 
     std::map<UnicodeString, message2::Formattable> argsBuilder;
     argsBuilder["userName"] = message2::Formattable("John");
@@ -215,9 +215,9 @@ void TestMessageFormat2::testAPISimple() {
     result = mf.formatToString(args, errorCode);
     assertEquals("testAPI", result, "Hello, John!");
 
-    mf = builder.setPattern("{Today is {$today :datetime skeleton=yMMMdEEE}.}")
+    mf = builder.setPattern("{Today is {$today :datetime skeleton=yMMMdEEE}.}", parseError, errorCode)
         .setLocale(locale)
-        .build(parseError, errorCode);
+        .build(errorCode);
 
     Calendar* cal(Calendar::createInstance(errorCode));
     // Sunday, October 28, 2136 8:39:12 AM PST
@@ -242,9 +242,9 @@ void TestMessageFormat2::testAPISimple() {
                      when 1 * {{$userName} added a new photo to their album.}\n \
                      when * masculine {{$userName} added {$photoCount} photos to his album.}\n \
                      when * feminine {{$userName} added {$photoCount} photos to her album.}\n \
-                     when * * {{$userName} added {$photoCount} photos to their album.}")
+                     when * * {{$userName} added {$photoCount} photos to their album.}", parseError, errorCode)
         .setLocale(locale)
-        .build(parseError, errorCode);
+        .build(errorCode);
     result = mf.formatToString(args, errorCode);
     assertEquals("testAPI", "Maria added 12 photos to her album.", result);
 
@@ -343,30 +343,30 @@ void TestMessageFormat2::testAPICustomFunctions() {
     argsBuilder["name"] = message2::Formattable(person);
     MessageArguments arguments(argsBuilder, errorCode);
 
-    MessageFormatter::Builder mfBuilder;
+    MessageFormatter::Builder mfBuilder(errorCode);
     UnicodeString result;
     // This fails, because we did not provide a function registry:
-    MessageFormatter mf = mfBuilder.setPattern("{Hello {$name :person formality=informal}}")
+    MessageFormatter mf = mfBuilder.setPattern("{Hello {$name :person formality=informal}}", parseError, errorCode)
                                     .setLocale(locale)
-                                    .build(parseError, errorCode);
+                                    .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", U_UNKNOWN_FUNCTION_ERROR, errorCode);
 
     errorCode = U_ZERO_ERROR;
     mfBuilder.setFunctionRegistry(functionRegistry).setLocale(locale);
 
-    mf = mfBuilder.setPattern("{Hello {$name :person formality=informal}}")
-                    .build(parseError, errorCode);
+    mf = mfBuilder.setPattern("{Hello {$name :person formality=informal}}", parseError, errorCode)
+                    .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello John", result);
 
-    mf = mfBuilder.setPattern("{Hello {$name :person formality=formal}}")
-                    .build(parseError, errorCode);
+    mf = mfBuilder.setPattern("{Hello {$name :person formality=formal}}", parseError, errorCode)
+                    .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello Mr. Doe", result);
 
-    mf = mfBuilder.setPattern("{Hello {$name :person formality=formal length=long}}")
-                    .build(parseError, errorCode);
+    mf = mfBuilder.setPattern("{Hello {$name :person formality=formal length=long}}", parseError, errorCode)
+                    .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello Mr. John Doe", result);
 
@@ -382,9 +382,9 @@ void TestMessageFormat2::testAPICustomFunctions() {
                                          errorCode)
                      .build();
     mfBuilder.setFunctionRegistry(functionRegistryByType);
-    mf = mfBuilder.setPattern("{Hello {$name}}")
+    mf = mfBuilder.setPattern("{Hello {$name}}", parseError, errorCode)
         .setLocale(locale)
-        .build(parseError, errorCode);
+        .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", U_ZERO_ERROR, errorCode);
     // Expect "Hello John" because in the custom function we registered,

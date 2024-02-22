@@ -65,6 +65,27 @@ namespace message2 {
         syntaxError = other.syntaxError;
     }
 
+    StaticErrors::StaticErrors(const StaticErrors& other, UErrorCode& errorCode) {
+        CHECK_ERROR(errorCode);
+
+        U_ASSERT(other.syntaxAndDataModelErrors.isValid());
+        syntaxAndDataModelErrors.adoptInstead(createUVector(errorCode));
+        CHECK_ERROR(errorCode);
+        for (int32_t i = 0; i < other.syntaxAndDataModelErrors->size(); i++) {
+            StaticError* e = static_cast<StaticError*>(other.syntaxAndDataModelErrors->elementAt(i));
+            U_ASSERT(e != nullptr);
+            StaticError* copy = new StaticError(*e);
+            if (copy == nullptr) {
+                errorCode = U_MEMORY_ALLOCATION_ERROR;
+                return;
+            }
+            syntaxAndDataModelErrors->adoptElement(copy, errorCode);
+        }
+        dataModelError = other.dataModelError;
+        missingSelectorAnnotationError = other.missingSelectorAnnotationError;
+        syntaxError = other.syntaxError;
+    }
+
     int32_t DynamicErrors::count() const {
         U_ASSERT(resolutionAndFormattingErrors.isValid() && staticErrors.syntaxAndDataModelErrors.isValid());
         return resolutionAndFormattingErrors->size() + staticErrors.syntaxAndDataModelErrors->size();
