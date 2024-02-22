@@ -1411,8 +1411,8 @@ namespace message2 {
         private:
             friend class PatternPart;
 
-            struct Iterator;
         public:
+            struct Iterator;
             /**
              * Returns the parts of this pattern
              *
@@ -1543,6 +1543,48 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Pattern& operator=(Pattern) noexcept;
+            struct U_I18N_API Iterator {
+            private:
+                using iterator_category = std::forward_iterator_tag;
+                using difference_type = std::ptrdiff_t;
+                using value_type = std::variant<UnicodeString, Expression>;
+                using pointer = value_type*;
+                using reference = const value_type&;
+
+                friend class Pattern;
+                Iterator(const Pattern* p, int32_t i) : pos(i), pat(p) {}
+                friend bool operator== (const Iterator& a, const Iterator& b) { return (a.pat == b.pat && a.pos == b.pos); }
+
+                int32_t pos;
+                const Pattern* pat;
+
+            public:
+                /**
+                 * Dereference operator (gets the element at the current iterator position)
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                reference operator*() const {
+                    const PatternPart& part = pat->parts[pos];
+                    return patternContents(part);
+                }
+                /**
+                 * Increment operator (advances to the next iterator position)
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Iterator operator++() { pos++; return *this; }
+                /**
+                 * Inequality comparison operator (used for comparing an iterator to the result of end())
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                friend bool operator!= (const Iterator& a, const Iterator& b) { return !(a == b); }
+            }; // struct Iterator
+
         private:
             friend class Builder;
             friend class message2::MessageFormatter;
@@ -1582,29 +1624,6 @@ namespace message2 {
             static const std::variant<UnicodeString, Expression>& patternContents(const PatternPart& p) {
                 return p.piece;
             }
-
-            struct Iterator {
-                using iterator_category = std::forward_iterator_tag;
-                using difference_type = std::ptrdiff_t;
-                using value_type = std::variant<UnicodeString, Expression>;
-                using pointer = value_type*;
-                using reference = const value_type&;
-
-                Iterator(const Pattern* p, int32_t i) : pos(i), pat(p) {}
-
-                int32_t pos;
-                const Pattern* pat;
-
-                reference operator*() const {
-                    const PatternPart& part = pat->parts[pos];
-                    return patternContents(part);
-                }
-
-                Iterator operator++() { pos++; return *this; }
-                Iterator operator++(int32_t) { Iterator tmp = *this; ++(*this); return tmp; }
-                friend bool operator== (const Iterator& a, const Iterator& b) { return (a.pat == b.pat && a.pos == b.pos); }
-                friend bool operator!= (const Iterator& a, const Iterator& b) { return !(a == b); }
-            }; // struct Iterator
 
         }; // class Pattern
 
