@@ -141,6 +141,14 @@ namespace message2 {
                 CLOSE,
                 DEFAULT
             };
+            /**
+             * Non-member swap function.
+             * @param l1 will get l2's contents
+             * @param l2 will get l1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
             friend inline void swap(Sigil& l1, Sigil& l2) noexcept {
                 Sigil temp = l1;
                 l1 = l2;
