@@ -187,9 +187,40 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(testResolutionErrors);
     TESTCASE_AUTO(testAPI);
     TESTCASE_AUTO(testAPISimple);
+    TESTCASE_AUTO(testDataModelAPI);
     TESTCASE_AUTO(testVariousPatterns);
     TESTCASE_AUTO(testInvalidPatterns);
     TESTCASE_AUTO_END;
+}
+
+// Needs more tests
+void TestMessageFormat2::testDataModelAPI() {
+    IcuTestErrorCode errorCode1(*this, "testAPI");
+    UErrorCode errorCode = (UErrorCode) errorCode1;
+
+    using Pattern = data_model::Pattern;
+
+    Pattern::Builder builder(errorCode);
+
+    builder.add("a", errorCode);
+    builder.add("b", errorCode);
+    builder.add("c", errorCode);
+
+    Pattern p = builder.build(errorCode);
+    int32_t i = 0;
+    for (auto iter = p.begin(); iter != p.end(); ++iter) {
+        std::variant<UnicodeString, Expression> part = *iter;
+        UnicodeString val = *std::get_if<UnicodeString>(&part);
+        if (i == 0) {
+            assertEquals("testDataModelAPI", val, "a");
+        } else if (i == 1) {
+            assertEquals("testDataModelAPI", val, "b");
+        } else if (i == 2) {
+            assertEquals("testDataModelAPI", val, "c");
+        }
+        i++;
+    }
+    assertEquals("testDataModelAPI", i, 3);
 }
 
 // Example for design doc -- version without null and error checks

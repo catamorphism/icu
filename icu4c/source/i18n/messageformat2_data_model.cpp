@@ -617,10 +617,19 @@ Pattern Pattern::Builder::build(UErrorCode& status) const noexcept {
     return Pattern(*parts, status);
 }
 
-Pattern::Builder& Pattern::Builder::add(PatternPart&& part, UErrorCode& status) noexcept {
+Pattern::Builder& Pattern::Builder::add(Expression&& part, UErrorCode& status) noexcept {
     U_ASSERT(parts != nullptr);
     if (U_SUCCESS(status)) {
-        PatternPart* l = create<PatternPart>(std::move(part), status);
+        PatternPart* l = create<PatternPart>(PatternPart(std::move(part)), status);
+        parts->adoptElement(l, status);
+    }
+    return *this;
+}
+
+Pattern::Builder& Pattern::Builder::add(UnicodeString&& part, UErrorCode& status) noexcept {
+    U_ASSERT(parts != nullptr);
+    if (U_SUCCESS(status)) {
+        PatternPart* l = create<PatternPart>(PatternPart(std::move(part)), status);
         parts->adoptElement(l, status);
     }
     return *this;
