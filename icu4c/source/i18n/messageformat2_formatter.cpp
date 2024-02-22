@@ -36,9 +36,8 @@ namespace message2 {
 
     // Precondition: `reg` is non-null
     // Does not adopt `reg`
-    MessageFormatter::Builder& MessageFormatter::Builder::setFunctionRegistry(const FunctionRegistry* reg) {
-        U_ASSERT(reg != nullptr);
-        customFunctionRegistry = reg;
+    MessageFormatter::Builder& MessageFormatter::Builder::setFunctionRegistry(const FunctionRegistry& reg) {
+        customFunctionRegistry = &reg;
         return *this;
     }
 

@@ -186,8 +186,9 @@ namespace message2 {
             /**
              * Sets a custom function registry.
              *
-             * @param functionRegistry Function registry to use. `functionRegistry` is not
-             *        adopted, and the caller must ensure its lifetime contains
+             * @param functionRegistry Reference to the function registry to use.
+             *        `functionRegistry` is not copied,
+             *        and the caller must ensure its lifetime contains
              *        the lifetime of the `MessageFormatter` object built by this
              *        builder.
              * @return       A reference to the builder.
@@ -195,7 +196,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setFunctionRegistry(const FunctionRegistry* functionRegistry);
+            Builder& setFunctionRegistry(const FunctionRegistry& functionRegistry);
             /**
              * Sets a data model. If a pattern was previously set, it is removed.
              *
