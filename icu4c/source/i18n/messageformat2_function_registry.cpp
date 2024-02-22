@@ -201,7 +201,7 @@ bool tryFormattableAsNumber(const Formattable& optionValue, int64_t& result) {
 
 static bool tryStringAsNumber(const Locale& locale, const Formattable& val, double& value) {
     // Check for a string option, try to parse it as a number if present
-    if (val.getType() != Formattable::Type::kString) {
+    if (val.getType() != UFMT_STRING) {
         return false;
     }
     UnicodeString tempString = val.getString();
@@ -285,7 +285,7 @@ FunctionRegistry::~FunctionRegistry() {
     number::UnlocalizedNumberFormatter nf;
     if (U_SUCCESS(status)) {
         Formattable opt;
-        if (opts.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == Formattable::Type::kString) {
+        if (opts.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == UFMT_STRING) {
             nf = number::NumberFormatter::forSkeleton(opt.getString(), status);
         } else {
             int64_t minFractionDigits = 0;
@@ -364,19 +364,19 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
     // Already checked that contents can be formatted
     const Formattable& toFormat = arg.asFormattable();
     switch (toFormat.getType()) {
-    case Formattable::Type::kDouble: {
+    case UFMT_DOUBLE: {
         numberResult = realFormatter.formatDouble(toFormat.getDouble() - offset, errorCode);
         break;
     }
-    case Formattable::Type::kLong: {
+    case UFMT_LONG: {
         numberResult = realFormatter.formatInt(toFormat.getLong() - offset, errorCode);
         break;
     }
-    case Formattable::Type::kInt64: {
+    case UFMT_INT64: {
         numberResult = realFormatter.formatInt(toFormat.getInt64() - offset, errorCode);
         break;
     }
-    case Formattable::Type::kString: {
+    case UFMT_STRING: {
         // Try to parse the string as a number
         return stringAsNumber(locale, realFormatter, arg, offset, errorCode);
     }
@@ -422,19 +422,19 @@ static void tryAsString(const Locale& locale, const UnicodeString& s, double& va
 
 static void tryWithFormattable(const Locale& locale, const Formattable& value, double& valToCheck, bool& noMatch) {
     switch (value.getType()) {
-        case Formattable::Type::kDouble: {
+        case UFMT_DOUBLE: {
             valToCheck = value.getDouble();
             break;
         }
-        case Formattable::Type::kLong: {
+        case UFMT_LONG: {
             valToCheck = (double) value.getLong();
             break;
         }
-        case Formattable::Type::kInt64: {
+        case UFMT_INT64: {
             valToCheck = (double) value.getInt64();
             break;
         }
-        case Formattable::Type::kString: {
+        case UFMT_STRING: {
             tryAsString(locale, value.getString(), valToCheck, noMatch);
             return;
         }
@@ -582,22 +582,22 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
 
     LocalPointer<DateFormat> df;
     Formattable opt;
-    if (opts.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == Formattable::Type::kString) {
+    if (opts.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == UFMT_STRING) {
         // Same as getInstanceForSkeleton(), see ICU 9029
         // Based on test/intltest/dtfmttst.cpp - TestPatterns()
         LocalPointer<DateTimePatternGenerator> generator(DateTimePatternGenerator::createInstance(locale, errorCode));
         UnicodeString pattern = generator->getBestPattern(opt.getString(), errorCode);
         df.adoptInstead(new SimpleDateFormat(pattern, locale, errorCode));
     } else {
-        if (opts.getFunctionOption(UnicodeString("pattern"), opt) && opt.getType() == Formattable::Type::kString) {
+        if (opts.getFunctionOption(UnicodeString("pattern"), opt) && opt.getType() == UFMT_STRING) {
             df.adoptInstead(new SimpleDateFormat(opt.getString(), locale, errorCode));
         } else {
             DateFormat::EStyle dateStyle = DateFormat::NONE;
-            if (opts.getFunctionOption(UnicodeString("datestyle"), opt) && opt.getType() == Formattable::Type::kString) {
+            if (opts.getFunctionOption(UnicodeString("datestyle"), opt) && opt.getType() == UFMT_STRING) {
                 dateStyle = stringToStyle(opt.getString(), errorCode);
             }
             DateFormat::EStyle timeStyle = DateFormat::NONE;
-            if (opts.getFunctionOption(UnicodeString("timestyle"), opt) && opt.getType() == Formattable::Type::kString) {
+            if (opts.getFunctionOption(UnicodeString("timestyle"), opt) && opt.getType() == UFMT_STRING) {
                 timeStyle = stringToStyle(opt.getString(), errorCode);
             }
             if (dateStyle == DateFormat::NONE && timeStyle == DateFormat::NONE) {

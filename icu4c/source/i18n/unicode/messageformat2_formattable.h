@@ -70,77 +70,12 @@ namespace message2 {
     public:
 
         /**
-         * Selector for flavor of data type contained within a
-         * Formattable object.  Formattable is a union of several
-         * different types, and at any time contains exactly one type.
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        enum Type {
-            /**
-             * Selector indicating a UDate value.  Use getDate to retrieve
-             * the value.
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            kDate,
-
-            /**
-             * Selector indicating a double value. Use getDouble to retrieve
-             * the value.
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            kDouble,
-
-            /**
-             * Selector indicating a 32-bit integer value. Use getLong to retrieve
-             * the value.
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            kLong,
-
-            /**
-             * Selector indicating a UnicodeString value.  Use getString
-             * to retrieve the value.
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            kString,
-
-            /**
-             * Selector indicating a 64-bit integer value. Use getInt64 to retrieve
-             * the value.
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            kInt64,
-
-            /**
-             * Selector indicating an array of Formattable values. Use getArray to
-             * retrieve the value.
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            kArray,
-
-            /**
-             * Selector indicating a pointer to a FormattableObject value.  Use getObject to
-             * retrieve the value.
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            kObject
-        };
-
-        /**
          * Gets the data type of this Formattable object.
          * @return    the data type of this Formattable object.
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Type getType() const;
+        UFormattableType getType() const;
 
         /**
          * Gets the double value of this object. If this object is not of type
@@ -150,7 +85,7 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         double getDouble() const {
-            if (isDecimal && type == Type::kDouble) {
+            if (isDecimal && type == UFMT_DOUBLE) {
                 return icuFormattable.getDouble();
             }
             return scalar.fDouble;
@@ -164,7 +99,7 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         int32_t getLong() const {
-            if (isDecimal && type == Type::kLong) {
+            if (isDecimal && type == UFMT_LONG) {
                 return icuFormattable.getLong();
             }
             return (int32_t) scalar.fInt64;
@@ -178,7 +113,7 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         int64_t getInt64() const {
-            if (isDecimal && type == Type::kInt64) {
+            if (isDecimal && type == UFMT_INT64) {
                 return icuFormattable.getInt64();
             }
             return scalar.fInt64;
@@ -225,7 +160,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        UBool isNumeric() const { return (type == kDouble || type == kLong || type == kInt64); }
+        UBool isNumeric() const { return (type == UFMT_DOUBLE || type == UFMT_LONG || type == UFMT_INT64); }
 
         /**
          * Gets the array value and count of this object. If this object
@@ -247,7 +182,7 @@ namespace message2 {
         const FormattableObject* getObject() const {
             // Can't return a reference since FormattableObject
             // is an abstract class
-            if (type != Type::kObject) {
+            if (type != UFMT_OBJECT) {
                 // TODO: should assert that if type is object, object is non-null
                 return nullptr;
             }
@@ -282,7 +217,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable() : type(Type::kDouble) {
+        Formattable() : type(UFMT_DOUBLE) {
             scalar.fDouble = 0.0;
         }
         /**
@@ -293,7 +228,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable(const UnicodeString& s) : fString(s), type(Type::kString) {}
+        Formattable(const UnicodeString& s) : fString(s), type(UFMT_STRING) {}
         /**
          * Double constructor.
          *
@@ -304,7 +239,7 @@ namespace message2 {
          */
         Formattable(double d) {
             scalar.fDouble = d;
-            type = Type::kDouble;
+            type = UFMT_DOUBLE;
         }
         /**
          * Int64 constructor.
@@ -316,7 +251,7 @@ namespace message2 {
          */
         Formattable(int64_t i) {
             scalar.fInt64 = i;
-            type = Type::kInt64;
+            type = UFMT_INT64;
         }
         /**
          * Date factory method.
@@ -328,7 +263,7 @@ namespace message2 {
         static Formattable forDate(UDate d) {
             Formattable f;
             f.scalar.fDate = d;
-            f.type = Type::kDate;
+            f.type = UFMT_DATE;
             return f;
         }
         /**
@@ -355,7 +290,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable(const Formattable* arr, int32_t len) : array(arr), arrayLen(len), type(Type::kArray) {}
+        Formattable(const Formattable* arr, int32_t len) : array(arr), arrayLen(len), type(UFMT_ARRAY) {}
         /**
          * Object constructor.
          *
@@ -364,7 +299,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable(const FormattableObject* obj) : object(obj), type(Type::kObject) {}
+        Formattable(const FormattableObject* obj) : object(obj), type(UFMT_OBJECT) {}
         /**
          * Destructor.
          *
@@ -374,7 +309,7 @@ namespace message2 {
         virtual ~Formattable();
         /**
          * Converts the Formattable object to an ICU Formattable object.
-         * If this has type kObject or kArray, then `status` is set to
+         * If this has type UFMT_OBJECT or kArray, then `status` is set to
          * U_ILLEGAL_ARGUMENT_ERROR.
          *
          * @param status Input/output error code.
@@ -386,7 +321,7 @@ namespace message2 {
         icu::Formattable asICUFormattable(UErrorCode& status) const;
     private:
 
-        // Ignored if type is kObject, kArray, or kString
+        // Ignored if type is UFMT_OBJECT, kArray, or kString
         union FormattableContents {
             double          fDouble;
             int64_t         fInt64;
@@ -402,16 +337,16 @@ namespace message2 {
         // Ignored if type != kString
         UnicodeString   fString;
 
-        // Null if type != kObject; not owned
+        // Null if type != UFMT_OBJECT; not owned
         const FormattableObject* object;
 
-        // Null if type != kArray; not owned
+        // Null if type != UFMT_ARRAY; not owned
         const Formattable* array;
 
-        // Ignored if type != kArray
+        // Ignored if type != UFMT_ARRAY
         int32_t arrayLen;
 
-        Type type;
+        UFormattableType type;
     }; // class Formattable
 
     // TODO doc comments

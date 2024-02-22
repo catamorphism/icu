@@ -476,13 +476,13 @@ message2::FormattedPlaceholder TemperatureFormatter::format(FormattedPlaceholder
     counter.formatCount++;
 
     FunctionOptionsMap opt = options.getOptions();
-    bool unitExists = opt.count("unit") > 0 && opt["unit"].getType() == Formattable::Type::kString;
+    bool unitExists = opt.count("unit") > 0 && opt["unit"].getType() == UFMT_STRING;
     if (!unitExists) {
         errorCode = U_FORMATTING_ERROR;
         return errorVal;
     }
     UnicodeString unit = opt["unit"].getString();
-    bool skeletonExists = opt.count("skeleton") > 0 && opt["skeleton"].getType() == Formattable::Type::kString;
+    bool skeletonExists = opt.count("skeleton") > 0 && opt["skeleton"].getType() == UFMT_STRING;
 
     number::LocalizedNumberFormatter* realNfCached = (number::LocalizedNumberFormatter*) cachedFormatters->get(unit);
     number::LocalizedNumberFormatter realNf;
@@ -512,17 +512,17 @@ message2::FormattedPlaceholder TemperatureFormatter::format(FormattedPlaceholder
 
     number::FormattedNumber result;
     switch (toFormat.getType()) {
-        case Formattable::Type::kDouble: {
+        case UFMT_DOUBLE: {
             result = realNf.formatDouble(toFormat.getDouble(),
                                                 errorCode);
             break;
         }
-        case Formattable::Type::kLong: {
+        case UFMT_LONG: {
             result = realNf.formatInt(toFormat.getLong(),
                                              errorCode);
             break;
         }
-        case Formattable::Type::kInt64: {
+        case UFMT_INT64: {
             result = realNf.formatInt(toFormat.getInt64(),
                                              errorCode);
             break;
