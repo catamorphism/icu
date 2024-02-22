@@ -36,7 +36,6 @@ namespace message2 {
         void emit(const UChar32 (&)[N]);
         void emit(const UnicodeString&);
         void emit(const FunctionName&);
-        void emit(const VariableName&);
         void emit(const Literal&);
         void emit(const Key&);
         void emit(const SelectorKeys&);

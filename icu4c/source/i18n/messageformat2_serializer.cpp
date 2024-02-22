@@ -43,10 +43,6 @@ void Serializer::emit(const FunctionName& f) {
     emit(f.toString());
 }
 
-void Serializer::emit(const VariableName& v) {
-    emit(v.declaration());
-}
-
 void Serializer::emit(const Literal& l) {
     if (l.isQuoted()) {
       emit(PIPE);
@@ -98,6 +94,7 @@ void Serializer::emit(const Operand& rand) {
     U_ASSERT(!rand.isNull());
 
     if (rand.isVariable()) {
+        emit(DOLLAR);
         emit(rand.asVariable());
     } else {
         // Literal: quoted or unquoted
@@ -213,6 +210,7 @@ void Serializer::serializeDeclarations() {
         // No whitespace needed here -- see `message` in the grammar
         emit(ID_LET);
         whitespace();
+        emit(DOLLAR);
         emit(locals[i].first);
         // No whitespace needed here -- see `declaration` in the grammar
         emit(EQUALS);

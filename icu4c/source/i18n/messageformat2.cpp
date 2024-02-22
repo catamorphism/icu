@@ -37,7 +37,9 @@ static Formattable evalLiteral(const Literal& lit) {
 [[nodiscard]] FormattedPlaceholder MessageFormatter::evalArgument(const VariableName& var, MessageContext& context) const {
     U_ASSERT(context.hasGlobal(var));
     // The fallback for a variable name is itself.
-    return (FormattedPlaceholder(context.getGlobal(var), var.declaration()));
+    UnicodeString str(DOLLAR);
+    str += var;
+    return (FormattedPlaceholder(context.getGlobal(var), str));
 }
 
 // Returns the contents of the literal
@@ -84,7 +86,9 @@ static Formattable evalLiteral(const Literal& lit) {
             context.getErrors().setUnresolvedVariable(var, status);
             // Use fallback per
             // https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fallback-resolution
-            return FormattedPlaceholder(var.declaration());
+            UnicodeString str(DOLLAR);
+            str += var;
+            return FormattedPlaceholder(str);
         }
     } else {
         U_ASSERT(rand.isLiteral());
@@ -603,7 +607,7 @@ ResolvedSelector MessageFormatter::resolveVariables(const Environment& env, cons
     } else {
         // Unresolved variable -- could be a previous warning. Nothing to resolve
         U_ASSERT(context.getErrors().hasUnresolvedVariableError());
-        return ResolvedSelector(FormattedPlaceholder(var.declaration()));
+        return ResolvedSelector(FormattedPlaceholder(var));
     }
 }
 

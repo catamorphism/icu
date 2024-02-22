@@ -100,22 +100,6 @@ SelectorKeys::~SelectorKeys() {
     len = 0;
 }
 
-//------------------ VariableName
-
-UnicodeString VariableName::declaration() const {
-    UnicodeString result(DOLLAR);
-    result += variableName;
-    return result;
-}
-
-VariableName& VariableName::operator=(VariableName other) noexcept {
-    swap(*this, other);
-
-    return *this;
-}
-
-VariableName::~VariableName() {}
-
 //------------------ Literal
 
 bool Literal::operator<(const Literal& other) const {
