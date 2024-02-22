@@ -555,7 +555,7 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
     FunctionRegistry reg = frBuilder.setFormatter(FunctionName("temp"), counter.getAlias(), errorCode)
         .build();
     CHECK_ERROR(errorCode);
-    mfBuilder.setPattern(message).setFunctionRegistry(&reg);
+    mfBuilder.setPattern(message).setFunctionRegistry(reg);
     UParseError parseError;
     MessageFormatter mf = mfBuilder.build(parseError, errorCode);
     UnicodeString result;

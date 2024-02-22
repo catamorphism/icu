@@ -220,7 +220,7 @@ class TestUtils {
         mfBuilder.setPattern(testCase.getPattern()).setLocale(testCase.getLocale());
 
         if (testCase.hasCustomRegistry()) {
-            mfBuilder.setFunctionRegistry(testCase.getCustomRegistry());
+            mfBuilder.setFunctionRegistry(*testCase.getCustomRegistry());
         }
         UParseError parseError;
 	MessageFormatter mf = mfBuilder.build(parseError, errorCode);
