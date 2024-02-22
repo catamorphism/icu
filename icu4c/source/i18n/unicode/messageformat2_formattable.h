@@ -189,6 +189,26 @@ namespace message2 {
             return object;
         }
         /**
+         * Non-member swap function.
+         * @param f1 will get f2's contents
+         * @param f2 will get f1's contents
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        friend inline void swap(Formattable& f1, Formattable& f2) noexcept {
+            using std::swap;
+
+            swap(f1.scalar, f2.scalar);
+            swap(f1.isDecimal, f2.isDecimal);
+            swap(f1.icuFormattable, f2.icuFormattable);
+            swap(f1.fString, f2.fString);
+            swap(f1.object, f2.object);
+            swap(f1.array, f2.array);
+            swap(f1.arrayLen, f2.arrayLen);
+            swap(f1.type, f2.type);
+        }
+        /**
          * Copy constructor.
          *
          * @internal ICU 75.0 technology preview
@@ -196,20 +216,12 @@ namespace message2 {
          */
         Formattable(const Formattable&);
         /**
-         * Copy assignment operator
+         * Assignment operator
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        Formattable& operator=(const Formattable&);
-        /**
-         * Move assignment operator:
-         * The source Formattable will be left in a valid but undefined state.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        Formattable& operator=(Formattable&&) noexcept;
+        Formattable& operator=(Formattable) noexcept;
         /**
          * Default constructor. Leaves the Formattable in a
          * valid but undefined state.
@@ -328,6 +340,8 @@ namespace message2 {
             UDate           fDate;
             bool            fDecimal;
         } scalar;
+
+        // TODO: use variant
 
         // True iff this was constructed with the decimal constructor
         bool isDecimal = false;
