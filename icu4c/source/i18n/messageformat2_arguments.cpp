@@ -23,7 +23,7 @@ namespace message2 {
     int32_t Arguments::findArg(const VariableName& arg) const {
         U_ASSERT(argsLen == 0 || arguments.isValid());
         for (int32_t i = 0; i < argsLen; i++) {
-            if (argumentNames[i] == arg.identifier()) {
+            if (argumentNames[i] == arg) {
                 return i;
             }
         }

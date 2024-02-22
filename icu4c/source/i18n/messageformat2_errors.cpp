@@ -46,7 +46,7 @@ namespace message2 {
     }
 
     void DynamicErrors::setUnresolvedVariable(const VariableName& v, UErrorCode& status) {
-        addError(DynamicError(DynamicErrorType::UnresolvedVariable, v.identifier()), status);
+        addError(DynamicError(DynamicErrorType::UnresolvedVariable, v), status);
     }
 
     DynamicErrors::DynamicErrors(const StaticErrors& e, UErrorCode& status) : staticErrors(e) {

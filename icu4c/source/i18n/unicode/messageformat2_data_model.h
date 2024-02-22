@@ -411,7 +411,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            const VariableName& asVariable() const;
+            const UnicodeString& asVariable() const;
             /**
              * Returns a reference to this operand's literal contents.
              * Precondition: isLiteral()
@@ -439,7 +439,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            explicit Operand(const VariableName& v) : contents(v) {}
+            explicit Operand(const UnicodeString& v) : contents(VariableName(v)) {}
             /**
              * Literal operand constructor.
              *
@@ -1842,10 +1842,11 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         std::vector<Binding> getLocalVariables() const {
-            if (bogus) {
-                return std::vector<Binding>();
+            std::vector<Binding> result;
+            if (!bogus) {
+                return toStdVector<Binding>(bindings.getAlias(), bindingsLen);
             }
-            return toStdVector<Binding>(bindings.getAlias(), bindingsLen);
+            return {};
         }
         /**
          * Determines what type of message this is.
@@ -2005,7 +2006,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& addLocalVariable(VariableName&& variableName, Expression&& expression, UErrorCode& status) noexcept;
+            Builder& addLocalVariable(UnicodeString&& variableName, Expression&& expression, UErrorCode& status) noexcept;
             /**
              * Adds a selector expression. Copies `expression`.
              * If a pattern was previously set, clears the pattern.
