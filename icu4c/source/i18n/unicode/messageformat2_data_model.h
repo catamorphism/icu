@@ -1849,19 +1849,7 @@ namespace message2 {
             return {};
         }
         /**
-         * Determines what type of message this is.
-         *
-         * @return true if and only if this data model represents a `selectors` message
-         *         (if it represents a `match` construct with selectors and variants).
-         *
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        UBool hasSelectors() const;
-        /**
-         * Accesses the selectors.
-         * Precondition: hasSelectors()
+         * Accesses the selectors. Returns an empty vector if this is a pattern message.
          *
          * @return A reference to the selector list.
          *
@@ -1869,19 +1857,15 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         const std::vector<Expression> getSelectors() const {
-            if (!hasSelectors()) {
+            if (std::holds_alternative<Pattern>(body)) {
                 return {};
             }
             const Matcher* match = std::get_if<Matcher>(&body);
-            // Should never happen, given the check for hasSelectors()
-            if (match == nullptr) {
-                return {};
-            }
+            // match must be non-null, given the previous check
             return toStdVector<Expression>(match->selectors.getAlias(), match->numSelectors);
         }
         /**
-         * Accesses the variants.
-         * Precondition: hasSelectors()
+         * Accesses the variants. Returns an empty vector if this is a pattern message.
          *
          * @return A vector of variants.
          *
@@ -1889,19 +1873,18 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         std::vector<Variant> getVariants() const {
-            if (hasSelectors()) {
-                const Matcher* match = std::get_if<Matcher>(&body);
-                // Should never happen, given the check for hasSelectors()
-                if (match == nullptr) {
-                    return {};
-                }
-                return toStdVector<Variant>(match->variants.getAlias(), match->numVariants);
+            // Return empty vector if no variants
+            if (std::holds_alternative<Pattern>(body)) {
+                return {};
             }
+            const Matcher* match = std::get_if<Matcher>(&body);
+            // match must be non-null, given the previous check
+            return toStdVector<Variant>(match->variants.getAlias(), match->numVariants);
             return {};
         }
         /**
          * Accesses the pattern (in a message without selectors).
-         * Precondition: !hasSelectors()
+         * Returns a reference to an empty pattern if the message has selectors.
          *
          * @return A reference to the pattern.
          *
@@ -2091,6 +2074,8 @@ namespace message2 {
         friend class MessageFormatter;
         friend class Serializer;
 
+        Pattern empty; // Provided so that `getPattern()` can return a result
+                       // if called on a selectors message
         bool hasPattern() const { return std::holds_alternative<Pattern>(body); }
 
         bool bogus = false; // Set if a copy constructor fails

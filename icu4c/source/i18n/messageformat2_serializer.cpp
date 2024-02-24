@@ -220,7 +220,7 @@ void Serializer::serializeDeclarations() {
 }
 
 void Serializer::serializeSelectors() {
-    U_ASSERT(dataModel.hasSelectors());
+    U_ASSERT(!dataModel.hasPattern());
     const Expression* selectors = dataModel.getSelectorsInternal();
 
     emit(ID_MATCH);
@@ -231,7 +231,7 @@ void Serializer::serializeSelectors() {
 }
 
 void Serializer::serializeVariants() {
-    U_ASSERT(dataModel.hasSelectors());
+    U_ASSERT(!dataModel.hasPattern());
     const Variant* variants = dataModel.getVariantsInternal();
     for (int32_t i = 0; i < dataModel.numVariants(); i++) {
         const Variant& v = variants[i];
@@ -248,7 +248,7 @@ void Serializer::serializeVariants() {
 void Serializer::serialize() {
     serializeDeclarations();
     // Pattern message
-    if (!dataModel.hasSelectors()) {
+    if (dataModel.hasPattern()) {
       emit(dataModel.getPattern());
     } else {
       // Selectors message

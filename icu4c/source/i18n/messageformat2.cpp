@@ -296,7 +296,7 @@ void MessageFormatter::formatPattern(MessageContext& context, const Environment&
 // `res` is a vector of ResolvedSelectors
 void MessageFormatter::resolveSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UVector& res) const {
     CHECK_ERROR(status);
-    U_ASSERT(dataModel.hasSelectors());
+    U_ASSERT(!dataModel.hasPattern());
 
     const Expression* selectors = dataModel.getSelectorsInternal();
     // 1. Let res be a new empty list of resolved values that support selection.
@@ -744,7 +744,7 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
     LocalPointer<Environment> globalEnv(env);
 
     UnicodeString result;
-    if (!dataModel.hasSelectors()) {
+    if (dataModel.hasPattern()) {
         formatPattern(context, *globalEnv, dataModel.getPattern(), status, result);
     } else {
         // Check for errors/warnings -- if so, then the result of pattern selection is the fallback value
