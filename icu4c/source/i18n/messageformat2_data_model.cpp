@@ -644,20 +644,11 @@ Variant::~Variant() {}
 
 // --------------- MessageFormatDataModel
 
-// The `hasSelectors()` method is provided so that `getSelectors()`,
-// `getVariants()` and `getPattern()` can rely on preconditions
-// rather than taking error codes as arguments.
-UBool MessageFormatDataModel::hasSelectors() const {
-    U_ASSERT(!bogus);
-    if (!hasPattern()) {
-        U_ASSERT(std::get_if<Matcher>(&body)->selectors.isValid());
-        return true;
-    }
-    return false;
-}
-
 const Pattern& MessageFormatDataModel::getPattern() const {
-    U_ASSERT(!hasSelectors());
+    if (std::holds_alternative<Matcher>(body)) {
+        // Return reference to empty pattern if this is a selectors message
+        return empty;
+    }
     return *(std::get_if<Pattern>(&body));
 }
 
@@ -669,13 +660,13 @@ const Binding* MessageFormatDataModel::getLocalVariablesInternal() const {
 
 const Expression* MessageFormatDataModel::getSelectorsInternal() const {
     U_ASSERT(!bogus);
-    U_ASSERT(hasSelectors());
+    U_ASSERT(!hasPattern());
     return std::get_if<Matcher>(&body)->selectors.getAlias();
 }
 
 const Variant* MessageFormatDataModel::getVariantsInternal() const {
     U_ASSERT(!bogus);
-    U_ASSERT(hasSelectors());
+    U_ASSERT(!hasPattern());
     return std::get_if<Matcher>(&body)->variants.getAlias();
 }
 

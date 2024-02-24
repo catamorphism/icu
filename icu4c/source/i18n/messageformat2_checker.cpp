@@ -79,7 +79,7 @@ static bool areDefaultKeys(const Key* keys, int32_t len) {
 void Checker::checkVariants(UErrorCode& status) {
     CHECK_ERROR(status);
 
-    U_ASSERT(dataModel.hasSelectors());
+    U_ASSERT(!dataModel.hasPattern());
 
     // Check that each variant has a key list with size
     // equal to the number of selectors
@@ -124,7 +124,7 @@ void Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selec
 }
 
 void Checker::checkSelectors(const TypeEnvironment& t, UErrorCode& status) {
-    U_ASSERT(dataModel.hasSelectors());
+    U_ASSERT(!dataModel.hasPattern());
 
     // Check each selector; if it's not annotated, emit a
     // "missing selector annotation" error
@@ -169,7 +169,7 @@ void Checker::check(UErrorCode& status) {
     TypeEnvironment typeEnv(status);
     checkDeclarations(typeEnv, status);
     // Pattern message
-    if (!dataModel.hasSelectors()) {
+    if (dataModel.hasPattern()) {
         return;
     } else {
       // Selectors message
