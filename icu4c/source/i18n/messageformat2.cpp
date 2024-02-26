@@ -108,15 +108,17 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
         if (U_FAILURE(status)) {
             return {};
         }
+        const UnicodeString& k = opt.getName();
+        const Operand& v = opt.getValue();
 
         // Options are fully evaluated before calling the function
         // Format the operand
-        FormattedPlaceholder rhsVal = formatOperand(env, opt.second, context, status);
+        FormattedPlaceholder rhsVal = formatOperand(env, v, context, status);
         if (U_FAILURE(status)) {
             return {};
         }
         if (!rhsVal.isFallback()) {
-            resolvedOpt.adoptInstead(create<ResolvedFunctionOption>(ResolvedFunctionOption(opt.first, rhsVal.asFormattable()), status));
+            resolvedOpt.adoptInstead(create<ResolvedFunctionOption>(ResolvedFunctionOption(k, rhsVal.asFormattable()), status));
             if (U_FAILURE(status)) {
                 return {};
             }
@@ -769,7 +771,7 @@ void MessageFormatter::check(MessageContext& context, const Environment& localEn
     for (int32_t i = 0; i < options.size(); i++) {
         const Option& opt = options.getOption(i, status);
         CHECK_ERROR(status);
-        check(context, localEnv, opt.second, status);
+        check(context, localEnv, opt.getValue(), status);
     }
 }
 
@@ -810,14 +812,15 @@ void MessageFormatter::checkDeclarations(MessageContext& context, Environment*& 
     U_ASSERT(env != nullptr && decls != nullptr);
 
     for (int32_t i = 0; i < getDataModel().bindingsLen; i++) {
-        const Expression& rhs = decls[i].second;
+        const Binding& decl = decls[i];
+        const Expression& rhs = decl.getValue();
         check(context, *env, rhs, status);
 
         // Add a closure to the global environment,
         // memoizing the value of localEnv up to this point
 
         // Add the LHS to the environment for checking the next declaration
-        env = Environment::create(decls[i].first, Closure(rhs, *env), env, status);
+        env = Environment::create(decl.getVariable(), Closure(rhs, *env), env, status);
         CHECK_ERROR(status);
     }
 }

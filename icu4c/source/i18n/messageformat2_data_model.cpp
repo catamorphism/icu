@@ -371,6 +371,15 @@ const OptionMap& Operator::getOptionsInternal() const {
     return std::get_if<Callable>(&contents)->second;
 }
 
+Option::Option(const Option& other): name(other.name), rand(other.rand) {}
+
+Option& Option::operator=(Option other) noexcept {
+    swap(*this, other);
+    return *this;
+}
+
+Option::~Option() {}
+
 static UBool stringsEqual(const UElement s1, const UElement s2) {
     return (*static_cast<UnicodeString*>(s1.pointer) == *static_cast<UnicodeString*>(s2.pointer));
 }
@@ -399,7 +408,7 @@ static UBool hasOptionNamed(const UVector& v, const UnicodeString& s) {
     for (int32_t i = 0; i < v.size(); i++) {
         const Option* opt = static_cast<Option*>(v[i]);
         U_ASSERT(opt != nullptr);
-        if (opt->first == s) {
+        if (opt->getName() == s) {
             return true;
         }
     }
@@ -630,6 +639,19 @@ Pattern::Builder::~Builder() {
         delete parts;
     }
 }
+
+// ---------------- Binding
+
+const Expression& Binding::getValue() const { return value; }
+
+Binding::Binding(const Binding& other) : var(other.var), value(other.value) {}
+
+Binding& Binding::operator=(Binding other) noexcept {
+    swap(*this, other);
+    return *this;
+}
+
+Binding::~Binding() {}
 
 // --------------- Variant
 

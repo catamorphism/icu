@@ -159,7 +159,8 @@ void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& status) {
     // Free variables (message arguments) are treated as unannotated.
     const Binding* env = dataModel.getLocalVariablesInternal();
     for (int32_t i = 0; i < dataModel.bindingsLen; i++) {
-        t.extend(env[i].first, typeOf(t, env[i].second), status);
+        const Binding& b = env[i];
+        t.extend(b.getVariable(), typeOf(t, b.getValue()), status);
     }
 }
 
