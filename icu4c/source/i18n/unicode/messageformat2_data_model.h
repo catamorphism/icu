@@ -795,7 +795,92 @@ namespace message2 {
     namespace data_model {
         class Operator;
 
-        typedef std::pair<UnicodeString, Operand> Option;
+        /**
+         *  An `Option` pairs an option name with an Operand.
+         *
+         * `Option` is immutable, copyable and movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class U_I18N_API Option : public UObject {
+        public:
+            /**
+             * Accesses the right-hand side of the option.
+             *
+             * @return A reference to the operand.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const Operand& getValue() const { return rand; }
+            /**
+             * Accesses the left-hand side of the option.
+             *
+             * @return A reference to the option name.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const UnicodeString& getName() const { return name; }
+            /**
+             * Constructor. Returns an `Option` representing the
+             * named option "name=rand".
+             *
+             * @param n The name of the option.
+             * @param r The value of the option.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Option(const UnicodeString& n, Operand&& r) : name(n), rand(std::move(r)) {}
+            /**
+             * Default constructor.
+             * Returns an Option in a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Option() {}
+            /**
+             * Non-member swap function.
+             * @param o1 will get o2's contents
+             * @param o2 will get o1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(Option& o1, Option& o2) noexcept {
+                using std::swap;
+
+                swap(o1.name, o2.name);
+                swap(o1.rand, o2.rand);
+            }
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Option(const Option& other);
+            /**
+             * Assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Option& operator=(Option other) noexcept;
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Option();
+        private:
+            /* const */ UnicodeString name;
+            /* const */ Operand rand;
+        }; // class Option
     } // namespace data_model
 } // namespace message2
 
@@ -1716,9 +1801,97 @@ namespace message2 {
             /* const */ SelectorKeys k;
             /* const */ Pattern p;
         }; // class Variant
+    } // namespace data_model
 
-      typedef std::pair<VariableName, Expression> Binding;
+        namespace data_model {
+        /**
+         *  A `Binding` pairs a variable name with an expression.
+         * It corresponds to the `Declaration` interface
+         * defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md#messages
+         *
+         * `Binding` is immutable and copyable. It is not movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class U_I18N_API Binding : public UObject {
+        public:
+            /**
+             * Accesses the right-hand side of the binding.
+             *
+             * @return A reference to the expression.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const Expression& getValue() const;
+            /**
+             * Accesses the left-hand side of the binding.
+             *
+             * @return A reference to the variable name.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const VariableName& getVariable() const { return var; }
+            /**
+             * Constructor.
+             * Precondition: i < numParts()
+             *
+             * @param v A variable name.
+             * @param e An expression.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Binding(const VariableName& v, const Expression& e) : var(v), value(e){}
+            /**
+             * Non-member swap function.
+             * @param b1 will get b2's contents
+             * @param b2 will get b1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(Binding& b1, Binding& b2) noexcept {
+                using std::swap;
 
+                swap(b1.var, b2.var);
+                swap(b1.value, b2.value);
+            }
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Binding(const Binding& other);
+            /**
+             * Copy assignment operator
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Binding& operator=(Binding) noexcept;
+            /**
+             * Default constructor.
+             * Puts the Binding into a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Binding() = default;
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Binding();
+        private:
+            /* const */ VariableName var;
+            /* const */ Expression value;
+        }; // class Binding
     } // namespace data_model
 } // namespace message2
 
