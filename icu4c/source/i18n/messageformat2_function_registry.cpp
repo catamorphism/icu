@@ -278,7 +278,9 @@ static FormattedPlaceholder stringAsNumber(Locale locale, const number::Localize
     }
 
     double numberValue;
-    const UnicodeString& inputStr = input.asFormattable().getString(errorCode);
+    // Copying string to avoid GCC dangling-reference warning
+    // (although the reference is safe)
+    UnicodeString inputStr = input.asFormattable().getString(errorCode);
     // Precondition: `input`'s source Formattable has type string
     if (U_FAILURE(errorCode)) {
         return {};
