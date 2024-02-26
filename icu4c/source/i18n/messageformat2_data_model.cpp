@@ -304,7 +304,7 @@ int32_t OptionMap::size() const {
 
 const FunctionName& Operator::getFunctionName() const {
     U_ASSERT(!isReserved());
-    return std::get_if<Callable>(&contents)->first;
+    return std::get_if<Callable>(&contents)->getName();
 }
 
 UChar FunctionName::sigilChar() const {
@@ -368,7 +368,7 @@ const Reserved& Operator::asReserved() const {
 
 const OptionMap& Operator::getOptionsInternal() const {
     U_ASSERT(!isReserved());
-    return std::get_if<Callable>(&contents)->second;
+    return std::get_if<Callable>(&contents)->getOptions();
 }
 
 Option::Option(const Option& other): name(other.name), rand(other.rand) {}
@@ -476,6 +476,8 @@ Operator::Builder::~Builder() {
 }
 
 Operator::~Operator() {}
+
+Callable::~Callable() {}
 
 // ------------ Expression
 

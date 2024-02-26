@@ -937,7 +937,17 @@ namespace message2 {
         #endif
 
       // Internal use only
-      typedef std::pair<FunctionName, OptionMap> Callable;
+      class U_I18N_API Callable : public UObject {
+      public:
+          const FunctionName& getName() const { return name; }
+          const OptionMap& getOptions() const { return options; }
+          Callable(const FunctionName& f, const OptionMap& opts) : name(f), options(opts) {}
+          Callable() = default;
+          virtual ~Callable();
+      private:
+          /* const */ FunctionName name;
+          /* const */ OptionMap options;
+      };
 
       /**
          * The `Operator` class corresponds to the `FunctionRef | Reserved` type in the
@@ -998,7 +1008,7 @@ namespace message2 {
                 const Callable* f = std::get_if<Callable>(&contents);
                 // This case should never happen, as the precondition is !isReserved()
                 if (f == nullptr) { return {}; }
-                const OptionMap& opts = f->second;
+                const OptionMap& opts = f->getOptions();
                 return toStdVector<Option>(opts.options.getAlias(), opts.len);
             }
             /**
