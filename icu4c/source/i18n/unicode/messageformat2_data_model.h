@@ -358,6 +358,26 @@ namespace message2 {
             /* const */ bool thisIsQuoted = false;
             /* const */ UnicodeString contents;
         };
+  } // namespace data_model
+} // namespace message2
+
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the std::variants and std::optionals
+// that are used as a data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+struct U_I18N_API std::_Nontrivial_dummy_type;
+template class U_I18N_API std::_Variant_storage_<false, message2::data_model::VariableName,message2::data_model::Literal>;
+template class U_I18N_API std::variant<message2::data_model::VariableName,message2::data_model::Literal>;
+template class U_I18N_API std::optional<std::variant<message2::data_model::VariableName,message2::data_model::Literal>>;
+template class U_I18N_API std::optional<message2::data_model::Literal>;
+#endif
+/// @endcond
+
+namespace message2 {
+  namespace data_model {
 
         /**
          * The `Operand` class corresponds to the `operand` nonterminal in the MessageFormat 2 grammar,
@@ -948,7 +968,23 @@ namespace message2 {
           /* const */ FunctionName name;
           /* const */ OptionMap options;
       };
+  } // namespace data_model
+} // namespace message2
 
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the std::variant that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+template class U_I18N_API std::_Variant_storage_<false, message2::data_model::Reserved,message2::data_model::Callable>;
+template class U_I18N_API std::variant<message2::data_model::Reserved,message2::data_model::Callable>;
+#endif
+/// @endcond
+
+namespace message2 {
+  namespace data_model {
       /**
          * The `Operator` class corresponds to the `FunctionRef | Reserved` type in the
          * `Expression` interface defined in
@@ -1157,7 +1193,22 @@ namespace message2 {
 
             /* const */ std::variant<Reserved, Callable> contents;
         }; // class Operator
+  } // namespace data_model
+} // namespace message2
 
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the std::optional that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+template class U_I18N_API std::optional<message2::data_model::Operator>;
+#endif
+/// @endcond
+
+namespace message2 {
+  namespace data_model {
         /**
          * The `Expression` class corresponds to the `expression` nonterminal in the MessageFormat 2
          * grammar and the `Expression` interface defined in
@@ -1358,26 +1409,6 @@ namespace message2 {
   } // namespace data_model
 } // namespace message2
 
-  /// @cond DOXYGEN_IGNORE
-// Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
-// (When building DLLs for Windows this is required.)
-// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
-// for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-#if defined(_MSC_VER)
-// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
-#pragma warning(push)
-#pragma warning(disable: 4661)
-#endif
-template class U_I18N_API LocalPointerBase<message2::data_model::PatternPart>;
-template class U_I18N_API LocalArray<message2::data_model::PatternPart>;
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-#endif
-/// @endcond
-
 namespace message2 {
   namespace data_model {
       class Pattern;
@@ -1491,7 +1522,31 @@ namespace message2 {
 
             std::variant<UnicodeString, Expression> piece;
         }; // class PatternPart
+  } // namespace data_model
+} // namespace message2
 
+  /// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointerBase<message2::data_model::PatternPart>;
+template class U_I18N_API LocalArray<message2::data_model::PatternPart>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+namespace message2 {
+  namespace data_model {
         /**
          *  A `Pattern` is a sequence of formattable parts.
          * It corresponds to the `Pattern` interface
@@ -1979,7 +2034,21 @@ namespace message2 {
         // The number of variants
         int32_t numVariants = 0;
     }; // class Matcher
+} // namespace message2
 
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the std::variant that is used as a
+// data member of various MessageFormatDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+template class U_I18N_API std::_Variant_storage_<false, message2::Matcher,message2::data_model::Pattern>;
+template class U_I18N_API std::variant<message2::Matcher,message2::data_model::Pattern>;
+#endif
+/// @endcond
+
+namespace message2 {
     // -----------------------------------------------------------------------
     // Public MessageFormatDataModel class
 
