@@ -19,6 +19,7 @@
 
 U_NAMESPACE_BEGIN
 
+
 namespace message2 {
 
 // Formattable
@@ -53,6 +54,42 @@ namespace message2 {
         virtual ~FormattableObject();
     }; // class FormattableObject
 
+    class Formattable;
+} // namespace message2
+
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the std::variant that is used
+// to represent the message2::Formattable class.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+class Formattable;
+template class U_I18N_API std::_Variant_storage_<false,
+  double,
+  int64_t,
+  UnicodeString,
+  icu::Formattable,
+  const message2::FormattableObject *,
+  std::pair<const message2::Formattable *,int32_t>>;
+template class U_I18N_API std::variant<double,
+				       int64_t,
+				       UnicodeString,
+				       icu::Formattable,
+				       const message2::FormattableObject*,
+				       std::pair<const message2::Formattable*, int32_t>>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
+namespace message2 {
     /**
      * The `Formattable` class represents a typed value that can be formatted,
      * originating either from a message argument or a literal in the code.
