@@ -666,6 +666,20 @@ Variant::Variant(const Variant& other) : k(other.k), p(other.p) {}
 
 Variant::~Variant() {}
 
+// ------------- Matcher
+
+Matcher& Matcher::operator=(Matcher other) {
+    swap(*this, other);
+    return *this;
+}
+
+Matcher::Matcher(const Matcher& other) {
+    numSelectors = other.numSelectors;
+    numVariants = other.numVariants;
+    selectors.adoptInstead(copyArray<Expression>(other.selectors.getAlias(), numSelectors));
+    variants.adoptInstead(copyArray<Variant>(other.variants.getAlias(), numVariants));
+}
+
 // --------------- MessageFormatDataModel
 
 const Pattern& MessageFormatDataModel::getPattern() const {

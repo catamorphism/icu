@@ -1938,6 +1938,25 @@ namespace message2 {
     class MessageFormatDataModel;
 
     class Matcher {
+    public:
+        Matcher& operator=(Matcher);
+        Matcher(const Matcher&);
+        /**
+         * Non-member swap function.
+         * @param m1 will get m2's contents
+         * @param m2 will get m1's contents
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        friend inline void swap(Matcher& m1, Matcher& m2) noexcept {
+            using std::swap;
+
+            swap(m1.selectors, m2.selectors);
+            swap(m1.numSelectors, m2.numSelectors);
+            swap(m1.variants, m2.variants);
+            swap(m1.numVariants, m2.numVariants);
+        }
     private:
 
         friend class MessageFormatDataModel;
