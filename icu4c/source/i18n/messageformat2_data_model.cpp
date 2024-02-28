@@ -642,6 +642,8 @@ Pattern::Builder::~Builder() {
     }
 }
 
+Pattern::~Pattern() {}
+
 // ---------------- Binding
 
 const Expression& Binding::getValue() const { return value; }

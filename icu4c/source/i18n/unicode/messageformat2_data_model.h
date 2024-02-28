@@ -1693,6 +1693,13 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Pattern& operator=(Pattern) noexcept;
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Pattern();
             struct U_I18N_API Iterator {
             private:
                 using iterator_category = std::forward_iterator_tag;
