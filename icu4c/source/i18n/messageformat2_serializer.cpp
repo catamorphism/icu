@@ -209,7 +209,7 @@ void Serializer::serializeDeclarations() {
     for (int32_t i = 0; i < dataModel.bindingsLen; i++) {
         const Binding& b = locals[i];
         // No whitespace needed here -- see `message` in the grammar
-        emit(ID_LET);
+        emit(ID_LOCAL);
         whitespace();
         emit(DOLLAR);
         emit(b.getVariable());
