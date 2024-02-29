@@ -62,7 +62,8 @@ namespace message2 {
 	static void translateParseError(const MessageParseError&, UParseError&);
 	static void setParseError(MessageParseError&, uint32_t);
 	void maybeAdvanceLine();
-	void parseBody(UErrorCode&);
+        Pattern parseSimpleMessage(UErrorCode&);
+        void parseBody(UErrorCode&);
 	void parseDeclarations(UErrorCode&);
 	void parseSelectors(UErrorCode&);
 
@@ -94,7 +95,7 @@ namespace message2 {
 	Key parseKey(UErrorCode&);
 	SelectorKeys parseNonEmptyKeys(UErrorCode&);
 	void errorPattern(UErrorCode& status);
-	Pattern parsePattern(UErrorCode&);
+	Pattern parseQuotedPattern(UErrorCode&);
 
 	// The input string
 	const UnicodeString &source;

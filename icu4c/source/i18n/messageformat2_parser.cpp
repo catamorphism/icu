@@ -334,13 +334,12 @@ void Parser::parseOptionalWhitespace(UErrorCode& errorCode) {
 }
 
 // Consumes a single character, signaling an error if `source[index]` != `c`
+// No postcondition -- a message can end with a '}' token
 void Parser::parseToken(UChar32 c, UErrorCode& errorCode) {
     CHECK_BOUNDS(source, index, parseError, errorCode);
 
     if (source[index] == c) {
         index++;
-        // Guarantee postcondition
-        CHECK_BOUNDS(source, index, parseError, errorCode);
         normalizedInput += c;
         return;
     }
@@ -351,6 +350,7 @@ void Parser::parseToken(UChar32 c, UErrorCode& errorCode) {
 /*
    Consumes a fixed-length token, signaling an error if the token isn't a prefix of
    the string beginning at `source[index]`
+   No postcondition -- a message can end with a '}' token
 */
 template <int32_t N>
 void Parser::parseToken(const UChar32 (&token)[N], UErrorCode& errorCode) {
@@ -364,9 +364,6 @@ void Parser::parseToken(const UChar32 (&token)[N], UErrorCode& errorCode) {
         }
         normalizedInput += token[tokenPos];
         index++;
-        // Guarantee postcondition
-        CHECK_BOUNDS(source, index, parseError, errorCode);
-
         tokenPos++;
     }
 }
@@ -1130,8 +1127,8 @@ void Parser::parseDeclarations(UErrorCode& status) {
     // declarations must be followed by a body
     CHECK_BOUNDS(source, index, parseError, status);
 
-    while (source[index] == ID_LET[0]) {
-        parseToken(ID_LET, status);
+    while (source[index] == ID_LOCAL[0]) {
+        parseToken(ID_LOCAL, status);
         parseRequiredWhitespace(status);
         // Restore precondition
         CHECK_BOUNDS(source, index, parseError, status);
@@ -1172,15 +1169,15 @@ void Parser::parseTextEscape(UnicodeString &str, UErrorCode& status) {
 /*
   Consume a non-empty sequence of text characters and escaped text characters,
   matching the `text` nonterminal in the grammar
+
+  No postcondition (a message can end with a text)
 */
 UnicodeString Parser::parseText(UErrorCode& status) {
     UnicodeString str;
     if (!inBounds(source, index)) {
-        ERROR(parseError, status, index);
+        // Text can be empty
         return str;
     }
-
-    bool empty = true;
 
     while (true) {
         if (source[index] == BACKSLASH) {
@@ -1193,16 +1190,10 @@ UnicodeString Parser::parseText(UErrorCode& status) {
         } else {
             break;
         }
-        // Restore precondition
         if (!inBounds(source, index)) {
-            ERROR(parseError, status, index);
-            return str;
+            // OK for text to end a message
+            break;
         }
-        empty = false;
-    }
-    if (empty) {
-        // text must be non-empty
-        ERROR(parseError, status, index);
     }
 
     return str;
@@ -1321,26 +1312,36 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
     return keysBuilder.build(status);
 }
 
+Pattern Parser::parseQuotedPattern(UErrorCode& status) {
+    U_ASSERT(inBounds(source, index));
+
+    parseToken(LEFT_CURLY_BRACE, status);
+    parseToken(LEFT_CURLY_BRACE, status);
+    Pattern p = parseSimpleMessage(status);
+    parseToken(RIGHT_CURLY_BRACE, status);
+    parseToken(RIGHT_CURLY_BRACE, status);
+    return p;
+}
+
 /*
-  Consume a `pattern`, matching the nonterminal in the grammar
-  No postcondition (on return, `index` might equal `source.length()` with U_SUCCESS(status)),
-  because a message can end with a pattern
+  Consume a `simple-message`, matching the nonterminal in the grammar
+  Postcondition: `index == source.length()` or U_FAILURE(status);
+  for a syntactically correct message, this will consume the entire input
 */
-Pattern Parser::parsePattern(UErrorCode& status) {
+Pattern Parser::parseSimpleMessage(UErrorCode& status) {
     U_ASSERT(inBounds(source, index));
 
     Pattern::Builder result(status);
 
     if (U_SUCCESS(status)) {
-        parseToken(LEFT_CURLY_BRACE, status);
-
         Expression expression;
-        while (source[index] != RIGHT_CURLY_BRACE) {
+        while (inBounds(source, index)) {
             switch (source[index]) {
             case LEFT_CURLY_BRACE: {
                 // Must be expression
                 bool rhsError = false;
-                result.add(parseExpression(rhsError, status), status);
+                Expression e = parseExpression(rhsError, status);
+                result.add(rhsError ? exprFallback() : e, status);
                 break;
             }
             default: {
@@ -1349,14 +1350,11 @@ Pattern Parser::parsePattern(UErrorCode& status) {
                 break;
             }
             }
-            // Need an explicit error check here so we don't loop infinitely
-            if (!inBounds(source, index)) {
-                return result.build(status);
+            if (source[index] == RIGHT_CURLY_BRACE) {
+                // End of quoted pattern
+                break;
             }
         }
-        // Consume the closing brace
-        index++;
-        normalizedInput += RIGHT_CURLY_BRACE;
     }
     return result.build(status);
 }
@@ -1438,7 +1436,7 @@ void Parser::parseSelectors(UErrorCode& status) {
         // Restore precondition before calling parsePattern()
         // (which must return a non-null value)
         CHECK_BOUNDS(source, index, parseError, status);
-        Pattern rhs = parsePattern(status);
+        Pattern rhs = parseQuotedPattern(status);
 
         dataModel.addVariant(std::move(keyList), std::move(rhs), status);
 
@@ -1495,7 +1493,7 @@ void Parser::parseBody(UErrorCode& status) {
     switch (source[index]) {
     case LEFT_CURLY_BRACE: {
         // Pattern
-        dataModel.setPattern(parsePattern(status));
+        dataModel.setPattern(parseQuotedPattern(status));
         break;
     }
     case ID_MATCH[0]: {
@@ -1528,8 +1526,20 @@ void Parser::parse(UParseError &parseErrorResult, UErrorCode& status) {
         ERROR(parseError, status, index);
     }
 
-    parseDeclarations(status);
-    parseBody(status);
+    switch (source[index]) {
+    case PERIOD:
+    case LEFT_CURLY_BRACE: {
+        // A complex message begins with a '.' or '{'
+        parseDeclarations(status);
+        parseBody(status);
+        break;
+    }
+    default: {
+        // Simple message
+        dataModel.setPattern(parseSimpleMessage(status));
+        break;
+    }}
+
     CHECK_ERROR(status);
 
     parseOptionalWhitespace(status);
