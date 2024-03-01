@@ -63,15 +63,11 @@ TestResult validTestCases[] = {
 };
 
 
-static const int32_t numResolutionErrors = 6;
+static const int32_t numResolutionErrors = 3;
 TestResultError jsonTestCasesResolutionError[] = {
-    {"let $foo = {$bar} match {$foo :plural} when one {one} when * {other}", "other", U_UNRESOLVED_VARIABLE_ERROR},
-    {"let $foo = {$bar} match {$foo :plural} when one {one} when * {other}", "other", U_UNRESOLVED_VARIABLE_ERROR},
-    {"let $bar = {$none :plural} match {$foo :select} when one {one} when * {{$bar}}", "{$none}", U_UNRESOLVED_VARIABLE_ERROR},
-    {"{{|content| +tag}}", "{|content|}", U_UNKNOWN_FUNCTION_ERROR},
-    {"{{|content| -tag}}", "{|content|}", U_UNKNOWN_FUNCTION_ERROR},
-    {"{{|content| +tag} {|content| -tag}}", "{|content|} {|content|}", U_UNKNOWN_FUNCTION_ERROR},
-    {"{content {|foo| +markup}}", "content {|foo|}", U_UNKNOWN_FUNCTION_ERROR}
+    {".local $foo = {$bar} .match {$foo :plural} .when one {{one}} .when * {{other}}", "other", U_UNRESOLVED_VARIABLE_ERROR},
+    {".local $foo = {$bar} .match {$foo :plural} .when one {{one}} .when * {{other}}", "other", U_UNRESOLVED_VARIABLE_ERROR},
+    {".local $bar = {$none :plural} .match {$foo :select} .when one {{one}} .when * {{{$bar}}}", "{$none}", U_UNRESOLVED_VARIABLE_ERROR}
 };
 
 static const int32_t numReservedErrors = 34;
@@ -183,10 +179,8 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(featureTests);
     TESTCASE_AUTO(testCustomFunctions);
     TESTCASE_AUTO(testBuiltInFunctions);
-    /*
     TESTCASE_AUTO(testDataModelErrors);
     TESTCASE_AUTO(testResolutionErrors);
-    */
     TESTCASE_AUTO(testAPI);
     TESTCASE_AUTO(testAPISimple);
     TESTCASE_AUTO(testDataModelAPI);
@@ -605,67 +599,67 @@ void TestMessageFormat2::testDataModelErrors() {
     // Examples taken from https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md
 
     // Variant key mismatch
-    testSemanticallyInvalidPattern(++i, "match {$foo :plural} {$bar :plural} when one{one}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, "match {$foo :plural} {$bar :plural} when one {one}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, "match {$foo :plural} {$bar :plural} when one  {one}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :plural} {$bar :plural} .when one{{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :plural} {$bar :plural} .when one {{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :plural} {$bar :plural} .when one  {{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
 
-    testSemanticallyInvalidPattern(++i, "match {$foo :plural} when * * {foo}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, "match {$one :plural}\n\
-                             when 1 2 {Too many}\n\
-                             when * {Otherwise}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, "match {$one :plural} {$two :plural}\n\
-                             when 1 2 {Two keys}\n\
-                             when * {Missing a key}\n\
-                             when * * {Otherwise}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :plural} .when * * {{foo}}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$one :plural}\n\
+                             .when 1 2 {{Too many}}\n\
+                             .when * {{Otherwise}}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$one :plural} {$two :plural}\n\
+                             .when 1 2 {{Two keys}}\n\
+                             .when * {{Missing a key}}\n\
+                             .when * * {{Otherwise}}", U_VARIANT_KEY_MISMATCH_ERROR);
 
     // Non-exhaustive patterns
-    testSemanticallyInvalidPattern(++i, "match {$one :plural}\n\
-                                         when 1 {Value is one}\n\
-                                         when 2 {Value is two}\n", U_NONEXHAUSTIVE_PATTERN_ERROR);
-    testSemanticallyInvalidPattern(++i, "match {$one :plural} {$two :plural}\n\
-                                         when 1 * {First is one}\n\
-                                         when * 1 {Second is one}\n", U_NONEXHAUSTIVE_PATTERN_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$one :plural}\n\
+                                         .when 1 {{Value is one}}\n\
+                                         .when 2 {{Value is two}}\n", U_NONEXHAUSTIVE_PATTERN_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$one :plural} {$two :plural}\n\
+                                         .when 1 * {{First is one}}\n\
+                                         .when * 1 {{Second is one}}\n", U_NONEXHAUSTIVE_PATTERN_ERROR);
 
     // Duplicate option names
-    testSemanticallyInvalidPattern(++i, "{{:foo a=1 b=2 a=1}}", U_DUPLICATE_OPTION_NAME_ERROR);
-    testSemanticallyInvalidPattern(++i, "{{:foo a=1 a=1}}", U_DUPLICATE_OPTION_NAME_ERROR);
-    testSemanticallyInvalidPattern(++i, "{{:foo a=1 a=2}}", U_DUPLICATE_OPTION_NAME_ERROR);
-    testSemanticallyInvalidPattern(++i, "{{|x| :foo a=1 a=2}}", U_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "{:foo a=1 b=2 a=1}", U_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "{:foo a=1 a=1}", U_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "{:foo a=1 a=2}", U_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "{|x| :foo a=1 a=2}", U_DUPLICATE_OPTION_NAME_ERROR);
 
     // Missing selector annotation
-    testSemanticallyInvalidPattern(++i, "match {$one}\n\
-                                         when 1 {Value is one}\n\
-                                         when * {Value is not one}\n", U_MISSING_SELECTOR_ANNOTATION_ERROR);
-    testSemanticallyInvalidPattern(++i, "let $one = {|The one|}\n\
-                                         match {$one}\n\
-                                         when 1 {Value is one}\n\
-                                         when * {Value is not one}\n", U_MISSING_SELECTOR_ANNOTATION_ERROR);
-    testSemanticallyInvalidPattern(++i, "match {|horse| ^private}\n\
-                                         when 1 {The value is one.}\n          \
-                                         when * {The value is not one.}\n", U_MISSING_SELECTOR_ANNOTATION_ERROR);
-    testSemanticallyInvalidPattern(++i, "match {$foo !select} when |1| {one} when * {other}",
+    testSemanticallyInvalidPattern(++i, ".match {$one}\n\
+                                         .when 1 {{Value is one}}\n\
+                                         .when * {{Value is not one}}\n", U_MISSING_SELECTOR_ANNOTATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $one = {|The one|}\n\
+                                         .match {$one}\n\
+                                         .when 1 {{Value is one}}\n\
+                                         .when * {{Value is not one}}\n", U_MISSING_SELECTOR_ANNOTATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {|horse| ^private}\n\
+                                         .when 1 {{The value is one.}}\n          \
+                                         .when * {{The value is not one.}}\n", U_MISSING_SELECTOR_ANNOTATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo !select} .when |1| {{one}} .when * {{other}}",
                                    U_MISSING_SELECTOR_ANNOTATION_ERROR);
-    testSemanticallyInvalidPattern(++i, "match {$foo ^select} when |1| {one} when * {other}",
+    testSemanticallyInvalidPattern(++i, ".match {$foo ^select} .when |1| {{one}} .when * {{other}}",
                                    U_MISSING_SELECTOR_ANNOTATION_ERROR);
 
     TestCase::Builder testBuilder;
     testBuilder.setName("testDataModelErrors");
 
     // This should *not* trigger a "missing selector annotation" error
-    TestCase test = testBuilder.setPattern("let $one = {|The one| :select}\n\
-                 match {$one}\n\
-                 when 1 {Value is one}\n\
-                 when * {Value is not one}")
+    TestCase test = testBuilder.setPattern(".local $one = {|The one| :select}\n\
+                 .match {$one}\n\
+                 .when 1 {{Value is one}}\n\
+                 .when * {{Value is not one}}")
                           .setExpected("Value is not one")
                           .setExpectSuccess()
                           .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("let $one = {|The one| :select}\n\
-                 let $two = {$one}\n\
-                 match {$two}\n\
-                 when 1 {Value is one}\n\
-                 when * {Value is not one}")
+    test = testBuilder.setPattern(".local $one = {|The one| :select}\n\
+                 .local $two = {$one}\n\
+                 .match {$two}\n\
+                 .when 1 {{Value is one}}\n\
+                 .when * {{Value is not one}}")
                           .setExpected("Value is not one")
                           .setExpectSuccess()
                           .build();
@@ -679,43 +673,43 @@ void TestMessageFormat2::testResolutionErrors() {
     // but should trigger a resolution error
 
     // Unresolved variable
-    testRuntimeWarningPattern(++i, "{{$oops}}", "{$oops}", U_UNRESOLVED_VARIABLE_ERROR);
-    testRuntimeWarningPattern(++i, "let $x = {$forward} let $forward = {42} {{$x}}", "{$forward}", U_UNRESOLVED_VARIABLE_ERROR);
+    testRuntimeWarningPattern(++i, "{$oops}", "{$oops}", U_UNRESOLVED_VARIABLE_ERROR);
+    testRuntimeWarningPattern(++i, ".local $x = {$forward} .local $forward = {42} {{{$x}}}", "{$forward}", U_UNRESOLVED_VARIABLE_ERROR);
 
     // Unknown function
-    testRuntimeWarningPattern(++i, "{The value is {horse :func}.}", "The value is {|horse|}.", U_UNKNOWN_FUNCTION_ERROR);
-    testRuntimeWarningPattern(++i, "match {|horse| :func}\n\
-                                         when 1 {The value is one.}\n\
-                                         when * {The value is not one.}\n",
+    testRuntimeWarningPattern(++i, "The value is {horse :func}.", "The value is {|horse|}.", U_UNKNOWN_FUNCTION_ERROR);
+    testRuntimeWarningPattern(++i, ".match {|horse| :func}\n\
+                                         .when 1 {{The value is one.}}\n\
+                                         .when * {{The value is not one.}}\n",
                               "The value is not one.", U_UNKNOWN_FUNCTION_ERROR);
     // Using formatter as selector
     // The fallback string will match the '*' variant
-    testRuntimeWarningPattern(++i, "match {|horse| :number}\n\
-                                         when 1 {The value is one.}\n\
-                                         when * {The value is not one.}\n", "The value is not one.", U_SELECTOR_ERROR);
+    testRuntimeWarningPattern(++i, ".match {|horse| :number}\n\
+                                         .when 1 {{The value is one.}}\n\
+                                         .when * {{The value is not one.}}\n", "The value is not one.", U_SELECTOR_ERROR);
 
     // Using selector as formatter
-    testRuntimeWarningPattern(++i, "match {|horse| :select}\n\
-                                         when 1 {The value is one.}\n   \
-                                         when * {{|horse| :select}}\n",
+    testRuntimeWarningPattern(++i, ".match {|horse| :select}\n\
+                                         .when 1 {{The value is one.}}\n   \
+                                         .when * {{{|horse| :select}}}\n",
                               "{|horse|}", U_FORMATTING_ERROR);
 
     // Unsupported expressions
-    testRuntimeErrorPattern(++i, "{The value is {@horse}.}", U_UNSUPPORTED_PROPERTY);
-    testRuntimeErrorPattern(++i, "{hello {|4.2| @number}}", U_UNSUPPORTED_PROPERTY);
-    testRuntimeErrorPattern(++i, "{{<tag}}", U_UNSUPPORTED_PROPERTY);
-    testRuntimeErrorPattern(++i, "let $bar = {|42| ~plural} match {|horse| :select} when * {{$bar}}",
+    testRuntimeErrorPattern(++i, "The value is {@horse}.", U_UNSUPPORTED_PROPERTY);
+    testRuntimeErrorPattern(++i, "hello {|4.2| @number}", U_UNSUPPORTED_PROPERTY);
+    testRuntimeErrorPattern(++i, "{<tag}", U_UNSUPPORTED_PROPERTY);
+    testRuntimeErrorPattern(++i, ".local $bar = {|42| ~plural} .match {|horse| :select} .when * {{{$bar}}}",
                             U_UNSUPPORTED_PROPERTY);
 
     // Selector error
     // Here, the plural selector returns "no match" so the * variant matches
-    testRuntimeWarningPattern(++i, "match {|horse| :plural}\n\
-                                  when 1 {The value is one.}\n\
-                                  when * {The value is not one.}\n", "The value is not one.", U_SELECTOR_ERROR);
-    testRuntimeWarningPattern(++i, "let $sel = {|horse| :plural}\n\
-                                  match {$sel}\n\
-                                  when 1 {The value is one.}\n\
-                                  when * {The value is not one.}\n", "The value is not one.", U_SELECTOR_ERROR);
+    testRuntimeWarningPattern(++i, ".match {|horse| :plural}\n\
+                                  .when 1 {{The value is one.}}\n\
+                                  .when * {{The value is not one.}}\n", "The value is not one.", U_SELECTOR_ERROR);
+    testRuntimeWarningPattern(++i, ".local $sel = {|horse| :plural}\n\
+                                  .match {$sel}\n\
+                                  .when 1 {{The value is one.}}\n\
+                                  .when * {{The value is not one.}}\n", "The value is not one.", U_SELECTOR_ERROR);
 }
 
 void TestMessageFormat2::testInvalidPatterns() {
