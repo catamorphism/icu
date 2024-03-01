@@ -1519,18 +1519,14 @@ void Parser::parse(UParseError &parseErrorResult, UErrorCode& status) {
     // Message can be empty, so we need to only look ahead
     // if we know it's non-empty
     if (inBounds(source, index)) {
-        switch (source[index]) {
-        case PERIOD:
-        case LEFT_CURLY_BRACE: {
+        if (source[index] == PERIOD
+            || (index < ((uint32_t) source.length() + 1)
+                && source[index] == LEFT_CURLY_BRACE
+                && source[index + 1] == LEFT_CURLY_BRACE)) {
             // A complex message begins with a '.' or '{'
             parseDeclarations(status);
             parseBody(status);
             simple = false;
-            break;
-        }
-        default: {
-            break;
-        }
         }
     }
     if (simple) {

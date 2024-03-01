@@ -30,7 +30,7 @@ as of the following commit from 2023-05-09:
 */
 
 void TestMessageFormat2::testSample(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    TestUtils::runTestCase(*this, testBuilder.setPattern("{There are {$count} files on {$where}}")
+    TestUtils::runTestCase(*this, testBuilder.setPattern("There are {$count} files on {$where}")
                                 .setArgument("count", "abc")
                                 .setArgument("where", "def")
                                 .setExpected("There are abc files on def")
@@ -38,8 +38,8 @@ void TestMessageFormat2::testSample(TestCase::Builder& testBuilder, IcuTestError
 }
 
 void TestMessageFormat2::testStaticFormat(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    TestUtils::runTestCase(*this, testBuilder.setPattern("{At {$when :datetime timestyle=default} on {$when :datetime datestyle=default}, \
-there was {$what} on planet {$planet :number kind=integer}.}")
+    TestUtils::runTestCase(*this, testBuilder.setPattern("At {$when :datetime timestyle=default} on {$when :datetime datestyle=default}, \
+there was {$what} on planet {$planet :number kind=integer}.")
                                 .setArgument("planet", (int64_t) 7)
                                 .setArgument("when", (UDate) 871068000000)
                                 .setArgument("what", "a disturbance in the Force")
@@ -48,7 +48,7 @@ there was {$what} on planet {$planet :number kind=integer}.}")
 }
 
 void TestMessageFormat2::testSimpleFormat(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    testBuilder.setPattern("{The disk \"{$diskName}\" contains {$fileCount} file(s).}");
+    testBuilder.setPattern("The disk \"{$diskName}\" contains {$fileCount} file(s).");
     testBuilder.setArgument("diskName", "MyDisk");
 
 
@@ -69,9 +69,9 @@ void TestMessageFormat2::testSimpleFormat(TestCase::Builder& testBuilder, IcuTes
 }
 
 void TestMessageFormat2::testSelectFormatToPattern(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    UnicodeString pattern = CharsToUnicodeString("match {$userGender :select}\n\
-                 when female {{$userName} est all\\u00E9e \\u00E0 Paris.}\n\
-                 when  *     {{$userName} est all\\u00E9 \\u00E0 Paris.}");
+    UnicodeString pattern = CharsToUnicodeString(".match {$userGender :select}\n\
+                 .when female {{{$userName} est all\\u00E9e \\u00E0 Paris.}}\n\
+                 .when  *     {{{$userName} est all\\u00E9 \\u00E0 Paris.}}");
 
     testBuilder.setPattern(pattern);
 
@@ -103,34 +103,34 @@ void TestMessageFormat2::testMessageFormatDateTimeSkeleton(TestCase::Builder& te
     testBuilder.setDateArgument("when", date);
     CHECK_ERROR(errorCode);
 
-    TestCase test = testBuilder.setPattern("{{$when :datetime skeleton=MMMMd}}")
+    TestCase test = testBuilder.setPattern("{$when :datetime skeleton=MMMMd}")
                                 .setExpected("November 23")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{{$when :datetime skeleton=yMMMMdjm}}")
+    test = testBuilder.setPattern("{$when :datetime skeleton=yMMMMdjm}")
                                  .setExpected(CharsToUnicodeString("November 23, 2021 at 4:42\\u202FPM"))
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{{$when :datetime skeleton=|   yMMMMd   |}}")
+    test = testBuilder.setPattern("{$when :datetime skeleton=|   yMMMMd   |}")
                                 .setExpected("November 23, 2021")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{{$when :datetime skeleton=yMMMMd}}")
+    test = testBuilder.setPattern("{$when :datetime skeleton=yMMMMd}")
                                 .setExpected("23 novembre 2021")
                                 .setLocale(Locale::forLanguageTag("fr", errorCode))
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{Expiration: {$when :datetime skeleton=yMMM}!}")
+    test = testBuilder.setPattern("Expiration: {$when :datetime skeleton=yMMM}!")
                                 .setExpected("Expiration: Nov 2021!")
                                 .setLocale(Locale::forLanguageTag("en", errorCode))
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{{$when :datetime pattern=|'::'yMMMMd|}}")
+    test = testBuilder.setPattern("{$when :datetime pattern=|'::'yMMMMd|}")
                                 .setExpected("::2021November23")
                                 .setLocale(Locale::forLanguageTag("en", errorCode))
                                 .build();
@@ -165,7 +165,7 @@ void TestMessageFormat2::testMf1Behavior(TestCase::Builder& testBuilder, IcuTest
     assertEquals("testMf1Behavior", (UBool) true, U_SUCCESS(errorCode));
     assertEquals("old icu test", expectedGood, result);
 
-    TestCase test = testBuilder.setPattern("{Hello {$user}, today is {$today :datetime datestyle=long}.}")
+    TestCase test = testBuilder.setPattern("Hello {$user}, today is {$today :datetime datestyle=long}.")
                                 .setArgument(badArgumentsNames[0], user)
                                 .setDateArgument(badArgumentsNames[1], testDate)
                                 .setExpected("Hello {$user}, today is {$today}.")
