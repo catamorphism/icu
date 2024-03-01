@@ -182,8 +182,8 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(featureTests);
     TESTCASE_AUTO(messageFormat1Tests);
     TESTCASE_AUTO(testAPICustomFunctions);
-    TESTCASE_AUTO(testCustomFunctions);
     */
+    TESTCASE_AUTO(testCustomFunctions);
     TESTCASE_AUTO(testBuiltInFunctions);
     /*
     TESTCASE_AUTO(testDataModelErrors);

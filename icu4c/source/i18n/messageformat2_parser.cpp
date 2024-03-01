@@ -1127,7 +1127,9 @@ void Parser::parseDeclarations(UErrorCode& status) {
     // declarations must be followed by a body
     CHECK_BOUNDS(source, index, parseError, status);
 
-    while (source[index] == ID_LOCAL[0]) {
+    while (source[index] == ID_LOCAL[0]
+           && index < ((uint32_t) (source.length() + 1))
+           && source[index + 1] == ID_LOCAL[1]) {
         parseToken(ID_LOCAL, status);
         parseRequiredWhitespace(status);
         // Restore precondition
