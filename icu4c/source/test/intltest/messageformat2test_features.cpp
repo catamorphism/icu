@@ -31,19 +31,19 @@ as of the following commit from 2023-05-09:
 */
 
 void TestMessageFormat2::testEmptyMessage(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    TestUtils::runTestCase(*this, testBuilder.setPattern("{}")
+    TestUtils::runTestCase(*this, testBuilder.setPattern("")
                            .setExpected("")
                            .build(), errorCode);
 }
 
 void TestMessageFormat2::testPlainText(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    TestUtils::runTestCase(*this, testBuilder.setPattern("{Hello World!}")
+    TestUtils::runTestCase(*this, testBuilder.setPattern("Hello World!")
                            .setExpected("Hello World!")
                            .build(), errorCode);
 }
 
 void TestMessageFormat2::testPlaceholders(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    TestUtils::runTestCase(*this, testBuilder.setPattern("{Hello, {$userName}!}")
+    TestUtils::runTestCase(*this, testBuilder.setPattern("Hello, {$userName}!")
                                 .setExpected("Hello, John!")
                                 .setArgument("userName", "John")
                                 .build(), errorCode);
@@ -52,7 +52,7 @@ void TestMessageFormat2::testPlaceholders(TestCase::Builder& testBuilder, IcuTes
 void TestMessageFormat2::testArgumentMissing(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    UnicodeString message = "{Hello {$name}, today is {$today :datetime skeleton=yMMMMdEEEE}.}";
+    UnicodeString message = "Hello {$name}, today is {$today :datetime skeleton=yMMMMdEEEE}.";
     LocalPointer<Calendar> cal(Calendar::createInstance(errorCode));
     CHECK_ERROR(errorCode);
 
@@ -104,7 +104,7 @@ void TestMessageFormat2::testDefaultLocale(TestCase::Builder& testBuilder, IcuTe
     UDate TEST_DATE = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    UnicodeString message = "{Date: {$date :datetime skeleton=yMMMMdEEEE}.}";
+    UnicodeString message = "Date: {$date :datetime skeleton=yMMMMdEEEE}.";
     UnicodeString expectedEn = "Date: Wednesday, November 23, 2022.";
     UnicodeString expectedRo = "Date: miercuri, 23 noiembrie 2022.";
 
@@ -143,10 +143,10 @@ void TestMessageFormat2::testSpecialPluralWithDecimals(TestCase::Builder& testBu
 
     UnicodeString message;
 
-    message = "let $amount = {$count :number}\n\
-                match {$amount :plural}\n\
-                  when 1 {I have {$amount} dollar.}\n\
-                  when * {I have {$amount} dollars.}\n";
+    message = ".local $amount = {$count :number}\n\
+                .match {$amount :plural}\n\
+                  .when 1 {{I have {$amount} dollar.}}\n\
+                  .when * {{I have {$amount} dollars.}}\n";
 
     TestCase test = testBuilder.setPattern(message)
         .clearArguments()
@@ -156,10 +156,10 @@ void TestMessageFormat2::testSpecialPluralWithDecimals(TestCase::Builder& testBu
         .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    message = "let $amount = {$count :number skeleton=|.00*|}\n\
-                match {$amount :plural skeleton=|.00*|}\n\
-                  when 1 {I have {$amount} dollar.}\n\
-                  when * {I have {$amount} dollars.}\n";
+    message = ".local $amount = {$count :number skeleton=|.00*|}\n\
+                .match {$amount :plural skeleton=|.00*|}\n\
+                  .when 1 {{I have {$amount} dollar.}}\n\
+                  .when * {{I have {$amount} dollars.}}\n";
 
     test = testBuilder.setPattern(message)
                                 .setExpected("I have 1.00 dollar.")
@@ -177,14 +177,14 @@ void TestMessageFormat2::testDefaultFunctionAndOptions(TestCase::Builder& testBu
     UDate TEST_DATE = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    TestCase test = testBuilder.setPattern("{Testing date formatting: {$date}.}")
+    TestCase test = testBuilder.setPattern("Testing date formatting: {$date}.")
         .clearArguments()
         .setDateArgument("date", TEST_DATE)
         .setExpected("Testing date formatting: 23.11.2022, 19:42.")
         .setLocale(Locale("ro"))
         .build();
     TestUtils::runTestCase(*this, test, errorCode);
-    test = testBuilder.setPattern("{Testing date formatting: {$date :datetime}.}")
+    test = testBuilder.setPattern("Testing date formatting: {$date :datetime}.")
                                 .setExpected("Testing date formatting: 23.11.2022, 19:42.")
                                 .setLocale(Locale("ro"))
                                 .build();
@@ -201,13 +201,13 @@ void TestMessageFormat2::testSimpleSelection(TestCase::Builder& testBuilder, Icu
 void TestMessageFormat2::testComplexSelection(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    UnicodeString message = "match {$photoCount :plural} {$userGender :select}\n\
-                 when 1 masculine {{$userName} added a new photo to his album.}\n\
-                 when 1 feminine {{$userName} added a new photo to her album.}\n\
-                 when 1 * {{$userName} added a new photo to their album.}\n\
-                 when * masculine {{$userName} added {$photoCount} photos to his album.}\n\
-                 when * feminine {{$userName} added {$photoCount} photos to her album.}\n\
-                 when * * {{$userName} added {$photoCount} photos to their album.}";
+    UnicodeString message = ".match {$photoCount :plural} {$userGender :select}\n\
+                 .when 1 masculine {{{$userName} added a new photo to his album.}}\n\
+                 .when 1 feminine {{{$userName} added a new photo to her album.}}\n\
+                 .when 1 * {{{$userName} added a new photo to their album.}}\n\
+                 .when * masculine {{{$userName} added {$photoCount} photos to his album.}}\n\
+                 .when * feminine {{{$userName} added {$photoCount} photos to her album.}}\n\
+                 .when * * {{{$userName} added {$photoCount} photos to their album.}}";
     testBuilder.setPattern(message);
 
     int64_t count = 1;
@@ -257,8 +257,8 @@ void TestMessageFormat2::testSimpleLocalVariable(TestCase::Builder& testBuilder,
     UDate TEST_DATE = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    testBuilder.setPattern("let $expDate = {$expDate :datetime skeleton=yMMMdE}\n\
-                            {Your tickets expire on {$expDate}.}");
+    testBuilder.setPattern(".local $expDate = {$expDate :datetime skeleton=yMMMdE}\n\
+                            {{Your tickets expire on {$expDate}.}}");
 
     int64_t count = 1;
     TestUtils::runTestCase(*this, testBuilder.clearArguments().setArgument("count", count)
@@ -278,10 +278,10 @@ void TestMessageFormat2::testLocalVariableWithSelect(TestCase::Builder& testBuil
     UDate TEST_DATE = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    testBuilder.setPattern("let $expDate = {$expDate :datetime skeleton=yMMMdE}\n\
-                match {$count :plural}\n\
-                when 1 {Your ticket expires on {$expDate}.}\n\
-                when * {Your {$count} tickets expire on {$expDate}.}\n");
+    testBuilder.setPattern(".local $expDate = {$expDate :datetime skeleton=yMMMdE}\n\
+                .match {$count :plural}\n\
+                .when 1 {{Your ticket expires on {$expDate}.}}\n\
+                .when * {{Your {$count} tickets expire on {$expDate}.}}\n");
 
     int64_t count = 1;
     TestCase test = testBuilder.clearArguments().setArgument("count", count)
@@ -305,32 +305,32 @@ void TestMessageFormat2::testDateFormat(TestCase::Builder& testBuilder, IcuTestE
     UDate expiration = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    TestCase test = testBuilder.clearArguments().setPattern("{Your card expires on {$exp :datetime skeleton=yMMMdE}!}")
+    TestCase test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :datetime skeleton=yMMMdE}!")
                                 .setLocale(Locale("en"))
                                 .setExpected("Your card expires on Thu, Oct 27, 2022!")
                                 .setDateArgument("exp", expiration)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setPattern("{Your card expires on {$exp :datetime datestyle=full}!}")
+    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :datetime datestyle=full}!")
                       .setExpected("Your card expires on Thursday, October 27, 2022!")
                       .setDateArgument("exp", expiration)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setPattern("{Your card expires on {$exp :datetime datestyle=long}!}")
+    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :datetime datestyle=long}!")
                       .setExpected("Your card expires on October 27, 2022!")
                       .setDateArgument("exp", expiration)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setPattern("{Your card expires on {$exp :datetime datestyle=medium}!}")
+    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :datetime datestyle=medium}!")
                       .setExpected("Your card expires on Oct 27, 2022!")
                       .setDateArgument("exp", expiration)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setPattern("{Your card expires on {$exp :datetime datestyle=short}!}")
+    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :datetime datestyle=short}!")
                       .setExpected("Your card expires on 10/27/22!")
                       .setDateArgument("exp", expiration)
                       .build();
@@ -343,7 +343,7 @@ void TestMessageFormat2::testDateFormat(TestCase::Builder& testBuilder, IcuTestE
 
     cal.adoptInstead(new GregorianCalendar(2022, Calendar::OCTOBER, 27, errorCode));
     if (cal.isValid()) {
-        test = testBuilder.setPattern("{Your card expires on {$exp :datetime skeleton=yMMMdE}!}")
+        test = testBuilder.setPattern("Your card expires on {$exp :datetime skeleton=yMMMdE}!")
                           .setExpected("Your card expires on Thu, Oct 27, 2022!")
                           .setArgument("exp", cal.orphan(), errorCode)
                           .build();
@@ -352,7 +352,7 @@ void TestMessageFormat2::testDateFormat(TestCase::Builder& testBuilder, IcuTestE
 */
 
     // Implied function based on type of the object to format
-    test = testBuilder.clearArguments().setPattern("{Your card expires on {$exp}!}")
+    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp}!")
                       .setExpected(CharsToUnicodeString("Your card expires on 10/27/22, 12:00\\u202FAM!"))
                       .setDateArgument("exp", expiration)
                       .build();
@@ -360,9 +360,9 @@ void TestMessageFormat2::testDateFormat(TestCase::Builder& testBuilder, IcuTestE
 }
 
 void TestMessageFormat2::testPlural(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    UnicodeString message = "match {$count :plural}\n\
-                when 1 {You have one notification.}\n           \
-                when * {You have {$count} notifications.}\n";
+    UnicodeString message = ".match {$count :plural}\n\
+                .when 1 {{You have one notification.}}\n           \
+                .when * {{You have {$count} notifications.}}\n";
 
     int64_t count = 1;
     TestCase test = testBuilder.clearArguments().setPattern(message)
@@ -392,14 +392,14 @@ void TestMessageFormat2::testPlural(TestCase::Builder& testBuilder, IcuTestError
 }
 
 void TestMessageFormat2::testPluralOrdinal(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    UnicodeString message =  "match {$place :selectordinal}\n\
-                when 1 {You got the gold medal}\n            \
-                when 2 {You got the silver medal}\n          \
-                when 3 {You got the bronze medal}\n\
-                when one {You got in the {$place}st place}\n\
-                when two {You got in the {$place}nd place}\n \
-                when few {You got in the {$place}rd place}\n \
-                when * {You got in the {$place}th place}\n";
+    UnicodeString message =  ".match {$place :selectordinal}\n\
+                .when 1 {{You got the gold medal}}\n            \
+                .when 2 {{You got the silver medal}}\n          \
+                .when 3 {{You got the bronze medal}}\n\
+                .when one {{You got in the {$place}st place}}\n\
+                .when two {{You got in the {$place}nd place}}\n \
+                .when few {{You got in the {$place}rd place}}\n \
+                .when * {{You got in the {$place}th place}}\n";
 
     TestCase test = testBuilder.clearArguments().setPattern(message)
                                 .setExpected("You got the gold medal")
@@ -556,7 +556,7 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
         return;
     }
 
-    UnicodeString message = "{Testing {$count :temp unit=$unit skeleton=|.00/w|}.}";
+    UnicodeString message = "Testing {$count :temp unit=$unit skeleton=|.00/w|}.";
 
     MessageFormatter::Builder mfBuilder(errorCode);
     FunctionRegistry reg = frBuilder.setFormatter(FunctionName("temp"), counter.getAlias(), errorCode)
@@ -620,7 +620,7 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
     assertEquals("cached formatter", CharsToUnicodeString("Testing 12.54\\u00B0F."), result);
 
     // Check skeleton
-    message = "{Testing {$count :temp unit=$unit skeleton=|.0/w|}.}";
+    message = "Testing {$count :temp unit=$unit skeleton=|.0/w|}.";
     mfBuilder.setPattern(message, parseError, errorCode);
     mf = mfBuilder.build(errorCode);
 
@@ -646,11 +646,11 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
 }
 
 void TestMessageFormat2::testPluralWithOffset(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    UnicodeString message = "match {$count :plural offset=2}\n\
-                  when 1 {Anna}\n\
-                  when 2 {Anna and Bob}\n\
-                  when one {Anna, Bob, and {$count :number offset=2} other guest}\n\
-                  when * {Anna, Bob, and {$count :number offset=2} other guests}\n";
+    UnicodeString message = ".match {$count :plural offset=2}\n\
+                  .when 1 {{Anna}}\n\
+                  .when 2 {{Anna and Bob}}\n\
+                  .when one {{Anna, Bob, and {$count :number offset=2} other guest}}\n\
+                  .when * {{Anna, Bob, and {$count :number offset=2} other guests}}\n";
 
     testBuilder.setPattern(message);
     testBuilder.setName("plural with offset");
@@ -684,12 +684,12 @@ void TestMessageFormat2::testPluralWithOffset(TestCase::Builder& testBuilder, Ic
 void TestMessageFormat2::testPluralWithOffsetAndLocalVar(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
 
     // $foo should "inherit" the offset
-    UnicodeString message = "let $foo = {$count :number offset=2}\
-                match {$foo :plural}\n                                 \
-                when 1 {Anna}\n                                        \
-                when 2 {Anna and Bob}\n                                \
-                when one {Anna, Bob, and {$foo} other guest}\n         \
-                when * {Anna, Bob, and {$foo} other guests}\n";
+    UnicodeString message = ".local $foo = {$count :number offset=2}\
+                .match {$foo :plural}\n                                 \
+                .when 1 {{Anna}}\n                                        \
+                .when 2 {{Anna and Bob}}\n                                \
+                .when one {{Anna, Bob, and {$foo} other guest}}\n         \
+                .when * {{Anna, Bob, and {$foo} other guests}}\n";
 
     testBuilder.clearArguments().setPattern(message);
     testBuilder.setName("plural with offset and local var");
@@ -719,11 +719,11 @@ void TestMessageFormat2::testPluralWithOffsetAndLocalVar(TestCase::Builder& test
                           .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    message = "let $foo = {$amount :number skeleton=|.00/w|}\n\
-                match {$foo :plural}\n\
-                when 1 {Last dollar}\n\
-                when one {{$foo} dollar}\n\
-                when * {{$foo} dollars}\n";
+    message = ".local $foo = {$amount :number skeleton=|.00/w|}\n\
+                .match {$foo :plural}\n\
+                .when 1 {{Last dollar}}\n\
+                .when one {{{$foo} dollar}}\n\
+                .when * {{{$foo} dollars}}\n";
     testBuilder.setPattern(message);
     test = testBuilder.setExpected("Last dollar")
                           .setArgument("amount", (int64_t) 1)
@@ -741,10 +741,10 @@ void TestMessageFormat2::testPluralWithOffsetAndLocalVar(TestCase::Builder& test
 
 void TestMessageFormat2::testDeclareBeforeUse(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
 
-    UnicodeString message = "let $foo = {$baz :number}\n\
-                 let $bar = {$foo}\n                    \
-                 let $baz = {$bar}\n                    \
-                 {The message uses {$baz} and works}\n";
+    UnicodeString message = ".local $foo = {$baz :number}\n\
+                 .local $bar = {$foo}\n                    \
+                 .local $baz = {$bar}\n                    \
+                 {{The message uses {$baz} and works}}";
     testBuilder.setPattern(message);
     testBuilder.setName("declare-before-use");
 
@@ -755,11 +755,11 @@ void TestMessageFormat2::testDeclareBeforeUse(TestCase::Builder& testBuilder, Ic
 }
 
 void TestMessageFormat2::testVariableOptionsInSelector(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    UnicodeString message = "match {$count :plural offset=$delta}\n\
-                when 1 {A}\n\
-                when 2 {A and B}\n\
-                when one {A, B, and {$count :number offset=$delta} more character}\n\
-                when * {A, B, and {$count :number offset=$delta} more characters}\n";
+    UnicodeString message = ".match {$count :plural offset=$delta}\n\
+                .when 1 {{A}}\n\
+                .when 2 {{A and B}}\n\
+                .when one {{A, B, and {$count :number offset=$delta} more character}}\n\
+                .when * {{A, B, and {$count :number offset=$delta} more characters}}\n";
 
     testBuilder.setPattern(message);
     testBuilder.setName("variable options in selector");
@@ -786,10 +786,10 @@ void TestMessageFormat2::testVariableOptionsInSelector(TestCase::Builder& testBu
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    message = "match {$count :plural offset=$delta}\n\
-                  when 1 {Exactly 1}\n\
-                  when 2 {Exactly 2}\n\
-                  when * {Count = {$count :number offset=$delta} and delta={$delta}.}\n";
+    message = ".match {$count :plural offset=$delta}\n\
+                  .when 1 {{Exactly 1}}\n\
+                  .when 2 {{Exactly 2}}\n\
+                  .when * {{Count = {$count :number offset=$delta} and delta={$delta}.}}\n";
     testBuilder.setPattern(message);
 
     test = testBuilder.clearArguments().setExpected("Exactly 1")
@@ -857,12 +857,12 @@ void TestMessageFormat2::testVariableOptionsInSelector(TestCase::Builder& testBu
 void TestMessageFormat2::testVariableOptionsInSelectorWithLocalVar(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    UnicodeString messageFix = "let $offCount = {$count :number offset=2}\n\
-                match {$offCount :plural}\n\
-                when 1 {A}\n\
-                when 2 {A and B}\n\
-                when one {A, B, and {$offCount} more character}\n\
-                when * {A, B, and {$offCount} more characters}\n";
+    UnicodeString messageFix = ".local $offCount = {$count :number offset=2}\n\
+                .match {$offCount :plural}\n\
+                .when 1 {{A}}\n\
+                .when 2 {{A and B}}\n\
+                .when one {{A, B, and {$offCount} more character}}\n\
+                .when * {{A, B, and {$offCount} more characters}}\n";
 
     testBuilder.setPattern(messageFix);
     testBuilder.setName("variable options in selector with local var");
@@ -885,12 +885,12 @@ void TestMessageFormat2::testVariableOptionsInSelectorWithLocalVar(TestCase::Bui
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    UnicodeString messageVar = "let $offCount = {$count :number offset=$delta}\n\
-                match {$offCount :plural}\n\
-                when 1 {A}\n\
-                when 2 {A and B}\n\
-                when one {A, B, and {$offCount} more character}\n\
-                when * {A, B, and {$offCount} more characters}\n";
+    UnicodeString messageVar = ".local $offCount = {$count :number offset=$delta}\n\
+                .match {$offCount :plural}\n\
+                .when 1 {{A}}\n\
+                .when 2 {{A and B}}\n\
+                .when one {{A, B, and {$offCount} more character}}\n\
+                .when * {{A, B, and {$offCount} more characters}}\n";
     testBuilder.setPattern(messageVar);
 
     test = testBuilder.clearArguments().setExpected("A")
@@ -914,11 +914,11 @@ void TestMessageFormat2::testVariableOptionsInSelectorWithLocalVar(TestCase::Bui
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    UnicodeString messageVar2 = "let $offCount = {$count :number offset=$delta}\n\
-                match {$offCount :plural}\n\
-                when 1 {Exactly 1}\n\
-                when 2 {Exactly 2}\n\
-                when * {Count = {$count}, OffCount = {$offCount}, and delta={$delta}.}\n";
+    UnicodeString messageVar2 = ".local $offCount = {$count :number offset=$delta}\n\
+                .match {$offCount :plural}\n\
+                .when 1 {{Exactly 1}}\n\
+                .when 2 {{Exactly 2}}\n\
+                .when * {{Count = {$count}, OffCount = {$offCount}, and delta={$delta}.}}\n";
     testBuilder.setPattern(messageVar2);
     test = testBuilder.clearArguments().setExpected("Exactly 1")
                                 .setArgument("count", (int64_t) 1)
