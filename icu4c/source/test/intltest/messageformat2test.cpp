@@ -178,9 +178,7 @@ void
 TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
                                   const char* &name, char* /*par*/) {
     TESTCASE_AUTO_BEGIN;
-    /*
     TESTCASE_AUTO(testAPICustomFunctions);
-    */
     TESTCASE_AUTO(messageFormat1Tests);
     TESTCASE_AUTO(featureTests);
     TESTCASE_AUTO(testCustomFunctions);
@@ -188,9 +186,11 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     /*
     TESTCASE_AUTO(testDataModelErrors);
     TESTCASE_AUTO(testResolutionErrors);
+    */
     TESTCASE_AUTO(testAPI);
     TESTCASE_AUTO(testAPISimple);
     TESTCASE_AUTO(testDataModelAPI);
+    /*
     TESTCASE_AUTO(testVariousPatterns);
     TESTCASE_AUTO(testInvalidPatterns);
     */
@@ -239,7 +239,7 @@ void TestMessageFormat2::testAPISimple() {
     // To be used in the test suite, it should include those checks
     // Null checks and error checks elided
     MessageFormatter::Builder builder(errorCode);
-    MessageFormatter mf = builder.setPattern(u"{Hello, {$userName}!}", parseError, errorCode)
+    MessageFormatter mf = builder.setPattern(u"Hello, {$userName}!", parseError, errorCode)
         .build(errorCode);
 
     std::map<UnicodeString, message2::Formattable> argsBuilder;
@@ -250,7 +250,7 @@ void TestMessageFormat2::testAPISimple() {
     result = mf.formatToString(args, errorCode);
     assertEquals("testAPI", result, "Hello, John!");
 
-    mf = builder.setPattern("{Today is {$today :datetime skeleton=yMMMdEEE}.}", parseError, errorCode)
+    mf = builder.setPattern("Today is {$today :datetime skeleton=yMMMdEEE}.", parseError, errorCode)
         .setLocale(locale)
         .build(errorCode);
 
@@ -271,13 +271,13 @@ void TestMessageFormat2::testAPISimple() {
     argsBuilder["userName"] = message2::Formattable("Maria");
     args = MessageArguments(argsBuilder, errorCode);
 
-    mf = builder.setPattern("match {$photoCount :plural} {$userGender :select}\n\
-                     when 1 masculine {{$userName} added a new photo to his album.}\n \
-                     when 1 feminine {{$userName} added a new photo to her album.}\n \
-                     when 1 * {{$userName} added a new photo to their album.}\n \
-                     when * masculine {{$userName} added {$photoCount} photos to his album.}\n \
-                     when * feminine {{$userName} added {$photoCount} photos to her album.}\n \
-                     when * * {{$userName} added {$photoCount} photos to their album.}", parseError, errorCode)
+    mf = builder.setPattern(".match {$photoCount :plural} {$userGender :select}\n\
+                     .when 1 masculine {{{$userName} added a new photo to his album.}}\n \
+                     .when 1 feminine {{{$userName} added a new photo to her album.}}\n \
+                     .when 1 * {{{$userName} added a new photo to their album.}}\n \
+                     .when * masculine {{{$userName} added {$photoCount} photos to his album.}}\n \
+                     .when * feminine {{{$userName} added {$photoCount} photos to her album.}}\n \
+                     .when * * {{{$userName} added {$photoCount} photos to their album.}}", parseError, errorCode)
         .setLocale(locale)
         .build(errorCode);
     result = mf.formatToString(args, errorCode);
@@ -291,9 +291,9 @@ void TestMessageFormat2::testAPI() {
     IcuTestErrorCode errorCode(*this, "testAPI");
     TestCase::Builder testBuilder;
 
-    // Pattern: "{Hello, {$userName}!}"
+    // Pattern: "Hello, {$userName}!"
     TestCase test(testBuilder.setName("testAPI")
-                  .setPattern("{Hello, {$userName}!}")
+                  .setPattern("Hello, {$userName}!")
                   .setArgument("userName", "John")
                   .setExpected("Hello, John!")
                   .setLocale("en_US")
@@ -307,7 +307,7 @@ void TestMessageFormat2::testAPI() {
     UDate date = cal->getTime(errorCode);
 
     test = testBuilder.setName("testAPI")
-        .setPattern("{Today is {$today :datetime skeleton=yMMMdEEE}.}")
+        .setPattern("Today is {$today :datetime skeleton=yMMMdEEE}.")
         .setDateArgument("today", date)
         .setExpected("Today is Sun, Oct 28, 2136.")
         .setLocale("en_US")
@@ -315,13 +315,13 @@ void TestMessageFormat2::testAPI() {
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Pattern matching - plural
-    UnicodeString pattern = "match {$photoCount :select} {$userGender :select}\n\
-                     when 1 masculine {{$userName} added a new photo to his album.}\n \
-                     when 1 feminine {{$userName} added a new photo to her album.}\n \
-                     when 1 * {{$userName} added a new photo to their album.}\n \
-                     when * masculine {{$userName} added {$photoCount} photos to his album.}\n \
-                     when * feminine {{$userName} added {$photoCount} photos to her album.}\n \
-                     when * * {{$userName} added {$photoCount} photos to their album.}";
+    UnicodeString pattern = ".match {$photoCount :select} {$userGender :select}\n\
+                     .when 1 masculine {{{$userName} added a new photo to his album.}}\n \
+                     .when 1 feminine {{{$userName} added a new photo to her album.}}\n \
+                     .when 1 * {{{$userName} added a new photo to their album.}}\n \
+                     .when * masculine {{{$userName} added {$photoCount} photos to his album.}}\n \
+                     .when * feminine {{{$userName} added {$photoCount} photos to her album.}}\n \
+                     .when * * {{{$userName} added {$photoCount} photos to their album.}}";
 
 
     int64_t photoCount = 12;
@@ -336,13 +336,13 @@ void TestMessageFormat2::testAPI() {
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Built-in functions
-    pattern = "match {$photoCount :plural} {$userGender :select}\n\
-                     when 1 masculine {{$userName} added a new photo to his album.}\n \
-                     when 1 feminine {{$userName} added a new photo to her album.}\n \
-                     when 1 * {{$userName} added a new photo to their album.}\n \
-                     when * masculine {{$userName} added {$photoCount} photos to his album.}\n \
-                     when * feminine {{$userName} added {$photoCount} photos to her album.}\n \
-                     when * * {{$userName} added {$photoCount} photos to their album.}";
+    pattern = ".match {$photoCount :plural} {$userGender :select}\n\
+                     .when 1 masculine {{{$userName} added a new photo to his album.}}\n \
+                     .when 1 feminine {{{$userName} added a new photo to her album.}}\n \
+                     .when 1 * {{{$userName} added a new photo to their album.}}\n \
+                     .when * masculine {{{$userName} added {$photoCount} photos to his album.}}\n \
+                     .when * feminine {{{$userName} added {$photoCount} photos to her album.}}\n \
+                     .when * * {{{$userName} added {$photoCount} photos to their album.}}";
 
     photoCount = 1;
     test = testBuilder.setName("testAPI")
@@ -366,7 +366,6 @@ void TestMessageFormat2::testAPICustomFunctions() {
 
     // Set up custom function registry
     FunctionRegistry::Builder builder(errorCode);
-    // Note that this doesn't use `setDefaultFormatterNameForType()`; not implemented yet
     LocalPointer<PersonNameFormatterFactory> personFormatterFactory(new PersonNameFormatterFactory());
     FunctionRegistry functionRegistry =
         builder.setFormatter(data_model::FunctionName("person"), personFormatterFactory.getAlias(), errorCode)
@@ -381,7 +380,7 @@ void TestMessageFormat2::testAPICustomFunctions() {
     MessageFormatter::Builder mfBuilder(errorCode);
     UnicodeString result;
     // This fails, because we did not provide a function registry:
-    MessageFormatter mf = mfBuilder.setPattern("{Hello {$name :person formality=informal}}", parseError, errorCode)
+    MessageFormatter mf = mfBuilder.setPattern("Hello {$name :person formality=informal}", parseError, errorCode)
                                     .setLocale(locale)
                                     .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
@@ -390,17 +389,17 @@ void TestMessageFormat2::testAPICustomFunctions() {
     errorCode = U_ZERO_ERROR;
     mfBuilder.setFunctionRegistry(functionRegistry).setLocale(locale);
 
-    mf = mfBuilder.setPattern("{Hello {$name :person formality=informal}}", parseError, errorCode)
+    mf = mfBuilder.setPattern("Hello {$name :person formality=informal}", parseError, errorCode)
                     .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello John", result);
 
-    mf = mfBuilder.setPattern("{Hello {$name :person formality=formal}}", parseError, errorCode)
+    mf = mfBuilder.setPattern("Hello {$name :person formality=formal}", parseError, errorCode)
                     .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello Mr. Doe", result);
 
-    mf = mfBuilder.setPattern("{Hello {$name :person formality=formal length=long}}", parseError, errorCode)
+    mf = mfBuilder.setPattern("Hello {$name :person formality=formal length=long}", parseError, errorCode)
                     .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
     assertEquals("testAPICustomFunctions", "Hello Mr. John Doe", result);
@@ -417,7 +416,7 @@ void TestMessageFormat2::testAPICustomFunctions() {
                                          errorCode)
                      .build();
     mfBuilder.setFunctionRegistry(functionRegistryByType);
-    mf = mfBuilder.setPattern("{Hello {$name}}", parseError, errorCode)
+    mf = mfBuilder.setPattern("Hello {$name}", parseError, errorCode)
         .setLocale(locale)
         .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
