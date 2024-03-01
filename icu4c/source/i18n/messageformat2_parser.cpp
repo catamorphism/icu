@@ -1331,8 +1331,6 @@ Pattern Parser::parseQuotedPattern(UErrorCode& status) {
   for a syntactically correct message, this will consume the entire input
 */
 Pattern Parser::parseSimpleMessage(UErrorCode& status) {
-    U_ASSERT(inBounds(source, index));
-
     Pattern::Builder result(status);
 
     if (U_SUCCESS(status)) {
@@ -1517,34 +1515,30 @@ void Parser::parseBody(UErrorCode& status) {
 void Parser::parse(UParseError &parseErrorResult, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    // parseOptionalWhitespace(status) succeeds on an empty string, so don't check bounds yet
-    parseOptionalWhitespace(status);
-    // parseDeclarations() requires there to be input left, so check to see if
-    // parseOptionalWhitespace(status) consumed it all
-
-    // Skip the check if status is already set, so as to avoid overwriting a
-    // previous error offset
-    if (!inBounds(source, index)) {
-        ERROR(parseError, status, index);
+    bool simple = true;
+    // Message can be empty, so we need to only look ahead
+    // if we know it's non-empty
+    if (inBounds(source, index)) {
+        switch (source[index]) {
+        case PERIOD:
+        case LEFT_CURLY_BRACE: {
+            // A complex message begins with a '.' or '{'
+            parseDeclarations(status);
+            parseBody(status);
+            simple = false;
+            break;
+        }
+        default: {
+            break;
+        }
+        }
     }
-
-    switch (source[index]) {
-    case PERIOD:
-    case LEFT_CURLY_BRACE: {
-        // A complex message begins with a '.' or '{'
-        parseDeclarations(status);
-        parseBody(status);
-        break;
-    }
-    default: {
+    if (simple) {
         // Simple message
         dataModel.setPattern(parseSimpleMessage(status));
-        break;
-    }}
+    }
 
     CHECK_ERROR(status);
-
-    parseOptionalWhitespace(status);
 
     // There are no errors; finally, check that the entire input was consumed
     if (((int32_t)index) != source.length()) {
