@@ -77,7 +77,13 @@ TestResult validTestCases[] = {
     {"{#tag foo=bar} |content| {/tag foo=bar}", "content"},
     {"{/tag foo=bar} |content| {#tag foo=bar}", "content"},
     {"{#tag/ foo=bar} |content| {#tag foo=bar}", "content"},
-    {"{#tag/ foo=bar} |content| {/tag foo=bar}", "content"}
+    {"{#tag/ foo=bar} |content| {/tag foo=bar}", "content"},
+    // Attributes are ignored
+    {"The value is {horse @horse}.", "The value is horse"},
+    {"hello {|4.2| @number}", "hello 4.2"},
+    {"The value is {horse @horse=cool}.", "The value is horse"},
+    {"hello {|4.2| @number=5}", "hello 4.2"},
+
 };
 
 
