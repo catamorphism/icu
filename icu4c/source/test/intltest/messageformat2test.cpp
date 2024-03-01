@@ -179,9 +179,9 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
                                   const char* &name, char* /*par*/) {
     TESTCASE_AUTO_BEGIN;
     /*
-    TESTCASE_AUTO(messageFormat1Tests);
     TESTCASE_AUTO(testAPICustomFunctions);
     */
+    TESTCASE_AUTO(messageFormat1Tests);
     TESTCASE_AUTO(featureTests);
     TESTCASE_AUTO(testCustomFunctions);
     TESTCASE_AUTO(testBuiltInFunctions);
