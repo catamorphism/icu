@@ -59,7 +59,25 @@ TestResult validTestCases[] = {
     {"let $foo = {|42| :number option=a:b:c} {bar {$foo}}", "bar 42"},
     // tests for newlines in literals and text
     {"{hello {|wo\nrld|}}", "hello wo\nrld"},
-    {"{hello wo\nrld}", "hello wo\nrld"}
+    {"{hello wo\nrld}", "hello wo\nrld"},
+    // Markup is ignored when formatting to string
+    {"{#tag/} |content|", "content"},
+    {"{#tag} |content|", "content"},
+    {"|content| {#tag/}", "content"},
+    {"|content| {#tag}", "content"},
+    {"{/tag} |content|", "content"},
+    {"|content| {/tag}", "content"},
+    {"{#tag} |content| {/tag}", "content"},
+    {"{/tag} |content| {#tag}", "content"},
+    {"{#tag/} |content| {#tag}", "content"},
+    {"{#tag/} |content| {/tag}", "content"},
+    {"{#tag foo=bar/} |content|", "content"},
+    {"{#tag foo=bar} |content|", "content"},
+    {"{/tag foo=bar} |content|", "content"},
+    {"{#tag foo=bar} |content| {/tag foo=bar}", "content"},
+    {"{/tag foo=bar} |content| {#tag foo=bar}", "content"},
+    {"{#tag/ foo=bar} |content| {#tag foo=bar}", "content"},
+    {"{#tag/ foo=bar} |content| {/tag foo=bar}", "content"}
 };
 
 
