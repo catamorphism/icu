@@ -39,14 +39,14 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
     testBuilder.setName("testPersonFormatter");
     testBuilder.setLocale(Locale("en"));
 
-    TestCase test = testBuilder.setPattern("{Hello {$name :person formality=formal}}")
+    TestCase test = testBuilder.setPattern("Hello {$name :person formality=formal}")
         .setArgument(name, person.getAlias())
         .setExpected("Hello {$name}")
         .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
         .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{Hello {$name :person formality=informal}}")
+    test = testBuilder.setPattern("Hello {$name :person formality=informal}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello {$name}")
                                 .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
@@ -55,35 +55,35 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
 
     testBuilder.setFunctionRegistry(&customRegistry);
 
-    test = testBuilder.setPattern("{Hello {$name :person formality=formal}}")
+    test = testBuilder.setPattern("Hello {$name :person formality=formal}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello Mr. Doe")
                                 .setExpectSuccess()
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{Hello {$name :person formality=informal}}")
+    test = testBuilder.setPattern("Hello {$name :person formality=informal}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello John")
                                 .setExpectSuccess()
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{Hello {$name :person formality=formal length=long}}")
+    test = testBuilder.setPattern("Hello {$name :person formality=formal length=long}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello Mr. John Doe")
                                 .setExpectSuccess()
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{Hello {$name :person formality=formal length=medium}}")
+    test = testBuilder.setPattern("Hello {$name :person formality=formal length=medium}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello John Doe")
                                 .setExpectSuccess()
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{Hello {$name :person formality=formal length=short}}")
+    test = testBuilder.setPattern("Hello {$name :person formality=formal length=short}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello Mr. Doe")
                                 .setExpectSuccess()
@@ -112,22 +112,22 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
        return;
    }
 
-    UnicodeString message = "let $hostName = {$host :person length=long}\n\
-                let $guestName = {$guest :person length=long}\n\
-                let $guestsOther = {$guestCount :number offset=1}\n\
-                match {$hostGender :gender} {$guestCount :plural}\n\
-                when female 0 {{$hostName} does not give a party.}\n\
-                when female 1 {{$hostName} invites {$guestName} to her party.}\n\
-                when female 2 {{$hostName} invites {$guestName} and one other person to her party.}\n\
-                when female * {{$hostName} invites {$guestName} and {$guestsOther} other people to her party.}\n\
-                when male 0 {{$hostName} does not give a party.}\n\
-                when male 1 {{$hostName} invites {$guestName} to his party.}\n\
-                when male 2 {{$hostName} invites {$guestName} and one other person to his party.}\n\
-                when male * {{$hostName} invites {$guestName} and {$guestsOther} other people to his party.}\n\
-                when * 0 {{$hostName} does not give a party.}\n\
-                when * 1 {{$hostName} invites {$guestName} to their party.}\n\
-                when * 2 {{$hostName} invites {$guestName} and one other person to their party.}\n\
-                when * * {{$hostName} invites {$guestName} and {$guestsOther} other people to their party.}\n";
+    UnicodeString message = ".local $hostName = {$host :person length=long}\n\
+                .local $guestName = {$guest :person length=long}\n\
+                .local $guestsOther = {$guestCount :number offset=1}\n\
+                .match {$hostGender :gender} {$guestCount :plural}\n\
+                .when female 0 {{{$hostName} does not give a party.}}\n\
+                .when female 1 {{{$hostName} invites {$guestName} to her party.}}\n\
+                .when female 2 {{{$hostName} invites {$guestName} and one other person to her party.}}\n\
+                .when female * {{{$hostName} invites {$guestName} and {$guestsOther} other people to her party.}}\n\
+                .when male 0 {{{$hostName} does not give a party.}}\n\
+                .when male 1 {{{$hostName} invites {$guestName} to his party.}}\n\
+                .when male 2 {{{$hostName} invites {$guestName} and one other person to his party.}}\n\
+                .when male * {{{$hostName} invites {$guestName} and {$guestsOther} other people to his party.}}\n\
+                .when * 0 {{{$hostName} does not give a party.}}\n\
+                .when * 1 {{{$hostName} invites {$guestName} to their party.}}\n\
+                .when * 2 {{{$hostName} invites {$guestName} and one other person to their party.}}\n\
+                .when * * {{{$hostName} invites {$guestName} and {$guestsOther} other people to their party.}}\n";
 
 
     TestCase::Builder testBuilder;
@@ -366,7 +366,7 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
     testBuilder.setName("testGrammarCasesFormatter - genitive");
     testBuilder.setFunctionRegistry(&customRegistry);
     testBuilder.setLocale(Locale("ro"));
-    testBuilder.setPattern("{Cartea {$owner :grammarBB case=genitive}}");
+    testBuilder.setPattern("Cartea {$owner :grammarBB case=genitive}");
     TestCase test = testBuilder.setArgument("owner", "Maria")
                                 .setExpected("Cartea Mariei")
                                 .build();
@@ -388,7 +388,7 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
     TestUtils::runTestCase(*this, test, errorCode);
 
     testBuilder.setName("testGrammarCasesFormatter - nominative");
-    testBuilder.setPattern("{M-a sunat {$owner :grammarBB case=nominative}}");
+    testBuilder.setPattern("M-a sunat {$owner :grammarBB case=nominative}");
 
     test = testBuilder.setArgument("owner", "Maria")
                                 .setExpected("M-a sunat Maria")
@@ -521,13 +521,13 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     testBuilder.setArgument("languages", progLanguages, 3);
 
     TestCase test = testBuilder.setName("testListFormatter")
-        .setPattern("{I know {$languages :listformat type=AND}!}")
+        .setPattern("I know {$languages :listformat type=AND}!")
         .setExpected("I know C/C++, Java, and Python!")
         .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setName("testListFormatter")
-                      .setPattern("{You are allowed to use {$languages :listformat type=OR}!}")
+                      .setPattern("You are allowed to use {$languages :listformat type=OR}!")
                       .setExpected("You are allowed to use C/C++, Java, or Python!")
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -540,9 +540,9 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
 /* static */ Hashtable* message2::ResourceManager::properties(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
-    UnicodeString* firefox = new UnicodeString("match {$gcase :select} when genitive {Firefoxin} when * {Firefox}");
-    UnicodeString* chrome = new UnicodeString("match {$gcase :select} when genitive {Chromen} when * {Chrome}");
-    UnicodeString* safari = new UnicodeString("match {$gcase :select} when genitive {Safarin} when * {Safari}");
+    UnicodeString* firefox = new UnicodeString(".match {$gcase :select} .when genitive {{Firefoxin}} .when * {{Firefox}}");
+    UnicodeString* chrome = new UnicodeString(".match {$gcase :select} .when genitive {{Chromen}} .when * {{Chrome}}");
+    UnicodeString* safari = new UnicodeString(".match {$gcase :select} .when genitive {{Safarin}} .when * {{Safari}}");
 
     if (firefox != nullptr && chrome != nullptr && safari != nullptr) {
         Hashtable* result = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
@@ -701,7 +701,7 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
 
     testBuilder.setArgument("res", fProperties.getAlias());
 
-    testBuilder.setPattern("{Please start {$browser :msgRef gcase=genitive resbundle=$res}}");
+    testBuilder.setPattern("Please start {$browser :msgRef gcase=genitive resbundle=$res}");
     test = testBuilder.setArgument("browser", "firefox")
                                 .setExpected("Please start Firefoxin")
                                 .build();
@@ -715,7 +715,7 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    testBuilder.setPattern("{Please start {$browser :msgRef resbundle=$res}}");
+    testBuilder.setPattern("Please start {$browser :msgRef resbundle=$res}");
     test = testBuilder.setArgument("browser", "firefox")
                                 .setExpected("Please start Firefox")
                                 .build();
