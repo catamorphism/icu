@@ -719,8 +719,7 @@ void TestMessageFormat2::testResolutionErrors() {
                               "{|horse|}", U_FORMATTING_ERROR);
 
     // Unsupported expressions
-    testRuntimeErrorPattern(++i, "The value is {@horse}.", U_UNSUPPORTED_PROPERTY);
-    testRuntimeErrorPattern(++i, "hello {|4.2| @number}", U_UNSUPPORTED_PROPERTY);
+    testRuntimeErrorPattern(++i, "hello {|4.2| !number}", U_UNSUPPORTED_PROPERTY);
     testRuntimeErrorPattern(++i, "{<tag}", U_UNSUPPORTED_PROPERTY);
     testRuntimeErrorPattern(++i, ".local $bar = {|42| ~plural} .match {|horse| :select} .when * {{{$bar}}}",
                             U_UNSUPPORTED_PROPERTY);
