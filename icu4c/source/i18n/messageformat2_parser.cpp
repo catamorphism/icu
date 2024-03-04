@@ -640,6 +640,105 @@ Literal Parser::parseLiteral(UErrorCode& errorCode) {
 }
 
 /*
+  Consume a @name-value pair, matching the `attribute` nonterminal in the grammar.
+
+  Adds the option to `options`
+*/
+void Parser::parseAttribute(UVector& options, UErrorCode& errorCode) {
+    U_ASSERT(inBounds(source, index));
+
+    U_ASSERT(source[index] == AT);
+    // Consume the '@'
+    parseToken(AT, errorCode);
+
+    // Parse LHS
+    UnicodeString lhs = parseName(errorCode);
+
+    parseOptionalWhitespace(errorCode);
+
+    Operand rand;
+    if (source[index] == EQUALS) {
+        // Parse '='
+        parseTokenWithWhitespace(EQUALS, errorCode);
+
+        UnicodeString rhsStr;
+        // Parse RHS, which is either a literal or variable
+        switch (source[index]) {
+        case DOLLAR: {
+            rand = Operand(parseVariableName(errorCode));
+            break;
+        }
+        default: {
+            // Must be a literal
+            rand = Operand(parseLiteral(errorCode));
+            break;
+        }
+        }
+        U_ASSERT(!rand.isNull());
+    } else {
+        // attribute -> "@" identifier [[s] "=" [s]]
+        // Use null operand, which `rand` is already set to
+    }
+
+    CHECK_ERROR(errorCode);
+
+    // Finally, add the key=value mapping
+    if (options.contains(&lhs)) {
+        errors.setDuplicateOptionName(errorCode);
+    } else {
+        Option* opt = new Option(lhs, std::move(rand));
+        if (opt == nullptr) {
+            errorCode = U_MEMORY_ALLOCATION_ERROR;
+            return;
+        }
+        options.adoptElement(static_cast<void*>(opt), errorCode);
+    }
+}
+
+/*
+  Consume a name-value pair, matching the `option` nonterminal in the grammar.
+
+  Adds the option to `optionList`
+*/
+void Parser::parseOption(UVector& options, UErrorCode& errorCode) {
+    U_ASSERT(inBounds(source, index));
+
+    // Parse LHS
+    UnicodeString lhs = parseName(errorCode);
+
+    // Parse '='
+    parseTokenWithWhitespace(EQUALS, errorCode);
+
+    UnicodeString rhsStr;
+    Operand rand;
+    // Parse RHS, which is either a literal or variable
+    switch (source[index]) {
+    case DOLLAR: {
+        rand = Operand(parseVariableName(errorCode));
+        break;
+    }
+    default: {
+        // Must be a literal
+        rand = Operand(parseLiteral(errorCode));
+        break;
+    }
+    }
+    U_ASSERT(!rand.isNull());
+
+    // Finally, add the key=value mapping
+    if (options.contains(&lhs)) {
+        errors.setDuplicateOptionName(errorCode);
+    } else {
+        Option* opt = new Option(lhs, std::move(rand));
+        if (opt == nullptr) {
+            errorCode = U_MEMORY_ALLOCATION_ERROR;
+            return;
+        }
+        options.adoptElement(static_cast<void*>(opt), errorCode);
+    }
+}
+
+/*
   Consume a name-value pair, matching the `option` nonterminal in the grammar.
 
   Adds the option to `optionList`
@@ -679,6 +778,12 @@ void Parser::parseOption(Operator::Builder &builder, UErrorCode& errorCode) {
       errors.setDuplicateOptionName(errorCode);
     }
 }
+
+/*
+  Note: there are multiple overloads of parseOptions() for parsing
+  options within markup, vs. within an expression, vs. parsing
+  attributes. This should be refactored. TODO
+ */
 
 /*
   Consume optional whitespace followed by a sequence of options
@@ -757,6 +862,161 @@ is involved and there's no state to save.
         }
         parseOption(builder, errorCode);
     }
+}
+
+/*
+  Consume optional whitespace followed by a sequence of options
+  (possibly empty), separated by whitespace
+*/
+OptionMap Parser::parseOptions(UErrorCode& errorCode) {
+    OptionMap options;
+
+    // Early exit if out of bounds -- no more work is possible
+    if (!inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+        return options;
+    }
+
+    // Initialize options vector, which supports equality on elements
+    UVector* optionVec = createStringUVector(errorCode);
+    if (U_FAILURE(errorCode)) {
+        return options;
+    }
+/*
+Arbitrary lookahead is required to parse option lists. To see why, consider
+these rules from the grammar:
+
+expression = "{" [s] (((literal / variable) [s annotation]) / annotation) [s] "}"
+annotation = (function *(s option)) / reserved
+
+And this example:
+{:foo  }
+
+Derivation:
+expression -> "{" [s] (((literal / variable) [s annotation]) / annotation) [s] "}"
+           -> "{" [s] annotation [s] "}"
+           -> "{" [s] ((function *(s option)) / reserved) [s] "}"
+           -> "{" [s] function *(s option) [s] "}"
+
+In this example, knowing whether to expect a '}' or the start of another option
+after the whitespace would require arbitrary lookahead -- in other words, which
+rule should we apply?
+    *(s option) -> s option *(s option)
+  or
+    *(s option) ->
+
+The same would apply to the example {:foo k=v } (note the trailing space after "v").
+
+This is addressed using a form of backtracking and (to make the backtracking easier
+to apply) a slight refactoring to the grammar.
+
+This code is written as if the grammar is:
+  expression = "{" [s] (((literal / variable) ([s] / [s annotation])) / annotation) "}"
+  annotation = (function *(s option) [s]) / (reserved [s])
+
+Parsing the `*(s option) [s]` sequence can be done within `parseOptions()`, meaning
+that `parseExpression()` can safely require a '}' after `parseOptions()` finishes.
+
+Note that when "backtracking" really just means early exit, since only whitespace
+is involved and there's no state to save.
+*/
+
+    while(true) {
+        // If the next character is not whitespace, that means we've already
+        // parsed the entire options list (which may have been empty) and there's
+        // no trailing whitespace. In that case, exit.
+        if (!isWhitespace(source[index])) {
+            break;
+        }
+
+        // In any case other than an empty options list, there must be at least
+        // one whitespace character.
+        parseRequiredWhitespace(errorCode);
+        // Restore precondition
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            break;
+        }
+
+        // If a name character follows, then at least one more option remains
+        // in the list.
+        // Otherwise, we've consumed all the options and any trailing whitespace,
+        // and can exit.
+        // Note that exiting is sort of like backtracking: "(s option)" doesn't apply,
+        // so we back out to [s].
+        if (!isNameStart(source[index])) {
+            // We've consumed all the options (meaning that either we consumed non-empty
+            // whitespace, or consumed at least one option.)
+            // Done.
+            // Remove the whitespace from normalizedInput
+            U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+            break;
+        }
+        parseOption(*optionVec, errorCode);
+    }
+
+    return OptionMap(*optionVec, errorCode);
+}
+
+/*
+  Consume optional whitespace followed by a sequence of attributes
+  (possibly empty), separated by whitespace
+*/
+OptionMap Parser::parseAttributes(UErrorCode& errorCode) {
+    OptionMap attributes;
+
+    // Early exit if out of bounds -- no more work is possible
+    if (!inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+        return attributes;
+    }
+
+    // Initialize options vector, which supports equality on elements
+    UVector* options = createStringUVector(errorCode);
+    if (U_FAILURE(errorCode)) {
+        return attributes;
+    }
+
+/*
+Arbitrary lookahead is required to parse attribute lists, similarly to option lists.
+(See comment in parseOptions()).
+*/
+
+    while(true) {
+        // If the next character is not whitespace, that means we've already
+        // parsed the entire attributes list (which may have been empty) and there's
+        // no trailing whitespace. In that case, exit.
+        if (!isWhitespace(source[index])) {
+            break;
+        }
+
+        // In any case other than an empty attributes list, there must be at least
+        // one whitespace character.
+        parseRequiredWhitespace(errorCode);
+        // Restore precondition
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            break;
+        }
+
+        // If an '@' follows, then at least one more attribute remains
+        // in the list.
+        // Otherwise, we've consumed all the attributes and any trailing whitespace,
+        // and can exit.
+        // Note that exiting is sort of like backtracking: "(s attributes)" doesn't apply,
+        // so we back out to [s].
+        if (source[index] != AT) {
+            // We've consumed all the attributes (meaning that either we consumed non-empty
+            // whitespace, or consumed at least one attribute.)
+            // Done.
+            // Remove the whitespace from normalizedInput
+            U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+            break;
+        }
+        parseAttribute(*options, errorCode);
+    }
+
+    return OptionMap(*options, errorCode);
 }
 
 void Parser::parseReservedEscape(UnicodeString &str, UErrorCode& errorCode) {
@@ -1326,6 +1586,105 @@ Pattern Parser::parseQuotedPattern(UErrorCode& status) {
 }
 
 /*
+  Consume a `placeholder`, matching the nonterminal in the grammar
+  No postcondition (a markup can end a message)
+*/
+Markup Parser::parseMarkup(UErrorCode& status) {
+    U_ASSERT(inBounds(source, index + 1));
+
+    U_ASSERT(source[index] == LEFT_CURLY_BRACE);
+
+    Markup::Builder builder(status);
+    if (U_FAILURE(status)) {
+        return {};
+    }
+
+    // Consume the '{'
+    index++;
+    normalizedInput = LEFT_CURLY_BRACE;
+    parseOptionalWhitespace(status);
+    bool closing = false;
+    switch (source[index]) {
+    case NUMBER_SIGN: {
+        // Open or standalone; consume the '#'
+        normalizedInput = source[index];
+        index++;
+        break;
+    }
+    case SLASH: {
+        // Closing
+        normalizedInput = source[index];
+        closing = true;
+        index++;
+        break;
+    }
+    default: {
+        ERROR(parseError, status, index);
+        return {};
+    }
+    }
+
+    // Parse the markup identifier
+    builder.setName(parseName(status));
+
+    // Parse the options, which must begin with a ' '
+    // if present
+    if (inBounds(source, index) && isWhitespace(source[index])) {
+        builder.setOptionMap(parseOptions(status));
+    }
+
+    // Parse the attributes, which also must begin
+    // with a ' '
+    if (inBounds(source, index) && isWhitespace(source[index])) {
+        builder.setAttributeMap(parseAttributes(status));
+    }
+
+    parseOptionalWhitespace(status);
+
+    bool standalone = false;
+    // Check if this is a standalone or not
+    if (!closing) {
+        if (inBounds(source, index) && source[index] == SLASH) {
+            standalone = true;
+            normalizedInput += SLASH;
+            index++;
+        }
+    }
+
+    parseToken(RIGHT_CURLY_BRACE, status);
+
+    if (standalone) {
+        builder.setStandalone();
+    } else if (closing) {
+        builder.setClose();
+    } else {
+        builder.setOpen();
+    }
+
+    return builder.build(status);
+}
+
+/*
+  Consume a `placeholder`, matching the nonterminal in the grammar
+  No postcondition (a placeholder can end a message)
+*/
+std::variant<Expression, Markup> Parser::parsePlaceholder(UErrorCode& status) {
+    U_ASSERT(source[index] == LEFT_CURLY_BRACE);
+
+    if (!inBounds(source, index)) {
+        ERROR(parseError, status, index);
+        return exprFallback();
+    }
+
+    // Check if it's markup or an expression
+    if (source[index + 1] == NUMBER_SIGN || source[index + 1] == SLASH) {
+        // Markup
+        return parseMarkup(status);
+    }
+    return parseExpression(status);
+}
+
+/*
   Consume a `simple-message`, matching the nonterminal in the grammar
   Postcondition: `index == source.length()` or U_FAILURE(status);
   for a syntactically correct message, this will consume the entire input
@@ -1338,10 +1697,15 @@ Pattern Parser::parseSimpleMessage(UErrorCode& status) {
         while (inBounds(source, index)) {
             switch (source[index]) {
             case LEFT_CURLY_BRACE: {
-                // Must be expression
-                bool rhsError = false;
-                Expression e = parseExpression(rhsError, status);
-                result.add(rhsError ? exprFallback() : e, status);
+                // Must be placeholder
+                std::variant<Expression, Markup> piece = parsePlaceholder(status);
+                if (std::holds_alternative<Expression>(piece)) {
+                    Expression expr = *std::get_if<Expression>(&piece);
+                    result.add(std::move(expr), status);
+                } else {
+                    Markup markup = *std::get_if<Markup>(&piece);
+                    result.add(std::move(markup), status);
+                }
                 break;
             }
             default: {

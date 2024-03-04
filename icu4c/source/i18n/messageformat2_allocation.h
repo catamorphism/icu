@@ -10,6 +10,7 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+#include "unicode/unistr.h"
 #include "uvector.h"
 
 U_NAMESPACE_BEGIN
@@ -80,6 +81,19 @@ namespace message2 {
         }
         result->setDeleter(uprv_deleteUObject);
         return result.orphan();
+    }
+
+    static UBool stringsEqual(const UElement s1, const UElement s2) {
+        return (*static_cast<UnicodeString*>(s1.pointer) == *static_cast<UnicodeString*>(s2.pointer));
+    }
+
+    inline UVector* createStringUVector(UErrorCode& status) {
+        UVector* v = createUVector(status);
+        if (U_FAILURE(status)) {
+            return nullptr;
+        }
+        v->setComparer(stringsEqual);
+        return v;
     }
 
     template<typename T>

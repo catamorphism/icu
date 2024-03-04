@@ -382,14 +382,8 @@ Option& Option::operator=(Option other) noexcept {
 
 Option::~Option() {}
 
-static UBool stringsEqual(const UElement s1, const UElement s2) {
-    return (*static_cast<UnicodeString*>(s1.pointer) == *static_cast<UnicodeString*>(s2.pointer));
-}
-
 Operator::Builder::Builder(UErrorCode& status) {
-    options = createUVector(status);
-    CHECK_ERROR(status);
-    options->setComparer(stringsEqual);
+    options = createStringUVector(status);
 }
 
 Operator::Builder& Operator::Builder::setReserved(Reserved&& reserved) {
@@ -481,6 +475,63 @@ Operator::~Operator() {}
 
 Callable::~Callable() {}
 
+// ------------ Markup
+
+Markup::Builder::Builder(UErrorCode& status) {
+    options = createUVector(status);
+    attributes = createUVector(status);
+}
+
+Markup::Builder& Markup::Builder::setAttributeMap(OptionMap&& m) {
+    attributeMap = std::move(m);
+    delete attributes;
+    attributes = nullptr;
+    return *this;
+}
+
+Markup::Builder& Markup::Builder::setOptionMap(OptionMap&& m) {
+    optionMap = std::move(m);
+    delete options;
+    options = nullptr;
+    return *this;
+}
+
+Markup::Markup(UMarkupType ty, UnicodeString n, OptionMap&& o, OptionMap&& a) : type(ty), name(n), options(std::move(o)), attributes(std::move(a)) {
+}
+
+Markup Markup::Builder::build(UErrorCode& errorCode) {
+    Markup result;
+
+    if (U_FAILURE(errorCode)) {
+        return result;
+    }
+
+    if (type == UMARKUP_COUNT || name.length() == 0) {
+        // One of `setOpen()`, `setClose()`, or `setStandalone()`
+        // must be called before calling build()
+        // setName() must be called before calling build()
+        errorCode = U_INVALID_STATE_ERROR;
+    } else {
+        if (options != nullptr) {
+            // Initialize options from what was done with setOptions
+            optionMap = OptionMap(*options, errorCode);
+        }
+        if (attributes != nullptr) {
+            attributeMap = OptionMap(*attributes, errorCode);
+        }
+        result = Markup(type, name, std::move(optionMap), std::move(attributeMap));
+    }
+    return result;
+}
+
+Markup::Builder::~Builder() {
+    if (options != nullptr) {
+        delete options;
+    }
+    if (attributes != nullptr) {
+        delete attributes;
+    }
+}
 // ------------ Expression
 
 
@@ -561,7 +612,7 @@ Expression::Builder::~Builder() {}
 PatternPart::PatternPart(const PatternPart& other) : piece(other.piece) {}
 
 const Expression& PatternPart::contents() const {
-    U_ASSERT(!isText());
+    U_ASSERT(isExpression());
     return *std::get_if<Expression>(&piece);
 }
 
@@ -615,6 +666,15 @@ Pattern Pattern::Builder::build(UErrorCode& status) const noexcept {
 }
 
 Pattern::Builder& Pattern::Builder::add(Expression&& part, UErrorCode& status) noexcept {
+    U_ASSERT(parts != nullptr);
+    if (U_SUCCESS(status)) {
+        PatternPart* l = create<PatternPart>(PatternPart(std::move(part)), status);
+        parts->adoptElement(l, status);
+    }
+    return *this;
+}
+
+Pattern::Builder& Pattern::Builder::add(Markup&& part, UErrorCode& status) noexcept {
     U_ASSERT(parts != nullptr);
     if (U_SUCCESS(status)) {
         PatternPart* l = create<PatternPart>(PatternPart(std::move(part)), status);
