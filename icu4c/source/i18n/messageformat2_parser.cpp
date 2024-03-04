@@ -176,9 +176,7 @@ static bool isQuotedChar(UChar32 c) {
 // Returns true iff `c` can begin a `function` nonterminal
 static bool isFunctionStart(UChar32 c) {
     switch (c) {
-    case COLON:
-    case PLUS:
-    case HYPHEN: {
+    case COLON: {
         return true;
     }
     default: {
