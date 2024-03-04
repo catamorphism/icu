@@ -1262,6 +1262,8 @@ the comment in `parseOptions()` for details.
 */
 
     if (isWhitespace(source[index])) {
+      int32_t firstWhitespace = index;
+
       // If the next character is whitespace, either [s annotation] or [s] applies
       // (the character is either the required space before an annotation, or optional
       // trailing space after the literal or variable). It's still ambiguous which
@@ -1271,10 +1273,20 @@ the comment in `parseOptions()` for details.
       CHECK_BOUNDS(source, index, parseError, status);
 
       // This next check resolves the ambiguity between [s annotation] and [s]
-      if (isAnnotationStart(source[index])) {
+      bool isSAnnotation = isAnnotationStart(source[index]);
+      bool isS = source[index] == RIGHT_CURLY_BRACE;
+
+      if (isSAnnotation || isS) {
         normalizedInput += SPACE;
+      }
+
+      if (isSAnnotation) {
         // The previously consumed whitespace precedes an annotation
         builder.setOperator(parseAnnotation(status));
+      } else if (!isS) {
+          // There's an error and the trailing whitespace should be
+          // handled by the caller
+          index = firstWhitespace;
       }
     } else {
       // Either there was never whitespace, or
@@ -1307,15 +1319,10 @@ static Expression exprFallback() {
     return result;
 }
 
-// Sets `parseError` to true if there was an error parsing this expression
-// Uses a flag rather than just returning a fallback expression because which
-// fallback to use depends on context
-Expression Parser::parseExpression(bool& err, UErrorCode& status) {
+Expression Parser::parseExpression(UErrorCode& status) {
     if (U_FAILURE(status)) {
         return {};
     }
-
-    err = false;
 
     // Early return if out of input -- no more work is possible
     U_ASSERT(inBounds(source, index));
@@ -1352,10 +1359,7 @@ Expression Parser::parseExpression(bool& err, UErrorCode& status) {
             } else {
                 // Not a literal, variable or annotation -- error out
                 ERROR(parseError, status, index);
-                // Set the operand in order to avoid an invalid state error --
-                // however, the caller will ignore the result
                 exprFallback(exprBuilder);
-                err = true;
                 break;
             }
             break;
@@ -1401,20 +1405,30 @@ void Parser::parseDeclarations(UErrorCode& status) {
         // (which must return a non-null value)
         CHECK_BOUNDS(source, index, parseError, status);
 
-        bool rhsError = false;
-        Expression rhs = parseExpression(rhsError, status);
+        Expression rhs = parseExpression(status);
         // Avoid looping infinitely
         CHECK_ERROR(status);
 
-        if (rhsError) {
-            rhs = exprFallback();
-        }
         parseOptionalWhitespace(status);
         // Restore precondition
         CHECK_BOUNDS(source, index, parseError, status);
 
         // Add binding from lhs to rhs, unless there was an error
-        if (lhs.length() > 0) {
+        // (This ensures that if there was a correct lhs but a
+        // parse error in rhs, the fallback for uses of the
+        // lhs will be its own name rather than the rhs)
+        /* This affects the behavior of this test case, which the spec
+           is ambiguous about:
+
+           .local $bar {|foo|} {{{$bar}}}
+
+           Should `$bar` still be bound to a value although
+           its declaration is syntactically incorrect (missing the '=')?
+           This code says no, but it needs to change if
+           https://github.com/unicode-org/message-format-wg/issues/703
+           is resolved differently.
+         */
+        if (!errors.hasSyntaxError()) {
             dataModel.addLocalVariable(std::move(lhs), std::move(rhs), status);
         }
     }
@@ -1752,15 +1766,8 @@ void Parser::parseSelectors(UErrorCode& status) {
             break;
         }
 
-        bool selectorError = false;
         Expression expression;
-        expression = parseExpression(selectorError, status);
-        if (selectorError) {
-            // What happens if one of the variant keys is the
-            // fallback string? this should be a `nomatch` according
-            // to the spec, but there's no way to pass that through
-            expression = exprFallback();
-        }
+        expression = parseExpression(status);
         empty = false;
 
         dataModel.addSelector(std::move(expression), status);
