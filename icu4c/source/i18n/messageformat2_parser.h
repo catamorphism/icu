@@ -8,6 +8,8 @@
 
 #include "unicode/messageformat2_data_model.h"
 
+#include "messageformat2_allocation.h"
+
 #if U_SHOW_CPLUSPLUS_API
 
 #if !UCONFIG_NO_FORMATTING
@@ -82,14 +84,20 @@ namespace message2 {
 	void parseEscapeSequence(EscapeKind, UnicodeString&, UErrorCode&);
 	void parseLiteralEscape(UnicodeString&, UErrorCode&);
 	Literal parseLiteral(UErrorCode&);
-	void parseOption(Operator::Builder&, UErrorCode&);
-	void parseOptions(Operator::Builder&, UErrorCode&);
+        void parseAttribute(UVector&, UErrorCode&);
+        OptionMap parseAttributes(UErrorCode&);
+        void parseOption(Operator::Builder&, UErrorCode&);
+        void parseOption(UVector&, UErrorCode&);
+        void parseOptions(Operator::Builder&, UErrorCode&);
+        OptionMap parseOptions(UErrorCode&);
 	void parseReservedEscape(UnicodeString&, UErrorCode&);
 	void parseReservedChunk(Reserved::Builder&, UErrorCode&);
 	Reserved parseReserved(UErrorCode&);
 	Operator parseAnnotation(UErrorCode&);
 	void parseLiteralOrVariableWithAnnotation(bool, Expression::Builder&, UErrorCode&);
-	Expression parseExpression(bool&, UErrorCode&);
+        Markup parseMarkup(UErrorCode&);
+	Expression parseExpression(UErrorCode&);
+        std::variant<Expression, Markup> parsePlaceholder(UErrorCode&);
 	void parseTextEscape(UnicodeString&, UErrorCode&);
 	UnicodeString parseText(UErrorCode&);
 	Key parseKey(UErrorCode&);

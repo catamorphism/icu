@@ -271,6 +271,8 @@ void MessageFormatter::formatPattern(MessageContext& context, const Environment&
         const PatternPart& part = pat.getPart(i);
         if (part.isText()) {
             result += part.asText();
+        } else if (part.isMarkup()) {
+            // Markup is ignored
         } else {
 	      // Format the expression
 	      FormattedPlaceholder partVal = formatExpression(globalEnv, part.contents(), context, status);

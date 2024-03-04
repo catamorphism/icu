@@ -72,6 +72,7 @@ namespace message2 {
     class Checker;
     class MessageFormatDataModel;
     class MessageFormatter;
+    class Parser;
     class Serializer;
 
 
@@ -1212,6 +1213,196 @@ template class U_I18N_API std::optional<message2::data_model::Operator>;
 
 namespace message2 {
   namespace data_model {
+      // Internal only
+      typedef enum UMarkupType {
+          UMARKUP_OPEN = 0,
+          UMARKUP_CLOSE,
+          UMARKUP_STANDALONE,
+          UMARKUP_COUNT
+      } UMarkupType;
+
+      /**
+         * The `Markup` class corresponds to the `markup` nonterminal in the MessageFormat 2
+         * grammar and the `markup` interface defined in
+         * https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model/message.json
+         *
+         * `Markup` is immutable, copyable and movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class U_I18N_API Markup : public UObject {
+        public:
+            /**
+             * Checks if this markup is an opening tag.
+             *
+             * @return True if and only if this represents an opening tag.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            UBool isOpen() const { return (type == UMARKUP_OPEN); }
+            /**
+             * Checks if this markup is an closing tag.
+             *
+             * @return True if and only if this represents an closing tag.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            UBool isClose() const { return (type == UMARKUP_CLOSE); }
+            /**
+             * Checks if this markup is an standalone tag.
+             *
+             * @return True if and only if this represents a standalone tag.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            UBool isStandalone() const { return (type == UMARKUP_STANDALONE); }
+            /**
+             * Default constructor.
+             * Puts the Markup into a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Markup() {}
+            /**
+             * The mutable `Markup::Builder` class allows the markup to be constructed
+             * incrementally.
+             *
+             * Builder is not copyable or movable.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            class U_I18N_API Builder : public UMemory {
+            private:
+                friend class Markup;
+                friend class message2::Parser;
+
+                UnicodeString name;
+                UVector* options; // Not a LocalPointer for the same reason as in `SelectorKeys::Builder`
+                UVector* attributes;
+                // The next two fields are used internally by the parser
+                // and override the `options` and `attributes` vectors.
+                // This is because it's easiest to share the code
+                // for parsing options between Operator::Builder and Markup::Builder.
+                OptionMap optionMap;
+                OptionMap attributeMap;
+                UMarkupType type = UMARKUP_COUNT;
+                Builder& setOptionMap(OptionMap&&);
+                Builder& setAttributeMap(OptionMap&& m);
+            public:
+                /**
+                 * Sets the name of this markup.
+                 *
+                 * @param name A string representing the name.
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& setName(const UnicodeString& n) { name = n; return *this; }
+                /**
+                 * Sets this to be an opening markup.
+                 *
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& setOpen() { type = UMARKUP_OPEN; return *this; }
+                /**
+                 * Sets this to be an closing markup.
+                 *
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& setClose() { type = UMARKUP_CLOSE; return *this; }
+                /**
+                 * Sets this to be a standalone markup.
+                 *
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& setStandalone() { type = UMARKUP_STANDALONE; return *this; }
+                /**
+                 * Adds a single option.
+                 *
+                 * @param key The name of the option.
+                 * @param value The value (right-hand side) of the option.
+                 * @param status Input/output error code.
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& addOption(const UnicodeString &key, Operand&& value, UErrorCode& status) noexcept;
+                /**
+                 * Adds a single attribute.
+                 *
+                 * @param key The name of the attribute.
+                 * @param value The value (right-hand side) of the attribute.
+                 * @param status Input/output error code.
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& addAttribute(const UnicodeString &key, Operand&& value, UErrorCode& status) noexcept;
+                /**
+                 * Constructs a new immutable `Markup` using the name and type
+                 * and (optionally) options and attributes that were previously set.
+                 * If `setName()` and at least one of `setOpen()`, `setClose()`, and `setStandalone()`
+                 * were not previously called,
+                 * then `status` is set to U_INVALID_STATE_ERROR.
+                 *
+                 * The builder object (`this`) can still be used after calling `build()`.
+                 * The `build()` method is non-const for internal implementation reasons,
+                 * but is observably const.
+                 *
+                 * @param status    Input/output error code.
+                 * @return          The new Markup.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Markup build(UErrorCode& status);
+                /**
+                 * Default constructor.
+                 * Returns a Builder with no name, type, options, or attributes set.
+                 *
+                 * @param status    Input/output error code.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder(UErrorCode& status);
+                /**
+                 * Destructor.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                virtual ~Builder();
+            }; // class Markup::Builder
+
+        private:
+            friend class Builder;
+
+            UMarkupType type;
+            UnicodeString name;
+            OptionMap options;
+            OptionMap attributes;
+            Markup(UMarkupType, UnicodeString, OptionMap&&, OptionMap&&);
+        }; // class Markup
+
         /**
          * The `Expression` class corresponds to the `expression` nonterminal in the MessageFormat 2
          * grammar and the `Expression` interface defined in
@@ -1299,6 +1490,7 @@ namespace message2 {
                 bool hasOperator = false;
                 Operand rand;
                 Operator rator;
+                UVector* attributes; // Not a LocalPointer for the same reason as in `SelectorKeys::builder`
             public:
                 /**
                  * Sets the operand of this expression.
@@ -1320,6 +1512,18 @@ namespace message2 {
                  * @deprecated This API is for technology preview only.
                  */
                 Builder& setOperator(Operator&& rAtor);
+                /**
+                 * Adds a single attribute.
+                 *
+                 * @param key The name of the attribute.
+                 * @param value The value (right-hand side) of the attribute.
+                 * @param status Input/output error code.
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& addAttribute(const UnicodeString &key, Operand&& value, UErrorCode& status);
                 /**
                  * Constructs a new immutable `Expression` using the operand and operator that
                  * were previously set. If neither `setOperand()` nor `setOperator()` was
@@ -1408,6 +1612,7 @@ namespace message2 {
             Expression(const Operator &rAtor) : rator(rAtor), rand() {}
             /* const */ std::optional<Operator> rator;
             /* const */ Operand rand;
+            /* const */ OptionMap attributes;
         }; // class Expression
   } // namespace data_model
 } // namespace message2
@@ -1438,6 +1643,24 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             UBool isText() const { return std::holds_alternative<UnicodeString>(piece); }
+            /**
+             * Checks if the part is a markup part.
+             *
+             * @return True if and only if this is a markup part.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            UBool isMarkup() const { return std::holds_alternative<Markup>(piece); }
+            /**
+             * Checks if the part is an expression part.
+             *
+             * @return True if and only if this is an expression part.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            UBool isExpression() const { return std::holds_alternative<Expression>(piece); }
             /**
              * Accesses the expression of the part.
              * Precondition: !isText()
@@ -1513,6 +1736,16 @@ namespace message2 {
              */
             explicit PatternPart(Expression&& e) : piece(e) {}
             /**
+             * Markup part constructor. Returns a Markup pattern
+             * part with markup `m`
+             *
+             * @param m A Markup.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            explicit PatternPart(Markup&& m) : piece(m) {}
+            /**
              * Default constructor.
              * Puts the PatternPart into a valid but undefined state.
              *
@@ -1523,7 +1756,7 @@ namespace message2 {
         private:
             friend class Pattern;
 
-            std::variant<UnicodeString, Expression> piece;
+            std::variant<UnicodeString, Expression, Markup> piece;
         }; // class PatternPart
   } // namespace data_model
 } // namespace message2
@@ -1618,6 +1851,17 @@ namespace message2 {
                  */
                 Builder& add(Expression&& part, UErrorCode& status) noexcept;
                 /**
+                 * Adds a single markup part to the pattern.
+                 *
+                 * @param part The part to be added (passed by move)
+                 * @param status Input/output error code.
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& add(Markup&& part, UErrorCode& status) noexcept;
+                /**
                  * Adds a single text part to the pattern. Copies `part`.
                  *
                  * @param part The part to be added (passed by move)
@@ -1707,7 +1951,7 @@ namespace message2 {
             private:
                 using iterator_category = std::forward_iterator_tag;
                 using difference_type = std::ptrdiff_t;
-                using value_type = std::variant<UnicodeString, Expression>;
+                using value_type = std::variant<UnicodeString, Expression, Markup>;
                 using pointer = value_type*;
                 using reference = const value_type&;
 
@@ -1781,7 +2025,7 @@ namespace message2 {
 
             // Gets around not being able to declare Pattern::Iterator as a friend
             // in PatternPart
-            static const std::variant<UnicodeString, Expression>& patternContents(const PatternPart& p) {
+            static const std::variant<UnicodeString, Expression, Markup>& patternContents(const PatternPart& p) {
                 return p.piece;
             }
 
