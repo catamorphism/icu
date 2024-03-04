@@ -146,7 +146,7 @@ void TestMessageFormat2::testSpecialPluralWithDecimals(TestCase::Builder& testBu
     message = ".local $amount = {$count :number}\n\
                 .match {$amount :plural}\n\
                   .when 1 {{I have {$amount} dollar.}}\n\
-                  .when * {{I have {$amount} dollars.}}\n";
+                  .when * {{I have {$amount} dollars.}}";
 
     TestCase test = testBuilder.setPattern(message)
         .clearArguments()
@@ -159,7 +159,7 @@ void TestMessageFormat2::testSpecialPluralWithDecimals(TestCase::Builder& testBu
     message = ".local $amount = {$count :number skeleton=|.00*|}\n\
                 .match {$amount :plural skeleton=|.00*|}\n\
                   .when 1 {{I have {$amount} dollar.}}\n\
-                  .when * {{I have {$amount} dollars.}}\n";
+                  .when * {{I have {$amount} dollars.}}";
 
     test = testBuilder.setPattern(message)
                                 .setExpected("I have 1.00 dollar.")
@@ -281,7 +281,7 @@ void TestMessageFormat2::testLocalVariableWithSelect(TestCase::Builder& testBuil
     testBuilder.setPattern(".local $expDate = {$expDate :datetime skeleton=yMMMdE}\n\
                 .match {$count :plural}\n\
                 .when 1 {{Your ticket expires on {$expDate}.}}\n\
-                .when * {{Your {$count} tickets expire on {$expDate}.}}\n");
+                .when * {{Your {$count} tickets expire on {$expDate}.}}");
 
     int64_t count = 1;
     TestCase test = testBuilder.clearArguments().setArgument("count", count)
@@ -362,7 +362,7 @@ void TestMessageFormat2::testDateFormat(TestCase::Builder& testBuilder, IcuTestE
 void TestMessageFormat2::testPlural(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     UnicodeString message = ".match {$count :plural}\n\
                 .when 1 {{You have one notification.}}\n           \
-                .when * {{You have {$count} notifications.}}\n";
+                .when * {{You have {$count} notifications.}}";
 
     int64_t count = 1;
     TestCase test = testBuilder.clearArguments().setPattern(message)
@@ -399,7 +399,7 @@ void TestMessageFormat2::testPluralOrdinal(TestCase::Builder& testBuilder, IcuTe
                 .when one {{You got in the {$place}st place}}\n\
                 .when two {{You got in the {$place}nd place}}\n \
                 .when few {{You got in the {$place}rd place}}\n \
-                .when * {{You got in the {$place}th place}}\n";
+                .when * {{You got in the {$place}th place}}";
 
     TestCase test = testBuilder.clearArguments().setPattern(message)
                                 .setExpected("You got the gold medal")
@@ -650,7 +650,7 @@ void TestMessageFormat2::testPluralWithOffset(TestCase::Builder& testBuilder, Ic
                   .when 1 {{Anna}}\n\
                   .when 2 {{Anna and Bob}}\n\
                   .when one {{Anna, Bob, and {$count :number offset=2} other guest}}\n\
-                  .when * {{Anna, Bob, and {$count :number offset=2} other guests}}\n";
+                  .when * {{Anna, Bob, and {$count :number offset=2} other guests}}";
 
     testBuilder.setPattern(message);
     testBuilder.setName("plural with offset");
@@ -689,7 +689,7 @@ void TestMessageFormat2::testPluralWithOffsetAndLocalVar(TestCase::Builder& test
                 .when 1 {{Anna}}\n                                        \
                 .when 2 {{Anna and Bob}}\n                                \
                 .when one {{Anna, Bob, and {$foo} other guest}}\n         \
-                .when * {{Anna, Bob, and {$foo} other guests}}\n";
+                .when * {{Anna, Bob, and {$foo} other guests}}";
 
     testBuilder.clearArguments().setPattern(message);
     testBuilder.setName("plural with offset and local var");
@@ -723,7 +723,7 @@ void TestMessageFormat2::testPluralWithOffsetAndLocalVar(TestCase::Builder& test
                 .match {$foo :plural}\n\
                 .when 1 {{Last dollar}}\n\
                 .when one {{{$foo} dollar}}\n\
-                .when * {{{$foo} dollars}}\n";
+                .when * {{{$foo} dollars}}";
     testBuilder.setPattern(message);
     test = testBuilder.setExpected("Last dollar")
                           .setArgument("amount", (int64_t) 1)
@@ -759,7 +759,7 @@ void TestMessageFormat2::testVariableOptionsInSelector(TestCase::Builder& testBu
                 .when 1 {{A}}\n\
                 .when 2 {{A and B}}\n\
                 .when one {{A, B, and {$count :number offset=$delta} more character}}\n\
-                .when * {{A, B, and {$count :number offset=$delta} more characters}}\n";
+                .when * {{A, B, and {$count :number offset=$delta} more characters}}";
 
     testBuilder.setPattern(message);
     testBuilder.setName("variable options in selector");
@@ -789,7 +789,7 @@ void TestMessageFormat2::testVariableOptionsInSelector(TestCase::Builder& testBu
     message = ".match {$count :plural offset=$delta}\n\
                   .when 1 {{Exactly 1}}\n\
                   .when 2 {{Exactly 2}}\n\
-                  .when * {{Count = {$count :number offset=$delta} and delta={$delta}.}}\n";
+                  .when * {{Count = {$count :number offset=$delta} and delta={$delta}.}}";
     testBuilder.setPattern(message);
 
     test = testBuilder.clearArguments().setExpected("Exactly 1")
@@ -862,7 +862,7 @@ void TestMessageFormat2::testVariableOptionsInSelectorWithLocalVar(TestCase::Bui
                 .when 1 {{A}}\n\
                 .when 2 {{A and B}}\n\
                 .when one {{A, B, and {$offCount} more character}}\n\
-                .when * {{A, B, and {$offCount} more characters}}\n";
+                .when * {{A, B, and {$offCount} more characters}}";
 
     testBuilder.setPattern(messageFix);
     testBuilder.setName("variable options in selector with local var");
@@ -890,7 +890,7 @@ void TestMessageFormat2::testVariableOptionsInSelectorWithLocalVar(TestCase::Bui
                 .when 1 {{A}}\n\
                 .when 2 {{A and B}}\n\
                 .when one {{A, B, and {$offCount} more character}}\n\
-                .when * {{A, B, and {$offCount} more characters}}\n";
+                .when * {{A, B, and {$offCount} more characters}}";
     testBuilder.setPattern(messageVar);
 
     test = testBuilder.clearArguments().setExpected("A")
@@ -918,7 +918,7 @@ void TestMessageFormat2::testVariableOptionsInSelectorWithLocalVar(TestCase::Bui
                 .match {$offCount :plural}\n\
                 .when 1 {{Exactly 1}}\n\
                 .when 2 {{Exactly 2}}\n\
-                .when * {{Count = {$count}, OffCount = {$offCount}, and delta={$delta}.}}\n";
+                .when * {{Count = {$count}, OffCount = {$offCount}, and delta={$delta}.}}";
     testBuilder.setPattern(messageVar2);
     test = testBuilder.clearArguments().setExpected("Exactly 1")
                                 .setArgument("count", (int64_t) 1)

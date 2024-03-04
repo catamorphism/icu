@@ -407,13 +407,13 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{missing end brace")
+    test = testBuilder.setPattern("{{missing end brace")
                       .setExpected("missing end brace")
                       .setExpectedError(U_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{missing end {$brace")
+    test = testBuilder.setPattern("{{missing end {$brace")
                       .setExpected("missing end {$brace}")
                       .setExpectedError(U_SYNTAX_ERROR)
                       .build();
@@ -443,7 +443,7 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("{bad {:}}")
+    test = testBuilder.setPattern("{{bad {:}}")
                       .setExpected("bad {:}")
                       .setExpectedError(U_SYNTAX_ERROR)
                       .build();
