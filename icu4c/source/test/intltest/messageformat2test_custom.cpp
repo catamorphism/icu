@@ -127,7 +127,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                 .when * 0 {{{$hostName} does not give a party.}}\n\
                 .when * 1 {{{$hostName} invites {$guestName} to their party.}}\n\
                 .when * 2 {{{$hostName} invites {$guestName} and one other person to their party.}}\n\
-                .when * * {{{$hostName} invites {$guestName} and {$guestsOther} other people to their party.}}\n";
+                .when * * {{{$hostName} invites {$guestName} and {$guestsOther} other people to their party.}}";
 
 
     TestCase::Builder testBuilder;

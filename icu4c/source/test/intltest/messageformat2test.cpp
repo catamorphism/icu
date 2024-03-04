@@ -212,9 +212,7 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(testAPISimple);
     TESTCASE_AUTO(testDataModelAPI);
     TESTCASE_AUTO(testVariousPatterns);
-    /*
     TESTCASE_AUTO(testInvalidPatterns);
-    */
     TESTCASE_AUTO_END;
 }
 
@@ -642,10 +640,10 @@ void TestMessageFormat2::testDataModelErrors() {
     // Non-exhaustive patterns
     testSemanticallyInvalidPattern(++i, ".match {$one :plural}\n\
                                          .when 1 {{Value is one}}\n\
-                                         .when 2 {{Value is two}}\n", U_NONEXHAUSTIVE_PATTERN_ERROR);
+                                         .when 2 {{Value is two}}", U_NONEXHAUSTIVE_PATTERN_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {$one :plural} {$two :plural}\n\
                                          .when 1 * {{First is one}}\n\
-                                         .when * 1 {{Second is one}}\n", U_NONEXHAUSTIVE_PATTERN_ERROR);
+                                         .when * 1 {{Second is one}}", U_NONEXHAUSTIVE_PATTERN_ERROR);
 
     // Duplicate option names
     testSemanticallyInvalidPattern(++i, "{:foo a=1 b=2 a=1}", U_DUPLICATE_OPTION_NAME_ERROR);
@@ -656,14 +654,14 @@ void TestMessageFormat2::testDataModelErrors() {
     // Missing selector annotation
     testSemanticallyInvalidPattern(++i, ".match {$one}\n\
                                          .when 1 {{Value is one}}\n\
-                                         .when * {{Value is not one}}\n", U_MISSING_SELECTOR_ANNOTATION_ERROR);
+                                         .when * {{Value is not one}}", U_MISSING_SELECTOR_ANNOTATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".local $one = {|The one|}\n\
                                          .match {$one}\n\
                                          .when 1 {{Value is one}}\n\
-                                         .when * {{Value is not one}}\n", U_MISSING_SELECTOR_ANNOTATION_ERROR);
+                                         .when * {{Value is not one}}", U_MISSING_SELECTOR_ANNOTATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {|horse| ^private}\n\
                                          .when 1 {{The value is one.}}\n          \
-                                         .when * {{The value is not one.}}\n", U_MISSING_SELECTOR_ANNOTATION_ERROR);
+                                         .when * {{The value is not one.}}", U_MISSING_SELECTOR_ANNOTATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {$foo !select} .when |1| {{one}} .when * {{other}}",
                                    U_MISSING_SELECTOR_ANNOTATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {$foo ^select} .when |1| {{one}} .when * {{other}}",
@@ -707,18 +705,18 @@ void TestMessageFormat2::testResolutionErrors() {
     testRuntimeWarningPattern(++i, "The value is {horse :func}.", "The value is {|horse|}.", U_UNKNOWN_FUNCTION_ERROR);
     testRuntimeWarningPattern(++i, ".match {|horse| :func}\n\
                                          .when 1 {{The value is one.}}\n\
-                                         .when * {{The value is not one.}}\n",
+                                         .when * {{The value is not one.}}",
                               "The value is not one.", U_UNKNOWN_FUNCTION_ERROR);
     // Using formatter as selector
     // The fallback string will match the '*' variant
     testRuntimeWarningPattern(++i, ".match {|horse| :number}\n\
                                          .when 1 {{The value is one.}}\n\
-                                         .when * {{The value is not one.}}\n", "The value is not one.", U_SELECTOR_ERROR);
+                                         .when * {{The value is not one.}}", "The value is not one.", U_SELECTOR_ERROR);
 
     // Using selector as formatter
     testRuntimeWarningPattern(++i, ".match {|horse| :select}\n\
                                          .when 1 {{The value is one.}}\n   \
-                                         .when * {{{|horse| :select}}}\n",
+                                         .when * {{{|horse| :select}}}",
                               "{|horse|}", U_FORMATTING_ERROR);
 
     // Unsupported expressions
@@ -731,11 +729,11 @@ void TestMessageFormat2::testResolutionErrors() {
     // Here, the plural selector returns "no match" so the * variant matches
     testRuntimeWarningPattern(++i, ".match {|horse| :plural}\n\
                                   .when 1 {{The value is one.}}\n\
-                                  .when * {{The value is not one.}}\n", "The value is not one.", U_SELECTOR_ERROR);
+                                  .when * {{The value is not one.}}", "The value is not one.", U_SELECTOR_ERROR);
     testRuntimeWarningPattern(++i, ".local $sel = {|horse| :plural}\n\
                                   .match {$sel}\n\
                                   .when 1 {{The value is one.}}\n\
-                                  .when * {{The value is not one.}}\n", "The value is not one.", U_SELECTOR_ERROR);
+                                  .when * {{The value is not one.}}", "The value is not one.", U_SELECTOR_ERROR);
 }
 
 void TestMessageFormat2::testInvalidPatterns() {
@@ -749,204 +747,203 @@ void TestMessageFormat2::testInvalidPatterns() {
     uint32_t i = 0;
 
     // Unexpected end of input
-    testInvalidPattern(++i, "let    ");
-    testInvalidPattern(++i, "le");
-    testInvalidPattern(++i, "let $foo");
-    testInvalidPattern(++i, "let $foo =    ");
-    testInvalidPattern(++i, "{{:fszzz");
-    testInvalidPattern(++i, "{{:fszzz   ");
-    testInvalidPattern(++i, "match {$foo} when |xyz");
-    testInvalidPattern(++i, "{{:f aaa");
-    testInvalidPattern(++i, "{missing end brace");
-    testInvalidPattern(++i, "{missing end {$brace");
+    testInvalidPattern(++i, ".local    ");
+    testInvalidPattern(++i, ".lo");
+    testInvalidPattern(++i, ".local $foo");
+    testInvalidPattern(++i, ".local $foo =    ");
+    testInvalidPattern(++i, "{:fszzz");
+    testInvalidPattern(++i, "{:fszzz   ");
+    testInvalidPattern(++i, ".match {$foo} .when |xyz");
+    testInvalidPattern(++i, "{:f aaa");
+    testInvalidPattern(++i, "{{missing end brace");
+    testInvalidPattern(++i, "{{missing end brace}");
+    testInvalidPattern(++i, "{{missing end {$brace");
+    testInvalidPattern(++i, "{{missing end {$brace}");
+    testInvalidPattern(++i, "{{missing end {$brace}}");
 
     // Error should be reported at character 0, not end of input
     testInvalidPattern(++i, "}{|xyz|", 0);
     testInvalidPattern(++i, "}", 0);
 
-    // @xyz is a valid annotation (`reserved`) so the error should be at the end of input
-    testInvalidPattern(++i, "{{@xyz");
+    // %xyz is a valid annotation (`reserved`) so the error should be at the end of input
+    testInvalidPattern(++i, "{{%xyz");
     // Backslash followed by non-backslash followed by a '{' -- this should be an error
     // immediately after the first backslash
-    testInvalidPattern(++i, "{{@\\y{}}", 4);
+    testInvalidPattern(++i, "{{{%\\y{}}", 5);
 
     // Reserved chars followed by a '|' that doesn't begin a valid literal -- this should be
     // an error at the first invalid char in the literal
-    testInvalidPattern(++i, "{{@abc|\\z}}", 8);
+    testInvalidPattern(++i, "{%abc|\\z}}", 7);
 
     // Same pattern, but with a valid reserved-char following the erroneous reserved-escape
     // -- the offset should be the same as with the previous one
-    testInvalidPattern(++i, "{{@\\y{p}}", 4);
+    testInvalidPattern(++i, "{%\\y{p}}", 3);
     // Erroneous literal inside a reserved string -- the error should be at the first
     // erroneous literal char
-    testInvalidPattern(++i, "{{@ab|\\z|cd}}", 7);
+    testInvalidPattern(++i, "{{{%ab|\\z|cd}}", 8);
 
     // tests for reserved syntax with bad escaped chars
     // Single backslash - not allowed
-    testInvalidPattern(++i, "{hello {|4.2| @num\\ber}}", 19);
+    testInvalidPattern(++i, "hello {|4.2| %num\\ber}}", 18);
     // Unescaped '{' -- not allowed
-    testInvalidPattern(++i, "{hello {|4.2| @num{be\\|r}}", 18);
+    testInvalidPattern(++i, "hello {|4.2| %num{be\\|r}}", 17);
     // Unescaped '}' -- will be interpreted as the end of the reserved
     // string, and the error will be reported at the index of '|', which is
     // when the parser determines that "\|" isn't a valid text-escape
-    testInvalidPattern(++i, "{hello {|4.2| @num}be\\|r}}", 22);
+    testInvalidPattern(++i, "hello {|4.2| %num}be\\|r}}", 21);
     // Unescaped '|' -- will be interpreted as the beginning of a literal
     // Error at end of input
-    testInvalidPattern(++i, "{hello {|4.2| @num\\{be|r}}", 26);
+    testInvalidPattern(++i, "hello {|4.2| %num\\{be|r}}", 25);
 
     // Invalid escape sequence in a `text` -- the error should be at the character
     // following the backslash
-    testInvalidPattern(++i, "{a\\qbc", 3);
+    testInvalidPattern(++i, "a\\qbc", 2);
 
     // Missing space after `when` -- the error should be immediately after the
     // `when` (not the error in the pattern)
-    testInvalidPattern(++i, "match {|y|} when|y| {|||}", 16);
+    testInvalidPattern(++i, ".match {|y|} .when|y| {{{|||}}}", 18);
 
     // Missing spaces betwen keys in `when`-clause
-    testInvalidPattern(++i, "match {|y|} when |foo|bar {a}", 22);
-    testInvalidPattern(++i, "match {|y|} when |quux| |foo|bar {a}", 29);
-    testInvalidPattern(++i, "match {|y|} when |quux| |foo||bar| {a}", 29);
+    testInvalidPattern(++i, ".match {|y|} .when |foo|bar {{{a}}}", 24);
+    testInvalidPattern(++i, ".match {|y|} .when |quux| |foo|bar {{{a}}}", 31);
+    testInvalidPattern(++i, ".match {|y|} .when |quux| |foo||bar| {{{a}}}", 31);
 
     // Error parsing the first key -- the error should be there, not in the
     // also-erroneous third key
-    testInvalidPattern(++i, "match {|y|} when |\\q| * @{! {z}", 19);
+    testInvalidPattern(++i, ".match {|y|} .when |\\q| * %{! {z}", 21);
 
     // Error parsing the second key -- the error should be there, not in the
     // also-erroneous third key
-    testInvalidPattern(++i, "match {|y|} when * @{! {z} |\\q|", 19);
+    testInvalidPattern(++i, ".match {|y|} .when * %{! {z} |\\q|", 21);
 
     // Error parsing the last key -- the error should be there, not in the erroneous
     // pattern
-    testInvalidPattern(++i, "match {|y|} when * |\\q| {\\z}", 21);
+    testInvalidPattern(++i, ".match {|y|} .when * |\\q| {\\z}", 23);
 
-    // Selectors not starting with `match` -- error should be on character 1,
+    // Selectors not starting with `match` -- error should be on character 2,
     // not the later erroneous key
-    testInvalidPattern(++i, "m {|y|} when @{! {z}", 1);
+    testInvalidPattern(++i, ".m {|y|} when %{! {z}", 2);
 
     // Non-expression as scrutinee in pattern -- error should be at the first
     // non-expression, not the later non-expression
-    testInvalidPattern(++i, "match {|y|} {\\|} {@} when * * * {a}", 13);
+    testInvalidPattern(++i, ".match {|y|} {\\|} {@} .when * * * {{a}}", 14);
 
     // Non-key in variant -- error should be there, not in the next erroneous
     // variant
-    testInvalidPattern(++i, "match {|y|} when $foo * {a} when * :bar {b}", 17);
+    testInvalidPattern(++i, ".match {|y|} .when $foo * {{a}} when * :bar {{b}}", 19);
 
 
     // Error should be within the first erroneous `text` or expression
-    testInvalidPattern(++i, "{ foo {|bar|} \\q baz  ", 15);
+    testInvalidPattern(++i, "{{ foo {|bar|} \\q baz  ", 16);
 
     // ':' has to be followed by a function name -- the error should be at the first
     // whitespace character
-    testInvalidPattern(++i, "{{:    }}", 3);
+    testInvalidPattern(++i, "{{{:    }}}", 4);
 
     // Expression not starting with a '{'
-    testInvalidPattern(++i, "let $x = }|foo|}", 9);
+    testInvalidPattern(++i, ".local $x = }|foo|}", 12);
 
-    // Error should be at the first declaration not starting with a `let`
-    testInvalidPattern(++i, "let $x = {|foo|} l $y = {|bar|} let $z {|quux|}", 18);
+    // Error should be at the first declaration not starting with a `.local`
+    testInvalidPattern(++i, ".local $x = {|foo|} .l $y = {|bar|} .local $z {|quux|}", 22);
 
-    // Missing '=' in `let` declaration
-    testInvalidPattern(++i, "let $bar {|foo|} {{$bar}}", 9);
+    // Missing '=' in `.local` declaration
+    testInvalidPattern(++i, ".local $bar {|foo|} {{$bar}}", 12);
 
     // LHS of declaration doesn't start with a '$'
-    testInvalidPattern(++i, "let bar = {|foo|} {{$bar}}", 4);
+    testInvalidPattern(++i, ".local bar = {|foo|} {{$bar}}", 7);
 
-    // `let` RHS isn't an expression
-    testInvalidPattern(++i, "let $bar = |foo| {{$bar}}", 11);
-
-    // Non-expression
-    testInvalidPattern(++i, "no braces", 0);
-    testInvalidPattern(++i, "no braces {$foo}", 0);
+    // `.local` RHS isn't an expression
+    testInvalidPattern(++i, ".local $bar = |foo| {{$bar}}", 14);
 
     // Trailing characters that are not whitespace
-    testInvalidPattern(++i, "{extra} content", 8);
-    testInvalidPattern(++i, "match {|x|} when * {foo} extra", 25);
+    testInvalidPattern(++i, "{{extra}}content", 9);
+    testInvalidPattern(++i, ".match {|x|} .when * {{foo}}extra", 28);
+
+    // Trailing whitespace at end of message should not be accepted either
+    UnicodeString longMsg(".match {$foo :select} {$bar :select} .when one * {{one}} .when * * {{other}}   ");
+    testInvalidPattern(++i, longMsg, longMsg.length() - 3);
+    testInvalidPattern(++i, "{{hi}} ", 6);
 
     // Empty expression
-    testInvalidPattern(++i, "{empty { }}", 9);
-    testInvalidPattern(++i, "match {} when * {foo}", 7);
+    testInvalidPattern(++i, "empty { }", 8);
+    testInvalidPattern(++i, ".match {} .when * {{foo}}", 8);
 
     // ':' not preceding a function name
-    testInvalidPattern(++i, "{bad {:}}", 7);
+    testInvalidPattern(++i, "bad {:}", 6);
 
     // Missing '=' after option name
-    testInvalidPattern(++i, "{no-equal {|42| :number m }}", 26);
-    testInvalidPattern(++i, "{no-equal {|42| :number minimumFractionDigits 2}}", 46);
-    testInvalidPattern(++i, "{bad {:placeholder option value}}", 26);
+    testInvalidPattern(++i, "{{no-equal {|42| :number m }}}", 27);
+    testInvalidPattern(++i, "{{no-equal {|42| :number minimumFractionDigits 2}}}", 47);
+    testInvalidPattern(++i, "bad {:placeholder option value}", 25);
 
     // Extra '=' after option value
-    testInvalidPattern(++i, "{hello {|4.2| :number min=2=3}}", 27),
-    testInvalidPattern(++i, "{hello {|4.2| :number min=2max=3}}", 30),
+    testInvalidPattern(++i, "hello {|4.2| :number min=2=3}", 26),
+    testInvalidPattern(++i, "hello {|4.2| :number min=2max=3}", 29),
     // Missing whitespace between valid options
-    testInvalidPattern(++i, "{hello {|4.2| :number min=|a|max=3}}", 29),
+    testInvalidPattern(++i, "hello {|4.2| :number min=|a|max=3}", 28),
     // Ill-formed RHS of option -- the error should be within the RHS,
     // not after parsing options
-    testInvalidPattern(++i, "{hello {|4.2| :number min=|\\a|}}", 28),
+    testInvalidPattern(++i, "hello {|4.2| :number min=|\\a|}", 27),
 
 
     // Junk after annotation
-    testInvalidPattern(++i, "{no-equal {|42| :number   {}", 26);
+    testInvalidPattern(++i, "no-equal {|42| :number   {}", 25);
 
     // Missing RHS of option
-    testInvalidPattern(++i, "{bad {:placeholder option=}}", 26);
-    testInvalidPattern(++i, "{bad {:placeholder option}}", 25);
+    testInvalidPattern(++i, "bad {:placeholder option=}", 25);
+    testInvalidPattern(++i, "bad {:placeholder option}", 24);
 
     // Annotation is not a function or reserved text
-    testInvalidPattern(++i, "{bad {$placeholder option}}", 19);
-    testInvalidPattern(++i, "{no {$placeholder end}", 18);
+    testInvalidPattern(++i, "bad {$placeholder option}", 18);
+    testInvalidPattern(++i, "no {$placeholder end", 17);
 
     // Missing whitespace before key in variant
-    testInvalidPattern(++i, "match {|foo|} when*{foo}", 18);
+    testInvalidPattern(++i, ".match {|foo|} .when*{{foo}}", 20);
     // Missing expression in selectors
-    testInvalidPattern(++i, "match when * {foo}", 6);
+    testInvalidPattern(++i, ".match .when * {{foo}}", 7);
     // Non-expression in selectors
-    testInvalidPattern(++i, "match |x| when * {foo}", 6);
+    testInvalidPattern(++i, ".match |x| .when * {{foo}}", 7);
 
     // Missing RHS in variant
-    testInvalidPattern(++i, "match {|x|} when * foo");
+    testInvalidPattern(++i, ".match {|x|} .when * foo");
 
     // Text may include newlines; check that the missing closing '}' is
     // reported on the correct line
-    testInvalidPattern(++i, "{hello wo\nrld", 3, 1);
-    testInvalidPattern(++i, "{hello wo\nr\nl\ndddd", 4, 3);
+    testInvalidPattern(++i, "{{hello wo\nrld", 3, 1);
+    testInvalidPattern(++i, "{{hello wo\nr\nl\ndddd", 4, 3);
     // Offset for end-of-input should be 0 here because the line begins
     // after the '\n', but there is no character after the '\n'
-    testInvalidPattern(++i, "{hello wo\nr\nl\n", 0, 3);
+    testInvalidPattern(++i, "{{hello wo\nr\nl\n", 0, 3);
 
-    // Literals may include newlines; check that the missing closing '|' is
+    // Quoted literals may include newlines; check that the missing closing '|' is
     // reported on the correct line
-    testInvalidPattern(++i, "{hello {|wo\nrld}", 4, 1);
-    testInvalidPattern(++i, "{hello {|wo\nr\nl\ndddd}", 5, 3);
+    testInvalidPattern(++i, "hello {|wo\nrld", 3, 1);
+    testInvalidPattern(++i, "hello {|wo\nr\nl\ndddd", 4, 3);
     // Offset for end-of-input should be 0 here because the line begins
     // after the '\n', but there is no character after the '\n'
-    testInvalidPattern(++i, "{hello {|wo\nr\nl\n", 0, 3);
+    testInvalidPattern(++i, "hello {|wo\nr\nl\n", 0, 3);
 
     // Variable names can't start with a : or -
-    testInvalidPattern(++i, "{{$:abc}}", 3);
-    testInvalidPattern(++i, "{{$-abc}}", 3);
+    testInvalidPattern(++i, "{$:abc}", 2);
+    testInvalidPattern(++i, "{$-abc}", 2);
 
     // Missing space before annotation
     // Note that {{$bar:foo}} and {{$bar-foo}} are valid,
     // because variable names can contain a ':' or a '-'
-    testInvalidPattern(++i, "{{$bar+foo}}", 6);
-    testInvalidPattern(++i, "{{|3.14|:foo}}", 8);
-    testInvalidPattern(++i, "{{|3.14|-foo}}", 8);
-    testInvalidPattern(++i, "{{|3.14|+foo}}", 8);
+    testInvalidPattern(++i, "{$bar+foo}", 5);
+    testInvalidPattern(++i, "{|3.14|:foo}", 7);
+    testInvalidPattern(++i, "{|3.14|-foo}", 7);
+    testInvalidPattern(++i, "{|3.14|+foo}", 7);
 
     // Unquoted literals can't begin with a ':'
-    testInvalidPattern(++i, "let $foo = {$bar} match {$foo} when :one {one} when * {other}", 36);
-    testInvalidPattern(++i, "let $foo = {$bar :fun option=:a} {bar {$foo}}", 29);
+    testInvalidPattern(++i, ".local $foo = {$bar} .match {$foo} .when :one {one} when * {other}", 41);
+    testInvalidPattern(++i, ".local $foo = {$bar :fun option=:a} {{bar {$foo}}}", 32);
 
     // Markup in wrong place
-    testInvalidPattern(++i, "{|foo| {#markup}}", 0);
-    testInvalidPattern(++i, "{|foo| #markup}", 0);
-    testInvalidPattern(++i, "{|foo| {#markup/}}", 0);
-    testInvalidPattern(++i, "{|foo| {/markup}}", 0);
-
-    // Trailing whitespace at end of message should not be accepted
-    UnicodeString longMsg(".match {$foo :select} {$bar :select} .when one * {{one}} .when * * {{other}}   ");
-    testInvalidPattern(++i, longMsg, longMsg.length() - 3);
-    testInvalidPattern(++i, "{{hi}} ", 6);
+    testInvalidPattern(++i, "{|foo| {#markup}}", 7);
+    testInvalidPattern(++i, "{|foo| #markup}", 7);
+    testInvalidPattern(++i, "{|foo| {#markup/}}", 7);
+    testInvalidPattern(++i, "{|foo| {/markup}}", 7);
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
