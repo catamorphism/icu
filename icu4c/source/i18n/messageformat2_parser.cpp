@@ -1274,18 +1274,19 @@ the comment in `parseOptions()` for details.
 
       // This next check resolves the ambiguity between [s annotation] and [s]
       bool isSAnnotation = isAnnotationStart(source[index]);
-      bool isS = source[index] == RIGHT_CURLY_BRACE;
 
-      if (isSAnnotation || isS) {
+      if (isSAnnotation) {
         normalizedInput += SPACE;
       }
 
       if (isSAnnotation) {
         // The previously consumed whitespace precedes an annotation
         builder.setOperator(parseAnnotation(status));
-      } else if (!isS) {
-          // There's an error and the trailing whitespace should be
-          // handled by the caller
+      } else {
+          // Either there's a right curly brace (will be consumed by the caller),
+          // or there's an error and the trailing whitespace should be
+          // handled by the caller. However, this is not an error
+          // here because we're just parsing `literal [s annotation]`.
           index = firstWhitespace;
       }
     } else {
@@ -1294,6 +1295,10 @@ the comment in `parseOptions()` for details.
       // either the next character is '}' or the error will be handled by parseExpression.
       // Do nothing, since the operand was already set
     }
+
+    // At the end of this code, the next character should either be '}',
+    // whitespace followed by a '}',
+    // or end-of-input
 }
 
 /*
@@ -1366,17 +1371,24 @@ Expression Parser::parseExpression(UErrorCode& status) {
         }
         }
     }
-    // For why we don't parse optional whitespace here, even though the grammar
-    // allows it, see comments in parseLiteralWithAnnotation() and parseOptions()
 
-    // Parse closing brace
-    parseToken(RIGHT_CURLY_BRACE, status);
+    // Parse optional space
+    // (the last [s] in e.g. "{" [s] literal [s annotation] *(s attribute) [s] "}")
+    parseOptionalWhitespace(status);
 
     // Either an operand or operator (or both) must have been set already,
     // so there can't be an error
     UErrorCode localStatus = U_ZERO_ERROR;
     Expression result = exprBuilder.build(localStatus);
     U_ASSERT(U_SUCCESS(localStatus));
+
+    // Check for end-of-input and missing '}'
+    if (!inBounds(source, index)) {
+        ERROR(parseError, status, index);
+    } else {
+        // Otherwise, it's safe to check for the '}'
+        parseToken(RIGHT_CURLY_BRACE, status);
+    }
     return result;
 }
 
@@ -1787,14 +1799,20 @@ void Parser::parseSelectors(UErrorCode& status) {
 
     // Parse variants
     while (isWhitespace(source[index]) || source[index] == ID_WHEN[0]) {
+        int32_t whitespaceStart = index;
         parseOptionalWhitespace(status);
-        // Restore the precondition, *without* erroring out if we've
-        // reached the end of input. That's because it's valid for the
-        // message to end with trailing whitespace that follows a variant.
-        CHECK_END_OF_INPUT
+        // Restore the precondition.
+        // Error out if we reached the end of input. The message
+        // cannot end with trailing whitespace if there are variants.
+        if (!inBounds(source, index)) {
+            // Use index of first whitespace for error message
+            index = whitespaceStart;
+            ERROR(parseError, status, index);
+            return;
+        }
 
         // Consume the "when"
-            parseToken(ID_WHEN, status);
+        parseToken(ID_WHEN, status);
 
         // At least one key is required
         SelectorKeys keyList(parseNonEmptyKeys(status));
