@@ -29,61 +29,62 @@ as of the following commit from 2023-05-09:
 
 */
 
-static const int32_t numValidTestCases = 25;
+static const int32_t numValidTestCases = 45;
 TestResult validTestCases[] = {
-    {"{hello {|4.2| :number}}", "hello 4.2"},
-    {"{hello {|4.2| :number minimumFractionDigits=2}}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits = 2}}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits= 2}}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits =2}}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits=2  }}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits=2 bar=3}}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits=2 bar=3  }}", "hello 4.20"},
-    {"{hello {|4.2| :number minimumFractionDigits=|2|}}", "hello 4.20"},
-    {"{content -tag}", "content -tag"},
-    {"{}", ""},
+    {"hello {|4.2| :number}", "hello 4.2"},
+    {"hello {|4.2| :number minimumFractionDigits=2}", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits = 2}", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits= 2}", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits =2}", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits=2  }", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits=2 bar=3}", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits=2 bar=3  }", "hello 4.20"},
+    {"hello {|4.2| :number minimumFractionDigits=|2|}", "hello 4.20"},
+    {"content -tag", "content -tag"},
+    {"", ""},
     // tests for escape sequences in literals
-    {"{{|hel\\\\lo|}}", "hel\\lo"},
-    {"{{|hel\\|lo|}}", "hel|lo"},
-    {"{{|hel\\|\\\\lo|}}", "hel|\\lo"},
+    {"{|hel\\\\lo|}", "hel\\lo"},
+    {"{|hel\\|lo|}", "hel|lo"},
+    {"{|hel\\|\\\\lo|}", "hel|\\lo"},
     // tests for text escape sequences
-    {"{hel\\{lo}", "hel{lo"},
-    {"{hel\\}lo}", "hel}lo"},
-    {"{hel\\\\lo}", "hel\\lo"},
-    {"{hel\\{\\\\lo}", "hel{\\lo"},
-    {"{hel\\{\\}lo}", "hel{}lo"},
+    {"hel\\{lo", "hel{lo"},
+    {"hel\\}lo", "hel}lo"},
+    {"hel\\\\lo", "hel\\lo"},
+    {"hel\\{\\\\lo", "hel{\\lo"},
+    {"hel\\{\\}lo", "hel{}lo"},
     // tests for ':' in unquoted literals
-    {"match {|foo| :select} when o:ne {one} when * {other}", "other"},
-    {"match {|foo| :select} when one: {one} when * {other}", "other"},
-    {"let $foo = {|42| :number option=a:b} {bar {$foo}}", "bar 42"},
-    {"let $foo = {|42| :number option=a:b:c} {bar {$foo}}", "bar 42"},
+    {".match {|foo| :select} .when o:ne {{one}} .when * {{other}}", "other"},
+    {".match {|foo| :select} .when one: {{one}} .when * {{other}}", "other"},
+    {".local $foo = {|42| :number option=a:b} {{bar {$foo}}}", "bar 42"},
+    {".local $foo = {|42| :number option=a:b:c} {{bar {$foo}}}", "bar 42"},
     // tests for newlines in literals and text
-    {"{hello {|wo\nrld|}}", "hello wo\nrld"},
-    {"{hello wo\nrld}", "hello wo\nrld"},
+    {"hello {|wo\nrld|}", "hello wo\nrld"},
+    {"hello wo\nrld", "hello wo\nrld"},
     // Markup is ignored when formatting to string
-    {"{#tag/} |content|", "content"},
-    {"{#tag} |content|", "content"},
-    {"|content| {#tag/}", "content"},
-    {"|content| {#tag}", "content"},
-    {"{/tag} |content|", "content"},
-    {"|content| {/tag}", "content"},
-    {"{#tag} |content| {/tag}", "content"},
-    {"{/tag} |content| {#tag}", "content"},
-    {"{#tag/} |content| {#tag}", "content"},
-    {"{#tag/} |content| {/tag}", "content"},
-    {"{#tag foo=bar/} |content|", "content"},
-    {"{#tag foo=bar} |content|", "content"},
-    {"{/tag foo=bar} |content|", "content"},
-    {"{#tag foo=bar} |content| {/tag foo=bar}", "content"},
-    {"{/tag foo=bar} |content| {#tag foo=bar}", "content"},
-    {"{#tag/ foo=bar} |content| {#tag foo=bar}", "content"},
-    {"{#tag/ foo=bar} |content| {/tag foo=bar}", "content"},
+    {"{#tag/} content", " content"},
+    {"{#tag} content", " content"},
+    {"{#tag/} {|content|}", " content"},
+    {"{#tag} {|content|}", " content"},
+    {"{|content|} {#tag/}", "content "},
+    {"{|content|} {#tag}", "content "},
+    {"{/tag} {|content|}", " content"},
+    {"{|content|} {/tag}", "content "},
+    {"{#tag} {|content|} {/tag}", " content "},
+    {"{/tag} {|content|} {#tag}", " content "},
+    {"{#tag/} {|content|} {#tag}", " content "},
+    {"{#tag/} {|content|} {/tag}", " content "},
+    {"{#tag foo=bar/} {|content|}", " content"},
+    {"{#tag foo=bar} {|content|}", " content"},
+    {"{/tag foo=bar} {|content|}", " content"},
+    {"{#tag foo=bar} {|content|} {/tag foo=bar}", " content "},
+    {"{/tag foo=bar} {|content|} {#tag foo=bar}", " content "},
+    {"{#tag foo=bar /} {|content|} {#tag foo=bar}", " content "},
+    {"{#tag foo=bar/} {|content|} {/tag foo=bar}", " content "},
     // Attributes are ignored
     {"The value is {horse @horse}.", "The value is horse"},
-    {"hello {|4.2| @number}", "hello 4.2"},
+    {"hello {|4.2| @number", "hello 4.2"},
     {"The value is {horse @horse=cool}.", "The value is horse"},
-    {"hello {|4.2| @number=5}", "hello 4.2"},
-
+    {"hello {|4.2| @number=5", "hello 4.2"},
 };
 
 
@@ -97,44 +98,48 @@ TestResultError jsonTestCasesResolutionError[] = {
 static const int32_t numReservedErrors = 34;
 UnicodeString reservedErrors[] = {
     // tests for reserved syntax
-    "{hello {|4.2| @number}}",
-    "{hello {|4.2| @n|um|ber}}",
-    "{hello {|4.2| &num|be|r}}",
-    "{hello {|4.2| ?num|be||r|s}}",
-    "{hello {|foo| !number}}",
-    "{hello {|foo| *number}}",
-    "{hello {#number}}",
-    "{{<tag}}",
-    "let $bar = {$none ~plural} match {$foo :select} when * {{$bar}}",
+    "hello {|4.2| %number}",
+    "hello {|4.2| %n|um|ber}",
+    // Private use -- n.b. this implementation doesn't support
+    // any private-use annotations, so it's treated like reserved
+    "hello {|4.2| &num|be|r}",
+    "hello {|4.2| ^num|be|r}",
+    "hello {|4.2| +num|be|r}",
+    "hello {|4.2| ?num|be||r|s}",
+    "hello {|foo| !number}",
+    "hello {|foo| *number}",
+    "hello {#number}",
+    "{<tag}",
+    ".local $bar = {$none ~plural} .match {$foo :select} .when * {{{$bar}}}",
     // tests for reserved syntax with escaped chars
-    "{hello {|4.2| @num\\\\ber}}",
-    "{hello {|4.2| @num\\{be\\|r}}",
-    "{hello {|4.2| @num\\\\\\}ber}}",
+    "hello {|4.2| %num\\\\ber}",
+    "hello {|4.2| %num\\{be\\|r}",
+    "hello {|4.2| %num\\\\\\}ber}",
     // tests for reserved syntax
-    "{hello {|4.2| @}}",
-    "{hello {|4.2| #}}",
-    "{hello {|4.2| *}}",
-    "{hello {|4.2| ^abc|123||5|\\\\}}",
-    "{hello {|4.2| ^ abc|123||5|\\\\}}",
-    "{hello {|4.2| ^ abc|123||5|\\\\ \\|def |3.14||2|}}",
+    "hello {|4.2| !}",
+    "hello {|4.2| %}",
+    "hello {|4.2| *}",
+    "hello {|4.2| ^abc|123||5|\\\\}",
+    "hello {|4.2| ^ abc|123||5|\\\\}",
+    "hello {|4.2| ^ abc|123||5|\\\\ \\|def |3.14||2|}",
     // tests for reserved syntax with trailing whitespace
-    "{hello {|4.2| ? }}",
-    "{hello {|4.2| @xyzz }}",
-    "{hello {|4.2| !xyzz   }}",
-    "{hello {$foo ~xyzz }}",
-    "{hello {$x   <xyzz   }}",
-    "{{@xyzz }}",
-    "{{  !xyzz   }}",
-    "{{~xyzz }}",
-    "{{ <xyzz   }}",
+    "hello {|4.2| ? }",
+    "hello {|4.2| %xyzz }",
+    "hello {|4.2| >xyzz   }",
+    "hello {$foo ~xyzz }",
+    "hello {$x   <xyzz   }",
+    "{>xyzz }",
+    "{  !xyzz   }",
+    "{~xyzz }",
+    "{ <xyzz   }",
     // tests for reserved syntax with space-separated sequences
-    "{hello {|4.2| @xy z z }}",
-    "{hello {|4.2| *num \\\\ b er}}",
-    "{hello {|4.2| %num \\\\ b |3.14| r    }}",
-    "{hello {|4.2|    #num xx \\\\ b |3.14| r  }}",
-    "{hello {$foo    #num x \\\\ abcde |3.14| r  }}",
-    "{hello {$foo    >num x \\\\ abcde |aaa||3.14||42| r  }}",
-    "{hello {$foo    >num x \\\\ abcde |aaa||3.14| |42| r  }}",
+    "hello {|4.2| !xy z z }",
+    "hello {|4.2| *num \\\\ b er}",
+    "hello {|4.2| %num \\\\ b |3.14| r    }",
+    "hello {|4.2|    +num xx \\\\ b |3.14| r  }",
+    "hello {$foo    +num x \\\\ abcde |3.14| r  }",
+    "hello {$foo    >num x \\\\ abcde |aaa||3.14||42| r  }",
+    "hello {$foo    >num x \\\\ abcde |aaa||3.14| |42| r  }",
     0
 };
 
@@ -157,40 +162,38 @@ UnicodeString matches[] = {
     // one or multiple keys, with or without whitespace before pattern
     "match {$foo :select} {$bar :select} when one *{one} when * * {foo}",
     "match {$foo :select} {$bar :select} when one * {one} when * * {foo}",
-    "match {$foo :select} {$bar :select} when one *  {one} when * * {foo}"
+    "match {$foo :select} {$bar :select} when one *  {one} when * * {foo}",
+    0
 };
 
 static const int32_t numSyntaxTests = 22;
 // These patterns are tested to ensure they parse without a syntax error
 UnicodeString syntaxTests[] = {
-    "{hello {|foo| :number   }}",
+    "hello {|foo| :number   }",
     // zero, one or multiple options, with or without whitespace before '}'
-    "{{:foo}}",
-    "{{:foo }}",
-    "{{:foo   }}",
-    "{{:foo k=v}}",
-    "{{:foo k=v   }}",
-    "{{:foo k1=v1   k2=v2}}",
-    "{{:foo k1=v1   k2=v2   }}",
+    "{:foo}",
+    "{:foo }",
+    "{:foo   }",
+    "{:foo k=v}",
+    "{:foo k=v   }",
+    "{:foo k1=v1   k2=v2}",
+    "{:foo k1=v1   k2=v2   }",
     // literals or variables followed by space, with or without an annotation following
-    "{{|3.14| }}",
-    "{{|3.14|    }}",
-    "{{|3.14|    :foo}}",
-    "{{|3.14|    :foo   }}",
-    "{{$bar }}",
-    "{{$bar    }}",
-    "{{$bar    :foo}}",
-    "{{$bar    :foo   }}",
-    // Trailing whitespace at end of message should be accepted
-    "match {$foo :select} {$bar :select} when one * {one} when * * {other}   ",
-    "{hi} ",
+    "{|3.14| }",
+    "{|3.14|    }",
+    "{|3.14|    :foo}",
+    "{|3.14|    :foo   }",
+    "{$bar }",
+    "{$bar    }",
+    "{$bar    :foo}",
+    "{$bar    :foo   }",
     // Variable names can contain '-' or ':'
-    "{{$bar:foo}}",
-    "{{$bar-foo}}",
-    // Name shadowing is allowed
-    "let $foo = {|hello|} let $foo = {$foo} {{$foo}}",
+    "{$bar:foo}",
+    "{$bar-foo}",
+    // Not a syntax error (is a semantic error)
+    ".local $foo = {|hello|} .local $foo = {$foo} {{{$foo}}}",
     // Unquoted literal -- should work
-    "{good {placeholder}}",
+    "good {placeholder}",
     0
 };
 
@@ -208,8 +211,8 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(testAPI);
     TESTCASE_AUTO(testAPISimple);
     TESTCASE_AUTO(testDataModelAPI);
-    /*
     TESTCASE_AUTO(testVariousPatterns);
+    /*
     TESTCASE_AUTO(testInvalidPatterns);
     */
     TESTCASE_AUTO_END;
@@ -231,7 +234,7 @@ void TestMessageFormat2::testDataModelAPI() {
     Pattern p = builder.build(errorCode);
     int32_t i = 0;
     for (auto iter = p.begin(); iter != p.end(); ++iter) {
-        std::variant<UnicodeString, Expression> part = *iter;
+        std::variant<UnicodeString, Expression, Markup> part = *iter;
         UnicodeString val = *std::get_if<UnicodeString>(&part);
         if (i == 0) {
             assertEquals("testDataModelAPI", val, "a");
@@ -477,13 +480,13 @@ void TestMessageFormat2::testNoSyntaxErrors(const UnicodeString* patterns, int32
     CHECK_ERROR(errorCode);
 
     TestCase::Builder testBuilder;
-    testBuilder.setName("testReservedErrorPattern");
+    testBuilder.setName("testNoSyntaxErrors");
 
     for (int32_t i = 0; i < len - 1; i++) {
         TestUtils::runTestCase(*this, testBuilder.setPattern(patterns[i])
                           .setNoSyntaxError()
                           .build(), errorCode);
-    } 
+    }
 }
 
 void TestMessageFormat2::testVariousPatterns() {
@@ -934,6 +937,16 @@ void TestMessageFormat2::testInvalidPatterns() {
     testInvalidPattern(++i, "let $foo = {$bar} match {$foo} when :one {one} when * {other}", 36);
     testInvalidPattern(++i, "let $foo = {$bar :fun option=:a} {bar {$foo}}", 29);
 
+    // Markup in wrong place
+    testInvalidPattern(++i, "{|foo| {#markup}}", 0);
+    testInvalidPattern(++i, "{|foo| #markup}", 0);
+    testInvalidPattern(++i, "{|foo| {#markup/}}", 0);
+    testInvalidPattern(++i, "{|foo| {/markup}}", 0);
+
+    // Trailing whitespace at end of message should not be accepted
+    UnicodeString longMsg(".match {$foo :select} {$bar :select} .when one * {{one}} .when * * {{other}}   ");
+    testInvalidPattern(++i, longMsg, longMsg.length() - 3);
+    testInvalidPattern(++i, "{{hi}} ", 6);
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
