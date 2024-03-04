@@ -302,6 +302,8 @@ int32_t OptionMap::size() const {
     return len;
 }
 
+OptionMap::~OptionMap() {}
+
 const FunctionName& Operator::getFunctionName() const {
     U_ASSERT(!isReserved());
     return std::get_if<Callable>(&contents)->getName();
