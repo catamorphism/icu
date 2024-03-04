@@ -113,19 +113,21 @@ static bool isTextChar(UChar32 c) {
            || inRange(c, 0xE000, 0x10FFFF);
 }
 
+// Note: this doesn't distinguish between private-use
+// and reserved, since the data model doesn't
 static bool isReservedStart(UChar32 c) {
     switch (c) {
     case BANG:
-    case AT:
-    case NUMBER_SIGN:
     case PERCENT:
-    case CARET:
-    case AMPERSAND:
     case ASTERISK:
+    case PLUS:
     case LESS_THAN:
     case GREATER_THAN:
     case QUESTION:
     case TILDE:
+    // Private-use
+    case CARET:
+    case AMPERSAND:
         return true;
     default:
         return false;
