@@ -935,22 +935,25 @@ namespace message2 {
             int32_t size() const;
             // Needs to take an error code b/c an earlier copy might have failed
             Option getOption(int32_t, UErrorCode&) const;
-
             friend inline void swap(OptionMap& m1, OptionMap& m2) noexcept {
                 using std::swap;
 
+                swap(m1.bogus, m2.bogus);
                 swap(m1.options, m2.options);
                 swap(m1.len, m2.len);
             }
             OptionMap() : len(0) {}
             OptionMap(const OptionMap&);
             OptionMap& operator=(OptionMap);
+            std::vector<Option> getOptions() const {
+                return toStdVector<Option>(options.getAlias(), len);
+            }
+            OptionMap(const UVector&, UErrorCode&);
+            virtual ~OptionMap();
         private:
             friend class message2::Serializer;
-            friend class Operator;
 
             bool bogus = false;
-            OptionMap(const UVector&, UErrorCode&);
             LocalArray<Option> options;
             int32_t len;
         }; // class OptionMap
@@ -1045,7 +1048,7 @@ namespace message2 {
                 // This case should never happen, as the precondition is !isReserved()
                 if (f == nullptr) { return {}; }
                 const OptionMap& opts = f->getOptions();
-                return toStdVector<Option>(opts.options.getAlias(), opts.len);
+                return opts.getOptions();
             }
             /**
              * The mutable `Operator::Builder` class allows the operator to be constructed
