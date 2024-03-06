@@ -181,30 +181,42 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
+    // TODO: currently the expected output is based on using
+    // the first definition of the duplicate-declared variable;
+    // perhaps it's better to remove all declarations for $foo before formatting.
+    // however if https://github.com/unicode-org/message-format-wg/pull/704 lands,
+    // it'll be a moot point since the output will be expected to be the fallback string
+    // (This applies to the expected output for all the U_DUPLICATE_DECLARATION_ERROR tests)
     test = testBuilder.setPattern(".local $foo = {$foo} .local $foo = {42} {{bar {$foo}}}")
-                                .setExpected("bar 42")
+                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
                                 .setArgument("foo", "foo")
+                                .setExpected("bar foo")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $foo = {42} .local $foo = {$foo} {{bar {$foo}}}")
+                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
                                 .setExpected("bar 42")
                                 .setArgument("foo", "foo")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $foo = {$foo} .local $foo = {42} {{bar {$foo}}}")
-                                .setExpected("bar 42")
+                                .clearArguments()
+                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpected("bar {$foo}")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $foo = {:unknown} .local $foo = {42} {{bar {$foo}}}")
-                                .setExpected("bar 42")
+                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpected("bar {:unknown}")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $x = {42} .local $y = {$x} .local $x = {13} {{{$x} {$y}}}")
-                                .setExpected("13 42")
+                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpected("42 42")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -220,6 +232,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
 
     test = testBuilder.setPattern(".match {$foo :select} .when |1| {{one}} .when * {{other}}")
                                 .setExpected("one")
+                                .setExpectSuccess()
                                 .setArgument("foo", (int64_t) 1)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -557,4 +570,128 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
+
+/*
+From https://github.com/unicode-org/message-format-wg/tree/main/test ,
+alpha version
+
+*/
+void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
+    TestCase::Builder testBuilder;
+    testBuilder.setName("specTests");
+
+    TestCase test = testBuilder.setPattern("hello {world}")
+        .setExpected("hello world")
+        .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello { world\t\n}")
+                                .setExpected("hello world")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {\u3000world\r}")
+                                .setExpected("hello world")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {$place-.}")
+                                .setExpected("hello world")
+                                .setArgument("place-.", "world")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$foo} .local $bar = {$foo} {{bar {$bar}}}")
+                                .setExpected("bar foo")
+                                .setArgument("foo", "foo")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$foo} .local $bar = {$foo} {{bar {$bar}}}")
+                                .setExpected("bar foo")
+                                .setArgument("foo", "foo")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $x = {42} .local $y = {$x} {{{$x} {$y}}}")
+                                 .setExpected("42 42")
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{#tag}")
+                                 .setExpected("")
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{#tag}content")
+                                 .setExpected("content")
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{#ns:tag}content{/ns:tag}")
+                                 .setExpected("content")
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{/tag}content")
+                                 .setExpected("content")
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{#tag foo=bar}")
+                                 .setExpected("")
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{#tag a:foo=|foo| b:bar=$bar}")
+                                 .setArgument("bar", "b a r")
+                                 .setExpected("")
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    /*
+    test = testBuilder.setPattern("{42 @foo @bar=13}")
+                                 .clearArguments()
+                                 .setExpected("42")
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{42 @foo=$bar}")
+                                 .setExpected("42")
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+    */
+
+    /* var2 is implicitly declared and can't be overridden by the second `.input` */
+    test = testBuilder.setPattern(".input {$var :number minimumFractionDigits=$var2} .input {$var2 :number minimumFractionDigits=5} {{{$var} {$var2}}}")
+                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setArgument("var", (int64_t) 1)
+                                .setArgument("var2", (int64_t) 3)
+        // Note: the more "correct" fallback output seems like it should be "1.000 3" (ignoring the
+        // overriding .input binding of $var2) but that's hard to achieve
+        // as so-called "implicit declarations" can only be detected after parsing, at which
+        // point the data model can't be modified.
+        // Probably this is going to change anyway so that any data model error gets replaced
+        // with a fallback for the whole message.
+                                .setExpected("1.000 3.00000")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    /* var2 is implicitly declared and can't be overridden by the second `.local` */
+    test = testBuilder.setPattern(".local $var = {$var2} .local $var2 = {1} {{{$var} {$var2}}}")
+                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setArgument("var2", (int64_t) 5)
+        // Same comment as above about the output
+                                .setExpected("5 1")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    /* var2 is provided as an argument but not used, and should have no effect on formatting */
+    test = testBuilder.setPattern(".local $var2 = {1} {{{$var2}}}")
+                                .setExpectSuccess()
+                                .setArgument("var2", (int64_t) 5)
+                                .setExpected("1")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+}
 #endif /* #if !UCONFIG_NO_FORMATTING */

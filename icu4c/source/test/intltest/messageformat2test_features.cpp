@@ -749,7 +749,7 @@ void TestMessageFormat2::testDeclareBeforeUse(TestCase::Builder& testBuilder, Ic
     testBuilder.setName("declare-before-use");
 
     TestCase test = testBuilder.clearArguments().setExpected("The message uses {$baz} and works")
-                                .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 }

@@ -5,6 +5,7 @@
 
 #if !UCONFIG_NO_FORMATTING
 
+#include "messageformat2_allocation.h"
 #include "messageformat2_checker.h"
 #include "messageformat2_macros.h"
 #include "uvector.h" // U_ASSERT
@@ -21,8 +22,11 @@ The following are checked here:
 Variant Key Mismatch
 Missing Fallback Variant (called NonexhaustivePattern here)
 Missing Selector Annotation
-
-(Duplicate option names are checked by the parser)
+Duplicate Declaration
+  - Most duplicate declaration errors are checked by the parser,
+    but the checker checks for declarations of input variables
+    that were previously implicitly declared
+(Duplicate option names and duplicate declarations are checked by the parser)
 */
 
 // Type environments
@@ -31,27 +35,58 @@ Missing Selector Annotation
 TypeEnvironment::TypeEnvironment(UErrorCode& status) {
     CHECK_ERROR(status);
 
-    UVector* result = new UVector(status);
+    UVector* temp;
+    temp = createStringVectorNoAdopt(status);
     CHECK_ERROR(status);
-    annotated.adoptInstead(result);
-    // `annotated` does not adopt its elements
+    annotated.adoptInstead(temp);
+    temp = createStringVectorNoAdopt(status);
+    CHECK_ERROR(status);
+    unannotated.adoptInstead(temp);
+    temp = createStringVectorNoAdopt(status);
+    CHECK_ERROR(status);
+    freeVars.adoptInstead(temp);
+}
+
+ static bool has(const UVector& v, const VariableName& var) {
+     return v.contains(const_cast<void*>(static_cast<const void*>(&var)));
+ }
+
+// Returns true if `var` was either previously used (implicit declaration),
+// or is in scope by an explicit declaration
+bool TypeEnvironment::known(const VariableName& var) const {
+    return has(*annotated, var) || has(*unannotated, var) || has(*freeVars, var);
 }
 
 TypeEnvironment::Type TypeEnvironment::get(const VariableName& var) const {
     U_ASSERT(annotated.isValid());
-    for (int32_t i = 0; i < annotated->size(); i++) {
-        const VariableName& lhs = *(static_cast<VariableName*>(annotated->elementAt(i)));
-        if (lhs == var) {
-            return Annotated;
-        }
+    if (has(*annotated, var)) {
+        return Annotated;
     }
+    U_ASSERT(unannotated.isValid());
+    if (has(*unannotated, var)) {
+        return Unannotated;
+    }
+    U_ASSERT(freeVars.isValid());
+    if (has(*freeVars, var)) {
+        return Free;
+    }
+    // This case is a "free variable without an implicit declaration",
+    // i.e. one used only in a selector expression and not in a declaration RHS
     return Unannotated;
 }
 
 void TypeEnvironment::extend(const VariableName& var, TypeEnvironment::Type t, UErrorCode& status) {
     if (t == Unannotated) {
-        // Nothing to do, as variables are considered
-        // unannotated by default
+        U_ASSERT(unannotated.isValid());
+        // See comment below
+        unannotated->addElement(const_cast<void*>(static_cast<const void*>(&var)), status);
+        return;
+    }
+
+    if (t == Free) {
+        U_ASSERT(freeVars.isValid());
+        // See comment below
+        freeVars->addElement(const_cast<void*>(static_cast<const void*>(&var)), status);
         return;
     }
 
@@ -74,6 +109,37 @@ static bool areDefaultKeys(const Key* keys, int32_t len) {
         }
     }
     return true;
+}
+
+void Checker::addFreeVars(TypeEnvironment& t, const Operand& rand, UErrorCode& status) {
+    CHECK_ERROR(status);
+
+    if (rand.isVariable()) {
+        const VariableName& v = rand.asVariable();
+        if (!t.known(v)) {
+            t.extend(v, TypeEnvironment::Type::Free, status);
+        }
+    }
+}
+
+void Checker::addFreeVars(TypeEnvironment& t, const Operator& rator, UErrorCode& status) {
+    CHECK_ERROR(status);
+
+    if (!rator.isReserved()) {
+        const OptionMap& opts = rator.getOptionsInternal();
+        for (int32_t i = 0; i < opts.size(); i++) {
+            const Option& o = opts.getOption(i, status);
+            CHECK_ERROR(status);
+            addFreeVars(t, o.getValue(), status);
+        }
+    }
+}
+
+void Checker::addFreeVars(TypeEnvironment& t, const Expression& rhs, UErrorCode& status) {
+    if (rhs.isFunctionCall()) {
+        addFreeVars(t, rhs.getOperator(), status);
+    }
+    addFreeVars(t, rhs.getOperand(), status);
 }
 
 void Checker::checkVariants(UErrorCode& status) {
@@ -154,13 +220,26 @@ void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& status) {
     CHECK_ERROR(status);
 
     // For each declaration, extend the type environment with its type
-    // Only a very simple type system is necessary: local variables
-    // have the type "annotated" or "unannotated".
-    // Free variables (message arguments) are treated as unannotated.
+    // Only a very simple type system is necessary: variables
+    // have the type "annotated", "unannotated", or "free".
+    // For "missing selector annotation" checking, free variables
+    // (message arguments) are treated as unannotated.
+    // Free variables are also used for checking duplicate declarations.
     const Binding* env = dataModel.getLocalVariablesInternal();
     for (int32_t i = 0; i < dataModel.bindingsLen; i++) {
         const Binding& b = env[i];
-        t.extend(b.getVariable(), typeOf(t, b.getValue()), status);
+        const VariableName& lhs = b.getVariable();
+        const Expression& rhs = b.getValue();
+
+        // First, check if the LHS equals any free variables
+        // whose implicit declarations are in scope
+        if (t.known(lhs) && t.get(lhs) == TypeEnvironment::Type::Free) {
+            errors.addError(StaticErrorType::DuplicateDeclarationError, status);
+        }
+        // Next, extend the type environment with a binding from lhs to its type
+        t.extend(lhs, typeOf(t, rhs), status);
+        // Finally, add free variables from the RHS of b
+        addFreeVars(t, rhs, status);
     }
 }
 

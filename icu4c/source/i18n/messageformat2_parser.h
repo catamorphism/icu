@@ -67,6 +67,8 @@ namespace message2 {
         Pattern parseSimpleMessage(UErrorCode&);
         void parseBody(UErrorCode&);
 	void parseDeclarations(UErrorCode&);
+        void parseLocalDeclaration(UErrorCode&);
+        void parseInputDeclaration(UErrorCode&);
 	void parseSelectors(UErrorCode&);
 
 	void parseWhitespaceMaybeRequired(bool, UErrorCode&);

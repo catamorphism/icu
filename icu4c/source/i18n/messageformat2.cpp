@@ -61,10 +61,7 @@ static Formattable evalLiteral(const Literal& lit) {
     }
     if (rand.isVariable()) {
         // Check if it's local or global
-        // TODO: Currently, this code allows name shadowing, but depending on the
-        // resolution of:
-        //   https://github.com/unicode-org/message-format-wg/issues/310
-        // it might need to forbid it.
+        // Note: there is no name shadowing; this is enforced by the parser
         const VariableName& var = rand.asVariable();
         // TODO: Currently, this code implements lazy evaluation of locals.
         // That is, the environment binds names to a closure, not a resolved value.

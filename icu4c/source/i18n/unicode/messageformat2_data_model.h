@@ -935,7 +935,7 @@ namespace message2 {
         public:
             int32_t size() const;
             // Needs to take an error code b/c an earlier copy might have failed
-            Option getOption(int32_t, UErrorCode&) const;
+            const Option& getOption(int32_t, UErrorCode&) const;
             friend inline void swap(OptionMap& m1, OptionMap& m2) noexcept {
                 using std::swap;
 
@@ -1185,6 +1185,7 @@ namespace message2 {
              */
             virtual ~Operator();
         private:
+            friend class message2::Checker;
             friend class message2::MessageFormatter;
             friend class message2::Serializer;
 
@@ -2154,6 +2155,18 @@ namespace message2 {
              */
             const VariableName& getVariable() const { return var; }
             /**
+             * Constructs a binding for an input-variable
+             *
+             * @return A binding whose internal state encodes
+             *        it as arising from an .input declaration,
+             *        which is needed in order to re-serialize the data model
+             *        as a valid message
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            static Binding input(UnicodeString&& variableName, Expression&& expression);
+            /**
              * Constructor.
              * Precondition: i < numParts()
              *
@@ -2210,6 +2223,7 @@ namespace message2 {
         private:
             /* const */ VariableName var;
             /* const */ Expression value;
+            bool isLocal = true; // True if this is a .local declaration; false if .input
         }; // class Binding
     } // namespace data_model
 } // namespace message2
@@ -2491,6 +2505,7 @@ namespace message2 {
         private:
             friend class MessageFormatDataModel;
 
+            void checkDuplicate(const VariableName&, UErrorCode&) const;
             void buildSelectorsMessage(UErrorCode&);
             bool hasPattern = true;
             bool hasSelectors = false;
@@ -2502,19 +2517,41 @@ namespace message2 {
 
         public:
             /**
-             * Adds a local variable declaration.
+             * Adds a local variable declaration. There must not already be
+             * a local variable or declared input variable named `variableName`
              *
              * @param variableName The variable name of the declaration.
              *                     Passed by move.
              * @param expression The expression to which `variableName` should be bound.
              *                   Passed by move.
-             * @param status     Input/output error code
+             * @param status     Input/output error code. Set to U_DUPLICATE_DECLARATION_ERROR
+             *                   if `addLocalVariable()` or `addInputVariable()` was already
+             *                   called for `variableName`.
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
             Builder& addLocalVariable(UnicodeString&& variableName, Expression&& expression, UErrorCode& status) noexcept;
+            /**
+             * Adds an input declaration. There must not already be
+             * a local variable or declared input variable named `variableName`
+             *
+             * @param variableName The variable name of the declaration.
+             *                     Passed by move.
+             * @param rhs The expression to which `variableName` should be bound.
+             *            Passed by move. Note: `rhs` must be an expression whose
+             *            operand is a variable reference to `variableName`; the caller
+             *            is responsible for checking this property.
+             * @param status     Input/output error code.  Set to U_DUPLICATE_DECLARATION_ERROR
+             *                   if `addLocalVariable()` or `addInputVariable()` was already
+             *                   called for `variableName`.
+             * @return A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& addInputVariable(UnicodeString&& variableName, Expression&& expression, UErrorCode& status) noexcept;
             /**
              * Adds a selector expression. Copies `expression`.
              * If a pattern was previously set, clears the pattern.
