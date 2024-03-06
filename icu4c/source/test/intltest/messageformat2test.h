@@ -65,6 +65,8 @@ private:
     void testResolutionErrors(IcuTestErrorCode&);
     void testNoSyntaxErrors(const UnicodeString*, int32_t, IcuTestErrorCode&);
     void jsonTests(IcuTestErrorCode&);
+    void specTests();
+    void runSpecTests(IcuTestErrorCode&);
 
     // Built-in function testing
     void testDateTime(IcuTestErrorCode&);

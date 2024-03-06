@@ -309,10 +309,15 @@ namespace message2 {
             }
         }
         // Unevaluated value: first evaluate it fully, then format
+        UErrorCode savedStatus = status;
         FormattedPlaceholder evaluated = formatWithDefaults(locale, *this, status);
         if (status == U_FORMATTING_ERROR) {
             U_ASSERT(evaluated.isFallback());
             return evaluated.getFallback();
+        }
+        // Ignore U_USING_DEFAULT_WARNING
+        if (status == U_USING_DEFAULT_WARNING) {
+            status = savedStatus;
         }
         return evaluated.formatToString(locale, status);
     }

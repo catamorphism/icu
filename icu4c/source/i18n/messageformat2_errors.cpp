@@ -117,6 +117,10 @@ namespace message2 {
         }
         if (staticErrors.syntaxAndDataModelErrors->size() > 0) {
             switch (staticErrors.first().type) {
+            case StaticErrorType::DuplicateDeclarationError: {
+                status = U_DUPLICATE_DECLARATION_ERROR;
+                break;
+            }
             case StaticErrorType::DuplicateOptionName: {
                 status = U_DUPLICATE_OPTION_NAME_ERROR;
                 break;
@@ -178,6 +182,11 @@ namespace message2 {
         switch (e.type) {
         case StaticErrorType::SyntaxError: {
             syntaxError = true;
+            syntaxAndDataModelErrors->adoptElement(errorP, status);
+            break;
+        }
+        case StaticErrorType::DuplicateDeclarationError: {
+            dataModelError = true;
             syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }

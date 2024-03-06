@@ -71,7 +71,7 @@ namespace message2 {
         return dest;
     }
 
-    inline UVector* createUVector(UErrorCode& status) {
+    inline UVector* createUVectorNoAdopt(UErrorCode& status) {
         if (U_FAILURE(status)) {
             return nullptr;
         }
@@ -79,8 +79,16 @@ namespace message2 {
         if (U_FAILURE(status)) {
             return nullptr;
         }
-        result->setDeleter(uprv_deleteUObject);
         return result.orphan();
+    }
+
+    inline UVector* createUVector(UErrorCode& status) {
+        UVector* result = createUVectorNoAdopt(status);
+        if (U_FAILURE(status)) {
+            return nullptr;
+        }
+        result->setDeleter(uprv_deleteUObject);
+        return result;
     }
 
     static UBool stringsEqual(const UElement s1, const UElement s2) {
@@ -89,6 +97,15 @@ namespace message2 {
 
     inline UVector* createStringUVector(UErrorCode& status) {
         UVector* v = createUVector(status);
+        if (U_FAILURE(status)) {
+            return nullptr;
+        }
+        v->setComparer(stringsEqual);
+        return v;
+    }
+
+    inline UVector* createStringVectorNoAdopt(UErrorCode& status) {
+        UVector* v = createUVectorNoAdopt(status);
         if (U_FAILURE(status)) {
             return nullptr;
         }

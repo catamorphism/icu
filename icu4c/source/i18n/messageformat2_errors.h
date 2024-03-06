@@ -49,6 +49,7 @@ namespace message2 {
     }; // class Error
 
     enum StaticErrorType {
+        DuplicateDeclarationError,
         DuplicateOptionName,
         MissingSelectorAnnotation,
         NonexhaustivePattern,

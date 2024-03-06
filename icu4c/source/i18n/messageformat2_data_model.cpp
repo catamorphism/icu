@@ -285,15 +285,15 @@ OptionMap& OptionMap::operator=(OptionMap other) {
     return *this;
 }
 
-Option OptionMap::getOption(int32_t i, UErrorCode& status) const {
+const Option& OptionMap::getOption(int32_t i, UErrorCode& status) const {
     if (U_FAILURE(status) || bogus) {
         if (bogus) {
             status = U_MEMORY_ALLOCATION_ERROR;
         }
-        return {};
+    } else {
+        U_ASSERT(options.isValid());
+        U_ASSERT(i < len);
     }
-    U_ASSERT(options.isValid());
-    U_ASSERT(i < len);
     return options[i];
 }
 
@@ -717,6 +717,12 @@ Binding& Binding::operator=(Binding other) noexcept {
     return *this;
 }
 
+/* static */ Binding Binding::input(VariableName&& lhs, Expression&& rhs) {
+    Binding result(lhs, rhs);
+    result.isLocal = false;
+    return result;
+}
+
 Binding::~Binding() {}
 
 // --------------- Variant
@@ -790,12 +796,39 @@ void MessageFormatDataModel::Builder::buildSelectorsMessage(UErrorCode& status) 
     hasSelectors = true;
 }
 
+void MessageFormatDataModel::Builder::checkDuplicate(const VariableName& var, UErrorCode& status) const {
+    CHECK_ERROR(status);
+
+    // This means that handling declarations is quadratic in the number of variables,
+    // but the `UVector` of locals in the builder could be changed to a `Hashtable`
+    // if that's a problem
+    for (int32_t i = 0; i < locals->size(); i++) {
+        if ((static_cast<Binding*>(locals->elementAt(i)))->getVariable() == var) {
+            status = U_DUPLICATE_DECLARATION_ERROR;
+            break;
+        }
+    }
+}
+
 MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariable(VariableName&& variableName,
                                                                                    Expression&& expression,
                                                                                    UErrorCode& status) noexcept {
-    U_ASSERT(locals != nullptr);
-    locals->adoptElement(create<Binding>(Binding(std::move(variableName), std::move(expression)), status), status);
+    if (U_SUCCESS(status)) {
+        U_ASSERT(locals != nullptr);
+        checkDuplicate(variableName, status);
+        locals->adoptElement(create<Binding>(Binding(std::move(variableName), std::move(expression)), status), status);
+    }
+    return *this;
+}
 
+MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addInputVariable(VariableName&& variableName,
+                                                                                   Expression&& expression,
+                                                                                   UErrorCode& status) noexcept {
+    if (U_SUCCESS(status)) {
+        U_ASSERT(locals != nullptr);
+        checkDuplicate(variableName, status);
+        locals->adoptElement(create<Binding>(Binding::input(std::move(variableName), std::move(expression)), status), status);
+    }
     return *this;
 }
 

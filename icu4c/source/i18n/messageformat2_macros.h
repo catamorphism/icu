@@ -28,7 +28,7 @@ using namespace pluralimpl;
 #define HTAB ((UChar32)0x0009)
 #define CR ((UChar32)0x000D)
 #define LF ((UChar32)0x000A)
-
+#define IDEOGRAPHIC_SPACE ((UChar32)0x3000)
 
 #define PIPE ((UChar32)0x007C)
 #define EQUALS ((UChar32)0x003D)
@@ -54,7 +54,11 @@ using namespace pluralimpl;
 // Fallback
 #define REPLACEMENT ((UChar32) 0xFFFD)
 
-// MessageFormat2 uses three keywords: `.local`, `.when`, and `.match`.
+// MessageFormat2 uses four keywords: `.input`, `.local`, `.when`, and `.match`.
+
+static constexpr UChar32 ID_INPUT[] = {
+    0x2E, 0x69, 0x6E, 0x70, 0x75, 0x74, 0 /* ".input" */
+};
 
 static constexpr UChar32 ID_LOCAL[] = {
     0x2E, 0x6C, 0x6F, 0x63, 0x61, 0x6C, 0 /* ".local" */

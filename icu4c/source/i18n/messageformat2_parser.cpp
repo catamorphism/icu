@@ -214,10 +214,22 @@ inline bool isWhitespace(UChar32 c) {
     case HTAB:
     case CR:
     case LF:
+    case IDEOGRAPHIC_SPACE:
         return true;
     default:
         return false;
     }
+}
+
+inline bool isDeclarationStart(const UnicodeString& source, int32_t index) {
+    int32_t len = source.length();
+    int32_t next = index + 1;
+    return (source[index] == ID_LOCAL[0]
+            && next < len
+            && source[next] == ID_LOCAL[1])
+        || (source[index] == ID_INPUT[0]
+            && next < len
+            && source[next] == ID_INPUT[1]);
 }
 
 // -------------------------------------
@@ -1393,6 +1405,100 @@ Expression Parser::parseExpression(UErrorCode& status) {
 }
 
 /*
+  Parse a .local declaration, matching the `local-declaration`
+  production in the grammar
+*/
+void Parser::parseLocalDeclaration(UErrorCode& status) {
+    // End-of-input here would be an error; even empty
+    // declarations must be followed by a body
+    CHECK_BOUNDS(source, index, parseError, status);
+
+    parseToken(ID_LOCAL, status);
+    parseRequiredWhitespace(status);
+
+    // Restore precondition
+    CHECK_BOUNDS(source, index, parseError, status);
+    VariableName lhs = parseVariableName(status);
+    parseTokenWithWhitespace(EQUALS, status);
+    // Restore precondition before calling parseExpression()
+    CHECK_BOUNDS(source, index, parseError, status);
+
+    Expression rhs = parseExpression(status);
+
+    // Add binding from lhs to rhs, unless there was an error
+    // (This ensures that if there was a correct lhs but a
+    // parse error in rhs, the fallback for uses of the
+    // lhs will be its own name rather than the rhs)
+    /* This affects the behavior of this test case, which the spec
+       is ambiguous about:
+
+       .local $bar {|foo|} {{{$bar}}}
+
+       Should `$bar` still be bound to a value although
+       its declaration is syntactically incorrect (missing the '=')?
+       This code says no, but it needs to change if
+       https://github.com/unicode-org/message-format-wg/issues/703
+       is resolved differently.
+    */
+    CHECK_ERROR(status);
+    if (!errors.hasSyntaxError()) {
+        dataModel.addLocalVariable(std::move(lhs), std::move(rhs), status);
+        // Check if status is U_DUPLICATE_DECLARATION_ERROR
+        // and add that as an internal error if so
+        if (status == U_DUPLICATE_DECLARATION_ERROR) {
+            status = U_ZERO_ERROR;
+            errors.addError(StaticErrorType::DuplicateDeclarationError, status);
+        }
+    }
+}
+
+/*
+  Parse an .input declaration, matching the `local-declaration`
+  production in the grammar
+*/
+void Parser::parseInputDeclaration(UErrorCode& status) {
+    // End-of-input here would be an error; even empty
+    // declarations must be followed by a body
+    CHECK_BOUNDS(source, index, parseError, status);
+
+    parseToken(ID_INPUT, status);
+    parseRequiredWhitespace(status);
+
+    // Restore precondition before calling parseExpression()
+    CHECK_BOUNDS(source, index, parseError, status);
+
+    // Save the index for error diagnostics
+    int32_t exprIndex = index;
+    Expression rhs = parseExpression(status);
+
+    // Here we have to check that the rhs is a variable-expression
+    if (!rhs.getOperand().isVariable()) {
+        // This case is a syntax error; report it at the beginning
+        // of the expression
+        ERROR(parseError, status, exprIndex);
+        return;
+    }
+
+    VariableName lhs = rhs.getOperand().asVariable();
+
+    // Add binding from lhs to rhs
+    // This just adds a new local variable that shadows the message
+    // argument referred to, which is harmless.
+    // When evaluating the RHS, the new local is not in scope
+    // and the message argument will be correctly referred to.
+    CHECK_ERROR(status);
+    if (!errors.hasSyntaxError()) {
+        dataModel.addInputVariable(std::move(lhs), std::move(rhs), status);
+        // Check if status is U_DUPLICATE_DECLARATION_ERROR
+        // and add that as an internal error if so
+        if (status == U_DUPLICATE_DECLARATION_ERROR) {
+            status = U_ZERO_ERROR;
+            errors.addError(StaticErrorType::DuplicateDeclarationError, status);
+        }
+    }
+}
+
+/*
   Consume a possibly-empty sequence of declarations separated by whitespace;
   each declaration matches the `declaration` nonterminal in the grammar
 
@@ -1403,46 +1509,19 @@ void Parser::parseDeclarations(UErrorCode& status) {
     // declarations must be followed by a body
     CHECK_BOUNDS(source, index, parseError, status);
 
-    while (source[index] == ID_LOCAL[0]
-           && index < ((uint32_t) (source.length() + 1))
-           && source[index + 1] == ID_LOCAL[1]) {
-        parseToken(ID_LOCAL, status);
-        parseRequiredWhitespace(status);
-        // Restore precondition
-        CHECK_BOUNDS(source, index, parseError, status);
-        VariableName lhs = parseVariableName(status);
-        parseTokenWithWhitespace(EQUALS, status);
+    while (isDeclarationStart(source, index)) {
+        if (source[index + 1] == ID_LOCAL[1]) {
+            parseLocalDeclaration(status);
+        } else {
+            parseInputDeclaration(status);
+        }
 
-        // Restore precondition before calling parseExpression()
-        // (which must return a non-null value)
-        CHECK_BOUNDS(source, index, parseError, status);
-
-        Expression rhs = parseExpression(status);
         // Avoid looping infinitely
         CHECK_ERROR(status);
 
         parseOptionalWhitespace(status);
         // Restore precondition
         CHECK_BOUNDS(source, index, parseError, status);
-
-        // Add binding from lhs to rhs, unless there was an error
-        // (This ensures that if there was a correct lhs but a
-        // parse error in rhs, the fallback for uses of the
-        // lhs will be its own name rather than the rhs)
-        /* This affects the behavior of this test case, which the spec
-           is ambiguous about:
-
-           .local $bar {|foo|} {{{$bar}}}
-
-           Should `$bar` still be bound to a value although
-           its declaration is syntactically incorrect (missing the '=')?
-           This code says no, but it needs to change if
-           https://github.com/unicode-org/message-format-wg/issues/703
-           is resolved differently.
-         */
-        if (!errors.hasSyntaxError()) {
-            dataModel.addLocalVariable(std::move(lhs), std::move(rhs), status);
-        }
     }
 }
 

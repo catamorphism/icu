@@ -213,6 +213,7 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(testDataModelAPI);
     TESTCASE_AUTO(testVariousPatterns);
     TESTCASE_AUTO(testInvalidPatterns);
+    TESTCASE_AUTO(specTests);
     TESTCASE_AUTO_END;
 }
 
@@ -498,6 +499,12 @@ void TestMessageFormat2::testVariousPatterns() {
     testNoSyntaxErrors(syntaxTests, numSyntaxTests, errorCode);
 }
 
+void TestMessageFormat2::specTests() {
+    IcuTestErrorCode errorCode(*this, "specTests");
+
+    runSpecTests(errorCode);
+}
+
 /*
  Tests a single pattern, which is expected to be invalid.
 
@@ -667,6 +674,14 @@ void TestMessageFormat2::testDataModelErrors() {
     testSemanticallyInvalidPattern(++i, ".match {$foo ^select} .when |1| {{one}} .when * {{other}}",
                                    U_MISSING_SELECTOR_ANNOTATION_ERROR);
 
+
+    // Duplicate declaration errors
+    // TODO: add more
+    testSemanticallyInvalidPattern(++i, ".local $x = {|1|} .input {$x :number} {{{$x}}}",
+                                   U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".input {$x :number} .input {$x :string} {{{$x}}}",
+                                   U_DUPLICATE_DECLARATION_ERROR);
+
     TestCase::Builder testBuilder;
     testBuilder.setName("testDataModelErrors");
 
@@ -699,7 +714,8 @@ void TestMessageFormat2::testResolutionErrors() {
 
     // Unresolved variable
     testRuntimeWarningPattern(++i, "{$oops}", "{$oops}", U_UNRESOLVED_VARIABLE_ERROR);
-    testRuntimeWarningPattern(++i, ".local $x = {$forward} .local $forward = {42} {{{$x}}}", "{$forward}", U_UNRESOLVED_VARIABLE_ERROR);
+    // .input of $x but $x is not supplied as an argument -- also unresolved variable
+    testRuntimeWarningPattern(++i, ".input {$x :number} {{{$x}}}", "{$x}", U_UNRESOLVED_VARIABLE_ERROR);
 
     // Unknown function
     testRuntimeWarningPattern(++i, "The value is {horse :func}.", "The value is {|horse|}.", U_UNKNOWN_FUNCTION_ERROR);
@@ -944,6 +960,13 @@ void TestMessageFormat2::testInvalidPatterns() {
     testInvalidPattern(++i, "{|foo| #markup}", 7);
     testInvalidPattern(++i, "{|foo| {#markup/}}", 7);
     testInvalidPattern(++i, "{|foo| {/markup}}", 7);
+
+    // .input with non-variable-expression
+    testInvalidPattern(++i, ".input $x = {|1|} {{{$x}}}", 7);
+    testInvalidPattern(++i, ".input $x = {:number} {{{$x}}}", 7);
+    testInvalidPattern(++i, ".input {|1| :number} {{{$x}}}", 7);
+    testInvalidPattern(++i, ".input {:number} {{{$x}}}", 7);
+    testInvalidPattern(++i, ".input {|1|} {{{$x}}}", 7);
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
