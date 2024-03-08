@@ -16,7 +16,9 @@
 #include "unicode/unistr.h"
 #include "plurrule_impl.h"
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 using namespace pluralimpl;
 
