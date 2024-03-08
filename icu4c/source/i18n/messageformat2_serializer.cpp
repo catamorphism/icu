@@ -10,7 +10,9 @@
 #include "messageformat2_serializer.h"
 #include "uvector.h" // U_ASSERT
 
-U_NAMESPACE_BEGIN namespace message2 {
+U_NAMESPACE_BEGIN
+
+namespace message2 {
 
 // Generates a string representation of a data model
 // ------------------------------------------------
