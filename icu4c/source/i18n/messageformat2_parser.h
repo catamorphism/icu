@@ -81,10 +81,14 @@ namespace message2 {
 	template <int32_t N>
 	void parseTokenWithWhitespace(const UChar32 (&)[N], UErrorCode&);
 	UnicodeString parseName(UErrorCode&);
+        UnicodeString parseIdentifier(UErrorCode&);
+        UnicodeString parseDigits(UErrorCode&);
 	VariableName parseVariableName(UErrorCode&);
 	FunctionName parseFunction(UErrorCode&);
 	void parseEscapeSequence(EscapeKind, UnicodeString&, UErrorCode&);
 	void parseLiteralEscape(UnicodeString&, UErrorCode&);
+        Literal parseUnquotedLiteral(UErrorCode&);
+        Literal parseQuotedLiteral(UErrorCode&);
 	Literal parseLiteral(UErrorCode&);
         void parseAttribute(UVector&, UErrorCode&);
         OptionMap parseAttributes(UErrorCode&);

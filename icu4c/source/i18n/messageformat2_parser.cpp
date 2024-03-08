@@ -157,7 +157,7 @@ static bool isNameStart(UChar32 c) {
 }
 
 static bool isNameChar(UChar32 c) {
-    return isNameStart(c) || isDigit(c) || c == HYPHEN || c == PERIOD || c == COLON || c == 0x00B7 ||
+    return isNameStart(c) || isDigit(c) || c == HYPHEN || c == PERIOD || c == 0x00B7 ||
            inRange(c, 0x0300, 0x036F) || inRange(c, 0x203F, 0x2040);
 }
 
@@ -239,7 +239,16 @@ inline bool isDeclarationStart(const UnicodeString& source, int32_t index) {
     This is a recursive-descent scannerless parser that,
     with a few exceptions, uses 1 character of lookahead.
 
-All the exceptions involve ambiguities about the meaning of whitespace.
+All but one of the exceptions involve ambiguities about the meaning of whitespace.
+The ambiguity not involving whitespace is:
+identifier -> namespace ":" name
+vs.
+identifier -> name
+
+`namespace` and `name` can't be distinguished without arbitrary lookahead.
+(For how this is handled, see parseIdentifier())
+
+Otherwise:
 
 There are four ambiguities in the grammar that can't be resolved with finite
 lookahead (since whitespace sequences can be arbitrarily long). They are resolved
@@ -483,11 +492,61 @@ static FunctionName::Sigil functionSigil(UChar32 c) {
         }
     }
 }
-/*
-  Consumes a reference to a function, matching the `function` nonterminal in
-  the grammar.
 
-  Initializes `func` to this name.
+/*
+  Corresponds to the `identifier` nonterminal in the grammar
+*/
+UnicodeString Parser::parseIdentifier(UErrorCode& errorCode) {
+    U_ASSERT(inBounds(source, index));
+
+    UnicodeString result;
+    // The following is a hack to get around ambiguity in the grammar:
+    // identifier -> namespace ":" name
+    // vs.
+    // identifier -> name
+    // can't be distinguished without arbitrary lookahead.
+    // Instead, we treat the production as:
+    // identifier -> namespace *(":"name)
+    // and then check for multiple colons.
+
+    // Parse namespace
+    result += parseName(errorCode);
+    int32_t firstColon = -1;
+    while (inBounds(source, index) && source[index] == COLON) {
+        // Parse ':' separator
+        if (firstColon == -1) {
+            firstColon = index;
+        }
+        parseToken(COLON, errorCode);
+        result += COLON;
+        // Check for message ending with something like "foo:"
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+        } else {
+            // Parse name part
+            result += parseName(errorCode);
+        }
+    }
+
+    // If there's at least one ':', scan from the first ':'
+    // to the end of the name to check for multiple ':'s
+    if (firstColon != -1) {
+        for (int32_t i = firstColon + 1; i < result.length(); i++) {
+            if (result[i] == COLON) {
+                ERROR(parseError, errorCode, i);
+                return {};
+            }
+        }
+    }
+
+    return result;
+}
+
+/*
+  Consumes a reference to a function, matching the ": identifier"
+  in the `function` nonterminal in the grammar.
+
+  Returns the function name.
 */
 FunctionName Parser::parseFunction(UErrorCode& errorCode) {
     U_ASSERT(inBounds(source, index));
@@ -503,7 +562,7 @@ FunctionName Parser::parseFunction(UErrorCode& errorCode) {
         ERROR(parseError, errorCode, index);
         return FunctionName();
     }
-    return FunctionName(sigil, parseName(errorCode));
+    return FunctionName(sigil, parseIdentifier(errorCode));
 }
 
 
@@ -587,68 +646,190 @@ void Parser::parseLiteralEscape(UnicodeString &str, UErrorCode& errorCode) {
     parseEscapeSequence(LITERAL, str, errorCode);
 }
 
+
+/*
+  Consume and return a quoted literal, matching the `literal` nonterminal in the grammar.
+*/
+Literal Parser::parseQuotedLiteral(UErrorCode& errorCode) {
+    bool error = false;
+
+    UnicodeString contents;
+    if (U_SUCCESS(errorCode)) {
+        // Parse the opening '|'
+        parseToken(PIPE, errorCode);
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            error = true;
+        } else {
+            // Parse the contents
+            bool done = false;
+            while (!done) {
+                if (source[index] == BACKSLASH) {
+                    parseLiteralEscape(contents, errorCode);
+                } else if (isQuotedChar(source[index])) {
+                    contents += source[index];
+                    normalizedInput += source[index];
+                    index++; // Consume this character
+                    maybeAdvanceLine();
+                } else {
+                    // Assume the sequence of literal characters ends here
+                    done = true;
+                }
+                if (!inBounds(source, index)) {
+                    ERROR(parseError, errorCode, index);
+                    error = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (error) {
+        return {};
+    }
+
+    // Parse the closing '|'
+    parseToken(PIPE, errorCode);
+
+    return Literal(true, contents);
+}
+
+// Parse (1*DIGIT)
+UnicodeString Parser::parseDigits(UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
+
+    U_ASSERT(isDigit(source[index]));
+
+    UnicodeString contents;
+    do {
+        contents += source[index];
+        normalizedInput += source[index];
+        index++;
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            return {};
+        }
+    } while (isDigit(source[index]));
+
+    return contents;
+}
+/*
+  Consume and return an unquoted literal, matching the `unquoted` nonterminal in the grammar.
+*/
+Literal Parser::parseUnquotedLiteral(UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
+
+    // unquoted -> name
+    if (isNameStart(source[index])) {
+        return Literal(false, parseName(errorCode));
+    }
+
+    // unquoted -> number
+    // Parse the contents
+    UnicodeString contents;
+
+    // Parse the sign
+    if (source[index] == HYPHEN) {
+        contents += source[index];
+        normalizedInput += source[index];
+        index++;
+    }
+    if (!inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+        return {};
+    }
+
+    // Parse the integer part
+    if (source[index] == ((UChar32)0x0030) /* 0 */) {
+        contents += source[index];
+        normalizedInput += source[index];
+        index++;
+    } else if (isDigit(source[index])) {
+        contents += parseDigits(errorCode);
+    } else {
+        // Error -- nothing else can start a number literal
+        ERROR(parseError, errorCode, index);
+        return {};
+    }
+
+    // Parse the decimal point if present
+    if (source[index] == PERIOD) {
+        contents += source[index];
+        normalizedInput += source[index];
+        index++;
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            return {};
+        }
+        // Parse the fraction part
+        if (isDigit(source[index])) {
+            contents += parseDigits(errorCode);
+        } else {
+            // '.' not followed by digit is a parse error
+            ERROR(parseError, errorCode, index);
+            return {};
+        }
+    }
+
+    if (!inBounds(source, index)) {
+        ERROR(parseError, errorCode, index);
+        return {};
+    }
+
+    // Parse the exponent part if present
+    if (source[index] == UPPERCASE_E || source[index] == LOWERCASE_E) {
+        contents += source[index];
+        normalizedInput += source[index];
+        index++;
+        if (!inBounds(source, index)) {
+            ERROR(parseError, errorCode, index);
+            return {};
+        }
+        // Parse sign if present
+        if (source[index] == PLUS || source[index] == HYPHEN) {
+            contents += source[index];
+            normalizedInput += source[index];
+            index++;
+            if (!inBounds(source, index)) {
+                ERROR(parseError, errorCode, index);
+                return {};
+            }
+        }
+        // Parse exponent digits
+        if (!isDigit(source[index])) {
+            ERROR(parseError, errorCode, index);
+            return {};
+        }
+        contents += parseDigits(errorCode);
+    }
+
+    return Literal(false, contents);
+}
+
 /*
   Consume and return a literal, matching the `literal` nonterminal in the grammar.
-  May be quoted or unquoted -- returns true iff quoted
 */
 Literal Parser::parseLiteral(UErrorCode& errorCode) {
     Literal result;
     if (!inBounds(source, index)) {
         ERROR(parseError, errorCode, index);
-        return result;
-    }
-
-    bool quoted;
-    // Parse the opening '|' if present
-    if (source[index] == PIPE) {
-        quoted = true;
-        parseToken(PIPE, errorCode);
-        if (!inBounds(source, index)) {
-            ERROR(parseError, errorCode, index);
-            return result;
-        }
     } else {
-        if (!isUnquotedStart(source[index])) {
-            ERROR(parseError, errorCode, index);
-            return result;
-        }
-        quoted = false;
-    }
-
-    // Parse the contents
-    UnicodeString contents;
-    bool done = false;
-    while (!done) {
-        if (quoted && source[index] == BACKSLASH) {
-            parseLiteralEscape(contents, errorCode);
-        } else if ((!quoted && isNameChar(source[index]))
-                   || (quoted && isQuotedChar(source[index]))) {
-            contents += source[index];
-            normalizedInput += source[index];
-            index++; // Consume this character
-            maybeAdvanceLine();
+        if (source[index] == PIPE) {
+            result = parseQuotedLiteral(errorCode);
         } else {
-          // Assume the sequence of literal characters ends here
-          done = true;
+            result = parseUnquotedLiteral(errorCode);
         }
+        // Guarantee postcondition
         if (!inBounds(source, index)) {
             ERROR(parseError, errorCode, index);
-            return result;
         }
     }
 
-    // Parse the closing '|' if we saw an opening '|'
-    if (quoted) {
-        parseToken(PIPE, errorCode);
-    }
-
-    // Guarantee postcondition
-    if (!inBounds(source, index)) {
-        ERROR(parseError, errorCode, index);
-        return result;
-    }
-
-    return Literal(quoted, contents);
+    return result;
 }
 
 /*
@@ -664,7 +845,7 @@ void Parser::parseAttribute(UVector& options, UErrorCode& errorCode) {
     parseToken(AT, errorCode);
 
     // Parse LHS
-    UnicodeString lhs = parseName(errorCode);
+    UnicodeString lhs = parseIdentifier(errorCode);
 
     parseOptionalWhitespace(errorCode);
 
@@ -716,7 +897,7 @@ void Parser::parseOption(UVector& options, UErrorCode& errorCode) {
     U_ASSERT(inBounds(source, index));
 
     // Parse LHS
-    UnicodeString lhs = parseName(errorCode);
+    UnicodeString lhs = parseIdentifier(errorCode);
 
     // Parse '='
     parseTokenWithWhitespace(EQUALS, errorCode);
@@ -759,7 +940,7 @@ void Parser::parseOption(Operator::Builder &builder, UErrorCode& errorCode) {
     U_ASSERT(inBounds(source, index));
 
     // Parse LHS
-    UnicodeString lhs = parseName(errorCode);
+    UnicodeString lhs = parseIdentifier(errorCode);
 
     // Parse '='
     parseTokenWithWhitespace(EQUALS, errorCode);
@@ -1730,7 +1911,7 @@ Markup Parser::parseMarkup(UErrorCode& status) {
     }
 
     // Parse the markup identifier
-    builder.setName(parseName(status));
+    builder.setName(parseIdentifier(status));
 
     // Parse the options, which must begin with a ' '
     // if present
