@@ -695,5 +695,53 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                 .setExpected("1")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
+
+    // Functions: integer
+    test = testBuilder.setPattern("hello {4.2 :integer}")
+                                .setExpectSuccess()
+                                .setExpected("hello 4")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {-4.20 :integer}")
+                                .setExpectSuccess()
+                                .setExpected("hello -4")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {0.42e+1 :integer}")
+                                .setExpectSuccess()
+                                .setExpected("hello 4")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".match {$foo :integer} one {{one}} * {{other}}")
+                                .setArgument("foo", 1.2)
+                                .setExpectSuccess()
+                                .setExpected("one")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    // TODO: The spec says "only integer matching is required"; I'm not sure
+    // how the result can be "=1.2" if only integer matching is done
+    /*
+      See https://github.com/unicode-org/message-format-wg/issues/713
+
+      test = testBuilder.setPattern(".match {$foo :integer} 1.2 {{=1.2}} one {{one}} * {{other}}")
+                                .setExpectSuccess()
+                                .setArgument("foo", 1.2)
+                                .setExpected("=1.2")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    // TODO: Likewise
+    test = testBuilder.setPattern(".match {$foo :integer} 1.2 {{=1.2}} |1,2| {{=1,2}} * {{other}}")
+                                .setExpectSuccess()
+                                .setLocale(Locale("fr"))
+                                .setArgument("foo", 1.2)
+                                .setExpected("=1.2")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+    */
 }
 #endif /* #if !UCONFIG_NO_FORMATTING */

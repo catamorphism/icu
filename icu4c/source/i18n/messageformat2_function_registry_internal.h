@@ -26,10 +26,6 @@ namespace message2 {
     class StandardFunctions {
         friend class MessageFormatter;
 
-        static number::LocalizedNumberFormatter formatterForOptions(Locale locale,
-                                                                    const FunctionOptions& opts,
-                                                                    UErrorCode& status);
-
         class DateTimeFactory : public FormatterFactory {
         public:
             Formatter* createFormatter(const Locale& locale, UErrorCode& status) override;
@@ -48,10 +44,23 @@ namespace message2 {
             const LocalPointer<icu::DateFormat> icuFormatter;
         };
 
+        // Note: IntegerFactory doesn't implement SelectorFactory;
+        // instead, an instance of PluralFactory is registered to the integer
+        // selector
+        // TODO
+        class IntegerFactory : public FormatterFactory {
+        public:
+            Formatter* createFormatter(const Locale& locale, UErrorCode& status) override;
+            virtual ~IntegerFactory();
+        };
+
         class NumberFactory : public FormatterFactory {
         public:
             Formatter* createFormatter(const Locale& locale, UErrorCode& status) override;
             virtual ~NumberFactory();
+        private:
+            friend class IntegerFactory;
+            static NumberFactory integer(const Locale& locale, UErrorCode& status);
         };
 
         class Number : public Formatter {
@@ -61,12 +70,22 @@ namespace message2 {
 
         private:
             friend class NumberFactory;
+            friend class StandardFunctions;
 
             Number(const Locale& loc) : locale(loc), icuFormatter(number::NumberFormatter::withLocale(loc)) {}
+            Number(const Locale& loc, bool isInt) : locale(loc), isInteger(isInt), icuFormatter(number::NumberFormatter::withLocale(loc)) {}
+            static Number integer(const Locale& loc);
 
+            int32_t maximumFractionDigits(const FunctionOptions& options) const;
+            bool usePercent(const FunctionOptions& options) const;
             const Locale& locale;
+            const bool isInteger = false;
             const number::LocalizedNumberFormatter icuFormatter;
         };
+
+        static number::LocalizedNumberFormatter formatterForOptions(const Number& number,
+                                                                    const FunctionOptions& opts,
+                                                                    UErrorCode& status);
 
         class IdentityFactory : public FormatterFactory {
         public:
@@ -92,10 +111,14 @@ namespace message2 {
             virtual ~PluralFactory();
 
         private:
+            friend class IntegerFactory;
             friend class MessageFormatter;
 
             PluralFactory(UPluralType t) : type(t) {}
+            PluralFactory(UPluralType t, bool isInt) : type(t), isInteger(isInt) {}
+            static PluralFactory integer() { return PluralFactory(UPLURAL_TYPE_CARDINAL, true);}
             const UPluralType type;
+            const bool isInteger = false;
         };
 
         class Plural : public Selector {
@@ -110,12 +133,16 @@ namespace message2 {
             virtual ~Plural();
 
         private:
+            friend class IntegerFactory;
             friend class PluralFactory;
 
             // Adopts `r`
             Plural(const Locale& loc, PluralRules* r) : locale(loc), rules(r) {}
+            Plural(const Locale& loc, PluralRules* r, bool isInt) : locale(loc), isInteger(isInt), rules(r) {}
+            static Plural integer(const Locale& loc, PluralRules* r) { return Plural(loc, r, true); }
 
             const Locale& locale;
+            const bool isInteger = false;
             LocalPointer<PluralRules> rules;
         };
 
