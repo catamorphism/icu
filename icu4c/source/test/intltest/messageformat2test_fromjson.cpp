@@ -58,9 +58,9 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("hello {$place:-.}")
+    test = testBuilder.setPattern("hello {$place-.}")
                                 .setExpected("hello world")
-                                .setArgument("place:-.", "world")
+                                .setArgument("place-.", "world")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -176,6 +176,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $foo = {$foo} {{bar {$foo}}}")
+                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
                                 .setExpected("bar foo")
                                 .setArgument("foo", "foo")
                                 .build();
