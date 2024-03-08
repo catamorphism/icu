@@ -116,18 +116,18 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                 .local $guestName = {$guest :person length=long}\n\
                 .local $guestsOther = {$guestCount :number offset=1}\n\
                 .match {$hostGender :gender} {$guestCount :plural}\n\
-                .when female 0 {{{$hostName} does not give a party.}}\n\
-                .when female 1 {{{$hostName} invites {$guestName} to her party.}}\n\
-                .when female 2 {{{$hostName} invites {$guestName} and one other person to her party.}}\n\
-                .when female * {{{$hostName} invites {$guestName} and {$guestsOther} other people to her party.}}\n\
-                .when male 0 {{{$hostName} does not give a party.}}\n\
-                .when male 1 {{{$hostName} invites {$guestName} to his party.}}\n\
-                .when male 2 {{{$hostName} invites {$guestName} and one other person to his party.}}\n\
-                .when male * {{{$hostName} invites {$guestName} and {$guestsOther} other people to his party.}}\n\
-                .when * 0 {{{$hostName} does not give a party.}}\n\
-                .when * 1 {{{$hostName} invites {$guestName} to their party.}}\n\
-                .when * 2 {{{$hostName} invites {$guestName} and one other person to their party.}}\n\
-                .when * * {{{$hostName} invites {$guestName} and {$guestsOther} other people to their party.}}";
+                 female 0 {{{$hostName} does not give a party.}}\n\
+                 female 1 {{{$hostName} invites {$guestName} to her party.}}\n\
+                 female 2 {{{$hostName} invites {$guestName} and one other person to her party.}}\n\
+                 female * {{{$hostName} invites {$guestName} and {$guestsOther} other people to her party.}}\n\
+                 male 0 {{{$hostName} does not give a party.}}\n\
+                 male 1 {{{$hostName} invites {$guestName} to his party.}}\n\
+                 male 2 {{{$hostName} invites {$guestName} and one other person to his party.}}\n\
+                 male * {{{$hostName} invites {$guestName} and {$guestsOther} other people to his party.}}\n\
+                 * 0 {{{$hostName} does not give a party.}}\n\
+                 * 1 {{{$hostName} invites {$guestName} to their party.}}\n\
+                 * 2 {{{$hostName} invites {$guestName} and one other person to their party.}}\n\
+                 * * {{{$hostName} invites {$guestName} and {$guestsOther} other people to their party.}}";
 
 
     TestCase::Builder testBuilder;
@@ -540,9 +540,9 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
 /* static */ Hashtable* message2::ResourceManager::properties(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
-    UnicodeString* firefox = new UnicodeString(".match {$gcase :select} .when genitive {{Firefoxin}} .when * {{Firefox}}");
-    UnicodeString* chrome = new UnicodeString(".match {$gcase :select} .when genitive {{Chromen}} .when * {{Chrome}}");
-    UnicodeString* safari = new UnicodeString(".match {$gcase :select} .when genitive {{Safarin}} .when * {{Safari}}");
+    UnicodeString* firefox = new UnicodeString(".match {$gcase :select}  genitive {{Firefoxin}}  * {{Firefox}}");
+    UnicodeString* chrome = new UnicodeString(".match {$gcase :select}  genitive {{Chromen}}  * {{Chrome}}");
+    UnicodeString* safari = new UnicodeString(".match {$gcase :select}  genitive {{Safarin}}  * {{Safari}}");
 
     if (firefox != nullptr && chrome != nullptr && safari != nullptr) {
         Hashtable* result = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
