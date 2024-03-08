@@ -122,22 +122,29 @@ void Checker::addFreeVars(TypeEnvironment& t, const Operand& rand, UErrorCode& s
     }
 }
 
+void Checker::addFreeVars(TypeEnvironment& t, const OptionMap& opts, UErrorCode& status) {
+    for (int32_t i = 0; i < opts.size(); i++) {
+        const Option& o = opts.getOption(i, status);
+        CHECK_ERROR(status);
+        addFreeVars(t, o.getValue(), status);
+    }
+}
+
 void Checker::addFreeVars(TypeEnvironment& t, const Operator& rator, UErrorCode& status) {
     CHECK_ERROR(status);
 
     if (!rator.isReserved()) {
-        const OptionMap& opts = rator.getOptionsInternal();
-        for (int32_t i = 0; i < opts.size(); i++) {
-            const Option& o = opts.getOption(i, status);
-            CHECK_ERROR(status);
-            addFreeVars(t, o.getValue(), status);
-        }
+        addFreeVars(t, rator.getOptionsInternal(), status);
     }
 }
 
 void Checker::addFreeVars(TypeEnvironment& t, const Expression& rhs, UErrorCode& status) {
+    CHECK_ERROR(status);
+
     if (rhs.isFunctionCall()) {
-        addFreeVars(t, rhs.getOperator(), status);
+        const Operator* rator = rhs.getOperator(status);
+        U_ASSERT(U_SUCCESS(status));
+        addFreeVars(t, *rator, status);
     }
     addFreeVars(t, rhs.getOperand(), status);
 }
@@ -229,17 +236,38 @@ void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& status) {
     for (int32_t i = 0; i < dataModel.bindingsLen; i++) {
         const Binding& b = env[i];
         const VariableName& lhs = b.getVariable();
-        const Expression& rhs = b.getValue();
 
-        // First, check if the LHS equals any free variables
-        // whose implicit declarations are in scope
-        if (t.known(lhs) && t.get(lhs) == TypeEnvironment::Type::Free) {
-            errors.addError(StaticErrorType::DuplicateDeclarationError, status);
+        // First, add free variables from the RHS of b
+        // This must be done first so we can catch:
+        // .local $foo = {$foo}
+        // (where the RHS is the first use of $foo)
+        if (b.isLocal()) {
+            const Expression& rhs = b.getValue();
+            addFreeVars(t, rhs, status);
+
+            // Next, check if the LHS equals any free variables
+            // whose implicit declarations are in scope
+            if (t.known(lhs) && t.get(lhs) == TypeEnvironment::Type::Free) {
+                errors.addError(StaticErrorType::DuplicateDeclarationError, status);
+            }
+            // Next, extend the type environment with a binding from lhs to its type
+            t.extend(lhs, typeOf(t, rhs), status);
+        } else {
+            // Input declaration; if b has no annotation, there's nothing to check
+            if (b.getFunctionName() != nullptr) {
+                const OptionMap& opts = b.getOptionsInternal();
+                // For .input declarations, we just need to add any variables
+                // referenced in the options
+                addFreeVars(t, opts, status);
+             }
+            // Next, check if the LHS equals any free variables
+            // whose implicit declarations are in scope
+            if (t.known(lhs) && t.get(lhs) == TypeEnvironment::Type::Free) {
+                errors.addError(StaticErrorType::DuplicateDeclarationError, status);
+            }
+            // All .input variables are annotated
+            t.extend(lhs, TypeEnvironment::Type::Annotated, status);
         }
-        // Next, extend the type environment with a binding from lhs to its type
-        t.extend(lhs, typeOf(t, rhs), status);
-        // Finally, add free variables from the RHS of b
-        addFreeVars(t, rhs, status);
     }
 }
 
