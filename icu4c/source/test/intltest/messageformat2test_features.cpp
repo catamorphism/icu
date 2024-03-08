@@ -257,7 +257,7 @@ void TestMessageFormat2::testSimpleLocalVariable(TestCase::Builder& testBuilder,
     UDate TEST_DATE = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    testBuilder.setPattern(".local $expDate = {$expDate :datetime skeleton=yMMMdE}\n\
+    testBuilder.setPattern(".input {$expDate :datetime skeleton=yMMMdE}\n\
                             {{Your tickets expire on {$expDate}.}}");
 
     int64_t count = 1;
@@ -278,7 +278,7 @@ void TestMessageFormat2::testLocalVariableWithSelect(TestCase::Builder& testBuil
     UDate TEST_DATE = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    testBuilder.setPattern(".local $expDate = {$expDate :datetime skeleton=yMMMdE}\n\
+    testBuilder.setPattern(".input {$expDate :datetime skeleton=yMMMdE}\n\
                 .match {$count :plural}\n\
                 .when 1 {{Your ticket expires on {$expDate}.}}\n\
                 .when * {{Your {$count} tickets expire on {$expDate}.}}");

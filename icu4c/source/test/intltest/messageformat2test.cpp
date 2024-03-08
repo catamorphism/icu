@@ -29,7 +29,7 @@ as of the following commit from 2023-05-09:
 
 */
 
-static const int32_t numValidTestCases = 45;
+static const int32_t numValidTestCases = 41;
 TestResult validTestCases[] = {
     {"hello {|4.2| :number}", "hello 4.2"},
     {"hello {|4.2| :number minimumFractionDigits=2}", "hello 4.20"},
@@ -52,11 +52,6 @@ TestResult validTestCases[] = {
     {"hel\\\\lo", "hel\\lo"},
     {"hel\\{\\\\lo", "hel{\\lo"},
     {"hel\\{\\}lo", "hel{}lo"},
-    // tests for ':' in unquoted literals
-    {".match {|foo| :select} .when o:ne {{one}} .when * {{other}}", "other"},
-    {".match {|foo| :select} .when one: {{one}} .when * {{other}}", "other"},
-    {".local $foo = {|42| :number option=a:b} {{bar {$foo}}}", "bar 42"},
-    {".local $foo = {|42| :number option=a:b:c} {{bar {$foo}}}", "bar 42"},
     // tests for newlines in literals and text
     {"hello {|wo\nrld|}", "hello wo\nrld"},
     {"hello wo\nrld", "hello wo\nrld"},
@@ -85,6 +80,18 @@ TestResult validTestCases[] = {
     {"hello {|4.2| @number", "hello 4.2"},
     {"The value is {horse @horse=cool}.", "The value is horse"},
     {"hello {|4.2| @number=5", "hello 4.2"},
+    // Number literals
+    {"{-1}", "-1"},
+    {"{0}", "0"},
+    {"{0.0123}", "0.0123"},
+    {"{1.234e5}", "1.234e5"},
+    {"{1.234E5}", "1.234E5"},
+    {"{1.234E+5}", "1.234E+5"},
+    {"{1.234e-5}", "1.234e-5"},
+    {"{42e5}", "42e5"},
+    {"{42e0}", "42e0"},
+    {"{42e000}", "42e000"},
+    {"{42e369}", "42e369"},
 };
 
 
@@ -100,6 +107,7 @@ UnicodeString reservedErrors[] = {
     // tests for reserved syntax
     "hello {|4.2| %number}",
     "hello {|4.2| %n|um|ber}",
+    "{+42}",
     // Private use -- n.b. this implementation doesn't support
     // any private-use annotations, so it's treated like reserved
     "hello {|4.2| &num|be|r}",
@@ -166,7 +174,7 @@ UnicodeString matches[] = {
     0
 };
 
-static const int32_t numSyntaxTests = 22;
+static const int32_t numSyntaxTests = 21;
 // These patterns are tested to ensure they parse without a syntax error
 UnicodeString syntaxTests[] = {
     "hello {|foo| :number   }",
@@ -187,8 +195,7 @@ UnicodeString syntaxTests[] = {
     "{$bar    }",
     "{$bar    :foo}",
     "{$bar    :foo   }",
-    // Variable names can contain '-' or ':'
-    "{$bar:foo}",
+    // Variable names can contain '-'
     "{$bar-foo}",
     // Not a syntax error (is a semantic error)
     ".local $foo = {|hello|} .local $foo = {$foo} {{{$foo}}}",
@@ -657,6 +664,8 @@ void TestMessageFormat2::testDataModelErrors() {
     testSemanticallyInvalidPattern(++i, "{:foo a=1 a=1}", U_DUPLICATE_OPTION_NAME_ERROR);
     testSemanticallyInvalidPattern(++i, "{:foo a=1 a=2}", U_DUPLICATE_OPTION_NAME_ERROR);
     testSemanticallyInvalidPattern(++i, "{|x| :foo a=1 a=2}", U_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "bad {:placeholder option=x option=x}", U_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "bad {:placeholder ns:option=x ns:option=y}", U_DUPLICATE_OPTION_NAME_ERROR);
 
     // Missing selector annotation
     testSemanticallyInvalidPattern(++i, ".match {$one}\n\
@@ -676,11 +685,20 @@ void TestMessageFormat2::testDataModelErrors() {
 
 
     // Duplicate declaration errors
-    // TODO: add more
     testSemanticallyInvalidPattern(++i, ".local $x = {|1|} .input {$x :number} {{{$x}}}",
                                    U_DUPLICATE_DECLARATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".input {$x :number} .input {$x :string} {{{$x}}}",
                                    U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".input {$foo} .input {$foo} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".input {$foo} .local $foo = {42} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {42} .input {$foo} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {:unknown} .local $foo = {42} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar} .local $bar = {42} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {$foo} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar} .local $bar = {$baz} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar :func} .local $bar = {$baz} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {42 :func opt=$foo} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {42 :func opt=$bar} .local $bar = {42} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
 
     TestCase::Builder testBuilder;
     testBuilder.setName("testDataModelErrors");
@@ -894,7 +912,7 @@ void TestMessageFormat2::testInvalidPatterns() {
 
     // Extra '=' after option value
     testInvalidPattern(++i, "hello {|4.2| :number min=2=3}", 26),
-    testInvalidPattern(++i, "hello {|4.2| :number min=2max=3}", 29),
+    testInvalidPattern(++i, "hello {|4.2| :number min=2max=3}", 26),
     // Missing whitespace between valid options
     testInvalidPattern(++i, "hello {|4.2| :number min=|a|max=3}", 28),
     // Ill-formed RHS of option -- the error should be within the RHS,
@@ -967,6 +985,92 @@ void TestMessageFormat2::testInvalidPatterns() {
     testInvalidPattern(++i, ".input {|1| :number} {{{$x}}}", 7);
     testInvalidPattern(++i, ".input {:number} {{{$x}}}", 7);
     testInvalidPattern(++i, ".input {|1|} {{{$x}}}", 7);
+
+    // invalid number literals
+    testInvalidPattern(++i, "{00}", 2);
+    testInvalidPattern(++i, "{042}", 2);
+    testInvalidPattern(++i, "{1.}", 3);
+    testInvalidPattern(++i, "{1e}", 3);
+    testInvalidPattern(++i, "{1E}", 3);
+    testInvalidPattern(++i, "{1.e}", 3);
+    testInvalidPattern(++i, "{1.2e}", 5);
+    testInvalidPattern(++i, "{1.e3}", 3);
+    testInvalidPattern(++i, "{1e+}", 4);
+    testInvalidPattern(++i, "{1e-}", 4);
+    testInvalidPattern(++i, "{1.0e2.0}", 6);
+
+    // The following are from https://github.com/unicode-org/message-format-wg/blob/main/test/syntax-errors.json
+    testInvalidPattern(++i,".", 1);
+    testInvalidPattern(++i, "{", 1);
+    testInvalidPattern(++i, "}", 0);
+    testInvalidPattern(++i, "{}", 1);
+    testInvalidPattern(++i, "{{", 2);
+    testInvalidPattern(++i, "{{}", 3);
+    testInvalidPattern(++i, "{{}}}", 4);
+    testInvalidPattern(++i, "{|foo| #markup}", 7);
+    testInvalidPattern(++i, "{{missing end brace}", 20);
+    testInvalidPattern(++i, "{{missing end braces", 20);
+    testInvalidPattern(++i, "{{missing end {$braces", 22);
+    testInvalidPattern(++i, "{{extra}} content", 9);
+    testInvalidPattern(++i, "empty { } placeholder", 8);
+    testInvalidPattern(++i, "missing space {42:func}", 17);
+    testInvalidPattern(++i, "missing space {|foo|:func}", 20);
+    testInvalidPattern(++i, "missing space {|foo|@bar}", 20);
+    testInvalidPattern(++i, "missing space {:func@bar}", 20);
+    testInvalidPattern(++i, "bad {:} placeholder", 6);
+    testInvalidPattern(++i, "bad {\\u0000placeholder}", 5);
+    testInvalidPattern(++i, "no-equal {|42| :number minimumFractionDigits 2}", 45);
+    testInvalidPattern(++i, "bad {:placeholder option=}", 25);
+    testInvalidPattern(++i, "bad {:placeholder option value}", 25);
+    testInvalidPattern(++i, "bad {:placeholder option:value}", 30);
+    testInvalidPattern(++i, "bad {:placeholder option}", 24);
+    testInvalidPattern(++i, "bad {:placeholder:}", 18);
+    testInvalidPattern(++i, "bad {::placeholder}", 6);
+    testInvalidPattern(++i, "bad {:placeholder::foo}", 18);
+    testInvalidPattern(++i, "bad {:placeholder option:=x}", 25);
+    testInvalidPattern(++i, "bad {:placeholder :option=x}", 18);
+    testInvalidPattern(++i, "bad {:placeholder option::x=y}", 25);
+    testInvalidPattern(++i, "bad {$placeholder option}", 18);
+    // Attributes NYI -- TODO
+    /*
+    testInvalidPattern(++i, "bad {:placeholder @attribute=}", 29);
+    testInvalidPattern(++i, "bad {:placeholder @attribute=@foo}", 29);
+    */
+    testInvalidPattern(++i, "no {placeholder end", 16);
+    testInvalidPattern(++i, "no {$placeholder end", 17);
+    testInvalidPattern(++i, "no {:placeholder end", 20);
+    testInvalidPattern(++i, "no {|placeholder| end", 18);
+    testInvalidPattern(++i, "no {|literal} end", 17);
+    testInvalidPattern(++i, "no {|literal or placeholder end", 31);
+    testInvalidPattern(++i, ".local bar = {|foo|} {{_}}", 7);
+    testInvalidPattern(++i, ".local #bar = {|foo|} {{_}}", 7);
+    testInvalidPattern(++i, ".local $bar {|foo|} {{_}}", 12);
+    testInvalidPattern(++i, ".local $bar = |foo| {{_}}", 14);
+    /* TODO: remove .when
+    testInvalidPattern(++i, ".match {#foo} * {{foo}}");
+    testInvalidPattern(++i, ".match {} * {{foo}}");
+    testInvalidPattern(++i, ".match {|foo| :x} {|bar| :x} ** {{foo}}");
+    testInvalidPattern(++i, ".match * {{foo}}");
+    testInvalidPattern(++i, ".match {|x| :x} * foo");
+    testInvalidPattern(++i, ".match {|x| :x} * {{foo}} extra");
+    testInvalidPattern(++i, ".match |x| * {{foo}}");
+    testInvalidPattern(++i, ".match {:foo} 1 {{_}}");
+    testInvalidPattern(++i, ".match {:foo} other {{_}}");
+    testInvalidPattern(++i, ".match {:foo} {:bar} * 1 {{_}} 1 * {{_}}");
+    testInvalidPattern(++i, ".match {$foo :x} * * {{foo}}");
+    testInvalidPattern(++i, ".match {$foo :x} {$bar :x} * {{foo}}");
+    testInvalidPattern(++i, ".match {$foo} one {{one}} * {{other}}");
+    testInvalidPattern(++i, ".input {$foo} .match {$foo} one {{one}} * {{other}}");
+    testInvalidPattern(++i, ".local $foo = {$bar} .match {$foo} one {{one}} * {{other}}");
+    */
+
+    // tests for ':' in unquoted literals (not allowed)
+    testInvalidPattern(++i, ".match {|foo| :select} .when o:ne {{one}} .when * {{other}}", 30);
+    testInvalidPattern(++i, ".match {|foo| :select} .when one: {{one}} .when * {{other}}", 32);
+    testInvalidPattern(++i, ".local $foo = {|42| :number option=a:b} {{bar {$foo}}}", 36);
+    testInvalidPattern(++i, ".local $foo = {|42| :number option=a:b:c} {{bar {$foo}}}", 36);
+    testInvalidPattern(++i, "{$bar:foo}", 5);
+
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
