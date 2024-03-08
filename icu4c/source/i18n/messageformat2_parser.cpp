@@ -162,7 +162,7 @@ static bool isNameChar(UChar32 c) {
 }
 
 static bool isUnquotedStart(UChar32 c) {
-    return isNameStart(c) || isDigit(c) || c == PERIOD || c == 0x00B7 ||
+    return isNameStart(c) || isDigit(c) || c == HYPHEN || c == PERIOD || c == 0x00B7 ||
            inRange(c, 0x0300, 0x036F) || inRange(c, 0x203F, 0x2040);
 }
 

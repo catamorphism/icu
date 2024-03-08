@@ -559,10 +559,8 @@ void MessageFormatter::sortVariants(const UVector& pref, UVector& vars, UErrorCo
                 // 5iii(c)(b). Let `ks` be the resolved value of `key`.
                 UnicodeString ks = key.asLiteral().unquoted();
                 // 5iii(c)(c) Let matchpref be the integer position of ks in `matches`.
-                #if U_DEBUG
-                int32_t matchpref = vectorFind(matches, ks);
+                matchpref = vectorFind(matches, ks);
                 U_ASSERT(matchpref >= 0);
-                #endif
             }
             // 5iii(d) Set the `tuple` integer value as matchpref.
             tuple.priority = matchpref;

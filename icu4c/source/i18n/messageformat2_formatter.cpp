@@ -100,15 +100,18 @@ namespace message2 {
         CHECK_ERROR(success);
         FormatterFactory* dateTime = new StandardFunctions::DateTimeFactory();
         FormatterFactory* number = new StandardFunctions::NumberFactory();
+        FormatterFactory* integer = new StandardFunctions::IntegerFactory();
         FormatterFactory* identity = new StandardFunctions::IdentityFactory();
         standardFormatters->adoptElement(dateTime, success);
         standardFormatters->adoptElement(number, success);
         standardFormatters->adoptElement(identity, success);
         standardFunctionsBuilder.setFormatter(FunctionName(UnicodeString("datetime")), dateTime, success)
             .setFormatter(FunctionName(UnicodeString("number")), number, success)
+            .setFormatter(FunctionName(UnicodeString("integer")), integer, success)
             .setFormatter(FunctionName(UnicodeString("identity")), identity, success)
             .setSelector(FunctionName(UnicodeString("plural")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
             .setSelector(FunctionName(UnicodeString("selectordinal")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL), success)
+            .setSelector(FunctionName(UnicodeString("integer")), new StandardFunctions::PluralFactory(StandardFunctions::PluralFactory::integer()), success)
             .setSelector(FunctionName(UnicodeString("select")), new StandardFunctions::TextFactory(), success)
             .setSelector(FunctionName(UnicodeString("gender")), new StandardFunctions::TextFactory(), success);
         CHECK_ERROR(success);
