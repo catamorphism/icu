@@ -70,8 +70,8 @@ void TestMessageFormat2::testSimpleFormat(TestCase::Builder& testBuilder, IcuTes
 
 void TestMessageFormat2::testSelectFormatToPattern(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     UnicodeString pattern = CharsToUnicodeString(".match {$userGender :select}\n\
-                 .when female {{{$userName} est all\\u00E9e \\u00E0 Paris.}}\n\
-                 .when  *     {{{$userName} est all\\u00E9 \\u00E0 Paris.}}");
+                 female {{{$userName} est all\\u00E9e \\u00E0 Paris.}}\n\
+                 *     {{{$userName} est all\\u00E9 \\u00E0 Paris.}}");
 
     testBuilder.setPattern(pattern);
 

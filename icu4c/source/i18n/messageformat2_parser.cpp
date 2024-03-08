@@ -207,6 +207,16 @@ static bool reservedChunkFollows(UChar32 c) {
     }
 }
 
+// Returns true iff `c` can begin a `literal` nonterminal
+static bool isLiteralStart(UChar32 c) {
+    return (c == PIPE || isNameStart(c) || c == HYPHEN || isDigit(c));
+}
+
+// Returns true iff `c` can begin a `key` nonterminal
+static bool isKeyStart(UChar32 c) {
+    return (c == ASTERISK || isLiteralStart(c));
+}
+
 // See `s` in the MessageFormat 2 grammar
 inline bool isWhitespace(UChar32 c) {
     switch (c) {
@@ -250,7 +260,7 @@ identifier -> name
 
 Otherwise:
 
-There are four ambiguities in the grammar that can't be resolved with finite
+There are five ambiguities in the grammar that can't be resolved with finite
 lookahead (since whitespace sequences can be arbitrarily long). They are resolved
 with a form of backtracking (early exit). No state needs to be saved/restored
 since whitespace doesn't affect the shape of the resulting parse tree, so it's
@@ -289,7 +299,14 @@ Fourth: expression = "{" [s] (((literal / variable) [s annotation]) / annotation
     Most functions match a non-terminal in the grammar, except as explained
     in comments.
 
-Unless otherwise noted in a comment, all helper functions that take
+Fifth: matcher = match-statement 1*([s] variant)
+               -> match 1 *([s] selector) 1*([s] variant)
+    Example: match {42} * {{_}}
+ When reading the space after the first '}', it's unclear whether
+ it's the optional space before another selector, or the optional space
+ before a variant.
+
+ Unless otherwise noted in a comment, all helper functions that take
     a `source` string, an `index` unsigned int, and an `errorCode` `UErrorCode`
     have the precondition:
       `index` < `source.length()`
@@ -1759,12 +1776,12 @@ Key Parser::parseKey(UErrorCode& status) {
     switch (source[index]) {
     case ASTERISK: {
         index++;
+        normalizedInput += ASTERISK;
         // Guarantee postcondition
         if (!inBounds(source, index)) {
             ERROR(parseError, status, index);
             return k;
         }
-        normalizedInput += ASTERISK;
         break;
     }
     default: {
@@ -1794,19 +1811,19 @@ SelectorKeys Parser::parseNonEmptyKeys(UErrorCode& status) {
 Arbitrary lookahead is required to parse key lists. To see why, consider
 this rule from the grammar:
 
-variant = when 1*(s key) [s] pattern
+variant = key *(s key) [s] quoted-pattern
 
 And this example:
-when k1    {a}
+when k1 k2   {a}
 
 Derivation:
-   variant -> when 1*(s key) [s] pattern
-           -> when s key *(s key) [s] pattern
+   variant -> key *(s key) [s] quoted-pattern
+           -> key s key *(s key) quoted-pattern
 
-After matching ' ' to `s` and 'k1' to `key`, it would require arbitrary lookahead
+After matching ' ' to `s` and 'k2' to `key`, it would require arbitrary lookahead
 to know whether to expect the start of a pattern or the start of another key.
-In other words: is the second whitespace sequence the required space in 1*(s key),
-or the optional space in [s] pattern?
+In other words: is the second whitespace sequence the required space in *(s key),
+or the optional space in [s] quoted-pattern?
 
 This is addressed using "backtracking" (similarly to `parseOptions()`).
 */
@@ -1816,20 +1833,18 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
         return result;
     }
 
-    // Since the first key is required, it's simplest to parse the required
-    // whitespace and then the first key separately.
-    parseRequiredWhitespace(status);
+    // Since the first key is required, it's simplest to parse it separately.
+    keysBuilder.add(parseKey(status), status);
+
     // Restore precondition
     if (!inBounds(source, index)) {
         ERROR(parseError, status, index);
         return result;
     }
-    keysBuilder.add(parseKey(status), status);
-
 
     // We've seen at least one whitespace-key pair, so now we can parse
     // *(s key) [s]
-    while (source[index] != LEFT_CURLY_BRACE) { // Try to recover from errors
+    while (source[index] != LEFT_CURLY_BRACE || isWhitespace(source[index])) { // Try to recover from errors
         bool wasWhitespace = isWhitespace(source[index]);
         parseRequiredWhitespace(status);
         if (!wasWhitespace) {
@@ -2026,6 +2041,8 @@ void Parser::parseSelectors(UErrorCode& status) {
 
     bool empty = true;
     // Parse selectors
+    // "Backtracking" is required here. It's not clear if whitespace is
+    // (`[s]` selector) or (`[s]` variant)
     while (isWhitespace(source[index]) || source[index] == LEFT_CURLY_BRACE) {
         parseOptionalWhitespace(status);
         // Restore precondition
@@ -2037,7 +2054,6 @@ void Parser::parseSelectors(UErrorCode& status) {
             // optional whitespace preceding a subsequent expression.
             break;
         }
-
         Expression expression;
         expression = parseExpression(status);
         empty = false;
@@ -2058,21 +2074,20 @@ void Parser::parseSelectors(UErrorCode& status) {
         }                                          \
 
     // Parse variants
-    while (isWhitespace(source[index]) || source[index] == ID_WHEN[0]) {
-        int32_t whitespaceStart = index;
-        parseOptionalWhitespace(status);
-        // Restore the precondition.
-        // Error out if we reached the end of input. The message
-        // cannot end with trailing whitespace if there are variants.
-        if (!inBounds(source, index)) {
-            // Use index of first whitespace for error message
-            index = whitespaceStart;
-            ERROR(parseError, status, index);
-            return;
+    while (isWhitespace(source[index]) || isKeyStart(source[index])) {
+        if (isWhitespace(source[index])) {
+            int32_t whitespaceStart = index;
+            parseOptionalWhitespace(status);
+            // Restore the precondition.
+            // Error out if we reached the end of input. The message
+            // cannot end with trailing whitespace if there are variants.
+            if (!inBounds(source, index)) {
+                // Use index of first whitespace for error message
+                index = whitespaceStart;
+                ERROR(parseError, status, index);
+                return;
+            }
         }
-
-        // Consume the "when"
-        parseToken(ID_WHEN, status);
 
         // At least one key is required
         SelectorKeys keyList(parseNonEmptyKeys(status));
