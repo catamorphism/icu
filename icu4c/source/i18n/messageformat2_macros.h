@@ -41,6 +41,8 @@ using namespace pluralimpl;
 #define PERIOD ((UChar32)0x002E)
 #define UNDERSCORE ((UChar32)0x005F)
 
+#define LOWERCASE_E ((UChar32)0x0065)
+#define UPPERCASE_E ((UChar32)0x0045)
 
 // Reserved sigils
 #define BANG ((UChar32)0x0021)
