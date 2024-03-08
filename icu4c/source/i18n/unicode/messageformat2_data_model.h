@@ -43,6 +43,7 @@ static inline std::vector<T> toStdVector(const T* arr, int32_t len) {
 namespace message2 {
 
     namespace data_model {
+        class Binding;
         class Literal;
         class Operator;
     } // namespace data_model
@@ -950,6 +951,7 @@ namespace message2 {
                 return toStdVector<Option>(options.getAlias(), len);
             }
             OptionMap(const UVector&, UErrorCode&);
+            OptionMap(Option*, int32_t);
             virtual ~OptionMap();
         private:
             friend class message2::Serializer;
@@ -963,9 +965,17 @@ namespace message2 {
       // Internal use only
       class U_I18N_API Callable : public UObject {
       public:
+          friend inline void swap(Callable& c1, Callable& c2) noexcept {
+              using std::swap;
+
+              swap(c1.name, c2.name);
+              swap(c1.options, c2.options);
+          }
           const FunctionName& getName() const { return name; }
           const OptionMap& getOptions() const { return options; }
           Callable(const FunctionName& f, const OptionMap& opts) : name(f), options(opts) {}
+          Callable& operator=(Callable) noexcept;
+          Callable(const Callable&);
           Callable() = default;
           virtual ~Callable();
       private:
@@ -1068,7 +1078,13 @@ namespace message2 {
                 bool hasOptions = false;
                 Reserved asReserved;
                 FunctionName functionName;
+                // The next field is used internally to construct Operators
+                // and overrides the `options` vector.
+                // This is because it's easiest to share the code
+                // for parsing options between Operator::Builder and Markup::Builder.
+                OptionMap optionMap;
                 UVector* options; // Not a LocalPointer for the same reason as in `SelectorKeys::Builder`
+                Builder& setOptionMap(OptionMap&&);
             public:
                 /**
                  * Sets this operator to be a reserved sequence.
@@ -1117,13 +1133,16 @@ namespace message2 {
                  *
                  * The builder object (`this`) can still be used after calling `build()`.
                  *
+                 * The `build()` method is non-const for internal implementation reasons,
+                 * but is observably const.
+                 *
                  * @param status    Input/output error code.
                  * @return          The new Operator
                  *
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Operator build(UErrorCode& status) const noexcept;
+                Operator build(UErrorCode& status);
                 /**
                  * Default constructor.
                  * Returns a Builder with no function name or reserved sequence set.
@@ -1185,8 +1204,11 @@ namespace message2 {
              */
             virtual ~Operator();
         private:
+            friend class Binding;
+            friend class Builder;
             friend class message2::Checker;
             friend class message2::MessageFormatter;
+            friend class message2::Parser;
             friend class message2::Serializer;
 
             // Function call constructor
@@ -1195,7 +1217,7 @@ namespace message2 {
             Operator(const Reserved& r) : contents(r) {}
 
             const OptionMap& getOptionsInternal() const;
-
+            Operator(const FunctionName&, const OptionMap&);
             /* const */ std::variant<Reserved, Callable> contents;
         }; // class Operator
   } // namespace data_model
@@ -1456,14 +1478,17 @@ namespace message2 {
             /**
              * Accesses the function or reserved sequence
              * annotating this expression.
-             * Precondition: isFunctionCall() || isReserved()
+             * If !(isFunctionCall() || isReserved()), sets
+             * `status` to U_INVALID_STATE_ERROR.
              *
-             * @return A reference to the operator of this expression.
+             * @param status Input/output error code.
+             * @return A non-owned pointer to the operator of this expression,
+             *         which does not outlive the expression.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            const Operator& getOperator() const;
+            const Operator* getOperator(UErrorCode& status) const;
             /**
              * Accesses the operand of this expression.
              *
@@ -2137,7 +2162,7 @@ namespace message2 {
         class U_I18N_API Binding : public UObject {
         public:
             /**
-             * Accesses the right-hand side of the binding.
+             * Accesses the right-hand side of a binding.
              *
              * @return A reference to the expression.
              *
@@ -2145,6 +2170,27 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             const Expression& getValue() const;
+            /**
+             * Accesses the function of an input binding.
+             *
+             * @return A non-owned pointer to the expression. Null if
+             *         `isLocal()` or this is an input binding with no annotation.
+             *         The pointer has the same lifetime as `this`.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const FunctionName* getFunctionName() const;
+            /**
+             * Accesses the options of an input binding.
+             *
+             * @return A vector of options (empty if `isLocal()` or
+             *         this is an input binding with no annotation)
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            std::vector<Option> getOptions() const;
             /**
              * Accesses the left-hand side of the binding.
              *
@@ -2155,20 +2201,31 @@ namespace message2 {
              */
             const VariableName& getVariable() const { return var; }
             /**
-             * Constructs a binding for an input-variable
+             * Constructor for input binding.
              *
-             * @return A binding whose internal state encodes
-             *        it as arising from an .input declaration,
-             *        which is needed in order to re-serialize the data model
-             *        as a valid message
+             * @param variableName The variable name (left-hand side) of the binding. Passed by move.
+             * @param rhs The right-hand side of the input binding. Passed by move.
+             *                   `rhs` must have an operand that is a variable reference to `variableName`.
+             *                   If `rhs` has an operator, it must be a function call.
+             *                   If either of these properties is violated, `errorCode` is set to
+             *                   U_INVALID_STATE_ERROR.
+             * @param options A vector of options in the annotation (right-hand side). Passed by move.
+             * @param errorCode Input/output error code
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            static Binding input(UnicodeString&& variableName, Expression&& expression);
+            static Binding input(UnicodeString&& variableName, Expression&& rhs, UErrorCode& errorCode);
+            /**
+             * Returns true if and only if this binding represents a local declaration.
+             * Otherwise, it's an input declaration.
+             *
+             * @return True if this binding represents a variable and expression;
+             *         false if it represents a variable plus an annotation.
+             */
+            UBool isLocal() const { return local; }
             /**
              * Constructor.
-             * Precondition: i < numParts()
              *
              * @param v A variable name.
              * @param e An expression.
@@ -2176,7 +2233,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Binding(const VariableName& v, const Expression& e) : var(v), value(e){}
+            Binding(const VariableName& v, Expression&& e) : var(v), expr(std::move(e)), local(true), annotation(nullptr) {}
             /**
              * Non-member swap function.
              * @param b1 will get b2's contents
@@ -2189,7 +2246,10 @@ namespace message2 {
                 using std::swap;
 
                 swap(b1.var, b2.var);
-                swap(b1.value, b2.value);
+                swap(b1.expr, b2.expr);
+                swap(b1.local, b2.local);
+                b1.updateAnnotation();
+                b2.updateAnnotation();
             }
             /**
              * Copy constructor.
@@ -2221,9 +2281,25 @@ namespace message2 {
              */
             virtual ~Binding();
         private:
+            friend class message2::Checker;
+            friend class message2::MessageFormatter;
+            friend class message2::Parser;
+            friend class message2::Serializer;
+
             /* const */ VariableName var;
-            /* const */ Expression value;
-            bool isLocal = true; // True if this is a .local declaration; false if .input
+            /* const */ Expression expr;
+            /* const */ bool local;
+
+            // The following field is always nullptr for a local
+            // declaration, and possibly nullptr for an .input declaration
+            // If non-null, the referent is a member of `expr` so
+            // its lifetime is the same as the lifetime of the enclosing Binding
+            // (as long as there's no mutation)
+            const Callable* annotation = nullptr;
+
+            const OptionMap& getOptionsInternal() const;
+
+            void updateAnnotation();
         }; // class Binding
     } // namespace data_model
 } // namespace message2
@@ -2513,45 +2589,18 @@ namespace message2 {
             // The following members are not LocalPointers for the same reason as in SelectorKeys::Builder
             UVector* selectors = nullptr;
             UVector* variants = nullptr;
-            UVector* locals   = nullptr;
-
+            UVector* bindings = nullptr;
         public:
             /**
-             * Adds a local variable declaration. There must not already be
-             * a local variable or declared input variable named `variableName`
+             * Adds a binding, There must not already be a binding
+             * with the same name.
              *
-             * @param variableName The variable name of the declaration.
-             *                     Passed by move.
-             * @param expression The expression to which `variableName` should be bound.
-             *                   Passed by move.
-             * @param status     Input/output error code. Set to U_DUPLICATE_DECLARATION_ERROR
-             *                   if `addLocalVariable()` or `addInputVariable()` was already
-             *                   called for `variableName`.
-             * @return A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
+             * @param b The binding. Passed by move.
+             * @param status Input/output error code. Set to U_DUPLICATE_DECLARATION_ERROR
+             *                   if `addBinding()` was previously called with a binding
+             *                   with the same variable name as `b`.
              */
-            Builder& addLocalVariable(UnicodeString&& variableName, Expression&& expression, UErrorCode& status) noexcept;
-            /**
-             * Adds an input declaration. There must not already be
-             * a local variable or declared input variable named `variableName`
-             *
-             * @param variableName The variable name of the declaration.
-             *                     Passed by move.
-             * @param rhs The expression to which `variableName` should be bound.
-             *            Passed by move. Note: `rhs` must be an expression whose
-             *            operand is a variable reference to `variableName`; the caller
-             *            is responsible for checking this property.
-             * @param status     Input/output error code.  Set to U_DUPLICATE_DECLARATION_ERROR
-             *                   if `addLocalVariable()` or `addInputVariable()` was already
-             *                   called for `variableName`.
-             * @return A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& addInputVariable(UnicodeString&& variableName, Expression&& expression, UErrorCode& status) noexcept;
+            Builder& addBinding(Binding&& b, UErrorCode& status);
             /**
              * Adds a selector expression. Copies `expression`.
              * If a pattern was previously set, clears the pattern.

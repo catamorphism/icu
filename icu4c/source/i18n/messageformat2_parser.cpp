@@ -1623,7 +1623,7 @@ void Parser::parseLocalDeclaration(UErrorCode& status) {
     */
     CHECK_ERROR(status);
     if (!errors.hasSyntaxError()) {
-        dataModel.addLocalVariable(std::move(lhs), std::move(rhs), status);
+        dataModel.addBinding(Binding(std::move(lhs), std::move(rhs)), status);
         // Check if status is U_DUPLICATE_DECLARATION_ERROR
         // and add that as an internal error if so
         if (status == U_DUPLICATE_DECLARATION_ERROR) {
@@ -1669,7 +1669,7 @@ void Parser::parseInputDeclaration(UErrorCode& status) {
     // and the message argument will be correctly referred to.
     CHECK_ERROR(status);
     if (!errors.hasSyntaxError()) {
-        dataModel.addInputVariable(std::move(lhs), std::move(rhs), status);
+        dataModel.addBinding(Binding::input(std::move(lhs), std::move(rhs), status), status);
         // Check if status is U_DUPLICATE_DECLARATION_ERROR
         // and add that as an internal error if so
         if (status == U_DUPLICATE_DECLARATION_ERROR) {

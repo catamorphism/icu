@@ -302,6 +302,13 @@ int32_t OptionMap::size() const {
     return len;
 }
 
+Operator::Builder& Operator::Builder::setOptionMap(OptionMap&& m) {
+    optionMap = std::move(m);
+    delete options;
+    options = nullptr;
+    return *this;
+}
+
 OptionMap::~OptionMap() {}
 
 const FunctionName& Operator::getFunctionName() const {
@@ -428,7 +435,7 @@ Operator::Builder& Operator::Builder::addOption(const UnicodeString &key, Operan
     return *this;
 }
 
-Operator Operator::Builder::build(UErrorCode& errorCode) const noexcept {
+Operator Operator::Builder::build(UErrorCode& errorCode) {
     Operator result;
     if (U_FAILURE(errorCode)) {
         return result;
@@ -449,8 +456,11 @@ Operator Operator::Builder::build(UErrorCode& errorCode) const noexcept {
             errorCode = U_INVALID_STATE_ERROR;
             return result;
         }
-        U_ASSERT(options != nullptr);
-        result = Operator(functionName, *options, errorCode);
+        if (options != nullptr) {
+            // Initialize options from what was set with setOptions()
+            optionMap = OptionMap(*options, errorCode);
+         }
+        result = Operator(functionName, optionMap);
     }
     return result;
 }
@@ -465,6 +475,8 @@ Operator& Operator::operator=(Operator other) noexcept {
 // Function call
 Operator::Operator(const FunctionName& f, const UVector& optsVector, UErrorCode& status) : contents(Callable(f, OptionMap(optsVector, status))) {}
 
+Operator::Operator(const FunctionName& f, const OptionMap& opts) : contents(Callable(f, opts)) {}
+
 Operator::Builder::~Builder() {
     if (options != nullptr) {
         delete options;
@@ -472,6 +484,13 @@ Operator::Builder::~Builder() {
 }
 
 Operator::~Operator() {}
+
+Callable& Callable::operator=(Callable other) noexcept {
+    swap(*this, other);
+    return *this;
+}
+
+Callable::Callable(const Callable& other) : name(other.name), options(other.options) {}
 
 Callable::~Callable() {}
 
@@ -550,9 +569,15 @@ UBool Expression::isReserved() const {
     return (rator.has_value() && rator->isReserved());
 }
 
-const Operator& Expression::getOperator() const {
+const Operator* Expression::getOperator(UErrorCode& status) const {
+    NULL_ON_ERROR(status);
+
+    if (!(isReserved() || isFunctionCall())) {
+        status = U_INVALID_STATE_ERROR;
+        return nullptr;
+    }
     U_ASSERT(rator);
-    return *rator;
+    return &(*rator);
 }
 
 // May return null operand
@@ -708,19 +733,73 @@ Pattern::~Pattern() {}
 
 // ---------------- Binding
 
-const Expression& Binding::getValue() const { return value; }
+const Expression& Binding::getValue() const {
+    return expr;
+}
 
-Binding::Binding(const Binding& other) : var(other.var), value(other.value) {}
+// Returns a pointer rather than a reference; null indicates
+// a local binding or unannotated .input binding
+const FunctionName* Binding::getFunctionName() const {
+    if (annotation == nullptr) {
+        return nullptr;
+    }
+    U_ASSERT(!local);
+    return &(annotation->getName());
+}
+
+/* static */ Binding Binding::input(UnicodeString&& variableName, Expression&& rhs, UErrorCode& errorCode) {
+    Binding b;
+    if (U_SUCCESS(errorCode)) {
+        const Operand& rand = rhs.getOperand();
+        if (!(rand.isVariable() && (rand.asVariable() == variableName))) {
+            errorCode = U_INVALID_STATE_ERROR;
+        } else {
+            const Operator* rator = rhs.getOperator(errorCode);
+            bool hasOperator = U_SUCCESS(errorCode);
+            if (hasOperator && rator->isReserved()) {
+                errorCode = U_INVALID_STATE_ERROR;
+            } else {
+                // Clear error code -- the "error" from the absent operator
+                // is handled
+                errorCode = U_ZERO_ERROR;
+                b = Binding(variableName, std::move(rhs));
+                b.local = false;
+                if (hasOperator) {
+                    rator = b.getValue().getOperator(errorCode);
+                    U_ASSERT(U_SUCCESS(errorCode));
+                    b.annotation = std::get_if<Callable>(&(rator->contents));
+                } else {
+                    b.annotation = nullptr;
+                }
+                U_ASSERT(!hasOperator || b.annotation != nullptr);
+            }
+        }
+    }
+    return b;
+}
+
+const OptionMap& Binding::getOptionsInternal() const {
+    U_ASSERT(annotation != nullptr);
+    return annotation->getOptions();
+}
+
+void Binding::updateAnnotation() {
+    UErrorCode localErrorCode = U_ZERO_ERROR;
+    const Operator* rator = expr.getOperator(localErrorCode);
+    if (U_FAILURE(localErrorCode) || rator->isReserved()) {
+        return;
+    }
+    U_ASSERT(U_SUCCESS(localErrorCode) && !rator->isReserved());
+    annotation = std::get_if<Callable>(&(rator->contents));
+}
+
+Binding::Binding(const Binding& other) : var(other.var), expr(other.expr), local(other.local) {
+    updateAnnotation();
+}
 
 Binding& Binding::operator=(Binding other) noexcept {
     swap(*this, other);
     return *this;
-}
-
-/* static */ Binding Binding::input(VariableName&& lhs, Expression&& rhs) {
-    Binding result(lhs, rhs);
-    result.isLocal = false;
-    return result;
 }
 
 Binding::~Binding() {}
@@ -780,7 +859,7 @@ const Variant* MessageFormatDataModel::getVariantsInternal() const {
 
 
 MessageFormatDataModel::Builder::Builder(UErrorCode& status) {
-    locals = createUVector(status);
+    bindings = createUVector(status);
 }
 
 // Invalidate pattern and create selectors/variants if necessary
@@ -802,32 +881,21 @@ void MessageFormatDataModel::Builder::checkDuplicate(const VariableName& var, UE
     // This means that handling declarations is quadratic in the number of variables,
     // but the `UVector` of locals in the builder could be changed to a `Hashtable`
     // if that's a problem
-    for (int32_t i = 0; i < locals->size(); i++) {
-        if ((static_cast<Binding*>(locals->elementAt(i)))->getVariable() == var) {
+    // Note: this also doesn't check _all_ duplicate declaration errors,
+    // see MessageFormatter::Checker::checkDeclarations()
+    for (int32_t i = 0; i < bindings->size(); i++) {
+        if ((static_cast<Binding*>(bindings->elementAt(i)))->getVariable() == var) {
             status = U_DUPLICATE_DECLARATION_ERROR;
             break;
         }
     }
 }
 
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addLocalVariable(VariableName&& variableName,
-                                                                                   Expression&& expression,
-                                                                                   UErrorCode& status) noexcept {
+MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addBinding(Binding&& b, UErrorCode& status) {
     if (U_SUCCESS(status)) {
-        U_ASSERT(locals != nullptr);
-        checkDuplicate(variableName, status);
-        locals->adoptElement(create<Binding>(Binding(std::move(variableName), std::move(expression)), status), status);
-    }
-    return *this;
-}
-
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addInputVariable(VariableName&& variableName,
-                                                                                   Expression&& expression,
-                                                                                   UErrorCode& status) noexcept {
-    if (U_SUCCESS(status)) {
-        U_ASSERT(locals != nullptr);
-        checkDuplicate(variableName, status);
-        locals->adoptElement(create<Binding>(Binding::input(std::move(variableName), std::move(expression)), status), status);
+        U_ASSERT(bindings != nullptr);
+        checkDuplicate(b.getVariable(), status);
+        bindings->adoptElement(create<Binding>(std::move(b), status), status);
     }
     return *this;
 }
@@ -907,9 +975,9 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
         body.emplace<Matcher>(Matcher(selectors, numSelectors, variants, numVariants));
     }
 
-    U_ASSERT(builder.locals != nullptr);
-    bindingsLen = builder.locals->size();
-    bindings.adoptInstead(copyVectorToArray<Binding>(*builder.locals, bindingsLen));
+    U_ASSERT(builder.bindings != nullptr);
+    bindingsLen = builder.bindings->size();
+    bindings.adoptInstead(copyVectorToArray<Binding>(*builder.bindings, bindingsLen));
     bogus &= (bool) bindings.isValid();
 }
 
@@ -938,8 +1006,8 @@ MessageFormatDataModel::Builder::~Builder() {
     if (variants != nullptr) {
         delete variants;
     }
-    if (locals != nullptr) {
-        delete locals;
+    if (bindings != nullptr) {
+        delete bindings;
     }
 }
 } // namespace message2

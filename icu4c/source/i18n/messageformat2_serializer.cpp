@@ -132,9 +132,11 @@ void Serializer::emit(const Expression& expr) {
           emit(expr.getOperand());
           whitespace();
         }
-        const Operator& rator = expr.getOperator();
-        if (rator.isReserved()) {
-          const Reserved& reserved = rator.asReserved();
+        UErrorCode localStatus = U_ZERO_ERROR;
+        const Operator* rator = expr.getOperator(localStatus);
+        U_ASSERT(U_SUCCESS(localStatus));
+        if (rator->isReserved()) {
+          const Reserved& reserved = rator->asReserved();
           // Re-escape '\' / '{' / '|' / '}'
           for (int32_t i = 0; i < reserved.numParts(); i++) {
             const Literal& l = reserved.getPart(i);
@@ -159,11 +161,11 @@ void Serializer::emit(const Expression& expr) {
             }
           }
         } else {
-            emit(rator.getFunctionName());
+            emit(rator->getFunctionName());
             // No whitespace after function name, in case it has
             // no options. (when there are options, emit(OptionMap) will
             // emit the leading whitespace)
-            emit(rator.getOptionsInternal());
+            emit(rator->getOptionsInternal());
         }
     }
 
@@ -205,21 +207,27 @@ void Serializer::emit(const Pattern& pat) {
 }
 
 void Serializer::serializeDeclarations() {
-    const Binding* locals = dataModel.getLocalVariablesInternal();
-    U_ASSERT(locals != nullptr);
+    const Binding* bindings = dataModel.getLocalVariablesInternal();
+    U_ASSERT(bindings != nullptr);
 
     for (int32_t i = 0; i < dataModel.bindingsLen; i++) {
-        const Binding& b = locals[i];
-        // No whitespace needed here -- see `message` in the grammar
-        emit(ID_LOCAL);
-        whitespace();
-        emit(DOLLAR);
-        emit(b.getVariable());
-        // No whitespace needed here -- see `declaration` in the grammar
-        emit(EQUALS);
-        // No whitespace needed here -- see `declaration` in the grammar
+        const Binding& b = bindings[i];
+        if (b.isLocal()) {
+            // No whitespace needed here -- see `message` in the grammar
+            emit(ID_LOCAL);
+            whitespace();
+            emit(DOLLAR);
+            emit(b.getVariable());
+            // No whitespace needed here -- see `local-declaration` in the grammar
+            emit(EQUALS);
+            // No whitespace needed here -- see `local-declaration` in the grammar
+        } else {
+            // Input declaration
+            emit(ID_INPUT);
+            // No whitespace needed here -- see `input-declaration` in the grammar
+        }
         emit(b.getValue());
-   }
+    }
 }
 
 void Serializer::serializeSelectors() {

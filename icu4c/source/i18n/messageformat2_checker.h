@@ -62,6 +62,7 @@ namespace message2 {
         void requireAnnotated(const TypeEnvironment&, const Expression&, UErrorCode&);
         void addFreeVars(TypeEnvironment& t, const Operand&, UErrorCode&);
         void addFreeVars(TypeEnvironment& t, const Operator&, UErrorCode&);
+        void addFreeVars(TypeEnvironment& t, const OptionMap&, UErrorCode&);
         void addFreeVars(TypeEnvironment& t, const Expression&, UErrorCode&);
         void checkDeclarations(TypeEnvironment&, UErrorCode&);
         void checkSelectors(const TypeEnvironment&, UErrorCode&);

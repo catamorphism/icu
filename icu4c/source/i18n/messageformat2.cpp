@@ -243,9 +243,10 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
                                  context,
                                  status);
     } else {
-        const Operator& rator = expr.getOperator();
-        const FunctionName& functionName = rator.getFunctionName();
-        const OptionMap& options = rator.getOptionsInternal();
+        const Operator* rator = expr.getOperator(status);
+        U_ASSERT(U_SUCCESS(status));
+        const FunctionName& functionName = rator->getFunctionName();
+        const OptionMap& options = rator->getOptionsInternal();
         // Resolve the options
         FunctionOptions resolvedOptions = resolveOptions(globalEnv, options, context, status);
 
@@ -630,13 +631,14 @@ ResolvedSelector MessageFormatter::resolveVariables(const Environment& env,
 
     // Function call -- resolve the operand and options
     if (expr.isFunctionCall()) {
-        const Operator& rator = expr.getOperator();
+        const Operator* rator = expr.getOperator(status);
+        U_ASSERT(U_SUCCESS(status));
         // Already checked that rator is non-reserved
-        const FunctionName& selectorName = rator.getFunctionName();
+        const FunctionName& selectorName = rator->getFunctionName();
         if (isSelector(selectorName)) {
             auto selector = getSelector(context, selectorName, status);
             if (U_SUCCESS(status)) {
-                FunctionOptions resolvedOptions = resolveOptions(env, rator.getOptionsInternal(), context, status);
+                FunctionOptions resolvedOptions = resolveOptions(env, rator->getOptionsInternal(), context, status);
                 // Operand may be the null argument, but resolveVariables() handles that
                 FormattedPlaceholder argument = formatOperand(env, expr.getOperand(), context, status);
                 return ResolvedSelector(selectorName, selector, std::move(resolvedOptions), std::move(argument));
@@ -796,10 +798,11 @@ void MessageFormatter::check(MessageContext& context, const Environment& localEn
 void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const Expression& expr, UErrorCode& status) const {
     // Check for unresolved variable errors
     if (expr.isFunctionCall()) {
-        const Operator& rator = expr.getOperator();
+        const Operator* rator = expr.getOperator(status);
+        U_ASSERT(U_SUCCESS(status));
         const Operand& rand = expr.getOperand();
         check(context, localEnv, rand, status);
-        check(context, localEnv, rator.getOptionsInternal(), status);
+        check(context, localEnv, rator->getOptionsInternal(), status);
     }
 }
 
