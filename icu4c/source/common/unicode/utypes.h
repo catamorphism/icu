@@ -581,12 +581,13 @@ typedef enum UErrorCode {
     U_SELECTOR_ERROR,               /** A selector function is applied to an operand of the wrong type */
     U_MISSING_SELECTOR_ANNOTATION_ERROR,  /** A selector expression evaluates to an unannotated operand */
     U_DUPLICATE_DECLARATION_ERROR, /** The same variable is declared in more than one .local or .input declaration */
+    U_OPERAND_MISMATCH_ERROR,     /** An operand provided to a function does not have the required form for that function */
 #ifndef U_HIDE_DEPRECATED_API
     /**
      * One more than the highest normal formatting API error code.
      * @deprecated ICU 58 The numeric value may change over time, see ICU ticket #12420.
      */
-    U_FMT_PARSE_ERROR_LIMIT = 0x1011E,
+    U_FMT_PARSE_ERROR_LIMIT = 0x1011F,
 #endif  // U_HIDE_DEPRECATED_API
 
     /*

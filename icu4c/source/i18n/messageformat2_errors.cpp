@@ -29,6 +29,10 @@ namespace message2 {
         addError(DynamicError(DynamicErrorType::FormattingError, UnicodeString("unknown formatter")), status);
     }
 
+    void DynamicErrors::setOperandMismatchError(const FunctionName& formatterName, UErrorCode& status) {
+        addError(DynamicError(DynamicErrorType::OperandMismatchError, formatterName.toString()), status);
+    }
+
     void StaticErrors::setDuplicateOptionName(UErrorCode& status) {
         addError(StaticError(StaticErrorType::DuplicateOptionName), status);
     }
@@ -157,6 +161,10 @@ namespace message2 {
                 status = U_FORMATTING_ERROR;
                 break;
             }
+            case DynamicErrorType::OperandMismatchError: {
+                status = U_OPERAND_MISMATCH_ERROR;
+                break;
+            }
             case DynamicErrorType::ReservedError: {
                 status = U_UNSUPPORTED_PROPERTY;
                 break;
@@ -227,6 +235,11 @@ namespace message2 {
             break;
         }
         case DynamicErrorType::FormattingError: {
+            formattingError = true;
+            resolutionAndFormattingErrors->adoptElement(errorP, status);
+            break;
+        }
+        case DynamicErrorType::OperandMismatchError: {
             formattingError = true;
             resolutionAndFormattingErrors->adoptElement(errorP, status);
             break;

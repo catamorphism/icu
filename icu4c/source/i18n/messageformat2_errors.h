@@ -60,6 +60,7 @@ namespace message2 {
     enum DynamicErrorType {
         UnresolvedVariable,
         FormattingError,
+        OperandMismatchError,
         ReservedError,
         SelectorError,
         UnknownFunction,
@@ -122,6 +123,7 @@ namespace message2 {
         void setFormattingError(const FunctionName&, UErrorCode&);
         // Used when the name of the offending formatter is unknown
         void setFormattingError(UErrorCode&);
+        void setOperandMismatchError(const FunctionName&, UErrorCode&);
         bool hasDataModelError() const { return staticErrors.hasDataModelError(); }
         bool hasFormattingError() const { return formattingError; }
         bool hasSelectorError() const { return selectorError; }
