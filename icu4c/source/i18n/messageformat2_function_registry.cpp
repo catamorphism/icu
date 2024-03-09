@@ -254,7 +254,8 @@ FunctionRegistry::~FunctionRegistry() {
                 UErrorCode localErrorCode = U_ZERO_ERROR;
                 minFractionDigits = getInt64Value(number.locale, opt, localErrorCode);
                 if (U_FAILURE(localErrorCode)) {
-                    minFractionDigits = 0;
+                    // Bad option => formatting error
+                    status = U_FORMATTING_ERROR;
                 }
             }
             nf = number::NumberFormatter::with()
@@ -309,6 +310,7 @@ static FormattedPlaceholder stringAsNumber(const Locale& locale, const number::L
     UErrorCode localErrorCode = U_ZERO_ERROR;
     strToDouble(inputStr, locale, numberValue, localErrorCode);
     if (U_FAILURE(localErrorCode)) {
+        errorCode = U_OPERAND_MISMATCH_ERROR;
         return notANumber(input);
     }
     UErrorCode savedStatus = errorCode;
@@ -361,6 +363,7 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
 
     // No argument => return "NaN"
     if (!arg.canFormat()) {
+        errorCode = U_OPERAND_MISMATCH_ERROR;
         return notANumber(arg);
     }
 
@@ -406,6 +409,7 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
         }
         default: {
             // Other types can't be parsed as a number
+            errorCode = U_OPERAND_MISMATCH_ERROR;
             return notANumber(arg);
         }
         }
@@ -685,6 +689,9 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
     const Formattable& source = toFormat.asFormattable();
     df->format(source.asICUFormattable(errorCode), result, 0, errorCode);
     if (U_FAILURE(errorCode)) {
+        if (errorCode == U_ILLEGAL_ARGUMENT_ERROR) {
+            errorCode = U_OPERAND_MISMATCH_ERROR;
+        }
         return {};
     }
     return FormattedPlaceholder(toFormat, FormattedValue(std::move(result)));
