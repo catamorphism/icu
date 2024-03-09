@@ -97,17 +97,20 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("hello {|foo| :number}")
-                                .setExpected("hello NaN")
+                                .setExpected("hello {|foo|}")
+                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("hello {:number}")
-                                .setExpected("hello NaN")
+                                .setExpected("hello {:number}")
+                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
 
     test = testBuilder.setPattern("hello {|4.2| :number minimumFractionDigits=2}")
+                                .setExpectSuccess()
                                 .setExpected("hello 4.20")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -158,18 +161,21 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $foo = {$bar :number minimumFractionDigits=foo} {{bar {$foo}}}")
-                                .setExpected("bar 4.2")
+                                .setExpected("bar {$bar}")
+                                .setExpectedError(U_FORMATTING_ERROR)
                                 .setArgument("bar", 4.2)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $foo = {$bar :number} {{bar {$foo}}}")
-                                .setExpected("bar NaN")
+                                .setExpected("bar {$bar}")
+                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
                                 .setArgument("bar", "foo")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $foo = {$baz} .local $bar = {$foo} {{bar {$bar}}}")
+                                .setExpectSuccess()
                                 .setExpected("bar foo")
                                 .setArgument("baz", "foo")
                                 .build();
@@ -722,26 +728,123 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    // TODO: The spec says "only integer matching is required"; I'm not sure
-    // how the result can be "=1.2" if only integer matching is done
-    /*
-      See https://github.com/unicode-org/message-format-wg/issues/713
+    // Functions: number
 
-      test = testBuilder.setPattern(".match {$foo :integer} 1.2 {{=1.2}} one {{one}} * {{other}}")
+    test = testBuilder.setPattern("hello {4.2 :number}")
                                 .setExpectSuccess()
-                                .setArgument("foo", 1.2)
-                                .setExpected("=1.2")
+                                .setExpected("hello 4.2")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    // TODO: Likewise
-    test = testBuilder.setPattern(".match {$foo :integer} 1.2 {{=1.2}} |1,2| {{=1,2}} * {{other}}")
+    test = testBuilder.setPattern("hello {-4.20 :number}")
                                 .setExpectSuccess()
-                                .setLocale(Locale("fr"))
-                                .setArgument("foo", 1.2)
-                                .setExpected("=1.2")
+                                .setExpected("hello -4.2")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
-    */
+
+    test = testBuilder.setPattern("hello {0.42e+1 :number}")
+                                .setExpectSuccess()
+                                .setExpected("hello 4.2")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {foo :number}")
+                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpected("hello {|foo|}")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {:number}")
+                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpected("hello {:number}")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {4.2 :number minimumFractionDigits=2}")
+                                .setExpectSuccess()
+                                .setExpected("hello 4.20")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {4.2 :number minimumFractionDigits=|2|}")
+                                .setExpectSuccess()
+                                .setExpected("hello 4.20")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {4.2 :number minimumFractionDigits=$foo}")
+                                .setExpectSuccess()
+                                .setArgument("foo", (int64_t) 2)
+                                .setExpected("hello 4.20")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {|4.2| :number minimumFractionDigits=$foo}")
+                                .setExpectSuccess()
+                                .setArgument("foo", (int64_t) 2)
+                                .setExpected("hello 4.20")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $foo = {$bar :number} {{bar {$foo}}}")
+                                .setExpectSuccess()
+                                .setArgument("bar", 4.2)
+                                .setExpected("bar 4.2")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $foo = {$bar :number minimumFractionDigits=2} {{bar {$foo}}}")
+                                .setExpectSuccess()
+                                .setArgument("bar", 4.2)
+                                .setExpected("bar 4.20")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $foo = {$bar :number minimumFractionDigits=foo} {{bar {$foo}}}")
+                                .setExpectedError(U_FORMATTING_ERROR)
+                                .setArgument("bar", 4.2)
+                                .setExpected("bar {$bar}")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $foo = {$bar :number} {{bar {$foo}}}")
+                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setArgument("bar", "foo")
+                                  .setExpected("bar {$bar}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$foo :number} {{bar {$foo}}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", 4.2)
+                                  .setExpected("bar 4.2")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$foo :number minimumFractionDigits=2} {{bar {$foo}}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", 4.2)
+                                  .setExpected("bar 4.20")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    // TODO: Test other option names and make sure all of them error out properly
+    test = testBuilder.setPattern(".input {$foo :number minimumFractionDigits=foo} {{bar {$foo}}}")
+                                .setExpectedError(U_FORMATTING_ERROR)
+                                .setArgument("foo", 4.2)
+                                .setExpected("bar {$foo}")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$foo :number} {{bar {$foo}}}")
+                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setArgument("foo", "foo")
+                                  .setExpected("bar {$foo}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    // Resume at https://github.com/unicode-org/message-format-wg/blob/main/test/test-functions.json#L100
+
+    // TODO: tests for other function options?
 }
 #endif /* #if !UCONFIG_NO_FORMATTING */
