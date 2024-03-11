@@ -144,13 +144,9 @@ void FunctionRegistry::checkStandard() const {
     // TODO: add date and time
     checkFormatter("number");
     checkFormatter("integer");
-    // TODO: rename to "string"
-    checkFormatter("identity");
     checkSelector("number");
-    checkSelector("string");
-    // TODO: remove
-    checkSelector("gender");
     checkSelector("integer");
+    checkSelector("string");
 }
 
 // Formatter/selector helpers
