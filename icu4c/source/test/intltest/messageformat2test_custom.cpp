@@ -115,7 +115,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
     UnicodeString message = ".local $hostName = {$host :person length=long}\n\
                 .local $guestName = {$guest :person length=long}\n\
                 .input {$guestCount :number}\n\
-                .match {$hostGender :gender} {$guestCount :plural}\n\
+                .match {$hostGender :gender} {$guestCount :number}\n\
                  female 0 {{{$hostName} does not give a party.}}\n\
                  female 1 {{{$hostName} invites {$guestName} to her party.}}\n\
                  female 2 {{{$hostName} invites {$guestName} and one other person to her party.}}\n\

@@ -144,7 +144,7 @@ void TestMessageFormat2::testSpecialPluralWithDecimals(TestCase::Builder& testBu
     UnicodeString message;
 
     message = ".local $amount = {$count :number}\n\
-                .match {$amount :plural}\n\
+                .match {$amount :number}\n\
                   1 {{I have {$amount} dollar.}}\n\
                   * {{I have {$amount} dollars.}}";
 
@@ -157,7 +157,7 @@ void TestMessageFormat2::testSpecialPluralWithDecimals(TestCase::Builder& testBu
     TestUtils::runTestCase(*this, test, errorCode);
 
     message = ".local $amount = {$count :number skeleton=|.00*|}\n\
-                .match {$amount :plural skeleton=|.00*|}\n\
+                .match {$amount :number skeleton=|.00*|}\n\
                    1 {{I have {$amount} dollar.}}\n\
                    * {{I have {$amount} dollars.}}";
 
@@ -201,7 +201,7 @@ void TestMessageFormat2::testSimpleSelection(TestCase::Builder& testBuilder, Icu
 void TestMessageFormat2::testComplexSelection(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    UnicodeString message = ".match {$photoCount :plural} {$userGender :select}\n\
+    UnicodeString message = ".match {$photoCount :number} {$userGender :select}\n\
                   1 masculine {{{$userName} added a new photo to his album.}}\n\
                   1 feminine {{{$userName} added a new photo to her album.}}\n\
                   1 * {{{$userName} added a new photo to their album.}}\n\
@@ -279,7 +279,7 @@ void TestMessageFormat2::testLocalVariableWithSelect(TestCase::Builder& testBuil
     CHECK_ERROR(errorCode);
 
     testBuilder.setPattern(".input {$expDate :datetime skeleton=yMMMdE}\n\
-                .match {$count :plural}\n\
+                .match {$count :number}\n\
                  1 {{Your ticket expires on {$expDate}.}}\n\
                  * {{Your {$count} tickets expire on {$expDate}.}}");
 
@@ -360,7 +360,7 @@ void TestMessageFormat2::testDateFormat(TestCase::Builder& testBuilder, IcuTestE
 }
 
 void TestMessageFormat2::testPlural(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    UnicodeString message = ".match {$count :plural}\n\
+    UnicodeString message = ".match {$count :number}\n\
                  1 {{You have one notification.}}\n           \
                  * {{You have {$count} notifications.}}";
 

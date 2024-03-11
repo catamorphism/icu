@@ -244,7 +244,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {$foo :plural}  1 {{one}}  * {{other}}")
+    test = testBuilder.setPattern(".match {$foo :number}  1 {{one}}  * {{other}}")
                                 .setExpected("one")
                                 .setArgument("foo", (int64_t) 1)
                                 .build();
@@ -253,7 +253,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
 /*
   This case can't be tested without a way to set the "foo" argument to null
 
-    test = testBuilder.setPattern(".match {$foo :plural}  1 {{one}}  * {{other}}")
+    test = testBuilder.setPattern(".match {$foo :number}  1 {{one}}  * {{other}}")
                                 .setExpected("other")
                                 .setArgument("foo", "", errorCode)
                                 .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
@@ -261,45 +261,45 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
 */
 
-    test = testBuilder.setPattern(".match {$foo :plural}  one {{one}}  * {{other}}")
+    test = testBuilder.setPattern(".match {$foo :number}  one {{one}}  * {{other}}")
                                 .setExpected("one")
                                 .setArgument("foo", (int64_t) 1)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {$foo :plural}  1 {{=1}}  one {{one}}  * {{other}}")
+    test = testBuilder.setPattern(".match {$foo :number}  1 {{=1}}  one {{one}}  * {{other}}")
                                 .setExpected("=1")
                                 .setArgument("foo", "1")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {$foo :plural}  1 {{=1}}  one {{one}}  * {{other}}")
+    test = testBuilder.setPattern(".match {$foo :number}  1 {{=1}}  one {{one}}  * {{other}}")
                                 .setExpected("=1")
                                 .setArgument("foo", (int64_t) 1)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {$foo :plural}  one {{one}}  1 {{=1}}  * {{other}}")
+    test = testBuilder.setPattern(".match {$foo :number}  one {{one}}  1 {{=1}}  * {{other}}")
                                 .setExpected("=1")
                                 .setArgument("foo", (int64_t) 1)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {$foo :plural} {$bar :plural}  one one {{one one}}  one * {{one other}}  * * {{other}}")
+    test = testBuilder.setPattern(".match {$foo :number} {$bar :number}  one one {{one one}}  one * {{one other}}  * * {{other}}")
                                 .setExpected("one one")
                                 .setArgument("foo", (int64_t) 1)
                                 .setArgument("bar", (int64_t) 1)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {$foo :plural} {$bar :plural}  one one {{one one}}  one * {{one other}}  * * {{other}}")
+    test = testBuilder.setPattern(".match {$foo :number} {$bar :number}  one one {{one one}}  one * {{one other}}  * * {{other}}")
                                 .setExpected("one other")
                                 .setArgument("foo", (int64_t) 1)
                                 .setArgument("bar", (int64_t) 2)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {$foo :plural} {$bar :plural}  one one {{one one}}  one * {{one other}}  * * {{other}}")
+    test = testBuilder.setPattern(".match {$foo :number} {$bar :number}  one one {{one one}}  one * {{one other}}  * * {{other}}")
                                 .setExpected("other")
                                 .setArgument("foo", (int64_t) 2)
                                 .setArgument("bar", (int64_t) 2)
@@ -313,19 +313,19 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
 
 
-    test = testBuilder.setPattern(".local $foo = {$bar :plural} .match {$foo}  one {{one}}  * {{other}}")
+    test = testBuilder.setPattern(".local $foo = {$bar :number} .match {$foo}  one {{one}}  * {{other}}")
                                 .setExpected("one")
                                 .setArgument("bar", (int64_t) 1)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".local $foo = {$bar :plural} .match {$foo}  one {{one}}  * {{other}}")
+    test = testBuilder.setPattern(".local $foo = {$bar :number} .match {$foo}  one {{one}}  * {{other}}")
                                 .setExpected("other")
                                 .setArgument("bar", (int64_t) 2)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".local $bar = {$none} .match {$foo :plural}  one {{one}}  * {{{$bar}}}")
+    test = testBuilder.setPattern(".local $bar = {$none} .match {$foo :number}  one {{one}}  * {{{$bar}}}")
                                 .setExpected("one")
                                 .setArgument("foo", (int64_t) 1)
                                 .build();
@@ -339,7 +339,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
 https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fallback-resolution -
 " an error occurs in an expression with a variable operand and the variable refers to a local declaration, the fallback value is formatted based on the expression on the right-hand side of the declaration, rather than the expression in the selector or pattern."
 */
-    test = testBuilder.setPattern(".local $bar = {$none} .match {$foo :plural}  one {{one}}  * {{{$bar}}}")
+    test = testBuilder.setPattern(".local $bar = {$none} .match {$foo :number}  one {{one}}  * {{{$bar}}}")
                                 .setExpected("{$none}")
                                 .setArgument("foo", (int64_t) 2)
                                 .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
@@ -565,13 +565,13 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {$foo :plural}  * * {{foo}}")
+    test = testBuilder.setPattern(".match {$foo :number}  * * {{foo}}")
                       .clearExpected()
                       .setExpectedError(U_VARIANT_KEY_MISMATCH_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {$foo :plural} {$bar :plural}  * {{foo}}")
+    test = testBuilder.setPattern(".match {$foo :number} {$bar :number}  * {{foo}}")
                       .clearExpected()
                       .setExpectedError(U_VARIANT_KEY_MISMATCH_ERROR)
                       .build();
@@ -1003,7 +1003,23 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    // https://github.com/unicode-org/message-format-wg/blob/main/test/test-functions.json#L278
+
+    // Same for `plural`
+
+    test = testBuilder.setPattern(".match {$foo :plural} one {{one}} * {{other}}")
+                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("other")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {42 :plural}")
+                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setExpected("hello {|42|}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    // https://github.com/unicode-org/message-format-wg/blob/main/test/test-functions.json#L291
     // Resume ^
 
     // TODO: tests for other function options?
