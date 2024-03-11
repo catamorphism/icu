@@ -976,7 +976,34 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
     */
 
-    // https://github.com/unicode-org/message-format-wg/blob/main/test/test-functions.json#L265
+    // Neither `ordinal` nor `selectordinal` exists in this spec version
+    test = testBuilder.setPattern(".match {$foo :ordinal} one {{st}} two {{nd}} few {{rd}} * {{th}}")
+                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("th")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {42 :ordinal}")
+                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setExpected("hello {|42|}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".match {$foo :selectordinal} one {{st}} two {{nd}} few {{rd}} * {{th}}")
+                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("th")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("hello {42 :selectordinal}")
+                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setExpected("hello {|42|}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    // https://github.com/unicode-org/message-format-wg/blob/main/test/test-functions.json#L278
     // Resume ^
 
     // TODO: tests for other function options?

@@ -111,7 +111,6 @@ namespace message2 {
             .setFormatter(FunctionName(UnicodeString("identity")), identity, success)
             .setSelector(FunctionName(UnicodeString("plural")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
             .setSelector(FunctionName(UnicodeString("number")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
-            .setSelector(FunctionName(UnicodeString("selectordinal")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_ORDINAL), success)
             .setSelector(FunctionName(UnicodeString("integer")), new StandardFunctions::PluralFactory(StandardFunctions::PluralFactory::integer()), success)
             .setSelector(FunctionName(UnicodeString("select")), new StandardFunctions::TextFactory(), success)
             .setSelector(FunctionName(UnicodeString("gender")), new StandardFunctions::TextFactory(), success);

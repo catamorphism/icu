@@ -114,20 +114,20 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
 
     UnicodeString message = ".local $hostName = {$host :person length=long}\n\
                 .local $guestName = {$guest :person length=long}\n\
-                .local $guestsOther = {$guestCount :number offset=1}\n\
+                .input {$guestCount :number}\n\
                 .match {$hostGender :gender} {$guestCount :plural}\n\
                  female 0 {{{$hostName} does not give a party.}}\n\
                  female 1 {{{$hostName} invites {$guestName} to her party.}}\n\
                  female 2 {{{$hostName} invites {$guestName} and one other person to her party.}}\n\
-                 female * {{{$hostName} invites {$guestName} and {$guestsOther} other people to her party.}}\n\
+                 female * {{{$hostName} invites {$guestCount} people, including {$guestName}, to her party.}}\n\
                  male 0 {{{$hostName} does not give a party.}}\n\
                  male 1 {{{$hostName} invites {$guestName} to his party.}}\n\
                  male 2 {{{$hostName} invites {$guestName} and one other person to his party.}}\n\
-                 male * {{{$hostName} invites {$guestName} and {$guestsOther} other people to his party.}}\n\
+                 male * {{{$hostName} invites {$guestCount} people, including {$guestName}, to his party.}}\n\
                  * 0 {{{$hostName} does not give a party.}}\n\
                  * 1 {{{$hostName} invites {$guestName} to their party.}}\n\
                  * 2 {{{$hostName} invites {$guestName} and one other person to their party.}}\n\
-                 * * {{{$hostName} invites {$guestName} and {$guestsOther} other people to their party.}}";
+                 * * {{{$hostName} invites {$guestCount} people, including {$guestName}, to their party.}}";
 
 
     TestCase::Builder testBuilder;
@@ -140,7 +140,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
         .setArgument(hostGender, "female")
         .setArgument(guest, john.getAlias())
         .setArgument(guestCount, (int64_t) 3)
-        .setExpected("Ms. Jane Doe invites Mr. John Doe and 2 other people to her party.")
+        .setExpected("Ms. Jane Doe invites 3 people, including Mr. John Doe, to her party.")
         .setExpectSuccess()
         .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -167,7 +167,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
                                 .setArgument(hostGender, "male")
                                 .setArgument(guest, jane.getAlias())
                                 .setArgument(guestCount, (int64_t) 3)
-                                .setExpected("Mr. John Doe invites Ms. Jane Doe and 2 other people to his party.")
+                                .setExpected("Mr. John Doe invites 3 people, including Ms. Jane Doe, to his party.")
                                 .setExpectSuccess()
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);

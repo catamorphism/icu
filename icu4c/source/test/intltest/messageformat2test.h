@@ -96,11 +96,7 @@ private:
 
     void testPluralOrdinal(message2::TestCase::Builder&, IcuTestErrorCode&);
     void testFormatterIsCreatedOnce(IcuTestErrorCode&);
-    void testPluralWithOffset(message2::TestCase::Builder&, IcuTestErrorCode&);
-    void testPluralWithOffsetAndLocalVar(message2::TestCase::Builder&, IcuTestErrorCode&);
     void testDeclareBeforeUse(message2::TestCase::Builder&, IcuTestErrorCode&);
-    void testVariableOptionsInSelector(message2::TestCase::Builder&, IcuTestErrorCode&);
-    void testVariableOptionsInSelectorWithLocalVar(message2::TestCase::Builder&, IcuTestErrorCode&);
 
     // MessageFormat 1 tests
     void testSample(message2::TestCase::Builder&, IcuTestErrorCode&);

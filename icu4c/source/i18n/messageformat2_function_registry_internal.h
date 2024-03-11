@@ -114,10 +114,9 @@ namespace message2 {
             friend class IntegerFactory;
             friend class MessageFormatter;
 
-            PluralFactory(UPluralType t) : type(t) {}
-            PluralFactory(UPluralType t, bool isInt) : type(t), isInteger(isInt) {}
-            static PluralFactory integer() { return PluralFactory(UPLURAL_TYPE_CARDINAL, true);}
-            const UPluralType type;
+            PluralFactory() {}
+            PluralFactory(bool isInt) : isInteger(isInt) {}
+            static PluralFactory integer() { return PluralFactory(true);}
             const bool isInteger = false;
         };
 
@@ -136,14 +135,19 @@ namespace message2 {
             friend class IntegerFactory;
             friend class PluralFactory;
 
-            // Adopts `r`
-            Plural(const Locale& loc, PluralRules* r) : locale(loc), rules(r) {}
-            Plural(const Locale& loc, PluralRules* r, bool isInt) : locale(loc), isInteger(isInt), rules(r) {}
-            static Plural integer(const Locale& loc, PluralRules* r) { return Plural(loc, r, true); }
-
+            // Can't use UPluralType for this since we want to include
+            // exact matching as an option
+            typedef enum PluralType {
+                PLURAL_ORDINAL,
+                PLURAL_CARDINAL,
+                PLURAL_EXACT
+            } PluralType;
+            Plural(const Locale& loc) : locale(loc) {}
+            Plural(const Locale& loc, bool isInt) : locale(loc), isInteger(isInt) {}
+            static Plural integer(const Locale& loc) { return Plural(loc, true); }
+            PluralType pluralType(const FunctionOptions& opts) const;
             const Locale& locale;
             const bool isInteger = false;
-            LocalPointer<PluralRules> rules;
         };
 
         class TextFactory : public SelectorFactory {
