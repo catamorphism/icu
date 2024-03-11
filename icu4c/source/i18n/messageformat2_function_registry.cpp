@@ -148,8 +148,6 @@ void FunctionRegistry::checkStandard() const {
     checkFormatter("identity");
     checkSelector("plural");
     checkSelector("number");
-    // TODO: rename to "ordinal"
-    checkSelector("selectordinal");
     // TODO: rename to "string"
     checkSelector("select");
     // TODO: remove
@@ -300,7 +298,7 @@ static FormattedPlaceholder notANumber(const FormattedPlaceholder& input) {
     return FormattedPlaceholder(input, FormattedValue(UnicodeString("NaN")));
 }
 
-static FormattedPlaceholder stringAsNumber(const Locale& locale, const number::LocalizedNumberFormatter& nf, const FormattedPlaceholder& input, int64_t offset, UErrorCode& errorCode) {
+static FormattedPlaceholder stringAsNumber(const Locale& locale, const number::LocalizedNumberFormatter& nf, const FormattedPlaceholder& input, UErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -320,7 +318,7 @@ static FormattedPlaceholder stringAsNumber(const Locale& locale, const number::L
         return notANumber(input);
     }
     UErrorCode savedStatus = errorCode;
-    number::FormattedNumber result = nf.formatDouble(numberValue - offset, errorCode);
+    number::FormattedNumber result = nf.formatDouble(numberValue, errorCode);
     // Ignore U_USING_DEFAULT_WARNING
     if (errorCode == U_USING_DEFAULT_WARNING) {
         errorCode = savedStatus;
@@ -373,16 +371,6 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
         return notANumber(arg);
     }
 
-    int64_t offset = 0;
-    Formattable opt;
-    if (opts.getFunctionOption(UnicodeString("offset"), opt)) {
-        UErrorCode localErrorCode = U_ZERO_ERROR;
-        offset = getInt64Value(locale, opt, localErrorCode);
-        if (U_FAILURE(localErrorCode)) {
-            offset = 0;
-        }
-    }
-
     number::LocalizedNumberFormatter realFormatter;
     realFormatter = formatterForOptions(*this, opts, errorCode);
 
@@ -394,24 +382,24 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
         case UFMT_DOUBLE: {
             double d = toFormat.getDouble(errorCode);
             U_ASSERT(U_SUCCESS(errorCode));
-            numberResult = realFormatter.formatDouble(d - offset, errorCode);
+            numberResult = realFormatter.formatDouble(d, errorCode);
             break;
         }
         case UFMT_LONG: {
             int32_t l = toFormat.getLong(errorCode);
             U_ASSERT(U_SUCCESS(errorCode));
-            numberResult = realFormatter.formatInt(l - offset, errorCode);
+            numberResult = realFormatter.formatInt(l, errorCode);
             break;
         }
         case UFMT_INT64: {
             int64_t i = toFormat.getInt64(errorCode);
             U_ASSERT(U_SUCCESS(errorCode));
-            numberResult = realFormatter.formatInt(i - offset, errorCode);
+            numberResult = realFormatter.formatInt(i, errorCode);
             break;
         }
         case UFMT_STRING: {
             // Try to parse the string as a number
-            return stringAsNumber(locale, realFormatter, arg, offset, errorCode);
+            return stringAsNumber(locale, realFormatter, arg, errorCode);
         }
         default: {
             // Other types can't be parsed as a number
@@ -429,17 +417,33 @@ StandardFunctions::NumberFactory::~NumberFactory() {}
 
 // --------- PluralFactory
 
+
+StandardFunctions::Plural::PluralType StandardFunctions::Plural::pluralType(const FunctionOptions& opts) const {
+    Formattable opt;
+
+    if (opts.getFunctionOption(UnicodeString("select"), opt)) {
+        UErrorCode localErrorCode = U_ZERO_ERROR;
+        UnicodeString val = opt.getString(localErrorCode);
+        if (U_SUCCESS(localErrorCode)) {
+            if (val == UnicodeString("ordinal")) {
+                return PluralType::PLURAL_ORDINAL;
+            }
+            if (val == UnicodeString("exact")) {
+                return PluralType::PLURAL_EXACT;
+            }
+        }
+    }
+    return PluralType::PLURAL_CARDINAL;
+}
+
 Selector* StandardFunctions::PluralFactory::createSelector(const Locale& locale, UErrorCode& errorCode) const {
     NULL_ON_ERROR(errorCode);
 
-    // Look up plural rules by locale
-    LocalPointer<PluralRules> rules(PluralRules::forLocale(locale, type, errorCode));
-    NULL_ON_ERROR(errorCode);
     Selector* result;
     if (isInteger) {
-        result = new Plural(Plural::integer(locale, rules.orphan()));
+        result = new Plural(Plural::integer(locale));
     } else {
-        result = new Plural(locale, rules.orphan());
+        result = new Plural(locale);
     }
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
@@ -513,16 +517,6 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
         return;
     }
 
-    int64_t offset = 0;
-    Formattable opt;
-    if (opts.getFunctionOption(UnicodeString("offset"), opt)) {
-        UErrorCode localErrorCode = U_ZERO_ERROR;
-        offset = getInt64Value(locale, opt, localErrorCode);
-        if (U_FAILURE(localErrorCode)) {
-            offset = 0;
-        }
-    }
-
     // Only doubles and integers can match
     double valToCheck;
 
@@ -566,9 +560,17 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
         }
     }
 
-    if (prefsLen == keysLen) {
+    PluralType type = pluralType(opts);
+    // Return immediately if exact matching was requested
+    if (prefsLen == keysLen || type == PluralType::PLURAL_EXACT) {
         return;
     }
+
+    UPluralType t = type == PluralType::PLURAL_ORDINAL ? UPLURAL_TYPE_ORDINAL : UPLURAL_TYPE_CARDINAL;
+    // Look up plural rules by locale and type
+    LocalPointer<PluralRules> rules(PluralRules::forLocale(locale, t, errorCode));
+    CHECK_ERROR(errorCode);
+
 
     // Check for a match based on the plural category
     UnicodeString match;
@@ -576,10 +578,9 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
         match = rules->select(toFormat.output().getNumber(), errorCode);
     } else {
         if (isInteger) {
-            int32_t valMinusOffset = static_cast<int32_t>(trunc(valToCheck)) - offset;
-            match = rules->select(valMinusOffset);
+            match = rules->select(static_cast<int32_t>(trunc(valToCheck)));
         } else {
-            match = rules->select(valToCheck - offset);
+            match = rules->select(valToCheck);
         }
     }
     CHECK_ERROR(errorCode);
