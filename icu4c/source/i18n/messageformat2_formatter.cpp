@@ -111,7 +111,7 @@ namespace message2 {
             .setFormatter(FunctionName(UnicodeString("identity")), identity, success)
             .setSelector(FunctionName(UnicodeString("number")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
             .setSelector(FunctionName(UnicodeString("integer")), new StandardFunctions::PluralFactory(StandardFunctions::PluralFactory::integer()), success)
-            .setSelector(FunctionName(UnicodeString("select")), new StandardFunctions::TextFactory(), success)
+            .setSelector(FunctionName(UnicodeString("string")), new StandardFunctions::TextFactory(), success)
             .setSelector(FunctionName(UnicodeString("gender")), new StandardFunctions::TextFactory(), success);
         CHECK_ERROR(success);
         standardFunctionRegistry = standardFunctionsBuilder.build();

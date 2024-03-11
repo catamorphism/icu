@@ -237,7 +237,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
 */
 
-    test = testBuilder.setPattern(".match {$foo :select}  |1| {{one}}  * {{other}}")
+    test = testBuilder.setPattern(".match {$foo :string}  |1| {{one}}  * {{other}}")
                                 .setExpected("one")
                                 .setExpectSuccess()
                                 .setArgument("foo", (int64_t) 1)
@@ -306,7 +306,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {|foo| :select} *{{foo}}")
+    test = testBuilder.setPattern(".match {|foo| :string} *{{foo}}")
                       .setExpectSuccess()
                       .setExpected("foo")
                       .build();
@@ -990,14 +990,14 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".match {$foo :selectordinal} one {{st}} two {{nd}} few {{rd}} * {{th}}")
+    test = testBuilder.setPattern(".match {$foo :stringordinal} one {{st}} two {{nd}} few {{rd}} * {{th}}")
                                   .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
                                   .setArgument("foo", (int64_t) 1)
                                   .setExpected("th")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("hello {42 :selectordinal}")
+    test = testBuilder.setPattern("hello {42 :stringordinal}")
                                   .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
                                   .setExpected("hello {|42|}")
                                   .build();
@@ -1018,6 +1018,49 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                   .setExpected("hello {|42|}")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
+
+    // :string
+
+    test = testBuilder.setPattern(".match {$foo :string} |1| {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".match {$foo :string} 1 {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    // The spec test with argument "foo" set to null is omitted, since
+    // this implementation doesn't support null arguments
+
+    test = testBuilder.setPattern(".match {$foo :string} 1 {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (double) 42.5)
+                                  .setExpected("other")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".match {$foo :string} 1 {{one}} * {{other}}")
+                                  .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                  .clearArguments()
+                                  .setExpected("other")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+
+    // There is no `:select` in this version of the spec
+    test = testBuilder.setPattern(".match {$foo :select} one {{one}} * {{other}}")
+                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("other")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
 
     // https://github.com/unicode-org/message-format-wg/blob/main/test/test-functions.json#L291
     // Resume ^
