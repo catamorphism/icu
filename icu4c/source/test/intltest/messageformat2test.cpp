@@ -97,9 +97,9 @@ TestResult validTestCases[] = {
 
 static const int32_t numResolutionErrors = 3;
 TestResultError jsonTestCasesResolutionError[] = {
-    {".local $foo = {$bar} .match {$foo :plural}  one {{one}}  * {{other}}", "other", U_UNRESOLVED_VARIABLE_ERROR},
-    {".local $foo = {$bar} .match {$foo :plural}  one {{one}}  * {{other}}", "other", U_UNRESOLVED_VARIABLE_ERROR},
-    {".local $bar = {$none :plural} .match {$foo :select}  one {{one}}  * {{{$bar}}}", "{$none}", U_UNRESOLVED_VARIABLE_ERROR}
+    {".local $foo = {$bar} .match {$foo :number}  one {{one}}  * {{other}}", "other", U_UNRESOLVED_VARIABLE_ERROR},
+    {".local $foo = {$bar} .match {$foo :number}  one {{one}}  * {{other}}", "other", U_UNRESOLVED_VARIABLE_ERROR},
+    {".local $bar = {$none :number} .match {$foo :select}  one {{one}}  * {{{$bar}}}", "{$none}", U_UNRESOLVED_VARIABLE_ERROR}
 };
 
 static const int32_t numReservedErrors = 34;
@@ -298,7 +298,7 @@ void TestMessageFormat2::testAPISimple() {
     argsBuilder["userName"] = message2::Formattable("Maria");
     args = MessageArguments(argsBuilder, errorCode);
 
-    mf = builder.setPattern(".match {$photoCount :plural} {$userGender :select}\n\
+    mf = builder.setPattern(".match {$photoCount :number} {$userGender :select}\n\
                       1 masculine {{{$userName} added a new photo to his album.}}\n \
                       1 feminine {{{$userName} added a new photo to her album.}}\n \
                       1 * {{{$userName} added a new photo to their album.}}\n \
@@ -363,7 +363,7 @@ void TestMessageFormat2::testAPI() {
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Built-in functions
-    pattern = ".match {$photoCount :plural} {$userGender :select}\n\
+    pattern = ".match {$photoCount :number} {$userGender :select}\n\
                       1 masculine {{{$userName} added a new photo to his album.}}\n \
                       1 feminine {{{$userName} added a new photo to her album.}}\n \
                       1 * {{{$userName} added a new photo to their album.}}\n \
@@ -638,25 +638,25 @@ void TestMessageFormat2::testDataModelErrors() {
     // Examples taken from https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md
 
     // Variant key mismatch
-    testSemanticallyInvalidPattern(++i, ".match {$foo :plural} {$bar :plural}  one{{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, ".match {$foo :plural} {$bar :plural}  one {{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, ".match {$foo :plural} {$bar :plural}  one  {{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :number} {$bar :number}  one{{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :number} {$bar :number}  one {{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :number} {$bar :number}  one  {{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
 
-    testSemanticallyInvalidPattern(++i, ".match {$foo :plural}  * * {{foo}}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, ".match {$one :plural}\n\
+    testSemanticallyInvalidPattern(++i, ".match {$foo :number}  * * {{foo}}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$one :number}\n\
                               1 2 {{Too many}}\n\
                               * {{Otherwise}}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, ".match {$one :plural} {$two :plural}\n\
+    testSemanticallyInvalidPattern(++i, ".match {$one :number} {$two :number}\n\
                               1 2 {{Two keys}}\n\
                               * {{Missing a key}}\n\
                               * * {{Otherwise}}", U_VARIANT_KEY_MISMATCH_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {$foo :x} {$bar :x} * {{foo}}", U_VARIANT_KEY_MISMATCH_ERROR);
 
     // Non-exhaustive patterns
-    testSemanticallyInvalidPattern(++i, ".match {$one :plural}\n\
+    testSemanticallyInvalidPattern(++i, ".match {$one :number}\n\
                                           1 {{Value is one}}\n\
                                           2 {{Value is two}}", U_NONEXHAUSTIVE_PATTERN_ERROR);
-    testSemanticallyInvalidPattern(++i, ".match {$one :plural} {$two :plural}\n\
+    testSemanticallyInvalidPattern(++i, ".match {$one :number} {$two :number}\n\
                                           1 * {{First is one}}\n\
                                           * 1 {{Second is one}}", U_NONEXHAUSTIVE_PATTERN_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {:foo} 1 {{_}}", U_NONEXHAUSTIVE_PATTERN_ERROR);
@@ -765,10 +765,10 @@ void TestMessageFormat2::testResolutionErrors() {
 
     // Selector error
     // Here, the plural selector returns "no match" so the * variant matches
-    testRuntimeWarningPattern(++i, ".match {|horse| :plural}\n\
+    testRuntimeWarningPattern(++i, ".match {|horse| :number}\n\
                                    1 {{The value is one.}}\n\
                                    * {{The value is not one.}}", "The value is not one.", U_SELECTOR_ERROR);
-    testRuntimeWarningPattern(++i, ".local $sel = {|horse| :plural}\n\
+    testRuntimeWarningPattern(++i, ".local $sel = {|horse| :number}\n\
                                   .match {$sel}\n\
                                    1 {{The value is one.}}\n\
                                    * {{The value is not one.}}", "The value is not one.", U_SELECTOR_ERROR);
