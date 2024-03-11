@@ -540,9 +540,9 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
 /* static */ Hashtable* message2::ResourceManager::properties(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
-    UnicodeString* firefox = new UnicodeString(".match {$gcase :select}  genitive {{Firefoxin}}  * {{Firefox}}");
-    UnicodeString* chrome = new UnicodeString(".match {$gcase :select}  genitive {{Chromen}}  * {{Chrome}}");
-    UnicodeString* safari = new UnicodeString(".match {$gcase :select}  genitive {{Safarin}}  * {{Safari}}");
+    UnicodeString* firefox = new UnicodeString(".match {$gcase :string}  genitive {{Firefoxin}}  * {{Firefox}}");
+    UnicodeString* chrome = new UnicodeString(".match {$gcase :string}  genitive {{Chromen}}  * {{Chrome}}");
+    UnicodeString* safari = new UnicodeString(".match {$gcase :string}  genitive {{Safarin}}  * {{Safari}}");
 
     if (firefox != nullptr && chrome != nullptr && safari != nullptr) {
         Hashtable* result = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);

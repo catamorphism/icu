@@ -99,7 +99,7 @@ static const int32_t numResolutionErrors = 3;
 TestResultError jsonTestCasesResolutionError[] = {
     {".local $foo = {$bar} .match {$foo :number}  one {{one}}  * {{other}}", "other", U_UNRESOLVED_VARIABLE_ERROR},
     {".local $foo = {$bar} .match {$foo :number}  one {{one}}  * {{other}}", "other", U_UNRESOLVED_VARIABLE_ERROR},
-    {".local $bar = {$none :number} .match {$foo :select}  one {{one}}  * {{{$bar}}}", "{$none}", U_UNRESOLVED_VARIABLE_ERROR}
+    {".local $bar = {$none :number} .match {$foo :string}  one {{one}}  * {{{$bar}}}", "{$none}", U_UNRESOLVED_VARIABLE_ERROR}
 };
 
 static const int32_t numReservedErrors = 34;
@@ -118,7 +118,7 @@ UnicodeString reservedErrors[] = {
     "hello {|foo| *number}",
     "hello {#number}",
     "{<tag}",
-    ".local $bar = {$none ~plural} .match {$foo :select}  * {{{$bar}}}",
+    ".local $bar = {$none ~plural} .match {$foo :string}  * {{{$bar}}}",
     // tests for reserved syntax with escaped chars
     "hello {|4.2| %num\\\\ber}",
     "hello {|4.2| %num\\{be\\|r}",
@@ -154,23 +154,23 @@ UnicodeString reservedErrors[] = {
 static const int32_t numMatches = 15;
 UnicodeString matches[] = {
     // multiple scrutinees, with or without whitespace
-    "match {$foo :select} {$bar :select} when one * {one} when * * {other}",
-    "match {$foo :select} {$bar :select}when one * {one} when * * {other}",
-    "match {$foo :select}{$bar :select} when one * {one} when * * {other}",
-    "match {$foo :select}{$bar :select}when one * {one} when * * {other}",
-    "match{$foo :select} {$bar :select} when one * {one} when * * {other}",
-    "match{$foo :select} {$bar :select}when one * {one} when * * {other}",
-    "match{$foo :select}{$bar :select} when one * {one} when * * {other}",
-    "match{$foo :select}{$bar :select}when one * {one} when * * {other}",
+    "match {$foo :string} {$bar :string} when one * {one} when * * {other}",
+    "match {$foo :string} {$bar :string}when one * {one} when * * {other}",
+    "match {$foo :string}{$bar :string} when one * {one} when * * {other}",
+    "match {$foo :string}{$bar :string}when one * {one} when * * {other}",
+    "match{$foo :string} {$bar :string} when one * {one} when * * {other}",
+    "match{$foo :string} {$bar :string}when one * {one} when * * {other}",
+    "match{$foo :string}{$bar :string} when one * {one} when * * {other}",
+    "match{$foo :string}{$bar :string}when one * {one} when * * {other}",
     // multiple variants, with or without whitespace
-    "match {$foo :select} {$bar :select} when one * {one} when * * {other}",
-    "match {$foo :select} {$bar :select} when one * {one}when * * {other}",
-    "match {$foo :select} {$bar :select}when one * {one} when * * {other}",
-    "match {$foo :select} {$bar :select}when one * {one}when * * {other}",
+    "match {$foo :string} {$bar :string} when one * {one} when * * {other}",
+    "match {$foo :string} {$bar :string} when one * {one}when * * {other}",
+    "match {$foo :string} {$bar :string}when one * {one} when * * {other}",
+    "match {$foo :string} {$bar :string}when one * {one}when * * {other}",
     // one or multiple keys, with or without whitespace before pattern
-    "match {$foo :select} {$bar :select} when one *{one} when * * {foo}",
-    "match {$foo :select} {$bar :select} when one * {one} when * * {foo}",
-    "match {$foo :select} {$bar :select} when one *  {one} when * * {foo}",
+    "match {$foo :string} {$bar :string} when one *{one} when * * {foo}",
+    "match {$foo :string} {$bar :string} when one * {one} when * * {foo}",
+    "match {$foo :string} {$bar :string} when one *  {one} when * * {foo}",
     0
 };
 
@@ -298,7 +298,7 @@ void TestMessageFormat2::testAPISimple() {
     argsBuilder["userName"] = message2::Formattable("Maria");
     args = MessageArguments(argsBuilder, errorCode);
 
-    mf = builder.setPattern(".match {$photoCount :number} {$userGender :select}\n\
+    mf = builder.setPattern(".match {$photoCount :number} {$userGender :string}\n\
                       1 masculine {{{$userName} added a new photo to his album.}}\n \
                       1 feminine {{{$userName} added a new photo to her album.}}\n \
                       1 * {{{$userName} added a new photo to their album.}}\n \
@@ -342,7 +342,7 @@ void TestMessageFormat2::testAPI() {
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Pattern matching - plural
-    UnicodeString pattern = ".match {$photoCount :select} {$userGender :select}\n\
+    UnicodeString pattern = ".match {$photoCount :string} {$userGender :string}\n\
                       1 masculine {{{$userName} added a new photo to his album.}}\n \
                       1 feminine {{{$userName} added a new photo to her album.}}\n \
                       1 * {{{$userName} added a new photo to their album.}}\n \
@@ -363,7 +363,7 @@ void TestMessageFormat2::testAPI() {
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Built-in functions
-    pattern = ".match {$photoCount :number} {$userGender :select}\n\
+    pattern = ".match {$photoCount :number} {$userGender :string}\n\
                       1 masculine {{{$userName} added a new photo to his album.}}\n \
                       1 feminine {{{$userName} added a new photo to her album.}}\n \
                       1 * {{{$userName} added a new photo to their album.}}\n \
@@ -708,7 +708,7 @@ void TestMessageFormat2::testDataModelErrors() {
     testBuilder.setName("testDataModelErrors");
 
     // This should *not* trigger a "missing selector annotation" error
-    TestCase test = testBuilder.setPattern(".local $one = {|The one| :select}\n\
+    TestCase test = testBuilder.setPattern(".local $one = {|The one| :string}\n\
                  .match {$one}\n\
                   1 {{Value is one}}\n\
                   * {{Value is not one}}")
@@ -717,7 +717,7 @@ void TestMessageFormat2::testDataModelErrors() {
                           .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".local $one = {|The one| :select}\n\
+    test = testBuilder.setPattern(".local $one = {|The one| :string}\n\
                  .local $two = {$one}\n\
                  .match {$two}\n\
                   1 {{Value is one}}\n\
@@ -752,15 +752,15 @@ void TestMessageFormat2::testResolutionErrors() {
                                           * {{The value is not one.}}", "The value is not one.", U_SELECTOR_ERROR);
 
     // Using selector as formatter
-    testRuntimeWarningPattern(++i, ".match {|horse| :select}\n\
+    testRuntimeWarningPattern(++i, ".match {|horse| :string}\n\
                                           1 {{The value is one.}}\n   \
-                                          * {{{|horse| :select}}}",
+                                          * {{{|horse| :string}}}",
                               "{|horse|}", U_FORMATTING_ERROR);
 
     // Unsupported expressions
     testRuntimeErrorPattern(++i, "hello {|4.2| !number}", U_UNSUPPORTED_PROPERTY);
     testRuntimeErrorPattern(++i, "{<tag}", U_UNSUPPORTED_PROPERTY);
-    testRuntimeErrorPattern(++i, ".local $bar = {|42| ~plural} .match {|horse| :select}  * {{{$bar}}}",
+    testRuntimeErrorPattern(++i, ".local $bar = {|42| ~plural} .match {|horse| :string}  * {{{$bar}}}",
                             U_UNSUPPORTED_PROPERTY);
 
     // Selector error
@@ -898,7 +898,7 @@ void TestMessageFormat2::testInvalidPatterns() {
     testInvalidPattern(++i, ".match {|x|}  * {{foo}}extra", 28);
 
     // Trailing whitespace at end of message should not be accepted either
-    UnicodeString longMsg(".match {$foo :select} {$bar :select}  one * {{one}}  * * {{other}}   ");
+    UnicodeString longMsg(".match {$foo :string} {$bar :string}  one * {{one}}  * * {{other}}   ");
     testInvalidPattern(++i, longMsg, longMsg.length() - 3);
     testInvalidPattern(++i, "{{hi}} ", 6);
 
@@ -1057,8 +1057,8 @@ void TestMessageFormat2::testInvalidPatterns() {
     testInvalidPattern(++i, ".match |x| * {{foo}}", 7);
 
     // tests for ':' in unquoted literals (not allowed)
-    testInvalidPattern(++i, ".match {|foo| :select} o:ne {{one}}  * {{other}}", 24);
-    testInvalidPattern(++i, ".match {|foo| :select} one: {{one}}  * {{other}}", 26);
+    testInvalidPattern(++i, ".match {|foo| :string} o:ne {{one}}  * {{other}}", 24);
+    testInvalidPattern(++i, ".match {|foo| :string} one: {{one}}  * {{other}}", 26);
     testInvalidPattern(++i, ".local $foo = {|42| :number option=a:b} {{bar {$foo}}}", 36);
     testInvalidPattern(++i, ".local $foo = {|42| :number option=a:b:c} {{bar {$foo}}}", 36);
     testInvalidPattern(++i, "{$bar:foo}", 5);

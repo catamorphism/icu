@@ -201,7 +201,7 @@ void TestMessageFormat2::testSimpleSelection(TestCase::Builder& testBuilder, Icu
 void TestMessageFormat2::testComplexSelection(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    UnicodeString message = ".match {$photoCount :number} {$userGender :select}\n\
+    UnicodeString message = ".match {$photoCount :number} {$userGender :string}\n\
                   1 masculine {{{$userName} added a new photo to his album.}}\n\
                   1 feminine {{{$userName} added a new photo to her album.}}\n\
                   1 * {{{$userName} added a new photo to their album.}}\n\

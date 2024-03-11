@@ -147,8 +147,7 @@ void FunctionRegistry::checkStandard() const {
     // TODO: rename to "string"
     checkFormatter("identity");
     checkSelector("number");
-    // TODO: rename to "string"
-    checkSelector("select");
+    checkSelector("string");
     // TODO: remove
     checkSelector("gender");
     checkSelector("integer");
