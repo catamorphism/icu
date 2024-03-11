@@ -728,7 +728,7 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    // Functions: number
+    // Functions: number (formatting)
 
     test = testBuilder.setPattern("hello {4.2 :number}")
                                 .setExpectSuccess()
@@ -843,7 +843,141 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    // Resume at https://github.com/unicode-org/message-format-wg/blob/main/test/test-functions.json#L100
+    // Functions: number (selection)
+
+    test = testBuilder.setPattern(".match {$foo :number} one {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".match {$foo :number} 1 {{=1}} one {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("=1")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".match {$foo :number} one {{one}} 1 {{=1}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("=1")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".match {$foo :number} {$bar :number} one one {{one one}} one * {{one other}} * * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setArgument("bar", (int64_t) 1)
+                                  .setExpected("one one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".match {$foo :number} {$bar :number} one one {{one one}} one * {{one other}} * * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setArgument("bar", (int64_t) 2)
+                                  .setExpected("one other")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".match {$foo :number} {$bar :number} one one {{one one}} one * {{one other}} * * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 2)
+                                  .setArgument("bar", (int64_t) 2)
+                                  .setExpected("other")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$foo :number} .match {$foo} one {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $foo = {$bar :number} .match {$foo} one {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("bar", (int64_t) 1)
+                                  .setExpected("one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$foo :number} .local $bar = {$foo} .match {$bar} one {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$bar :number} .match {$bar} one {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("bar", (int64_t) 2)
+                                  .setExpected("other")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$bar} .match {$bar :number} one {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("bar", (int64_t) 1)
+                                  .setExpected("one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$bar} .match {$bar :number} one {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("bar", (int64_t) 2)
+                                  .setExpected("other")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$bar} .match {$bar :number} one {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("bar", (int64_t) 1)
+                                  .setExpected("one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$bar} .match {$bar :number} one {{one}} * {{other}}")
+                                  .setExpectSuccess()
+                                  .setArgument("bar", (int64_t) 2)
+                                  .setExpected("other")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$none} .match {$foo :number} one {{one}} * {{{$none}}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $bar = {$none} .match {$foo :number} one {{one}} * {{{$bar}}}")
+                                  .setExpectSuccess()
+                                  .setArgument("foo", (int64_t) 1)
+                                  .setExpected("one")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $bar = {$none} .match {$foo :number} one {{one}} * {{{$bar}}}")
+                                  .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                  .setArgument("foo", (int64_t) 2)
+                                  .setExpected("{$none}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    // TODO: Attributes
+    /*
+    test = testBuilder.setPattern("{42 :number @foo @bar=13}")
+                                  .setExpectSuccess()
+                                  .setExpected("42")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+    */
+
+    // https://github.com/unicode-org/message-format-wg/blob/main/test/test-functions.json#L265
+    // Resume ^
 
     // TODO: tests for other function options?
 }
