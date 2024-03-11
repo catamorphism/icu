@@ -141,12 +141,18 @@ void FunctionRegistry::checkSelector(const char* s) const {
 // Debugging
 void FunctionRegistry::checkStandard() const {
     checkFormatter("datetime");
+    // TODO: add date and time
     checkFormatter("number");
     checkFormatter("integer");
+    // TODO: rename to "string"
     checkFormatter("identity");
     checkSelector("plural");
+    checkSelector("number");
+    // TODO: rename to "ordinal"
     checkSelector("selectordinal");
+    // TODO: rename to "string"
     checkSelector("select");
+    // TODO: remove
     checkSelector("gender");
     checkSelector("integer");
 }
