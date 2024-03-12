@@ -2171,27 +2171,6 @@ namespace message2 {
              */
             const Expression& getValue() const;
             /**
-             * Accesses the function of an input binding.
-             *
-             * @return A non-owned pointer to the expression. Null if
-             *         `isLocal()` or this is an input binding with no annotation.
-             *         The pointer has the same lifetime as `this`.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            const FunctionName* getFunctionName() const;
-            /**
-             * Accesses the options of an input binding.
-             *
-             * @return A vector of options (empty if `isLocal()` or
-             *         this is an input binding with no annotation)
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            std::vector<Option> getOptions() const;
-            /**
              * Accesses the left-hand side of the binding.
              *
              * @return A reference to the variable name.
@@ -2299,6 +2278,7 @@ namespace message2 {
 
             const OptionMap& getOptionsInternal() const;
 
+            bool hasAnnotation() const { return !local && (annotation != nullptr); }
             void updateAnnotation();
         }; // class Binding
     } // namespace data_model

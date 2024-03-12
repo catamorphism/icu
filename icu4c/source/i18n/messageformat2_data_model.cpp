@@ -683,16 +683,6 @@ const Expression& Binding::getValue() const {
     return expr;
 }
 
-// Returns a pointer rather than a reference; null indicates
-// a local binding or unannotated .input binding
-const FunctionName* Binding::getFunctionName() const {
-    if (annotation == nullptr) {
-        return nullptr;
-    }
-    U_ASSERT(!local);
-    return &(annotation->getName());
-}
-
 /* static */ Binding Binding::input(UnicodeString&& variableName, Expression&& rhs, UErrorCode& errorCode) {
     Binding b;
     if (U_SUCCESS(errorCode)) {

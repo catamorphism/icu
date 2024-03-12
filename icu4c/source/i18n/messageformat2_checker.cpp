@@ -252,7 +252,7 @@ void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& status) {
             }
         } else {
             // Input declaration; if b has no annotation, there's nothing to check
-            if (b.getFunctionName() != nullptr) {
+            if (!b.isLocal() && b.hasAnnotation()) {
                 const OptionMap& opts = b.getOptionsInternal();
                 // For .input declarations, we just need to add any variables
                 // referenced in the options
