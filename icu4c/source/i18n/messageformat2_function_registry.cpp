@@ -765,7 +765,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
         const UnicodeString& sourceStr = source.getString(errorCode);
         U_ASSERT(U_SUCCESS(errorCode));
         // Pattern for ISO 8601 format - datetime
-        UnicodeString pattern("Y-M-d'T'H:m:sZZZZZ");
+        UnicodeString pattern("YYYY-MM-dd'T'HH:mm:ss");
         LocalPointer<DateFormat> dateParser(new SimpleDateFormat(pattern, errorCode));
         if (U_FAILURE(errorCode)) {
             errorCode = U_FORMATTING_ERROR;
