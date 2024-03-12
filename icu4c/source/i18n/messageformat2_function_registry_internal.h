@@ -121,24 +121,6 @@ namespace message2 {
                                                                     const FunctionOptions& opts,
                                                                     UErrorCode& status);
 
-        class IdentityFactory : public FormatterFactory {
-        public:
-            Formatter* createFormatter(const Locale& locale, UErrorCode& status) override;
-            virtual ~IdentityFactory();
-        };
-
-        class Identity : public Formatter {
-        public:
-            FormattedPlaceholder format(FormattedPlaceholder&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
-            virtual ~Identity();
-
-        private:
-            friend class IdentityFactory;
-
-            const Locale& locale;
-            Identity(const Locale& loc) : locale(loc) {}
-        };
-
         class PluralFactory : public SelectorFactory {
         public:
             Selector* createSelector(const Locale& locale, UErrorCode& status) const override;
