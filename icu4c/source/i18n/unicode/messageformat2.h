@@ -98,7 +98,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FormattedMessage formatToParts(const MessageArguments& arguments, UErrorCode &status) const {
+        FormattedMessage format(const MessageArguments& arguments, UErrorCode &status) const {
             (void) arguments;
             if (U_SUCCESS(status)) {
                 status = U_UNSUPPORTED_ERROR;
