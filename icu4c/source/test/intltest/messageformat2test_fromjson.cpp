@@ -1233,7 +1233,7 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
 
     test = testBuilder.setPattern("{|2006-01-02T15:04:06| :datetime timeStyle=medium}")
                                   .setExpectSuccess()
-                                  .setExpected(CharsToUnicodeString("3:04\\u202FPM"))
+                                  .setExpected(CharsToUnicodeString("3:04:06\\u202FPM"))
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -1244,12 +1244,19 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
+/*
+TODO
+This can't work -- the "style" option is different from "dateStyle" and can't get used
+in the second call to `:datetime`
+See https://github.com/unicode-org/message-format-wg/issues/726
+
     test = testBuilder.setPattern(".input {$dt :time style=medium} {{{$dt :datetime dateStyle=long}}}")
                                   .setArgument("dt", "2006-01-02T15:04:06")
                                   .setExpectSuccess()
                                   .setExpected(CharsToUnicodeString("January 2, 2006 at 3:04:06\\u202FPM"))
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
+*/
 
     // TODO: tests for other function options?
 }

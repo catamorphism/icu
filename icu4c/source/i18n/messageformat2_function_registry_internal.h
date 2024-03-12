@@ -76,6 +76,13 @@ namespace message2 {
             UnicodeString getFunctionOption(const FormattedPlaceholder& toFormat,
                                             const FunctionOptions& opts,
                                             const UnicodeString& optionName) const;
+            // Version for options that don't have defaults; sets the error
+            // code instead of returning a default value
+            UnicodeString getFunctionOption(const FormattedPlaceholder& toFormat,
+                                            const FunctionOptions& opts,
+                                            const UnicodeString& optionName,
+                                            UErrorCode& errorCode) const;
+
         };
 
         // Note: IntegerFactory doesn't implement SelectorFactory;
