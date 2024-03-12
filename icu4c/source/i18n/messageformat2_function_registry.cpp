@@ -650,6 +650,31 @@ UnicodeString StandardFunctions::DateTime::getFunctionOption(const FormattedPlac
     return defaultForOption(optionName);
 }
 
+// Used for options that don't have defaults
+UnicodeString StandardFunctions::DateTime::getFunctionOption(const FormattedPlaceholder& toFormat,
+                                                             const FunctionOptions& opts,
+                                                             const UnicodeString& optionName,
+                                                             UErrorCode& errorCode) const {
+    if (U_SUCCESS(errorCode)) {
+        // Options passed to the current function invocation take priority
+        Formattable opt;
+        UnicodeString s;
+        UErrorCode localErrorCode = U_ZERO_ERROR;
+        s = getStringOption(opts, optionName, localErrorCode);
+        if (U_SUCCESS(localErrorCode)) {
+            return s;
+        }
+        // Next try the set of options used to construct `toFormat`
+        localErrorCode = U_ZERO_ERROR;
+        s = getStringOption(toFormat.options(), optionName, localErrorCode);
+        if (U_SUCCESS(localErrorCode)) {
+            return s;
+        }
+        errorCode = U_ILLEGAL_ARGUMENT_ERROR;
+    }
+    return {};
+}
+
 static DateFormat::EStyle stringToStyle(UnicodeString option, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
         UnicodeString upper = option.toUpper();
@@ -732,22 +757,159 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
     DateFormat::EStyle dateStyle = DateFormat::kShort;
     DateFormat::EStyle timeStyle = DateFormat::kShort;
 
-    // Extract style options
-    if (type == DateTimeFactory::DateTimeType::DateTime) {
-        dateStyle = stringToStyle(getFunctionOption(toFormat, opts, UnicodeString("dateStyle")), errorCode);
-        timeStyle = stringToStyle(getFunctionOption(toFormat, opts, UnicodeString("timeStyle")), errorCode);
-        if (dateStyle == DateFormat::NONE && timeStyle == DateFormat::NONE) {
-            df.adoptInstead(defaultDateTimeInstance(locale, errorCode));
+    UnicodeString dateStyleName("dateStyle");
+    UnicodeString timeStyleName("timeStyle");
+    UnicodeString styleName("style");
+
+    bool hasDateStyleOption = opts.getFunctionOption(dateStyleName, opt);
+    bool hasTimeStyleOption = opts.getFunctionOption(timeStyleName, opt);
+    bool noOptions = opts.optionsCount() == 0;
+
+    bool useStyle = (type == DateTimeFactory::DateTimeType::DateTime
+                     && (hasDateStyleOption || hasTimeStyleOption
+                         || noOptions))
+        || (type != DateTimeFactory::DateTimeType::DateTime);
+
+    bool useDate = type == DateTimeFactory::DateTimeType::Date
+        || (type == DateTimeFactory::DateTimeType::DateTime
+            && hasDateStyleOption);
+    bool useTime = type == DateTimeFactory::DateTimeType::Time
+        || (type == DateTimeFactory::DateTimeType::DateTime
+            && hasTimeStyleOption);
+
+    if (useStyle) {
+        // Extract style options
+        if (type == DateTimeFactory::DateTimeType::DateTime) {
+            // Note that the options-getting has to be repeated across the three cases,
+            // since `:datetime` uses "dateStyle"/"timeStyle" and `:date` and `:time`
+            // use "style"
+            dateStyle = stringToStyle(getFunctionOption(toFormat, opts, dateStyleName), errorCode);
+            timeStyle = stringToStyle(getFunctionOption(toFormat, opts, timeStyleName), errorCode);
+
+            if (useDate && !useTime) {
+                df.adoptInstead(DateFormat::createDateInstance(dateStyle, locale));
+            } else if (useTime && !useDate) {
+                df.adoptInstead(DateFormat::createTimeInstance(timeStyle, locale));
+            } else {
+                df.adoptInstead(DateFormat::createDateTimeInstance(dateStyle, timeStyle, locale));
+            }
+        } else if (type == DateTimeFactory::DateTimeType::Date) {
+            dateStyle = stringToStyle(getFunctionOption(toFormat, opts, styleName), errorCode);
+            df.adoptInstead(DateFormat::createDateInstance(dateStyle, locale));
         } else {
-            df.adoptInstead(DateFormat::createDateTimeInstance(dateStyle, timeStyle, locale));
+            // :time
+            timeStyle = stringToStyle(getFunctionOption(toFormat, opts, styleName), errorCode);
+            df.adoptInstead(DateFormat::createTimeInstance(timeStyle, locale));
         }
-    } else if (type == DateTimeFactory::DateTimeType::Date) {
-        dateStyle = stringToStyle(getFunctionOption(toFormat, opts, UnicodeString("style")), errorCode);
-        df.adoptInstead(DateFormat::createDateInstance(dateStyle, locale));
     } else {
-        // :time
-        timeStyle = stringToStyle(getFunctionOption(toFormat, opts, UnicodeString("style")), errorCode);
-        df.adoptInstead(DateFormat::createTimeInstance(timeStyle, locale));
+        // Build up a skeleton based on the field options, then use that to
+        // create the date formatter
+
+        UnicodeString skeleton;
+        #define ADD_PATTERN(s) skeleton += UnicodeString(s)
+        if (U_SUCCESS(errorCode)) {
+            // Year
+            UnicodeString year = getFunctionOption(toFormat, opts, UnicodeString("year"), errorCode);
+            if (U_FAILURE(errorCode)) {
+                errorCode = U_ZERO_ERROR;
+            } else {
+                useDate = true;
+                if (year == UnicodeString("2-digit")) {
+                    ADD_PATTERN("YY");
+                } else if (year == UnicodeString("numeric")) {
+                    ADD_PATTERN("YYYY");
+                }
+            }
+            // Month
+            UnicodeString month = getFunctionOption(toFormat, opts, UnicodeString("month"), errorCode);
+            if (U_FAILURE(errorCode)) {
+                errorCode = U_ZERO_ERROR;
+            } else {
+                useDate = true;
+                /* numeric, 2-digit, long, short, narrow */
+                if (month == UnicodeString("long")) {
+                    ADD_PATTERN("MMMM");
+                } else if (month == UnicodeString("short")) {
+                    ADD_PATTERN("MMM");
+                } else if (month == UnicodeString("narrow")) {
+                    ADD_PATTERN("MMMMM");
+                } else if (month == UnicodeString("numeric")) {
+                    ADD_PATTERN("M");
+                } else if (month == UnicodeString("2-digit")) {
+                    ADD_PATTERN("MM");
+                }
+            }
+            // Weekday
+            UnicodeString weekday = getFunctionOption(toFormat, opts, UnicodeString("weekday"), errorCode);
+            if (U_FAILURE(errorCode)) {
+                errorCode = U_ZERO_ERROR;
+            } else {
+                useDate = true;
+                if (weekday == UnicodeString("long")) {
+                    ADD_PATTERN("EEEE");
+                } else if (weekday == UnicodeString("short")) {
+                    ADD_PATTERN("EEEEE");
+                } else if (weekday == UnicodeString("narrow")) {
+                    ADD_PATTERN("EEEEE");
+                }
+            }
+            // Day
+            UnicodeString day = getFunctionOption(toFormat, opts, UnicodeString("day"), errorCode);
+            if (U_FAILURE(errorCode)) {
+                errorCode = U_ZERO_ERROR;
+            } else {
+                useDate = true;
+                if (day == UnicodeString("numeric")) {
+                    ADD_PATTERN("d");
+                } else if (day == UnicodeString("2-digit")) {
+                    ADD_PATTERN("dd");
+                }
+            }
+            // Hour
+            UnicodeString hour = getFunctionOption(toFormat, opts, UnicodeString("hour"), errorCode);
+            if (U_FAILURE(errorCode)) {
+                errorCode = U_ZERO_ERROR;
+            } else {
+                useTime = true;
+                if (hour == UnicodeString("numeric")) {
+                    ADD_PATTERN("h");
+                } else if (hour == UnicodeString("2-digit")) {
+                    ADD_PATTERN("hh");
+                }
+            }
+            // Minute
+            UnicodeString minute = getFunctionOption(toFormat, opts, UnicodeString("minute"), errorCode);
+            if (U_FAILURE(errorCode)) {
+                errorCode = U_ZERO_ERROR;
+            } else {
+                useTime = true;
+                if (minute == UnicodeString("numeric")) {
+                    ADD_PATTERN("m");
+                } else if (minute == UnicodeString("2-digit")) {
+                    ADD_PATTERN("mm");
+                }
+            }
+            // Second
+            UnicodeString second = getFunctionOption(toFormat, opts, UnicodeString("second"), errorCode);
+            if (U_FAILURE(errorCode)) {
+                errorCode = U_ZERO_ERROR;
+            } else {
+                useTime = true;
+                if (second == UnicodeString("numeric")) {
+                    ADD_PATTERN("s");
+                } else if (second == UnicodeString("2-digit")) {
+                    ADD_PATTERN("ss");
+                }
+            }
+        }
+        /*
+          TODO
+          fractionalSecondDigits
+          hourCycle
+          timeZoneName
+          era
+         */
+        df.adoptInstead(DateFormat::createInstanceForSkeleton(skeleton, errorCode));
     }
 
     if (U_FAILURE(errorCode)) {
