@@ -162,7 +162,7 @@ void TestMessageFormat2::testNumbers(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setPattern("Default number: {$val}!")
                                 .setLocale(Locale("ro"))
-                                .setDecimalArgument(val, StringPiece("1234567890123456789.987654321"), errorCode)
+                                .setDecimalArgument(val, "1234567890123456789.987654321", errorCode)
                                 .setExpected("Default number: 1.234.567.890.123.456.789,987654!")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
