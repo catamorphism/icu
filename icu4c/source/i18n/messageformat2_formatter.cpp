@@ -98,14 +98,21 @@ namespace message2 {
         // the elements are deleted
         standardFormatters = createUVector(success);
         CHECK_ERROR(success);
-        FormatterFactory* dateTime = new StandardFunctions::DateTimeFactory();
+        FormatterFactory* dateTime = StandardFunctions::DateTimeFactory::dateTime(success);
+        FormatterFactory* date = StandardFunctions::DateTimeFactory::date(success);
+        FormatterFactory* time = StandardFunctions::DateTimeFactory::time(success);
         FormatterFactory* number = new StandardFunctions::NumberFactory();
         FormatterFactory* integer = new StandardFunctions::IntegerFactory();
         FormatterFactory* identity = new StandardFunctions::IdentityFactory();
         standardFormatters->adoptElement(dateTime, success);
+        standardFormatters->adoptElement(time, success);
+        standardFormatters->adoptElement(date, success);
         standardFormatters->adoptElement(number, success);
         standardFormatters->adoptElement(identity, success);
+        standardFormatters->adoptElement(integer, success);
         standardFunctionsBuilder.setFormatter(FunctionName(UnicodeString("datetime")), dateTime, success)
+            .setFormatter(FunctionName(UnicodeString("date")), date, success)
+            .setFormatter(FunctionName(UnicodeString("time")), time, success)
             .setFormatter(FunctionName(UnicodeString("number")), number, success)
             .setFormatter(FunctionName(UnicodeString("integer")), integer, success)
             .setSelector(FunctionName(UnicodeString("number")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
