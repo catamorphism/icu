@@ -9,6 +9,8 @@
 #include "unicode/smpdtfmt.h"
 #include "messageformat2_macros.h"
 
+#include "limits.h"
+
 U_NAMESPACE_BEGIN
 
 namespace message2 {
@@ -34,9 +36,16 @@ namespace message2 {
         holdsDate = other.holdsDate;
     }
 
-    Formattable Formattable::forDecimal(StringPiece number, UErrorCode &status) {
+    Formattable Formattable::forDecimal(std::string_view number, UErrorCode &status) {
         Formattable f;
-        f.contents = icu::Formattable(number, status);
+        // The relevant overload of the StringPiece constructor
+        // casts the string length to int32_t, so we have to check
+        // that the length makes sense
+        if (number.size() > INT_MAX) {
+            status = U_ILLEGAL_ARGUMENT_ERROR;
+        } else {
+            f.contents = icu::Formattable(StringPiece(number), status);
+        }
         return f;
     }
 
