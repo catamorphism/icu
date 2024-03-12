@@ -1104,6 +1104,43 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
+    // :time
+    test = testBuilder.setPattern("{:time}")
+                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpected("{:time}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{horse :time}")
+                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpected("{|horse|}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{|2006-01-02T15:04:06| :time}")
+                                  .setExpectSuccess()
+                                  .setExpected(CharsToUnicodeString("3:04\\u202FPM"))
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{|2006-01-02T15:04:06| :time style=medium}")
+                                  .setExpectSuccess()
+                                  .setExpected(CharsToUnicodeString("3:04:06\\u202FPM"))
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $t = {|2006-01-02T15:04:06| :time style=medium} {{{$t :time}}}")
+                                  .setExpectSuccess()
+                                  .setExpected(CharsToUnicodeString("3:04:06\\u202FPM"))
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $t = {|2006-01-02T15:04:06| :date} {{{$t :time}}}")
+                                  .setExpectSuccess()
+                                  .setExpected(CharsToUnicodeString("3:04\\u202FPM"))
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
     // TODO: tests for other function options?
 }
 #endif /* #if !UCONFIG_NO_FORMATTING */
