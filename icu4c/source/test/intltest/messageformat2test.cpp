@@ -277,7 +277,7 @@ void TestMessageFormat2::testAPISimple() {
     result = mf.formatToString(args, errorCode);
     assertEquals("testAPI", result, "Hello, John!");
 
-    mf = builder.setPattern("Today is {$today :datetime skeleton=yMMMdEEE}.", parseError, errorCode)
+    mf = builder.setPattern("Today is {$today :date style=full}.", parseError, errorCode)
         .setLocale(locale)
         .build(errorCode);
 
@@ -290,7 +290,7 @@ void TestMessageFormat2::testAPISimple() {
     argsBuilder["today"] = message2::Formattable::forDate(date);
     args = MessageArguments(argsBuilder, errorCode);
     result = mf.formatToString(args, errorCode);
-    assertEquals("testAPI", "Today is Sun, Oct 28, 2136.", result);
+    assertEquals("testAPI", "Today is Sunday, October 28, 2136.", result);
 
     argsBuilder.clear();
     argsBuilder["photoCount"] = message2::Formattable((int64_t) 12);
@@ -334,9 +334,9 @@ void TestMessageFormat2::testAPI() {
     UDate date = cal->getTime(errorCode);
 
     test = testBuilder.setName("testAPI")
-        .setPattern("Today is {$today :datetime skeleton=yMMMdEEE}.")
+        .setPattern("Today is {$today :date style=full}.")
         .setDateArgument("today", date)
-        .setExpected("Today is Sun, Oct 28, 2136.")
+        .setExpected("Today is Sunday, October 28, 2136.")
         .setLocale("en_US")
         .build();
     TestUtils::runTestCase(*this, test, errorCode);

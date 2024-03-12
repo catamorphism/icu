@@ -38,10 +38,10 @@ void TestMessageFormat2::testSample(TestCase::Builder& testBuilder, IcuTestError
 }
 
 void TestMessageFormat2::testStaticFormat(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    TestUtils::runTestCase(*this, testBuilder.setPattern("At {$when :datetime timestyle=default} on {$when :datetime datestyle=default}, \
-there was {$what} on planet {$planet :number kind=integer}.")
+    TestUtils::runTestCase(*this, testBuilder.setPattern("At {$when :time style=medium} on {$when :date style=medium}, \
+there was {$what} on planet {$planet :integer}.")
                                 .setArgument("planet", (int64_t) 7)
-                                .setArgument("when", (UDate) 871068000000)
+                                .setDateArgument("when", (UDate) 871068000000)
                                 .setArgument("what", "a disturbance in the Force")
                                 .setExpected(CharsToUnicodeString("At 12:20:00\\u202FPM on Aug 8, 1997, there was a disturbance in the Force on planet 7."))
                                 .build(), errorCode);
@@ -94,49 +94,6 @@ void TestMessageFormat2::testSelectFormatToPattern(TestCase::Builder& testBuilde
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
-
-void TestMessageFormat2::testMessageFormatDateTimeSkeleton(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
-    LocalPointer<GregorianCalendar> cal(new GregorianCalendar(2021, Calendar::NOVEMBER, 23, 16, 42, 55, errorCode));
-    CHECK_ERROR(errorCode);
-    UDate date = cal->getTime(errorCode);
-    testBuilder.setLocale(Locale::forLanguageTag("en", errorCode));
-    testBuilder.setDateArgument("when", date);
-    CHECK_ERROR(errorCode);
-
-    TestCase test = testBuilder.setPattern("{$when :datetime skeleton=MMMMd}")
-                                .setExpected("November 23")
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("{$when :datetime skeleton=yMMMMdjm}")
-                                 .setExpected(CharsToUnicodeString("November 23, 2021 at 4:42\\u202FPM"))
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("{$when :datetime skeleton=|   yMMMMd   |}")
-                                .setExpected("November 23, 2021")
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("{$when :datetime skeleton=yMMMMd}")
-                                .setExpected("23 novembre 2021")
-                                .setLocale(Locale::forLanguageTag("fr", errorCode))
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("Expiration: {$when :datetime skeleton=yMMM}!")
-                                .setExpected("Expiration: Nov 2021!")
-                                .setLocale(Locale::forLanguageTag("en", errorCode))
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("{$when :datetime pattern=|'::'yMMMMd|}")
-                                .setExpected("::2021November23")
-                                .setLocale(Locale::forLanguageTag("en", errorCode))
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-}
-
 void TestMessageFormat2::testMf1Behavior(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
@@ -165,7 +122,7 @@ void TestMessageFormat2::testMf1Behavior(TestCase::Builder& testBuilder, IcuTest
     assertEquals("testMf1Behavior", (UBool) true, U_SUCCESS(errorCode));
     assertEquals("old icu test", expectedGood, result);
 
-    TestCase test = testBuilder.setPattern("Hello {$user}, today is {$today :datetime datestyle=long}.")
+    TestCase test = testBuilder.setPattern("Hello {$user}, today is {$today :date style=long}.")
                                 .setArgument(badArgumentsNames[0], user)
                                 .setDateArgument(badArgumentsNames[1], testDate)
                                 .setExpected("Hello {$user}, today is {$today}.")
@@ -192,7 +149,6 @@ void TestMessageFormat2::messageFormat1Tests() {
     testStaticFormat(testBuilder, errorCode);
     testSimpleFormat(testBuilder, errorCode);
     testSelectFormatToPattern(testBuilder, errorCode);
-    testMessageFormatDateTimeSkeleton(testBuilder, errorCode);
     testMf1Behavior(testBuilder, errorCode);
 }
 

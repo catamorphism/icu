@@ -1061,9 +1061,48 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
+    // :date
+    test = testBuilder.setPattern("{:date}")
+                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpected("{:date}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
 
-    // https://github.com/unicode-org/message-format-wg/blob/main/test/test-functions.json#L291
-    // Resume ^
+    test = testBuilder.setPattern("{horse :date}")
+                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpected("{|horse|}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{|2006-01-02| :date}")
+                                  .setExpectSuccess()
+                                  .setExpected("1/2/06")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{|2006-01-02T15:04:06| :date}")
+                                  .setExpectSuccess()
+                                  .setExpected("1/2/06")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{|2006-01-02| :date style=long}")
+                                  .setExpectSuccess()
+                                  .setExpected("January 2, 2006")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $d = {|2006-01-02| :date style=long} {{{$d :date}}}")
+                                  .setExpectSuccess()
+                                  .setExpected("January 2, 2006")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".local $t = {|2006-01-02T15:04:06| :time} {{{$t :date}}}")
+                                  .setExpectSuccess()
+                                  .setExpected("1/2/06")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
 
     // TODO: tests for other function options?
 }

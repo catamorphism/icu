@@ -38,82 +38,49 @@ void TestMessageFormat2::testDateTime(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    testBuilder.setLocale(Locale("ro", "RO"));
-
-    // Skeleton
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime skeleton=yMMMMd}.")
-                                .setExpected("Testing date formatting: 23 noiembrie 2022.")
+    // Formatted string as argument -- `:date` should format the source Formattable
+    test = testBuilder.setPattern(".local $dateStr = {$date :datetime}\n\
+                                               {{Testing date formatting: {$dateStr :datetime}}}")
+                                .setExpected("Testing date formatting: 23.11.2022, 19:42.")
+                                .setExpectSuccess()
                                 .setDateArgument(date, TEST_DATE)
                                 .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime skeleton=jm}.")
-                                .setExpected("Testing date formatting: 19:42.")
-                                .setDateArgument(date, TEST_DATE)
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    testBuilder.setLocale(Locale("en"));
-
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime skeleton=yMMMd}.")
-                                .setExpected("Testing date formatting: Nov 23, 2022.")
-                                .setDateArgument(date, TEST_DATE)
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime skeleton=yMMMdjms}.")
-                                .setExpected(CharsToUnicodeString("Testing date formatting: Nov 23, 2022, 7:42:37\\u202FPM."))
-                                .setDateArgument(date, TEST_DATE)
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime skeleton=jm}.")
-                                .setExpected(CharsToUnicodeString("Testing date formatting: 7:42\\u202FPM."))
-                                .setDateArgument(date, TEST_DATE)
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
    // Style
 
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime datestyle=long}.")
+    testBuilder.setLocale(Locale("en", "US"));
+
+    test = testBuilder.setPattern("Testing date formatting: {$date :date style=long}.")
                                 .setExpected("Testing date formatting: November 23, 2022.")
                                 .setDateArgument(date, TEST_DATE)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime datestyle=medium}.")
+    test = testBuilder.setPattern("Testing date formatting: {$date :date style=medium}.")
                                 .setExpected("Testing date formatting: Nov 23, 2022.")
                                 .setDateArgument(date, TEST_DATE)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime datestyle=short}.")
+    test = testBuilder.setPattern("Testing date formatting: {$date :date style=short}.")
                                 .setExpected("Testing date formatting: 11/23/22.")
                                 .setDateArgument(date, TEST_DATE)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime timestyle=long}.")
+    test = testBuilder.setPattern("Testing date formatting: {$date :time style=long}.")
                                 .setExpected(CharsToUnicodeString("Testing date formatting: 7:42:37\\u202FPM PST."))
                                 .setDateArgument(date, TEST_DATE)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime timestyle=medium}.")
+    test = testBuilder.setPattern("Testing date formatting: {$date :time style=medium}.")
                                 .setExpected(CharsToUnicodeString("Testing date formatting: 7:42:37\\u202FPM."))
                                 .setDateArgument(date, TEST_DATE)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime timestyle=short}.")
+    test = testBuilder.setPattern("Testing date formatting: {$date :time style=short}.")
                                 .setExpected(CharsToUnicodeString("Testing date formatting: 7:42\\u202FPM."))
-                                .setDateArgument(date, TEST_DATE)
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    // Pattern
-    test = testBuilder.setPattern("Testing date formatting: {$date :datetime pattern=|d 'of' MMMM, y 'at' HH:mm|}.")
-                                .setExpected("Testing date formatting: 23 of November, 2022 at 19:42.")
                                 .setDateArgument(date, TEST_DATE)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -129,15 +96,8 @@ void TestMessageFormat2::testDateTime(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
     // Literal string as argument
     test = testBuilder.setPattern("Testing date formatting: {|horse| :datetime}")
-                                .setExpected("Testing date formatting: |horse|")
+                                .setExpected("Testing date formatting: {|horse|}")
                                 .setExpectedError(U_OPERAND_MISMATCH_ERROR)
-                                .build();
-    // Formatted string as argument
-    test = testBuilder.setPattern(".local $dateStr = {$date :datetime}\n\
-                                               {{Testing date formatting: {$dateStr :datetime}}}")
-                                .setExpected("Testing date formatting: {$date}")
-                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
-                                .setDateArgument(date, TEST_DATE)
                                 .build();
 
     TestUtils::runTestCase(*this, test, errorCode);
