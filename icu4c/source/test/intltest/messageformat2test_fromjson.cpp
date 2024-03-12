@@ -412,6 +412,11 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
+    test = testBuilder.setPattern("{#tag foo=bar/}")
+                      .setExpected("")
+                      .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
     test = testBuilder.setPattern("{#tag foo=|foo| bar=$bar}")
                       .setArgument("bar", "b a r")
                       .setExpected("")
@@ -669,6 +674,45 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
     */
+
+    test = testBuilder.setPattern("foo {+reserved}")
+                                 .setExpected("foo {+}")
+                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("foo {&private}")
+                                 .setExpected("foo {&}")
+                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("foo {?reserved @a @b=$c}")
+                                 .setExpected("foo {?}")
+                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+/*
+// TODO: reserved statements NYI
+    test = testBuilder.setPattern(".foo {42} {{bar}}")
+                                 .setExpected("bar")
+                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".foo {42}{{bar}}")
+                                 .setExpected(".foo {42} {{bar}}")
+                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".foo |}lit{| {42}{{bar}}")
+                                 .setExpected("bar")
+                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+*/
 
     /* var2 is implicitly declared and can't be overridden by the second `.input` */
     test = testBuilder.setPattern(".input {$var :number minimumFractionDigits=$var2} .input {$var2 :number minimumFractionDigits=5} {{{$var} {$var2}}}")
@@ -1138,6 +1182,72 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
     test = testBuilder.setPattern(".local $t = {|2006-01-02T15:04:06| :date} {{{$t :time}}}")
                                   .setExpectSuccess()
                                   .setExpected(CharsToUnicodeString("3:04\\u202FPM"))
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+
+    // :datetime
+    test = testBuilder.setPattern("{:datetime}")
+                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpected("{:datetime}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{$x :datetime}")
+                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpected("{$x}")
+                                  .setArgument("x", (int64_t) 1)
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{$x :datetime}")
+                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpected("{$x}")
+                                  .setArgument("x", "true")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{horse :datetime}")
+                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpected("{|horse|}")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{|2006-01-02T15:04:06| :datetime}")
+                                  .setExpectSuccess()
+                                  .setExpected(CharsToUnicodeString("1/2/06, 3:04\\u202FPM"))
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{|2006-01-02T15:04:06| :datetime year=numeric month=|2-digit|}")
+                                  .setExpectSuccess()
+                                  .setExpected("01/2006")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{|2006-01-02T15:04:06| :datetime dateStyle=long}")
+                                  .setExpectSuccess()
+                                  .setExpected("January 2, 2006")
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{|2006-01-02T15:04:06| :datetime timeStyle=medium}")
+                                  .setExpectSuccess()
+                                  .setExpected(CharsToUnicodeString("3:04\\u202FPM"))
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{$dt :datetime}")
+                                  .setArgument("dt", "2006-01-02T15:04:06")
+                                  .setExpectSuccess()
+                                  .setExpected(CharsToUnicodeString("1/2/06, 3:04\\u202FPM"))
+                                  .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".input {$dt :time style=medium} {{{$dt :datetime dateStyle=long}}}")
+                                  .setArgument("dt", "2006-01-02T15:04:06")
+                                  .setExpectSuccess()
+                                  .setExpected(CharsToUnicodeString("January 2, 2006 at 3:04:06\\u202FPM"))
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
