@@ -174,7 +174,11 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
 
     DynamicErrors& errs = context.getErrors();
 
-    UnicodeString fallback = argument.isNullOperand() ? functionName.toString() : argument.fallback;
+    UnicodeString fallback(COLON);
+    fallback += functionName;
+    if (!argument.isNullOperand()) {
+        fallback = argument.fallback;
+    }
 
     if (isFormatter(functionName)) {
         const Formatter& formatterImpl = getFormatter(context, functionName, status);
@@ -271,7 +275,13 @@ static UnicodeString reservedFallback (const Expression& e) {
 
         // Call the formatter function
         // The fallback for a nullary function call is the function name
-        UnicodeString fallback = rand.isNull() ? functionName.toString() : randVal.fallback;
+        UnicodeString fallback;
+        if (rand.isNull()) {
+            fallback = UnicodeString(COLON);
+            fallback += functionName;
+        } else {
+            fallback = randVal.fallback;
+        }
         return evalFormatterCall(functionName,
                                  std::move(randVal),
                                  std::move(resolvedOptions),
@@ -666,9 +676,11 @@ ResolvedSelector MessageFormatter::resolveVariables(const Environment& env,
             context.getErrors().setUnknownFunction(selectorName, status);
         }
         // Non-selector used as selector; an error would have been recorded earlier
-        UnicodeString fallback = (!expr.getOperand().isNull()) ?
-            formatOperand(env, expr.getOperand(), context, status).fallback
-            : selectorName.toString();
+        UnicodeString fallback(COLON);
+        fallback += selectorName;
+        if (!expr.getOperand().isNull()) {
+            fallback = formatOperand(env, expr.getOperand(), context, status).fallback;
+        }
         return ResolvedSelector(FormattedPlaceholder(fallback));
     } else {
         // Might be a variable reference, so expand one more level of variable

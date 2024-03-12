@@ -35,7 +35,6 @@ namespace message2 {
         template <int32_t N>
         void emit(const UChar32 (&)[N]);
         void emit(const UnicodeString&);
-        void emit(const FunctionName&);
         void emit(const Literal&);
         void emit(const Key&);
         void emit(const SelectorKeys&);

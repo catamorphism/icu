@@ -311,65 +311,6 @@ Operator::Builder& Operator::Builder::setOptionMap(OptionMap&& m) {
 
 OptionMap::~OptionMap() {}
 
-const FunctionName& Operator::getFunctionName() const {
-    U_ASSERT(!isReserved());
-    return std::get_if<Callable>(&contents)->getName();
-}
-
-UChar FunctionName::sigilChar() const {
-    switch (functionSigil) {
-    case Sigil::OPEN: { return PLUS; }
-    case Sigil::CLOSE: { return HYPHEN; }
-    default: { return COLON; }
-    }
-}
-
-UnicodeString FunctionName::toString() const {
-    UnicodeString result;
-    result += sigilChar();
-    result += functionName;
-    return result;
-}
-
-FunctionName::~FunctionName() {}
-
-FunctionName& FunctionName::operator=(FunctionName other) noexcept {
-    swap(*this, other);
-
-    return *this;
-}
-
-bool FunctionName::operator<(const FunctionName& other) const {
-    // If sigils are different, arbitrarily order open < close < default
-    switch (other.functionSigil) {
-    case OPEN: {
-        if (functionSigil != OPEN) {
-            return false;
-        }
-        break;
-    }
-    case CLOSE: {
-        if (functionSigil == OPEN) {
-            return true;
-        }
-        if (functionSigil == DEFAULT) {
-            return false;
-            break;
-        }
-        break;
-    }
-    case DEFAULT: {
-        if (functionSigil != DEFAULT) {
-            return true;
-        }
-        break;
-    }
-    }
-
-    // Sigils are equal; compare names
-    return (functionName < other.functionName);
-}
-
 const Reserved& Operator::asReserved() const {
     U_ASSERT(isReserved());
     return *(std::get_if<Reserved>(&contents));
@@ -405,6 +346,11 @@ Operator::Builder& Operator::Builder::setFunctionName(FunctionName&& func) {
     hasFunctionName = true;
     functionName = std::move(func);
     return *this;
+}
+
+const FunctionName& Operator::getFunctionName() const {
+    U_ASSERT(!isReserved());
+    return std::get_if<Callable>(&contents)->getName();
 }
 
 static UBool hasOptionNamed(const UVector& v, const UnicodeString& s) {

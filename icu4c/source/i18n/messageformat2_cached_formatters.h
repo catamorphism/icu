@@ -37,11 +37,11 @@ namespace message2 {
     public:
         // Returns a pointer because Formatter is an abstract class
         const Formatter* getFormatter(const FunctionName& f) {
-            return static_cast<const Formatter*>(cache.get(f.toString()));
+            return static_cast<const Formatter*>(cache.get(f));
         }
         // Adopts its argument
         void adoptFormatter(const FunctionName& f, Formatter* val, UErrorCode& status) {
-            cache.put(f.toString(), val, status);
+            cache.put(f, val, status);
         }
         CachedFormatters& operator=(const CachedFormatters&) = delete;
 

@@ -499,17 +499,6 @@ VariableName Parser::parseVariableName(UErrorCode& errorCode) {
     return VariableName(varName);
 }
 
-static FunctionName::Sigil functionSigil(UChar32 c) {
-    switch (c) {
-        case PLUS:   { return FunctionName::Sigil::OPEN; }
-        case HYPHEN: { return FunctionName::Sigil::CLOSE; }
-        default: {
-            U_ASSERT(c == COLON);
-            return FunctionName::Sigil::DEFAULT;
-        }
-    }
-}
-
 /*
   Corresponds to the `identifier` nonterminal in the grammar
 */
@@ -572,14 +561,13 @@ FunctionName Parser::parseFunction(UErrorCode& errorCode) {
         return FunctionName();
     }
 
-    FunctionName::Sigil sigil = functionSigil(source[index]);
     normalizedInput += source[index];
     index++; // Consume the function start character
     if (!inBounds(source, index)) {
         ERROR(parseError, errorCode, index);
         return FunctionName();
     }
-    return FunctionName(sigil, parseIdentifier(errorCode));
+    return parseIdentifier(errorCode);
 }
 
 

@@ -42,7 +42,7 @@ FunctionRegistry FunctionRegistry::Builder::build() {
 FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
         U_ASSERT(selectors != nullptr);
-        selectors->put(selectorName.toString(), selectorFactory, errorCode);
+        selectors->put(selectorName, selectorFactory, errorCode);
     }
     return *this;
 }
@@ -51,7 +51,7 @@ FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const Function
 FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
         U_ASSERT(formatters != nullptr);
-        formatters->put(formatterName.toString(), formatterFactory, errorCode);
+        formatters->put(formatterName, formatterFactory, errorCode);
     }
     return *this;
 }
@@ -97,7 +97,7 @@ FunctionRegistry::Builder::~Builder() {
 
 FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterName) const {
     U_ASSERT(formatters != nullptr);
-    return static_cast<FormatterFactory*>(formatters->get(formatterName.toString()));
+    return static_cast<FormatterFactory*>(formatters->get(formatterName));
 }
 
 UBool FunctionRegistry::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
@@ -112,7 +112,7 @@ UBool FunctionRegistry::getFormatterByType(const UnicodeString& type, FunctionNa
 
 const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selectorName) const {
     U_ASSERT(selectors != nullptr);
-    return static_cast<const SelectorFactory*>(selectors->get(selectorName.toString()));
+    return static_cast<const SelectorFactory*>(selectors->get(selectorName));
 }
 
 bool FunctionRegistry::hasFormatter(const FunctionName& f) const {
