@@ -176,15 +176,8 @@ namespace message2 {
         return *this;
     }
 
-    Formattable FormattedPlaceholder::asFormattable() const {
-        if (type == kEvaluated && formatted.isString()) {
-            return Formattable(formatted.getString());
-        }
-        if (type == kFallback) {
-            return Formattable(fallback);
-        } else {
-            return source;
-        }
+    const Formattable& FormattedPlaceholder::asFormattable() const {
+        return source;
     }
 
     // Default formatters
