@@ -52,7 +52,7 @@ void TestMessageFormat2::testPlaceholders(TestCase::Builder& testBuilder, IcuTes
 void TestMessageFormat2::testArgumentMissing(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    UnicodeString message = "Hello {$name}, today is {$today :datetime skeleton=yMMMMdEEEE}.";
+    UnicodeString message = "Hello {$name}, today is {$today :date style=long}.";
     LocalPointer<Calendar> cal(Calendar::createInstance(errorCode));
     CHECK_ERROR(errorCode);
 
@@ -65,7 +65,7 @@ void TestMessageFormat2::testArgumentMissing(TestCase::Builder& testBuilder, Icu
         .clearArguments()
         .setArgument("name", "John")
         .setDateArgument("today", TEST_DATE)
-        .setExpected("Hello John, today is Wednesday, November 23, 2022.")
+        .setExpected("Hello John, today is November 23, 2022.")
         .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -81,7 +81,7 @@ void TestMessageFormat2::testArgumentMissing(TestCase::Builder& testBuilder, Icu
                                 .clearArguments()
                                 .setDateArgument("today", TEST_DATE)
                                 .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
-                                .setExpected("Hello {$name}, today is Wednesday, November 23, 2022.")
+                                .setExpected("Hello {$name}, today is November 23, 2022.")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -104,9 +104,9 @@ void TestMessageFormat2::testDefaultLocale(TestCase::Builder& testBuilder, IcuTe
     UDate TEST_DATE = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    UnicodeString message = "Date: {$date :datetime skeleton=yMMMMdEEEE}.";
-    UnicodeString expectedEn = "Date: Wednesday, November 23, 2022.";
-    UnicodeString expectedRo = "Date: miercuri, 23 noiembrie 2022.";
+    UnicodeString message = "Date: {$date :date style=long}.";
+    UnicodeString expectedEn = "Date: November 23, 2022.";
+    UnicodeString expectedRo = "Date: 23 noiembrie 2022.";
 
     testBuilder.setPattern(message);
 
@@ -257,14 +257,14 @@ void TestMessageFormat2::testSimpleLocalVariable(TestCase::Builder& testBuilder,
     UDate TEST_DATE = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    testBuilder.setPattern(".input {$expDate :datetime skeleton=yMMMdE}\n\
+    testBuilder.setPattern(".input {$expDate :date style=medium}\n\
                             {{Your tickets expire on {$expDate}.}}");
 
     int64_t count = 1;
     TestUtils::runTestCase(*this, testBuilder.clearArguments().setArgument("count", count)
                       .setLocale(Locale("en"))
                       .setDateArgument("expDate", TEST_DATE)
-                      .setExpected("Your tickets expire on Wed, Nov 23, 2022.")
+                      .setExpected("Your tickets expire on Nov 23, 2022.")
                       .build(), errorCode);
 }
 
@@ -278,7 +278,7 @@ void TestMessageFormat2::testLocalVariableWithSelect(TestCase::Builder& testBuil
     UDate TEST_DATE = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    testBuilder.setPattern(".input {$expDate :datetime skeleton=yMMMdE}\n\
+    testBuilder.setPattern(".input {$expDate :date style=medium}\n\
                 .match {$count :number}\n\
                  1 {{Your ticket expires on {$expDate}.}}\n\
                  * {{Your {$count} tickets expire on {$expDate}.}}");
@@ -287,12 +287,12 @@ void TestMessageFormat2::testLocalVariableWithSelect(TestCase::Builder& testBuil
     TestCase test = testBuilder.clearArguments().setArgument("count", count)
                       .setLocale(Locale("en"))
                       .setDateArgument("expDate", TEST_DATE)
-                      .setExpected("Your ticket expires on Wed, Nov 23, 2022.")
+                      .setExpected("Your ticket expires on Nov 23, 2022.")
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
     count = 3;
     test = testBuilder.setArgument("count", count)
-                      .setExpected("Your 3 tickets expire on Wed, Nov 23, 2022.")
+                      .setExpected("Your 3 tickets expire on Nov 23, 2022.")
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 }
@@ -305,32 +305,32 @@ void TestMessageFormat2::testDateFormat(TestCase::Builder& testBuilder, IcuTestE
     UDate expiration = cal->getTime(errorCode);
     CHECK_ERROR(errorCode);
 
-    TestCase test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :datetime skeleton=yMMMdE}!")
+    TestCase test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :date style=medium}!")
                                 .setLocale(Locale("en"))
-                                .setExpected("Your card expires on Thu, Oct 27, 2022!")
+                                .setExpected("Your card expires on Oct 27, 2022!")
                                 .setDateArgument("exp", expiration)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :datetime datestyle=full}!")
+    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :date style=full}!")
                       .setExpected("Your card expires on Thursday, October 27, 2022!")
                       .setDateArgument("exp", expiration)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :datetime datestyle=long}!")
+    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :date style=long}!")
                       .setExpected("Your card expires on October 27, 2022!")
                       .setDateArgument("exp", expiration)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :datetime datestyle=medium}!")
+    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :date style=medium}!")
                       .setExpected("Your card expires on Oct 27, 2022!")
                       .setDateArgument("exp", expiration)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :datetime datestyle=short}!")
+    test = testBuilder.clearArguments().setPattern("Your card expires on {$exp :date style=short}!")
                       .setExpected("Your card expires on 10/27/22!")
                       .setDateArgument("exp", expiration)
                       .build();
