@@ -142,7 +142,8 @@ void FunctionRegistry::checkSelector(const char* s) const {
 // Debugging
 void FunctionRegistry::checkStandard() const {
     checkFormatter("datetime");
-    // TODO: add date and time
+    checkFormatter("date");
+    checkFormatter("time");
     checkFormatter("number");
     checkFormatter("integer");
     checkSelector("number");
