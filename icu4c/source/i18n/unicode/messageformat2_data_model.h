@@ -95,7 +95,7 @@ namespace message2 {
              * A `Reserved` is a sequence of literals.
              *
              * @return The number of literals.
-             *         *
+             *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
