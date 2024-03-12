@@ -1019,6 +1019,15 @@ void TestMessageFormat2::testInvalidPatterns() {
     testInvalidPattern(++i, "missing space {|foo|:func}", 20);
     testInvalidPattern(++i, "missing space {|foo|@bar}", 20);
     testInvalidPattern(++i, "missing space {:func@bar}", 20);
+
+    // TODO - attributes NYI
+    /*
+    testInvalidPattern(++i, "{:func @bar@baz}", 12);
+    testInvalidPattern(++i, "{:func @bar=42@baz}", 14);
+    testInvalidPattern(++i, "{+reserved@bar}", 10);
+    testInvalidPattern(++i, "{&private@bar}", 9);
+    */
+
     testInvalidPattern(++i, "bad {:} placeholder", 6);
     testInvalidPattern(++i, "bad {\\u0000placeholder}", 5);
     testInvalidPattern(++i, "no-equal {|42| :number minimumFractionDigits 2}", 45);
