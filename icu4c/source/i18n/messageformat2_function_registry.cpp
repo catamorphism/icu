@@ -870,41 +870,6 @@ void StandardFunctions::TextSelector::selectKey(FormattedPlaceholder&& toFormat,
 StandardFunctions::TextFactory::~TextFactory() {}
 StandardFunctions::TextSelector::~TextSelector() {}
 
-// --------- IdentityFactory
-
-Formatter* StandardFunctions::IdentityFactory::createFormatter(const Locale& locale, UErrorCode& errorCode) {
-    Formatter* result = new Identity(locale);
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
-    }
-    return result;
-
-}
-
-FormattedPlaceholder StandardFunctions::Identity::format(FormattedPlaceholder&& toFormat,
-                                                   FunctionOptions&& opts,
-                                                   UErrorCode& errorCode) const {
-    // No options
-    (void) opts;
-
-    if (U_FAILURE(errorCode)) {
-        return {};
-    }
-
-    // Argument must be present
-    if (!toFormat.canFormat()) {
-        errorCode = U_FORMATTING_ERROR;
-        return std::move(toFormat);
-    }
-
-    // Just returns the contents as a string
-    return FormattedPlaceholder(toFormat, FormattedValue(toFormat.formatToString(locale, errorCode)));
-}
-
-StandardFunctions::IdentityFactory::~IdentityFactory() {}
-StandardFunctions::Identity::~Identity() {}
-
 } // namespace message2
 U_NAMESPACE_END
 
