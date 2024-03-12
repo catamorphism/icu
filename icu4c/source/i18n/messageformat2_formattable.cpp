@@ -171,6 +171,7 @@ namespace message2 {
         source = other.source;
         if (type == kEvaluated) {
             formatted = std::move(other.formatted);
+            previousOptions = std::move(other.previousOptions);
         }
         fallback = other.fallback;
         return *this;

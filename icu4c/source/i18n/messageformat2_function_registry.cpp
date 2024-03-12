@@ -6,6 +6,7 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/dtptngen.h"
+#include "unicode/messageformat2_data_model_names.h"
 #include "unicode/messageformat2_function_registry.h"
 #include "unicode/smpdtfmt.h"
 #include "messageformat2_allocation.h"
@@ -99,7 +100,7 @@ FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterNa
     return static_cast<FormatterFactory*>(formatters->get(formatterName.toString()));
 }
 
-    UBool FunctionRegistry::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
+UBool FunctionRegistry::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
     U_ASSERT(formatters != nullptr);
     const FunctionName* f = static_cast<FunctionName*>(formattersByType->get(type));
     if (f != nullptr) {
@@ -595,6 +596,59 @@ StandardFunctions::PluralFactory::~PluralFactory() {}
 
 // --------- DateTimeFactory
 
+/* static */ UnicodeString StandardFunctions::getStringOption(const FunctionOptions& opts,
+                                                              const UnicodeString& optionName,
+                                                              UErrorCode& errorCode) {
+    if (U_SUCCESS(errorCode)) {
+        Formattable opt;
+        if (opts.getFunctionOption(optionName, opt)) {
+            return opt.getString(errorCode); // In case it's not a string, error code will be set
+        } else {
+            errorCode = U_ILLEGAL_ARGUMENT_ERROR;
+        }
+    }
+    // Default is empty string
+    return {};
+}
+
+// Date/time options only
+static UnicodeString defaultForOption(const UnicodeString& optionName) {
+    if (optionName == UnicodeString("dateStyle")
+        || optionName == UnicodeString("timeStyle")
+        || optionName == UnicodeString("style")) {
+        return UnicodeString("short");
+    }
+    return {}; // Empty string is default
+}
+
+// TODO
+// Only DateTime currently uses the function options stored in the placeholder.
+// It also doesn't use them very consistently (it looks at the previous set of options,
+// and others aren't preserved). This needs to be generalized,
+// but that depends on https://github.com/unicode-org/message-format-wg/issues/515
+// Finally, the option value is assumed to be a string,
+// which works for datetime options but not necessarily in general.
+UnicodeString StandardFunctions::DateTime::getFunctionOption(const FormattedPlaceholder& toFormat,
+                                                             const FunctionOptions& opts,
+                                                             const UnicodeString& optionName) const {
+    // Options passed to the current function invocation take priority
+    Formattable opt;
+    UnicodeString s;
+    UErrorCode localErrorCode = U_ZERO_ERROR;
+    s = getStringOption(opts, optionName, localErrorCode);
+    if (U_SUCCESS(localErrorCode)) {
+        return s;
+    }
+    // Next try the set of options used to construct `toFormat`
+    localErrorCode = U_ZERO_ERROR;
+    s = getStringOption(toFormat.options(), optionName, localErrorCode);
+    if (U_SUCCESS(localErrorCode)) {
+        return s;
+    }
+    // Finally, use default
+    return defaultForOption(optionName);
+}
+
 static DateFormat::EStyle stringToStyle(UnicodeString option, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
         UnicodeString upper = option.toUpper();
@@ -618,13 +672,42 @@ static DateFormat::EStyle stringToStyle(UnicodeString option, UErrorCode& errorC
     return DateFormat::EStyle::kNone;
 }
 
+/* static */ StandardFunctions::DateTimeFactory* StandardFunctions::DateTimeFactory::dateTime(UErrorCode& errorCode) {
+    NULL_ON_ERROR(errorCode);
+
+    DateTimeFactory* result = new StandardFunctions::DateTimeFactory(DateTimeType::DateTime);
+    if (result == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
+
+/* static */ StandardFunctions::DateTimeFactory* StandardFunctions::DateTimeFactory::date(UErrorCode& errorCode) {
+    NULL_ON_ERROR(errorCode);
+
+    DateTimeFactory* result = new DateTimeFactory(DateTimeType::Date);
+    if (result == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
+
+/* static */ StandardFunctions::DateTimeFactory* StandardFunctions::DateTimeFactory::time(UErrorCode& errorCode) {
+    NULL_ON_ERROR(errorCode);
+
+    DateTimeFactory* result = new DateTimeFactory(DateTimeType::Time);
+    if (result == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
+
 Formatter* StandardFunctions::DateTimeFactory::createFormatter(const Locale& locale, UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
-    Formatter* result = new DateTime(locale);
+    Formatter* result = new StandardFunctions::DateTime(locale, type);
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
-        return nullptr;
     }
     return result;
 }
@@ -638,64 +721,98 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
 
     // Argument must be present
     if (!toFormat.canFormat()) {
-        errorCode = U_FORMATTING_ERROR;
+        errorCode = U_OPERAND_MISMATCH_ERROR;
         return std::move(toFormat);
     }
 
     LocalPointer<DateFormat> df;
     Formattable opt;
-    if (opts.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == UFMT_STRING) {
-        // Same as getInstanceForSkeleton(), see ICU 9029
-        // Based on test/intltest/dtfmttst.cpp - TestPatterns()
-        LocalPointer<DateTimePatternGenerator> generator(DateTimePatternGenerator::createInstance(locale, errorCode));
-        const UnicodeString& s = opt.getString(errorCode);
-        U_ASSERT(U_SUCCESS(errorCode));
-        UnicodeString pattern = generator->getBestPattern(s, errorCode);
-        df.adoptInstead(new SimpleDateFormat(pattern, locale, errorCode));
-    } else {
-        if (opts.getFunctionOption(UnicodeString("pattern"), opt) && opt.getType() == UFMT_STRING) {
-            const UnicodeString& s = opt.getString(errorCode);
-            U_ASSERT(U_SUCCESS(errorCode));
-            df.adoptInstead(new SimpleDateFormat(s, locale, errorCode));
+
+    DateFormat::EStyle dateStyle = DateFormat::kShort;
+    DateFormat::EStyle timeStyle = DateFormat::kShort;
+
+    // Extract style options
+    if (type == DateTimeFactory::DateTimeType::DateTime) {
+        dateStyle = stringToStyle(getFunctionOption(toFormat, opts, UnicodeString("dateStyle")), errorCode);
+        timeStyle = stringToStyle(getFunctionOption(toFormat, opts, UnicodeString("timeStyle")), errorCode);
+        if (dateStyle == DateFormat::NONE && timeStyle == DateFormat::NONE) {
+            df.adoptInstead(defaultDateTimeInstance(locale, errorCode));
         } else {
-            DateFormat::EStyle dateStyle = DateFormat::NONE;
-            if (opts.getFunctionOption(UnicodeString("datestyle"), opt) && opt.getType() == UFMT_STRING) {
-                const UnicodeString& s = opt.getString(errorCode);
-                U_ASSERT(U_SUCCESS(errorCode));
-                dateStyle = stringToStyle(s, errorCode);
-            }
-            DateFormat::EStyle timeStyle = DateFormat::NONE;
-            if (opts.getFunctionOption(UnicodeString("timestyle"), opt) && opt.getType() == UFMT_STRING) {
-                const UnicodeString& s = opt.getString(errorCode);
-                U_ASSERT(U_SUCCESS(errorCode));
-                timeStyle = stringToStyle(s, errorCode);
-            }
-            if (dateStyle == DateFormat::NONE && timeStyle == DateFormat::NONE) {
-                df.adoptInstead(defaultDateTimeInstance(locale, errorCode));
-            } else {
-                df.adoptInstead(DateFormat::createDateTimeInstance(dateStyle, timeStyle, locale));
-                if (!df.isValid()) {
-                    errorCode = U_MEMORY_ALLOCATION_ERROR;
-                    return {};
-                }
-            }
+            df.adoptInstead(DateFormat::createDateTimeInstance(dateStyle, timeStyle, locale));
         }
+    } else if (type == DateTimeFactory::DateTimeType::Date) {
+        dateStyle = stringToStyle(getFunctionOption(toFormat, opts, UnicodeString("style")), errorCode);
+        df.adoptInstead(DateFormat::createDateInstance(dateStyle, locale));
+    } else {
+        // :time
+        timeStyle = stringToStyle(getFunctionOption(toFormat, opts, UnicodeString("style")), errorCode);
+        df.adoptInstead(DateFormat::createTimeInstance(timeStyle, locale));
     }
 
     if (U_FAILURE(errorCode)) {
+        return {};
+    }
+    if (!df.isValid()) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
         return {};
     }
 
     UnicodeString result;
     const Formattable& source = toFormat.asFormattable();
-    df->format(source.asICUFormattable(errorCode), result, 0, errorCode);
-    if (U_FAILURE(errorCode)) {
-        if (errorCode == U_ILLEGAL_ARGUMENT_ERROR) {
-            errorCode = U_OPERAND_MISMATCH_ERROR;
+    switch (source.getType()) {
+    case UFMT_STRING: {
+        const UnicodeString& sourceStr = source.getString(errorCode);
+        U_ASSERT(U_SUCCESS(errorCode));
+        // Pattern for ISO 8601 format - datetime
+        UnicodeString pattern("Y-M-d'T'H:m:sZZZZZ");
+        LocalPointer<DateFormat> dateParser(new SimpleDateFormat(pattern, errorCode));
+        if (U_FAILURE(errorCode)) {
+            errorCode = U_FORMATTING_ERROR;
+        } else {
+            // Parse the date
+            UDate d = dateParser->parse(sourceStr, errorCode);
+            if (U_FAILURE(errorCode)) {
+                // Pattern for ISO 8601 format - date
+                UnicodeString pattern("YYYY-MM-dd");
+                errorCode = U_ZERO_ERROR;
+                dateParser.adoptInstead(new SimpleDateFormat(pattern, errorCode));
+                if (U_FAILURE(errorCode)) {
+                    errorCode = U_FORMATTING_ERROR;
+                } else {
+                    d = dateParser->parse(sourceStr, errorCode);
+                    if (U_FAILURE(errorCode)) {
+                        errorCode = U_OPERAND_MISMATCH_ERROR;
+                    }
+                }
+            }
+            // Use the parsed date as the source value
+            // in the returned FormattedPlaceholder; this is necessary
+            // so the date can be re-formatted
+            toFormat = FormattedPlaceholder(message2::Formattable::forDate(d),
+                                            toFormat.getFallback());
+            df->format(d, result, 0, errorCode);
+            break;
         }
+    }
+    case UFMT_DATE: {
+        df->format(source.asICUFormattable(errorCode), result, 0, errorCode);
+        if (U_FAILURE(errorCode)) {
+            if (errorCode == U_ILLEGAL_ARGUMENT_ERROR) {
+                errorCode = U_OPERAND_MISMATCH_ERROR;
+            }
+        }
+        break;
+    }
+    // Any other cases are an error
+    default: {
+        errorCode = U_OPERAND_MISMATCH_ERROR;
+        break;
+    }
+    }
+    if (U_FAILURE(errorCode)) {
         return {};
     }
-    return FormattedPlaceholder(toFormat, FormattedValue(std::move(result)));
+    return FormattedPlaceholder(toFormat, std::move(opts), FormattedValue(std::move(result)));
 }
 
 StandardFunctions::DateTimeFactory::~DateTimeFactory() {}

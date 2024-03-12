@@ -14,16 +14,24 @@
 
 #include "unicode/chariter.h"
 #include "unicode/numberformatter.h"
+#include "unicode/messageformat2_data_model_names.h"
 
+#include <map>
 #include <variant>
 
 U_NAMESPACE_BEGIN
 
+class Hashtable;
+class UVector;
 
 namespace message2 {
 
-// Formattable
-// ----------
+    class Formatter;
+    class MessageContext;
+    class Selector;
+
+    // Formattable
+    // ----------
 
     /**
      * `FormattableObject` is an abstract class that can be implemented in order to define
@@ -426,6 +434,132 @@ namespace message2 {
         }
     }; // class Formattable
 
+/**
+ * Internal use only, but has to be included here as part of the implementation
+ * of the header-only `FunctionOptions::getOptions()` method
+ *
+ *  A `ResolvedFunctionOption` represents the result of evaluating
+ * a single named function option. It pairs the given name with the `Formattable`
+ * value resulting from evaluating the option's value.
+ *
+ * `ResolvedFunctionOption` is immutable and is not copyable or movable.
+ *
+ * @internal ICU 75.0 technology preview
+ * @deprecated This API is for technology preview only.
+ */
+#ifndef U_IN_DOXYGEN
+class U_I18N_API ResolvedFunctionOption : public UObject {
+  private:
+
+    /* const */ UnicodeString name;
+    /* const */ Formattable value;
+
+  public:
+      const UnicodeString& getName() const { return name; }
+      const Formattable& getValue() const { return value; }
+      ResolvedFunctionOption(const UnicodeString& n, const Formattable& f) : name(n), value(f) {}
+      ResolvedFunctionOption() {}
+      ResolvedFunctionOption(ResolvedFunctionOption&&);
+      ResolvedFunctionOption& operator=(ResolvedFunctionOption&& other) noexcept {
+          name = std::move(other.name);
+          value = std::move(other.value);
+          return *this;
+    }
+    virtual ~ResolvedFunctionOption();
+}; // class ResolvedFunctionOption
+#endif
+
+/**
+ * Mapping from option names to `message2::Formattable` objects, obtained
+ * by calling `getOptions()` on a `FunctionOptions` object.
+ *
+ * @internal ICU 75.0 technology preview
+ * @deprecated This API is for technology preview only.
+ */
+using FunctionOptionsMap = std::map<UnicodeString, message2::Formattable>;
+
+/**
+ * Structure encapsulating named options passed to a custom selector or formatter.
+ *
+ * @internal ICU 75.0 technology preview
+ * @deprecated This API is for technology preview only.
+ */
+class U_I18N_API FunctionOptions : public UObject {
+ public:
+    /**
+     * Returns a map of all name-value pairs provided as options to this function.
+     * The syntactic order of options is not guaranteed to
+     * be preserved.
+     *
+     * This class is immutable and movable but not copyable.
+     *
+     * @return           A map from strings to `message2::Formattable` objects representing
+     *                   the results of resolving each option value.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    FunctionOptionsMap getOptions() const {
+        int32_t len;
+        const ResolvedFunctionOption* resolvedOptions = getResolvedFunctionOptions(len);
+        FunctionOptionsMap result;
+        for (int32_t i = 0; i < len; i++) {
+            const ResolvedFunctionOption& opt = resolvedOptions[i];
+            result[opt.getName()] = opt.getValue();
+        }
+        return result;
+    }
+    /**
+     * Default constructor.
+     * Returns an empty mapping.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    FunctionOptions() { options = nullptr; }
+    /**
+     * Destructor.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    virtual ~FunctionOptions();
+    /**
+     * Move assignment operator:
+     * The source FunctionOptions will be left in a valid but undefined state.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    FunctionOptions& operator=(FunctionOptions&&) noexcept;
+    /**
+     * Move constructor:
+     * The source FunctionOptions will be left in a valid but undefined state.
+     *
+     * @internal ICU 75.0 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    FunctionOptions(FunctionOptions&&);
+    FunctionOptions& operator=(const FunctionOptions&) = delete;
+ private:
+    friend class MessageFormatter;
+    friend class StandardFunctions;
+
+    explicit FunctionOptions(UVector&&, UErrorCode&);
+
+    const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const;
+    UBool getFunctionOption(const UnicodeString&, Formattable&) const;
+    int32_t optionsCount() const { return functionOptionsLen; }
+
+    // Named options passed to functions
+    // This is not a Hashtable in order to make it possible for code in a public header file
+    // to construct a std::map from it, on-the-fly. Otherwise, it would be impossible to put
+    // that code in the header because it would have to call internal Hashtable methods.
+    ResolvedFunctionOption* options;
+    int32_t functionOptionsLen = 0;
+}; // class FunctionOptions
+
+
     // TODO doc comments
     // Encapsulates either a formatted string or formatted number;
     // more output types could be added in the future.
@@ -558,7 +692,23 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         FormattedPlaceholder(const FormattedPlaceholder& input, FormattedValue&& output)
-            : fallback(input.fallback), source(input.source), formatted(std::move(output)), type(kEvaluated) {}
+            : fallback(input.fallback), source(input.source),
+            formatted(std::move(output)), previousOptions(FunctionOptions()), type(kEvaluated) {}
+        /**
+         * Constructor for fully formatted placeholders with options.
+         *
+         * @param input A `FormattedPlaceholder` containing the fallback string and source
+         *        `Formattable` used to construct the formatted value.
+         * @param opts Function options that were used to construct `output`. May be the empty map.
+         * @param output A `FormattedValue` representing the formatted output of `input`.
+         *        Passed by move.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        FormattedPlaceholder(const FormattedPlaceholder& input, FunctionOptions&& opts, FormattedValue&& output)
+            : fallback(input.fallback), source(input.source),
+            formatted(std::move(output)), previousOptions(std::move(opts)), type(kEvaluated) {}
         /**
          * Constructor for unformatted placeholders.
          *
@@ -579,19 +729,15 @@ namespace message2 {
          */
         FormattedPlaceholder() : type(kNull) {}
         /**
-         * Returns a `Formattable` value corresponding to this placeholder.
-         * If this is a fallback value, a `Formattable` value wrapping the fallback string is returned.onverts the Formattable object to an ICU Formattable object.
+         * Returns the source `Formattable` value for this placeholder.
          * The result is undefined if this is a null operand.
-         * If this has no formatting output, then the source `Formattable` is returned.
-         * If this has a string-typed `FormattedValue` output, then a `Formattable` wrapping the formatted string is returned.
-         * If this has any other type of `FormattedValue` output, then the source `Formattable` is returned.
          *
          * @return A message2::Formattable value.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        message2::Formattable asFormattable() const;
+        const message2::Formattable& asFormattable() const;
         /**
          * Returns true iff this is a fallback placeholder.
          *
@@ -639,6 +785,16 @@ namespace message2 {
          * @deprecated This API is for technology preview only.
          */
         const UnicodeString& getFallback() const { return fallback; }
+        /**
+         * Returns the options of this placeholder. The result is the empty map if !isEvaluated().
+         * @return A reference to an option map, capturing the options that were used
+         *         in producing the output of this `FormattedPlaceholder`
+         *         (or empty if there is no output)
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        const FunctionOptions& options() const { return previousOptions; }
+
         /**
          * Returns the formatted output of this placeholder. The result is undefined if !isEvaluated().
          * @return          A fully formatted `FormattedPlaceholder`.
@@ -692,6 +848,7 @@ namespace message2 {
         UnicodeString fallback;
         Formattable source;
         FormattedValue formatted;
+        FunctionOptions previousOptions; // Ignored unless type is kEvaluated
         Type type;
     }; // class FormattedPlaceholder
 
