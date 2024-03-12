@@ -19,17 +19,40 @@ namespace message2 {
 
     // Built-in functions
     /*
-      The standard functions are :datetime, :number,
-      :identity, :plural, :selectordinal, :select, and :gender.
-      Subject to change
+      The standard functions are :datetime, :date, :time,
+      :number, :integer, and :string,
+      per https://github.com/unicode-org/message-format-wg/blob/main/spec/registry.md
+      as of https://github.com/unicode-org/message-format-wg/releases/tag/LDML45-alpha
     */
     class StandardFunctions {
         friend class MessageFormatter;
 
+        static UnicodeString getStringOption(const FunctionOptions& opts,
+                                             const UnicodeString& optionName,
+                                             UErrorCode& errorCode);
+
+        class DateTime;
+
         class DateTimeFactory : public FormatterFactory {
         public:
             Formatter* createFormatter(const Locale& locale, UErrorCode& status) override;
+            static DateTimeFactory* date(UErrorCode&);
+            static DateTimeFactory* time(UErrorCode&);
+            static DateTimeFactory* dateTime(UErrorCode&);
+            DateTimeFactory() = delete;
             virtual ~DateTimeFactory();
+
+        private:
+            friend class DateTime;
+
+            typedef enum DateTimeType {
+                Date,
+                Time,
+                DateTime
+            } DateTimeType;
+
+            DateTimeType type;
+            DateTimeFactory(DateTimeType t) : type(t) {}
         };
 
         class DateTime : public Formatter {
@@ -39,9 +62,20 @@ namespace message2 {
 
         private:
             const Locale& locale;
+            const DateTimeFactory::DateTimeType type;
             friend class DateTimeFactory;
-            DateTime(const Locale& l) : locale(l) {}
+            DateTime(const Locale& l, DateTimeFactory::DateTimeType t) : locale(l), type(t) {}
             const LocalPointer<icu::DateFormat> icuFormatter;
+
+            /*
+              Looks up an option by name, first checking `opts`, then the cached options
+              in `toFormat` if applicable, and finally using a default
+
+              Ignores any options with non-string values
+             */
+            UnicodeString getFunctionOption(const FormattedPlaceholder& toFormat,
+                                            const FunctionOptions& opts,
+                                            const UnicodeString& optionName) const;
         };
 
         // Note: IntegerFactory doesn't implement SelectorFactory;

@@ -14,7 +14,6 @@
 
 #include "unicode/messageformat2_data_model_names.h"
 #include "unicode/messageformat2_formattable.h"
-
 #include <map>
 
 U_NAMESPACE_BEGIN
@@ -24,136 +23,13 @@ class UVector;
 
 namespace message2 {
 
+    /*
     class Formatter;
     class MessageContext;
     class Selector;
+    */
 
     using namespace data_model;
-
-/**
- * Internal use only, but has to be included here as part of the implementation
- * of the header-only `FunctionOptions::getOptions()` method
- *
- *  A `ResolvedFunctionOption` represents the result of evaluating
- * a single named function option. It pairs the given name with the `Formattable`
- * value resulting from evaluating the option's value.
- *
- * `ResolvedFunctionOption` is immutable and is not copyable or movable.
- *
- * @internal ICU 75.0 technology preview
- * @deprecated This API is for technology preview only.
- */
-#ifndef U_IN_DOXYGEN
-class U_I18N_API ResolvedFunctionOption : public UObject {
-  private:
-
-    /* const */ UnicodeString name;
-    /* const */ Formattable value;
-
-  public:
-      const UnicodeString& getName() const { return name; }
-      const Formattable& getValue() const { return value; }
-      ResolvedFunctionOption(const UnicodeString& n, const Formattable& f) : name(n), value(f) {}
-      ResolvedFunctionOption() {}
-      ResolvedFunctionOption(ResolvedFunctionOption&&);
-      ResolvedFunctionOption& operator=(ResolvedFunctionOption&& other) noexcept {
-          name = std::move(other.name);
-          value = std::move(other.value);
-          return *this;
-    }
-    virtual ~ResolvedFunctionOption();
-}; // class ResolvedFunctionOption
-#endif
-
-/**
- * Mapping from option names to `message2::Formattable` objects, obtained
- * by calling `getOptions()` on a `FunctionOptions` object.
- *
- * @internal ICU 75.0 technology preview
- * @deprecated This API is for technology preview only.
- */
-using FunctionOptionsMap = std::map<UnicodeString, message2::Formattable>;
-
-/**
- * Structure encapsulating named options passed to a custom selector or formatter.
- *
- * @internal ICU 75.0 technology preview
- * @deprecated This API is for technology preview only.
- */
-class U_I18N_API FunctionOptions : public UObject {
- public:
-    /**
-     * Returns a map of all name-value pairs provided as options to this function.
-     * The syntactic order of options is not guaranteed to
-     * be preserved.
-     *
-     * This class is immutable and movable but not copyable.
-     *
-     * @return           A map from strings to `message2::Formattable` objects representing
-     *                   the results of resolving each option value.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    FunctionOptionsMap getOptions() const {
-        int32_t len;
-        const ResolvedFunctionOption* resolvedOptions = getResolvedFunctionOptions(len);
-        FunctionOptionsMap result;
-        for (int32_t i = 0; i < len; i++) {
-            const ResolvedFunctionOption& opt = resolvedOptions[i];
-            result[opt.getName()] = opt.getValue();
-        }
-        return result;
-    }
-    /**
-     * Default constructor.
-     * Returns an empty mapping.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    FunctionOptions() { options = nullptr; }
-    /**
-     * Destructor.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    virtual ~FunctionOptions();
-    /**
-     * Move assignment operator:
-     * The source FunctionOptions will be left in a valid but undefined state.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    FunctionOptions& operator=(FunctionOptions&&) noexcept;
-    /**
-     * Move constructor:
-     * The source FunctionOptions will be left in a valid but undefined state.
-     *
-     * @internal ICU 75.0 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    FunctionOptions(FunctionOptions&&);
-    FunctionOptions& operator=(const FunctionOptions&) = delete;
- private:
-    friend class MessageFormatter;
-    friend class StandardFunctions;
-
-    explicit FunctionOptions(UVector&&, UErrorCode&);
-
-    const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const;
-    UBool getFunctionOption(const UnicodeString&, Formattable&) const;
-    int32_t optionsCount() const { return functionOptionsLen; }
-
-    // Named options passed to functions
-    // This is not a Hashtable in order to make it possible for code in a public header file
-    // to construct a std::map from it, on-the-fly. Otherwise, it would be impossible to put
-    // that code in the header because it would have to call internal Hashtable methods.
-    ResolvedFunctionOption* options;
-    int32_t functionOptionsLen = 0;
-};
 
     /**
      * Interface that factory classes for creating formatters must implement.
@@ -236,7 +112,7 @@ class U_I18N_API FunctionOptions : public UObject {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FormatterFactory* getFormatter(const data_model::FunctionName& formatterName) const;
+        FormatterFactory* getFormatter(const FunctionName& formatterName) const;
         /**
          * Looks up a selector factory by the name of the selector. (This returns the result by pointer
          * rather than by reference since `FormatterFactory` is an abstract class.)
@@ -248,7 +124,7 @@ class U_I18N_API FunctionOptions : public UObject {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const SelectorFactory* getSelector(const data_model::FunctionName& selectorName) const;
+        const SelectorFactory* getSelector(const FunctionName& selectorName) const;
         /**
          * Looks up a formatter factory by a type tag. This method gets the name of the default formatter registered
          * for that type. If no formatter was explicitly registered for this type, it returns false.
@@ -311,7 +187,7 @@ class U_I18N_API FunctionOptions : public UObject {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setFormatterByType(const UnicodeString& type, const FunctionName& functionName, UErrorCode& errorCode);
+            Builder& setFormatterByType(const UnicodeString& type, const data_model::FunctionName& functionName, UErrorCode& errorCode);
 
             /**
              * Registers a selector factory to a given selector name. Adopts `selectorFactory`.
