@@ -41,10 +41,6 @@ void Serializer::emit(const UChar32 (&token)[N]) {
     }
 }
 
-void Serializer::emit(const FunctionName& f) {
-    emit(f.toString());
-}
-
 void Serializer::emit(const Literal& l) {
     if (l.isQuoted()) {
       emit(PIPE);
@@ -161,6 +157,7 @@ void Serializer::emit(const Expression& expr) {
             }
           }
         } else {
+            emit(COLON);
             emit(rator->getFunctionName());
             // No whitespace after function name, in case it has
             // no options. (when there are options, emit(OptionMap) will

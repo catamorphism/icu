@@ -22,7 +22,7 @@ namespace message2 {
     }
 
     void DynamicErrors::setFormattingError(const FunctionName& formatterName, UErrorCode& status) {
-        addError(DynamicError(DynamicErrorType::FormattingError, formatterName.toString()), status);
+        addError(DynamicError(DynamicErrorType::FormattingError, formatterName), status);
     }
 
     void DynamicErrors::setFormattingError(UErrorCode& status) {
@@ -30,7 +30,7 @@ namespace message2 {
     }
 
     void DynamicErrors::setOperandMismatchError(const FunctionName& formatterName, UErrorCode& status) {
-        addError(DynamicError(DynamicErrorType::OperandMismatchError, formatterName.toString()), status);
+        addError(DynamicError(DynamicErrorType::OperandMismatchError, formatterName), status);
     }
 
     void StaticErrors::setDuplicateOptionName(UErrorCode& status) {
@@ -42,11 +42,11 @@ namespace message2 {
     }
 
     void DynamicErrors::setSelectorError(const FunctionName& selectorName, UErrorCode& status) {
-        addError(DynamicError(DynamicErrorType::SelectorError, selectorName.toString()), status);
+        addError(DynamicError(DynamicErrorType::SelectorError, selectorName), status);
     }
 
     void DynamicErrors::setUnknownFunction(const FunctionName& functionName, UErrorCode& status) {
-        addError(DynamicError(DynamicErrorType::UnknownFunction, functionName.toString()), status);
+        addError(DynamicError(DynamicErrorType::UnknownFunction, functionName), status);
     }
 
     void DynamicErrors::setUnresolvedVariable(const VariableName& v, UErrorCode& status) {
