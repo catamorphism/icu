@@ -1011,14 +1011,11 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    // TODO: Attributes
-    /*
     test = testBuilder.setPattern("{42 :number @foo @bar=13}")
                                   .setExpectSuccess()
                                   .setExpected("42")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
-    */
 
     // Neither `ordinal` nor `selectordinal` exists in this spec version
     test = testBuilder.setPattern(".match {$foo :ordinal} one {{st}} two {{nd}} few {{rd}} * {{th}}")
