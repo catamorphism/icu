@@ -1797,6 +1797,12 @@ UnicodeString Parser::parseText(UErrorCode& status) {
         return str;
     }
 
+    if (!(isTextChar(source[index] || source[index] == BACKSLASH))) {
+        // Error -- text is expected here
+        ERROR(parseError, status, index);
+        return str;
+    }
+
     while (true) {
         if (source[index] == BACKSLASH) {
             parseTextEscape(str, status);
@@ -2070,6 +2076,10 @@ Pattern Parser::parseSimpleMessage(UErrorCode& status) {
             }
             if (source[index] == RIGHT_CURLY_BRACE) {
                 // End of quoted pattern
+                break;
+            }
+            // Don't loop infinitely
+            if (errors.hasSyntaxError()) {
                 break;
             }
         }
