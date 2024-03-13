@@ -1316,6 +1316,10 @@ namespace message2 {
                 OptionMap attributeMap;
                 UMarkupType type = UMARKUP_COUNT;
                 Builder& setOptionMap(OptionMap&&);
+
+                // TODO: Would probably be best to make this method public (same for Markup)
+                // and not make the parser a friend class.
+                // Same for options on Operator and Markup. (addAll())
                 Builder& setAttributeMap(OptionMap&& m);
             public:
                 /**
@@ -1512,11 +1516,21 @@ namespace message2 {
             class U_I18N_API Builder : public UMemory {
             private:
                 friend class Expression;
+                friend class message2::Parser;
+
                 bool hasOperand = false;
                 bool hasOperator = false;
                 Operand rand;
                 Operator rator;
                 UVector* attributes; // Not a LocalPointer for the same reason as in `SelectorKeys::builder`
+                // The next field is used internally by the parser
+                // and overrides `attributes` vector.
+                // This is because it's easiest to share the code
+                // for parsing options between Expression::Builder and Markup::Builder.
+                OptionMap attributeMap;
+                // Provided as a private method so that the parser
+                // can use the same attribute-parsing code for Expression and Markup
+                Builder& setAttributeMap(OptionMap&& m);
             public:
                 /**
                  * Sets the operand of this expression.
@@ -1558,22 +1572,26 @@ namespace message2 {
                  * U_INVALID_STATE_ERROR.
                  *
                  * The builder object (`this`) can still be used after calling `build()`.
-                 *
+                 * The `build()` method is non-const for internal implementation reasons,
+                 * but is observably const.
+
                  * @param status    Input/output error code.
                  * @return          The new Expression.
                  *
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Expression build(UErrorCode& status) const;
+                Expression build(UErrorCode& status);
                 /**
                  * Default constructor.
                  * Returns a Builder with no operator or operand set.
                  *
+                 * @param status    Input/output error code.
+                 *
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Builder() = default;
+                Builder(UErrorCode& status);
                 /**
                  * Destructor.
                  *
@@ -1633,9 +1651,9 @@ namespace message2 {
               options={opt: value})  | NullOperand()
             */
 
-            Expression(const Operator &rAtor, const Operand &rAnd) : rator(rAtor), rand(rAnd) {}
-            Expression(const Operand &rAnd) : rator(std::nullopt), rand(Operand(rAnd)) {}
-            Expression(const Operator &rAtor) : rator(rAtor), rand() {}
+            Expression(const Operator &rAtor, const Operand &rAnd, const OptionMap& attrs) : rator(rAtor), rand(rAnd), attributes(attrs) {}
+            Expression(const Operand &rAnd, const OptionMap& attrs) : rator(std::nullopt), rand(Operand(rAnd)), attributes(attrs) {}
+            Expression(const Operator &rAtor, const OptionMap& attrs) : rator(rAtor), rand(), attributes(attrs) {}
             /* const */ std::optional<Operator> rator;
             /* const */ Operand rand;
             /* const */ OptionMap attributes;
