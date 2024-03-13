@@ -94,6 +94,7 @@ static bool inRange(UChar32 c, UChar32 first, UChar32 last) {
 /*
   The following helper predicates should exactly match nonterminals in the MessageFormat 2 grammar:
 
+  `isContentChar()`   : `content-char`
   `isTextChar()`      : `text-char`
   `isReservedStart()` : `reserved-start`
   `isReservedChar()`  : `reserved-char`
@@ -105,12 +106,39 @@ static bool inRange(UChar32 c, UChar32 first, UChar32 last) {
   `isQuotedChar()`    : `quoted-char`
   `isWhitespace()`    : `s`
 */
-static bool isTextChar(UChar32 c) {
-    return inRange(c, 0x0000, 0x005B)    // Omit backslash
-           || inRange(c, 0x005D, 0x007A) // Omit {
-           || c == 0x007C                // }
+
+static bool isContentChar(UChar32 c) {
+    return inRange(c, 0x0001, 0x0008)    // Omit NULL, HTAB and LF
+           || inRange(c, 0x000B, 0x000C) // Omit CR
+           || inRange(c, 0x000E, 0x001F) // Omit SP
+           || inRange(c, 0x0021, 0x002D) // Omit '.'
+           || inRange(c, 0x002F, 0x003F) // Omit '@'
+           || inRange(c, 0x0041, 0x005B) // Omit '\'
+           || inRange(c, 0x005D, 0x007A) // Omit { | }
            || inRange(c, 0x007E, 0xD7FF) // Omit surrogates
            || inRange(c, 0xE000, 0x10FFFF);
+}
+
+// See `s` in the MessageFormat 2 grammar
+inline bool isWhitespace(UChar32 c) {
+    switch (c) {
+    case SPACE:
+    case HTAB:
+    case CR:
+    case LF:
+    case IDEOGRAPHIC_SPACE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool isTextChar(UChar32 c) {
+    return isContentChar(c)
+        || isWhitespace(c)
+        || c == PERIOD
+        || c == AT
+        || c == PIPE;
 }
 
 // Note: this doesn't distinguish between private-use
@@ -135,13 +163,7 @@ static bool isReservedStart(UChar32 c) {
 }
 
 static bool isReservedChar(UChar32 c) {
-    return inRange(c, 0x0000, 0x0008)    // Omit HTAB and LF
-           || inRange(c, 0x000B, 0x000C) // Omit CR
-           || inRange(c, 0x000E, 0x0019) // Omit SP
-           || inRange(c, 0x0021, 0x005B) // Omit backslash
-           || inRange(c, 0x005D, 0x007A) // Omit { | }
-           || inRange(c, 0x007E, 0xD7FF) // Omit surrogates
-           || inRange(c, 0xE000, 0x10FFFF);
+    return isContentChar(c) || c == PERIOD;
 }
 
 static bool isAlpha(UChar32 c) { return inRange(c, 0x0041, 0x005A) || inRange(c, 0x0061, 0x007A); }
@@ -167,10 +189,12 @@ static bool isUnquotedStart(UChar32 c) {
 }
 
 static bool isQuotedChar(UChar32 c) {
-    return inRange(c, 0x0000, 0x005B)    // Omit backslash
-           || inRange(c, 0x005D, 0x007B) // Omit pipe
-           || inRange(c, 0x007D, 0xD7FF) // Omit surrogates
-           || inRange(c, 0xE000, 0x10FFFF);
+    return isContentChar(c)
+        || isWhitespace(c)
+        || c == PERIOD
+        || c == AT
+        || c == LEFT_CURLY_BRACE
+        || c == RIGHT_CURLY_BRACE;
 }
 
 // Returns true iff `c` can begin a `function` nonterminal
@@ -215,20 +239,6 @@ static bool isLiteralStart(UChar32 c) {
 // Returns true iff `c` can begin a `key` nonterminal
 static bool isKeyStart(UChar32 c) {
     return (c == ASTERISK || isLiteralStart(c));
-}
-
-// See `s` in the MessageFormat 2 grammar
-inline bool isWhitespace(UChar32 c) {
-    switch (c) {
-    case SPACE:
-    case HTAB:
-    case CR:
-    case LF:
-    case IDEOGRAPHIC_SPACE:
-        return true;
-    default:
-        return false;
-    }
 }
 
 inline bool isDeclarationStart(const UnicodeString& source, int32_t index) {
