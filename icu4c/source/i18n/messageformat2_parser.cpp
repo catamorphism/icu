@@ -255,6 +255,16 @@ inline bool isDeclarationStart(const UnicodeString& source, int32_t index) {
 // -------------------------------------
 // Parsing functions
 
+
+/*
+  TODO: Since handling the whitespace ambiguities needs to be repeated
+  in several different places and is hard to factor out,
+  it probably would be better to replace the parser with a lexer + parser
+  to separate tokenizing from parsing, which would simplify the code significantly.
+  This has the disadvantage that there is no token grammar for MessageFormat,
+  so one would have to be invented that isn't a component of the spec.
+ */
+
 /*
     This is a recursive-descent scannerless parser that,
     with a few exceptions, uses 1 character of lookahead.
@@ -270,7 +280,7 @@ identifier -> name
 
 Otherwise:
 
-There are five ambiguities in the grammar that can't be resolved with finite
+There are at least seven ambiguities in the grammar that can't be resolved with finite
 lookahead (since whitespace sequences can be arbitrarily long). They are resolved
 with a form of backtracking (early exit). No state needs to be saved/restored
 since whitespace doesn't affect the shape of the resulting parse tree, so it's
@@ -315,6 +325,20 @@ Fifth: matcher = match-statement 1*([s] variant)
  When reading the space after the first '}', it's unclear whether
  it's the optional space before another selector, or the optional space
  before a variant.
+
+Sixth: annotation-expression = "{" [s] annotation *(s attribute) [s] "}"
+       -> "{" [s] function *(s attribute) [s] "}"
+       -> "{" [s] ":" identifier *(s option) *(s attribute) [s] "}"
+       -> "{" [s] ":" identifier s attribute *(s attribute) [s] "}"
+
+     Example: {:func @foo}
+(Note: the same ambiguity is present with variable-expression and literal-expression)
+
+Seventh:
+
+
+When parsing the space, it's unclear whether it's the optional space before an
+option, or the optional space before an attribute.
 
  Unless otherwise noted in a comment, all helper functions that take
     a `source` string, an `index` unsigned int, and an `errorCode` `UErrorCode`
