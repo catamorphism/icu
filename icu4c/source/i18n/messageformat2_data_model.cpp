@@ -272,7 +272,7 @@ OptionMap::OptionMap(const UVector& opts, UErrorCode& status) {
 OptionMap::OptionMap(const OptionMap& other) : len(other.len) {
     U_ASSERT(!other.bogus);
     Option* result = copyArray(other.options.getAlias(), len);
-    if (result == nullptr) {
+    if (result == nullptr && len != 0) {
         bogus = true;
         return;
     }
