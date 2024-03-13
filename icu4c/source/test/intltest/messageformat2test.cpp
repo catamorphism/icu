@@ -174,7 +174,7 @@ UnicodeString matches[] = {
     0
 };
 
-static const int32_t numSyntaxTests = 21;
+static const int32_t numSyntaxTests = 19;
 // These patterns are tested to ensure they parse without a syntax error
 UnicodeString syntaxTests[] = {
     "hello {|foo| :number   }",
@@ -1019,15 +1019,10 @@ void TestMessageFormat2::testInvalidPatterns() {
     testInvalidPattern(++i, "missing space {|foo|:func}", 20);
     testInvalidPattern(++i, "missing space {|foo|@bar}", 20);
     testInvalidPattern(++i, "missing space {:func@bar}", 20);
-
-    // TODO - attributes NYI
-    /*
-    testInvalidPattern(++i, "{:func @bar@baz}", 12);
+    testInvalidPattern(++i, "{:func @bar@baz}", 11);
     testInvalidPattern(++i, "{:func @bar=42@baz}", 14);
     testInvalidPattern(++i, "{+reserved@bar}", 10);
     testInvalidPattern(++i, "{&private@bar}", 9);
-    */
-
     testInvalidPattern(++i, "bad {:} placeholder", 6);
     testInvalidPattern(++i, "bad {\\u0000placeholder}", 5);
     testInvalidPattern(++i, "no-equal {|42| :number minimumFractionDigits 2}", 45);
@@ -1042,11 +1037,8 @@ void TestMessageFormat2::testInvalidPatterns() {
     testInvalidPattern(++i, "bad {:placeholder :option=x}", 18);
     testInvalidPattern(++i, "bad {:placeholder option::x=y}", 25);
     testInvalidPattern(++i, "bad {$placeholder option}", 18);
-    // Attributes NYI -- TODO
-    /*
     testInvalidPattern(++i, "bad {:placeholder @attribute=}", 29);
     testInvalidPattern(++i, "bad {:placeholder @attribute=@foo}", 29);
-    */
     testInvalidPattern(++i, "no {placeholder end", 16);
     testInvalidPattern(++i, "no {$placeholder end", 17);
     testInvalidPattern(++i, "no {:placeholder end", 20);
