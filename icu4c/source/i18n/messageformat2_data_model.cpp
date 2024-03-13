@@ -499,6 +499,9 @@ Markup::Builder::~Builder() {
 }
 // ------------ Expression
 
+Expression::Builder::Builder(UErrorCode& status) {
+    attributes = createUVector(status);
+}
 
 UBool Expression::isStandaloneAnnotation() const {
     return rand.isNull();
@@ -541,7 +544,14 @@ Expression::Builder& Expression::Builder::setOperator(Operator&& rAtor) {
     return *this;
 }
 
-Expression Expression::Builder::build(UErrorCode& errorCode) const {
+Expression::Builder& Expression::Builder::setAttributeMap(OptionMap&& m) {
+    attributeMap = std::move(m);
+    delete attributes;
+    attributes = nullptr;
+    return *this;
+}
+
+Expression Expression::Builder::build(UErrorCode& errorCode) {
     Expression result;
 
     if (U_FAILURE(errorCode)) {
@@ -553,13 +563,16 @@ Expression Expression::Builder::build(UErrorCode& errorCode) const {
         return result;
     }
 
+    if (attributes != nullptr) {
+        attributeMap = OptionMap(*attributes, errorCode);
+    }
     if (hasOperand && hasOperator) {
-        result = Expression(rator, rand);
+        result = Expression(rator, rand, attributeMap);
     } else if (hasOperand && !hasOperator) {
-        result = Expression(rand);
+        result = Expression(rand, attributeMap);
     } else {
         // rator is valid, rand is not valid
-        result = Expression(rator);
+        result = Expression(rator, attributeMap);
     }
     return result;
 }
@@ -573,7 +586,11 @@ Expression& Expression::operator=(Expression other) noexcept {
     return *this;
 }
 
-Expression::Builder::~Builder() {}
+Expression::Builder::~Builder() {
+    if (attributes != nullptr) {
+        delete attributes;
+    }
+}
 
 // ----------- PatternPart
 

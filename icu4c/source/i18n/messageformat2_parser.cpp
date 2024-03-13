@@ -852,6 +852,10 @@ void Parser::parseAttribute(UVector& options, UErrorCode& errorCode) {
     // Parse LHS
     UnicodeString lhs = parseIdentifier(errorCode);
 
+    // Prepare to "backtrack" to resolve ambiguity
+    // about whether whitespace precedes another
+    // attribute, or the '=' sign
+    int32_t savedIndex = index;
     parseOptionalWhitespace(errorCode);
 
     Operand rand;
@@ -876,6 +880,9 @@ void Parser::parseAttribute(UVector& options, UErrorCode& errorCode) {
     } else {
         // attribute -> "@" identifier [[s] "=" [s]]
         // Use null operand, which `rand` is already set to
+        // "Backtrack" by restoring the whitespace
+        U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+        index = savedIndex;
     }
 
     CHECK_ERROR(errorCode);
@@ -1028,6 +1035,9 @@ that `parseExpression()` can safely require a '}' after `parseOptions()` finishe
 
 Note that when "backtracking" really just means early exit, since only whitespace
 is involved and there's no state to save.
+
+There is a separate but similar ambiguity as to whether the space precedes
+an option or an attribute.
 */
 
     while(true) {
@@ -1037,6 +1047,7 @@ is involved and there's no state to save.
         if (!isWhitespace(source[index])) {
             break;
         }
+        int32_t firstWhitespace = index;
 
         // In any case other than an empty options list, there must be at least
         // one whitespace character.
@@ -1056,6 +1067,9 @@ is involved and there's no state to save.
             // Done.
             // Remove the whitespace from normalizedInput
             U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+            // "Backtrack" so as to leave the optional whitespace there
+            // when parsing attributes
+            index = firstWhitespace;
             break;
         }
         parseOption(builder, errorCode);
@@ -1344,10 +1358,11 @@ Reserved Parser::parseReserved(UErrorCode& status) {
         if (!inBounds(source, index)) {
             break;
         }
-        bool sawWhitespace = false;
+        int32_t numWhitespaceChars = 0;
+        int32_t savedIndex = index;
         if (isWhitespace(source[index])) {
-            sawWhitespace = true;
             parseOptionalWhitespace(status);
+            numWhitespaceChars = index - savedIndex;
             // Restore precondition
             if (!inBounds(source, index)) {
                 break;
@@ -1362,10 +1377,18 @@ Reserved Parser::parseReserved(UErrorCode& status) {
                 break;
             }
         } else {
-            if (sawWhitespace) {
+            if (numWhitespaceChars > 0) {
                 if (source[index] == RIGHT_CURLY_BRACE) {
                     // Not an error: just means there's no trailing whitespace
                     // after this `reserved`
+                    break;
+                }
+                if (source[index] == AT) {
+                    // Not an error, but we have to "backtrack" due to the ambiguity
+                    // between an `s` preceding another reserved chunk
+                    // and an `s` preceding an attribute list
+                    U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+                    index -= numWhitespaceChars;
                     break;
                 }
                 // Error: if there's whitespace, it must either be followed
@@ -1509,16 +1532,20 @@ static void exprFallback(Expression::Builder& exprBuilder) {
     exprBuilder.setOperand(Operand(Literal(false, UnicodeString(REPLACEMENT))));
 }
 
-static Expression exprFallback() {
-    Expression::Builder exprBuilder;
-
-    // Construct a literal consisting just of  The U+FFFD REPLACEMENT CHARACTER
-    // per https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fallback-resolution
-    exprBuilder.setOperand(Operand(Literal(false, UnicodeString(REPLACEMENT))));
-    UErrorCode status = U_ZERO_ERROR;
-    Expression result = exprBuilder.build(status);
-    // An operand was set, so there can't be an error
-    U_ASSERT(U_SUCCESS(status));
+static Expression exprFallback(UErrorCode& status) {
+    Expression result;
+    if (U_SUCCESS(status)) {
+        Expression::Builder exprBuilder(status);
+        if (U_SUCCESS(status)) {
+            // Construct a literal consisting just of  The U+FFFD REPLACEMENT CHARACTER
+            // per https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fallback-resolution
+            exprBuilder.setOperand(Operand(Literal(false, UnicodeString(REPLACEMENT))));
+            UErrorCode status = U_ZERO_ERROR;
+            result = exprBuilder.build(status);
+            // An operand was set, so there can't be an error
+            U_ASSERT(U_SUCCESS(status));
+        }
+    }
     return result;
 }
 
@@ -1535,7 +1562,7 @@ Expression Parser::parseExpression(UErrorCode& status) {
     // Optional whitespace after opening brace
     parseOptionalWhitespace(status);
 
-    Expression::Builder exprBuilder;
+    Expression::Builder exprBuilder(status);
     // Restore precondition
     if (!inBounds(source, index)) {
         exprFallback(exprBuilder);
@@ -1569,6 +1596,10 @@ Expression Parser::parseExpression(UErrorCode& status) {
         }
         }
     }
+
+    // Parse attributes
+    OptionMap attributes = parseAttributes(status);
+    exprBuilder.setAttributeMap(std::move(attributes));
 
     // Parse optional space
     // (the last [s] in e.g. "{" [s] literal [s annotation] *(s attribute) [s] "}")
@@ -1962,7 +1993,7 @@ std::variant<Expression, Markup> Parser::parsePlaceholder(UErrorCode& status) {
 
     if (!inBounds(source, index)) {
         ERROR(parseError, status, index);
-        return exprFallback();
+        return exprFallback(status);
     }
 
     // Check if it's markup or an expression
