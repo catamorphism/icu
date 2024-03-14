@@ -944,8 +944,7 @@ void Parser::parseAttribute(UVector& options, UErrorCode& errorCode) {
     } else {
         // attribute -> "@" identifier [[s] "=" [s]]
         // Use null operand, which `rand` is already set to
-        // "Backtrack" by restoring the whitespace
-        U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+        // "Backtrack" by restoring the whitespace (if there was any)
         index = savedIndex;
     }
 
@@ -1129,7 +1128,7 @@ an option or an attribute.
             // We've consumed all the options (meaning that either we consumed non-empty
             // whitespace, or consumed at least one option.)
             // Done.
-            // Remove the whitespace from normalizedInput
+            // Remove the required whitespace from normalizedInput
             U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
             // "Backtrack" so as to leave the optional whitespace there
             // when parsing attributes
@@ -1453,7 +1452,6 @@ Reserved Parser::parseReservedBody(Reserved::Builder& builder, UErrorCode& statu
                     // Resolve even more ambiguity (space preceding another piece of
                     // a `reserved-body`, vs. space preceding an expression in `reserved-statement`
                     // "Backtrack"
-                    U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
                     index -= numWhitespaceChars;
                     break;
                 }
@@ -1466,7 +1464,6 @@ Reserved Parser::parseReservedBody(Reserved::Builder& builder, UErrorCode& statu
                     // Not an error, but we have to "backtrack" due to the ambiguity
                     // between an `s` preceding another reserved chunk
                     // and an `s` preceding an attribute list
-                    U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
                     index -= numWhitespaceChars;
                     break;
                 }
