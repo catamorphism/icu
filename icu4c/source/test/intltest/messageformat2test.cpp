@@ -29,7 +29,7 @@ as of the following commit from 2023-05-09:
 
 */
 
-static const int32_t numValidTestCases = 41;
+static const int32_t numValidTestCases = 55;
 TestResult validTestCases[] = {
     {"hello {|4.2| :number}", "hello 4.2"},
     {"hello {|4.2| :number minimumFractionDigits=2}", "hello 4.20"},
@@ -76,10 +76,10 @@ TestResult validTestCases[] = {
     {"{#tag foo=bar /} {|content|} {#tag foo=bar}", " content "},
     {"{#tag foo=bar/} {|content|} {/tag foo=bar}", " content "},
     // Attributes are ignored
-    {"The value is {horse @horse}.", "The value is horse"},
-    {"hello {|4.2| @number", "hello 4.2"},
-    {"The value is {horse @horse=cool}.", "The value is horse"},
-    {"hello {|4.2| @number=5", "hello 4.2"},
+    {"The value is {horse @horse}.", "The value is horse."},
+    {"hello {|4.2| @number}", "hello 4.2"},
+    {"The value is {horse @horse=cool}.", "The value is horse."},
+    {"hello {|4.2| @number=5}", "hello 4.2"},
     // Number literals
     {"{-1}", "-1"},
     {"{0}", "0"},
@@ -704,6 +704,10 @@ void TestMessageFormat2::testDataModelErrors() {
     testSemanticallyInvalidPattern(++i, ".local $foo = {42 :func opt=$foo} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".local $foo = {42 :func opt=$bar} .local $bar = {42} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
 
+    // Disambiguating unsupported statements from match
+    testSemanticallyInvalidPattern(++i, ".matc {-1} {{hello}}", U_UNSUPPORTED_STATEMENT_ERROR);
+    testSemanticallyInvalidPattern(++i, ".m {-1} {{hello}}", U_UNSUPPORTED_STATEMENT_ERROR);
+
     TestCase::Builder testBuilder;
     testBuilder.setName("testDataModelErrors");
 
@@ -758,10 +762,10 @@ void TestMessageFormat2::testResolutionErrors() {
                               "{|horse|}", U_FORMATTING_ERROR);
 
     // Unsupported expressions
-    testRuntimeErrorPattern(++i, "hello {|4.2| !number}", U_UNSUPPORTED_PROPERTY);
-    testRuntimeErrorPattern(++i, "{<tag}", U_UNSUPPORTED_PROPERTY);
+    testRuntimeErrorPattern(++i, "hello {|4.2| !number}", U_UNSUPPORTED_EXPRESSION_ERROR);
+    testRuntimeErrorPattern(++i, "{<tag}", U_UNSUPPORTED_EXPRESSION_ERROR);
     testRuntimeErrorPattern(++i, ".local $bar = {|42| ~plural} .match {|horse| :string}  * {{{$bar}}}",
-                            U_UNSUPPORTED_PROPERTY);
+                            U_UNSUPPORTED_EXPRESSION_ERROR);
 
     // Selector error
     // Here, the plural selector returns "no match" so the * variant matches
@@ -857,10 +861,6 @@ void TestMessageFormat2::testInvalidPatterns() {
     // Error parsing the last key -- the error should be there, not in the erroneous
     // pattern
     testInvalidPattern(++i, ".match {|y|}  * |\\q| {\\z}", 18);
-
-    // Selectors not starting with `match` -- error should be on character 2,
-    // not the later erroneous key
-    testInvalidPattern(++i, ".m {|y|} %{! {z}", 2);
 
     // Non-expression as scrutinee in pattern -- error should be at the first
     // non-expression, not the later non-expression
@@ -1064,6 +1064,8 @@ void TestMessageFormat2::testInvalidPatterns() {
     testInvalidPattern(++i, ".local $foo = {|42| :number option=a:b:c} {{bar {$foo}}}", 36);
     testInvalidPattern(++i, "{$bar:foo}", 5);
 
+    // Disambiguating a wrong .match from an unsupported statement
+    testInvalidPattern(++i, ".match {1} {{_}}", 12);
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
