@@ -166,6 +166,10 @@ static bool isReservedChar(UChar32 c) {
     return isContentChar(c) || c == PERIOD;
 }
 
+static bool isReservedBodyStart(UChar32 c) {
+    return isReservedChar(c) || c == BACKSLASH || c == PIPE;
+}
+
 static bool isAlpha(UChar32 c) { return inRange(c, 0x0041, 0x005A) || inRange(c, 0x0061, 0x007A); }
 
 static bool isDigit(UChar32 c) { return inRange(c, 0x0030, 0x0039); }
@@ -269,8 +273,11 @@ inline bool isDeclarationStart(const UnicodeString& source, int32_t index) {
     This is a recursive-descent scannerless parser that,
     with a few exceptions, uses 1 character of lookahead.
 
-All but one of the exceptions involve ambiguities about the meaning of whitespace.
-The ambiguity not involving whitespace is:
+    This may not be an exhaustive list, as the additions of attributes and reserved
+    statements introduced several new ambiguities.
+
+All but three of the exceptions involve ambiguities about the meaning of whitespace.
+One ambiguity not involving whitespace is:
 identifier -> namespace ":" name
 vs.
 identifier -> name
@@ -278,7 +285,30 @@ identifier -> name
 `namespace` and `name` can't be distinguished without arbitrary lookahead.
 (For how this is handled, see parseIdentifier())
 
-Otherwise:
+The second ambiguity not involving whitespace is:
+complex-message -> *(declaration[s]) complex-body
+                -> declaration *(declaration[s]) complex-body
+                -> declaration complex-body
+                -> reserved-statement complex-body
+                -> .foo {$x} .match // ...
+When processing the '.', arbitrary lookahead is required to distinguish the
+arbitrary-length unsupported keyword from `.match`.
+(For how this is handled, see parseDeclarations()).
+
+The third ambiguity not involving whitespace is:
+complex-message -> *(declaration [s]) complex-body
+                -> reserved-statement *(declaration [s]) complex-body
+                -> reserved-statement complex-body
+                -> reserved-statement quotedPattern
+                -> reserved-keyword [s reserved-body] 1*([s] expression) quoted-pattern
+                -> reserved-keyword expression quoted-pattern
+ Example: .foo {1} {{1}}
+
+ Without lookahead, the opening '{' of the quoted pattern can't be distinguished
+ from the opening '{' of another expression in the unsupported statement.
+ (Though this only requires 1 character of lookahead.)
+
+ Otherwise:
 
 There are at least seven ambiguities in the grammar that can't be resolved with finite
 lookahead (since whitespace sequences can be arbitrarily long). They are resolved
@@ -1353,6 +1383,13 @@ Reserved Parser::parseReserved(UErrorCode& status) {
     // Consume reservedStart
     normalizedInput += source[index];
     index++;
+    return parseReservedBody(builder, status);
+}
+
+Reserved Parser::parseReservedBody(Reserved::Builder& builder, UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
 
 /*
   Arbitrary lookahead is required to parse a `reserved`, for similar reasons
@@ -1412,6 +1449,14 @@ Reserved Parser::parseReserved(UErrorCode& status) {
             }
         } else {
             if (numWhitespaceChars > 0) {
+                if (source[index] == LEFT_CURLY_BRACE) {
+                    // Resolve even more ambiguity (space preceding another piece of
+                    // a `reserved-body`, vs. space preceding an expression in `reserved-statement`
+                    // "Backtrack"
+                    U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+                    index -= numWhitespaceChars;
+                    break;
+                }
                 if (source[index] == RIGHT_CURLY_BRACE) {
                     // Not an error: just means there's no trailing whitespace
                     // after this `reserved`
@@ -1750,6 +1795,93 @@ void Parser::parseInputDeclaration(UErrorCode& status) {
 }
 
 /*
+  Parses a `reserved-statement` per the grammar
+ */
+void Parser::parseUnsupportedStatement(UErrorCode& status) {
+    U_ASSERT(inBounds(source, index) && source[index] == PERIOD);
+
+    UnsupportedStatement::Builder builder(status);
+    CHECK_ERROR(status);
+
+    // Parse the keyword
+    UnicodeString keyword(PERIOD);
+    normalizedInput += UnicodeString(PERIOD);
+    index++;
+    keyword += parseName(status);
+    builder.setKeyword(keyword);
+
+    // Parse the body, which is optional
+    // Lookahead is required to distinguish the `s` in reserved-body
+    // from the `s` in `[s] expression`
+    // Next character may be:
+    // * whitespace (followed by either a reserved-body start or
+    //   a '{')
+    // * a '{'
+
+    CHECK_BOUNDS(source, index, parseError, status);
+
+    if (source[index] != LEFT_CURLY_BRACE) {
+        if (!isWhitespace(source[index])) {
+            ERROR(parseError, status, index);
+            return;
+        }
+        // Expect a reserved-body start
+        int32_t savedIndex = index;
+        parseRequiredWhitespace(status);
+        CHECK_BOUNDS(source, index, parseError, status);
+        if (isReservedBodyStart(source[index])) {
+            // There is a reserved body
+            Reserved::Builder r(status);
+            builder.setBody(parseReservedBody(r, status));
+        } else {
+            // No body -- backtrack so we can parse 1*([s] expression)
+            index = savedIndex;
+            normalizedInput.truncate(normalizedInput.length() - 1);
+        }
+        // Otherwise, the next character must be a '{'
+        // to open the required expression (or optional whitespace)
+        if (source[index] != LEFT_CURLY_BRACE && !isWhitespace(source[index])) {
+            ERROR(parseError, status, index);
+            return;
+        }
+    }
+
+    // Finally, parse the expressions
+
+    // Need to look ahead to disambiguate a '{' beginning
+    // an expression from one beginning with a quoted pattern
+    int32_t expressionCount = 0;
+    while (source[index] == LEFT_CURLY_BRACE || isWhitespace(source[index])) {
+        parseOptionalWhitespace(status);
+
+        bool nextIsLbrace = source[index] == LEFT_CURLY_BRACE;
+        bool nextIsQuotedPattern = nextIsLbrace && inBounds(source, index + 1)
+            && source[index + 1] == LEFT_CURLY_BRACE;
+        if (nextIsQuotedPattern) {
+            break;
+        }
+
+        builder.addExpression(parseExpression(status), status);
+        expressionCount++;
+    }
+    if (expressionCount <= 0) {
+        // At least one expression is required
+        ERROR(parseError, status, index);
+        return;
+    }
+    dataModel.addUnsupportedStatement(builder.build(status), status);
+}
+
+// Terrible hack to get around the ambiguity between `matcher` and `reserved-statement`
+bool Parser::nextIsMatch() const {
+    for(int32_t i = 0; i < 6; i++) {
+        if (!inBounds(source, index + i) || source[index + i] != ID_MATCH[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+/*
   Consume a possibly-empty sequence of declarations separated by whitespace;
   each declaration matches the `declaration` nonterminal in the grammar
 
@@ -1760,11 +1892,21 @@ void Parser::parseDeclarations(UErrorCode& status) {
     // declarations must be followed by a body
     CHECK_BOUNDS(source, index, parseError, status);
 
-    while (isDeclarationStart(source, index)) {
+    while (source[index] == PERIOD) {
+        CHECK_BOUNDS(source, index + 1, parseError, status);
         if (source[index + 1] == ID_LOCAL[1]) {
             parseLocalDeclaration(status);
-        } else {
+        } else if (source[index + 1] == ID_INPUT[1]) {
             parseInputDeclaration(status);
+        } else {
+            // Unsupported statement
+            // Lookahead is needed to disambiguate this from a `match`
+            if (!nextIsMatch()) {
+                parseUnsupportedStatement(status);
+            } else {
+                // Done parsing declarations
+                break;
+            }
         }
 
         // Avoid looping infinitely

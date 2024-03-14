@@ -67,6 +67,7 @@ namespace message2 {
         Pattern parseSimpleMessage(UErrorCode&);
         void parseBody(UErrorCode&);
 	void parseDeclarations(UErrorCode&);
+        void parseUnsupportedStatement(UErrorCode&);
         void parseLocalDeclaration(UErrorCode&);
         void parseInputDeclaration(UErrorCode&);
 	void parseSelectors(UErrorCode&);
@@ -80,6 +81,7 @@ namespace message2 {
 	void parseToken(const UChar32 (&)[N], UErrorCode&);
 	template <int32_t N>
 	void parseTokenWithWhitespace(const UChar32 (&)[N], UErrorCode&);
+        bool nextIsMatch() const;
 	UnicodeString parseName(UErrorCode&);
         UnicodeString parseIdentifier(UErrorCode&);
         UnicodeString parseDigits(UErrorCode&);
@@ -99,6 +101,7 @@ namespace message2 {
 	void parseReservedEscape(UnicodeString&, UErrorCode&);
 	void parseReservedChunk(Reserved::Builder&, UErrorCode&);
 	Reserved parseReserved(UErrorCode&);
+        Reserved parseReservedBody(Reserved::Builder&, UErrorCode&);
 	Operator parseAnnotation(UErrorCode&);
 	void parseLiteralOrVariableWithAnnotation(bool, Expression::Builder&, UErrorCode&);
         Markup parseMarkup(UErrorCode&);
