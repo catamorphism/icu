@@ -1503,7 +1503,15 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             const Operand& getOperand() const;
-
+            /**
+             * Gets the attributes of this expression
+             *
+             * @return A vector of attributes
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            std::vector<Option> getAttributes() const { return attributes.getOptions(); }
             /**
              * The mutable `Expression::Builder` class allows the operator to be constructed
              * incrementally.
@@ -1613,6 +1621,7 @@ namespace message2 {
 
                 swap(e1.rator, e2.rator);
                 swap(e1.rand, e2.rand);
+                swap(e1.attributes, e2.attributes);
             }
             /**
              * Copy constructor.
@@ -1644,6 +1653,8 @@ namespace message2 {
              */
             virtual ~Expression();
         private:
+            friend class message2::Serializer;
+
             /*
               Internally, an expression is represented as the application of an optional operator to an operand.
               The operand is always present; for function calls with no operand, it's represented
@@ -1664,6 +1675,7 @@ namespace message2 {
             /* const */ std::optional<Operator> rator;
             /* const */ Operand rand;
             /* const */ OptionMap attributes;
+            const OptionMap& getAttributesInternal() const { return attributes; }
         }; // class Expression
   } // namespace data_model
 } // namespace message2
