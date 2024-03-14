@@ -298,7 +298,7 @@ const Option& OptionMap::getOption(int32_t i, UErrorCode& status) const {
 }
 
 int32_t OptionMap::size() const {
-    U_ASSERT(options.isValid());
+    U_ASSERT(options.isValid() || len == 0);
     return len;
 }
 
@@ -579,7 +579,7 @@ Expression Expression::Builder::build(UErrorCode& errorCode) {
 
 Expression::Expression() : rator(std::nullopt) {}
 
-Expression::Expression(const Expression& other) : rator(other.rator), rand(other.rand) {}
+Expression::Expression(const Expression& other) : rator(other.rator), rand(other.rand), attributes(other.attributes) {}
 
 Expression& Expression::operator=(Expression other) noexcept {
     swap(*this, other);
