@@ -870,9 +870,9 @@ Matcher::Matcher(const Matcher& other) {
     variants.adoptInstead(copyArray<Variant>(other.variants.getAlias(), numVariants));
 }
 
-// --------------- MessageFormatDataModel
+// --------------- MFDataModel
 
-const Pattern& MessageFormatDataModel::getPattern() const {
+const Pattern& MFDataModel::getPattern() const {
     if (std::holds_alternative<Matcher>(body)) {
         // Return reference to empty pattern if this is a selectors message
         return empty;
@@ -880,38 +880,38 @@ const Pattern& MessageFormatDataModel::getPattern() const {
     return *(std::get_if<Pattern>(&body));
 }
 
-const Binding* MessageFormatDataModel::getLocalVariablesInternal() const {
+const Binding* MFDataModel::getLocalVariablesInternal() const {
     U_ASSERT(!bogus);
     U_ASSERT(bindings.isValid());
     return bindings.getAlias();
 }
 
-const Expression* MessageFormatDataModel::getSelectorsInternal() const {
+const Expression* MFDataModel::getSelectorsInternal() const {
     U_ASSERT(!bogus);
     U_ASSERT(!hasPattern());
     return std::get_if<Matcher>(&body)->selectors.getAlias();
 }
 
-const Variant* MessageFormatDataModel::getVariantsInternal() const {
+const Variant* MFDataModel::getVariantsInternal() const {
     U_ASSERT(!bogus);
     U_ASSERT(!hasPattern());
     return std::get_if<Matcher>(&body)->variants.getAlias();
 }
 
-const UnsupportedStatement* MessageFormatDataModel::getUnsupportedStatementsInternal() const {
+const UnsupportedStatement* MFDataModel::getUnsupportedStatementsInternal() const {
     U_ASSERT(!bogus);
     U_ASSERT(unsupportedStatements.isValid());
     return unsupportedStatements.getAlias();
 }
 
 
-MessageFormatDataModel::Builder::Builder(UErrorCode& status) {
+MFDataModel::Builder::Builder(UErrorCode& status) {
     bindings = createUVector(status);
     unsupportedStatements = createUVector(status);
 }
 
 // Invalidate pattern and create selectors/variants if necessary
-void MessageFormatDataModel::Builder::buildSelectorsMessage(UErrorCode& status) {
+void MFDataModel::Builder::buildSelectorsMessage(UErrorCode& status) {
     CHECK_ERROR(status);
 
     if (hasPattern) {
@@ -923,7 +923,7 @@ void MessageFormatDataModel::Builder::buildSelectorsMessage(UErrorCode& status) 
     hasSelectors = true;
 }
 
-void MessageFormatDataModel::Builder::checkDuplicate(const VariableName& var, UErrorCode& status) const {
+void MFDataModel::Builder::checkDuplicate(const VariableName& var, UErrorCode& status) const {
     CHECK_ERROR(status);
 
     // This means that handling declarations is quadratic in the number of variables,
@@ -939,7 +939,7 @@ void MessageFormatDataModel::Builder::checkDuplicate(const VariableName& var, UE
     }
 }
 
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addBinding(Binding&& b, UErrorCode& status) {
+MFDataModel::Builder& MFDataModel::Builder::addBinding(Binding&& b, UErrorCode& status) {
     if (U_SUCCESS(status)) {
         U_ASSERT(bindings != nullptr);
         checkDuplicate(b.getVariable(), status);
@@ -956,7 +956,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addBinding(Bin
     return *this;
 }
 
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addUnsupportedStatement(UnsupportedStatement&& s, UErrorCode& status) {
+MFDataModel::Builder& MFDataModel::Builder::addUnsupportedStatement(UnsupportedStatement&& s, UErrorCode& status) {
     if (U_SUCCESS(status)) {
         U_ASSERT(unsupportedStatements != nullptr);
         unsupportedStatements->adoptElement(create<UnsupportedStatement>(std::move(s), status), status);
@@ -967,7 +967,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addUnsupported
 /*
   selector must be non-null
 */
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(Expression&& selector, UErrorCode& status) noexcept {
+MFDataModel::Builder& MFDataModel::Builder::addSelector(Expression&& selector, UErrorCode& status) noexcept {
     THIS_ON_ERROR(status);
 
     buildSelectorsMessage(status);
@@ -980,7 +980,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addSelector(Ex
 /*
   `pattern` must be non-null
 */
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& errorCode) noexcept {
+MFDataModel::Builder& MFDataModel::Builder::addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& errorCode) noexcept {
     buildSelectorsMessage(errorCode);
     Variant* v = create<Variant>(Variant(std::move(keys), std::move(pattern)), errorCode);
     if (U_SUCCESS(errorCode)) {
@@ -989,7 +989,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addVariant(Sel
     return *this;
 }
 
-MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::setPattern(Pattern&& pat) {
+MFDataModel::Builder& MFDataModel::Builder::setPattern(Pattern&& pat) {
     pattern = std::move(pat);
     hasPattern = true;
     hasSelectors = false;
@@ -1000,7 +1000,7 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::setPattern(Pat
     return *this;
 }
 
-MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel& other) : body(Pattern()) {
+MFDataModel::MFDataModel(const MFDataModel& other) : body(Pattern()) {
     U_ASSERT(!other.bogus);
 
     if (other.hasPattern()) {
@@ -1030,7 +1030,7 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel& oth
     }
 }
 
-MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder, UErrorCode& errorCode) noexcept : body(Pattern()) {
+MFDataModel::MFDataModel(const MFDataModel::Builder& builder, UErrorCode& errorCode) noexcept : body(Pattern()) {
     CHECK_ERROR(errorCode);
 
     if (builder.hasPattern) {
@@ -1052,25 +1052,25 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
     bogus &= ((bool) (bindings.isValid() && unsupportedStatements.isValid()));
 }
 
-MessageFormatDataModel::MessageFormatDataModel() : body(Pattern()) {}
+MFDataModel::MFDataModel() : body(Pattern()) {}
 
-MessageFormatDataModel& MessageFormatDataModel::operator=(MessageFormatDataModel other) noexcept {
+MFDataModel& MFDataModel::operator=(MFDataModel other) noexcept {
     swap(*this, other);
     return *this;
 }
 
-MessageFormatDataModel MessageFormatDataModel::Builder::build(UErrorCode& errorCode) const noexcept {
+MFDataModel MFDataModel::Builder::build(UErrorCode& errorCode) const noexcept {
     if (U_FAILURE(errorCode)) {
         return {};
     }
     if (!hasPattern && !hasSelectors) {
         errorCode = U_INVALID_STATE_ERROR;
     }
-    return MessageFormatDataModel(*this, errorCode);
+    return MFDataModel(*this, errorCode);
 }
 
-MessageFormatDataModel::~MessageFormatDataModel() {}
-MessageFormatDataModel::Builder::~Builder() {
+MFDataModel::~MFDataModel() {}
+MFDataModel::Builder::~Builder() {
     if (selectors != nullptr) {
         delete selectors;
     }

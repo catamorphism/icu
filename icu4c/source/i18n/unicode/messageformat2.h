@@ -136,7 +136,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const MessageFormatDataModel& getDataModel() const;
+        const MFDataModel& getDataModel() const;
 
         /**
          * The mutable Builder class allows each part of the MessageFormatter to be initialized
@@ -155,7 +155,7 @@ namespace message2 {
             // The data model to be used to generate the formatted message
             // Initialized either by `setDataModel()`, or by the parser
             // through a call to `setPattern()`
-            MessageFormatDataModel dataModel;
+            MFDataModel dataModel;
             // Normalized representation of the pattern;
             // ignored if `setPattern()` wasn't called
             UnicodeString normalizedInput;
@@ -216,7 +216,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setDataModel(MessageFormatDataModel&& dataModel);
+            Builder& setDataModel(MFDataModel&& dataModel);
             /**
              * Constructs a new immutable MessageFormatter using the pattern or data model
              * that was previously set, and the locale (if it was previously set)
@@ -367,7 +367,7 @@ namespace message2 {
         const FunctionRegistry* customFunctionRegistry;
 
         // Data model, representing the parsed message
-        MessageFormatDataModel dataModel;
+        MFDataModel dataModel;
 
         // Normalized version of the input string (optional whitespace removed)
         UnicodeString normalizedInput;

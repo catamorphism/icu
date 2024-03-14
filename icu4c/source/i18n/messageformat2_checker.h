@@ -56,7 +56,7 @@ namespace message2 {
     class Checker {
     public:
         void check(UErrorCode&);
-        Checker(const MessageFormatDataModel& m, StaticErrors& e) : dataModel(m), errors(e) {}
+        Checker(const MFDataModel& m, StaticErrors& e) : dataModel(m), errors(e) {}
     private:
 
         void requireAnnotated(const TypeEnvironment&, const Expression&, UErrorCode&);
@@ -71,7 +71,7 @@ namespace message2 {
         void check(const Operand&);
         void check(const Expression&);
         void check(const Pattern&);
-        const MessageFormatDataModel& dataModel;
+        const MFDataModel& dataModel;
         StaticErrors& errors;
     }; // class Checker
 

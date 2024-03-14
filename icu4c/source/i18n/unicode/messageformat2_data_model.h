@@ -51,7 +51,7 @@ namespace message2 {
 
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
+// data member of various MFDataModel classes.
 // (When building DLLs for Windows this is required.)
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
@@ -71,7 +71,7 @@ template class U_I18N_API LocalArray<message2::data_model::Literal>;
 
 namespace message2 {
     class Checker;
-    class MessageFormatDataModel;
+    class MFDataModel;
     class MessageFormatter;
     class Parser;
     class Serializer;
@@ -365,7 +365,7 @@ namespace message2 {
 
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the std::variants and std::optionals
-// that are used as a data member of various MessageFormatDataModel classes.
+// that are used as a data member of various MFDataModel classes.
 // (When building DLLs for Windows this is required.)
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
@@ -635,7 +635,7 @@ namespace message2 {
 
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
+// data member of various MFDataModel classes.
 // (When building DLLs for Windows this is required.)
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
@@ -908,7 +908,7 @@ namespace message2 {
 
   /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
+// data member of various MFDataModel classes.
 // (When building DLLs for Windows this is required.)
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
@@ -987,7 +987,7 @@ namespace message2 {
 
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the std::variant that is used as a
-// data member of various MessageFormatDataModel classes.
+// data member of various MFDataModel classes.
 // (When building DLLs for Windows this is required.)
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
@@ -1225,7 +1225,7 @@ namespace message2 {
 
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the std::optional that is used as a
-// data member of various MessageFormatDataModel classes.
+// data member of various MFDataModel classes.
 // (When building DLLs for Windows this is required.)
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
@@ -2062,7 +2062,7 @@ namespace message2 {
 
   /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
+// data member of various MFDataModel classes.
 // (When building DLLs for Windows this is required.)
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
@@ -2559,7 +2559,7 @@ namespace message2 {
 
   /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the LocalPointer that is used as a
-// data member of various MessageFormatDataModel classes.
+// data member of various MFDataModel classes.
 // (When building DLLs for Windows this is required.)
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
@@ -2587,7 +2587,7 @@ namespace message2 {
 
     // Internal only
 
-    class MessageFormatDataModel;
+    class MFDataModel;
 
     class Matcher {
     public:
@@ -2611,7 +2611,7 @@ namespace message2 {
         }
     private:
 
-        friend class MessageFormatDataModel;
+        friend class MFDataModel;
 
         Matcher(Expression* ss, int32_t ns, Variant* vs, int32_t nv) : selectors(ss), numSelectors(ns), variants(vs), numVariants(nv) {
             if (selectors == nullptr) {
@@ -2635,7 +2635,7 @@ namespace message2 {
 
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the std::variant that is used as a
-// data member of various MessageFormatDataModel classes.
+// data member of various MFDataModel classes.
 // (When building DLLs for Windows this is required.)
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
@@ -2647,28 +2647,28 @@ template class U_I18N_API std::variant<message2::Matcher,message2::data_model::P
 
 namespace message2 {
     // -----------------------------------------------------------------------
-    // Public MessageFormatDataModel class
+    // Public MFDataModel class
 
     /**
      *
-     * The `MessageFormatDataModel` class describes a parsed representation of the text of a message.
+     * The `MFDataModel` class describes a parsed representation of the text of a message.
      * This representation is public as higher-level APIs for messages will need to know its public
      * interface: for example, to re-instantiate a parsed message with different values for imported
      variables.
      *
-     * The MessageFormatDataModel API implements <a target="github"
+     * The MFDataModel API implements <a target="github"
      href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md">the
      * specification of the abstract syntax (data model representation)</a> for MessageFormat.
      *
-     * `MessageFormatDataModel` is immutable, copyable and movable.
+     * `MFDataModel` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API MessageFormatDataModel : public UMemory {
+    class U_I18N_API MFDataModel : public UMemory {
         /*
           Classes that represent nodes in the data model are nested inside the
-          `MessageFormatDataModel` class.
+          `MFDataModel` class.
 
           Classes such as `Expression`, `Pattern` and `VariantMap` are immutable and
           are constructed using the builder pattern.
@@ -2777,7 +2777,7 @@ namespace message2 {
         const Pattern& getPattern() const;
 
         /**
-         * The mutable `MessageFormatDataModel::Builder` class allows the data model to be
+         * The mutable `MFDataModel::Builder` class allows the data model to be
          * constructed incrementally.
          *
          * @internal ICU 75.0 technology preview
@@ -2787,12 +2787,12 @@ namespace message2 {
 
         /**
          * Default constructor.
-         * Puts the MessageFormatDataModel into a valid but undefined state.
+         * Puts the MFDataModel into a valid but undefined state.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatDataModel();
+        MFDataModel();
         /**
          * Non-member swap function.
          * @param m1 will get m2's contents
@@ -2801,7 +2801,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        friend inline void swap(MessageFormatDataModel& m1, MessageFormatDataModel& m2) noexcept {
+        friend inline void swap(MFDataModel& m1, MFDataModel& m2) noexcept {
             using std::swap;
 
             if (m1.bogus) {
@@ -2824,24 +2824,24 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatDataModel& operator=(MessageFormatDataModel) noexcept;
+        MFDataModel& operator=(MFDataModel) noexcept;
         /**
          * Copy constructor.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MessageFormatDataModel(const MessageFormatDataModel& other);
+        MFDataModel(const MFDataModel& other);
         /**
          * Destructor.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual ~MessageFormatDataModel();
+        virtual ~MFDataModel();
 
         /**
-         * The mutable `MessageFormatDataModel::Builder` class allows the data model to be
+         * The mutable `MFDataModel::Builder` class allows the data model to be
          * constructed incrementally. Builder is not copyable or movable.
          *
          * @internal ICU 75.0 technology preview
@@ -2849,7 +2849,7 @@ namespace message2 {
          */
         class U_I18N_API Builder : public UMemory {
         private:
-            friend class MessageFormatDataModel;
+            friend class MFDataModel;
 
             void checkDuplicate(const VariableName&, UErrorCode&) const;
             void buildSelectorsMessage(UErrorCode&);
@@ -2930,12 +2930,12 @@ namespace message2 {
              * The builder object (`this`) can still be used after calling `build()`.
              *
              * @param status Input/output error code.
-             * @return       The new MessageFormatDataModel
+             * @return       The new MFDataModel
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            MessageFormatDataModel build(UErrorCode& status) const noexcept;
+            MFDataModel build(UErrorCode& status) const noexcept;
             /**
              * Default constructor.
              * Returns a Builder with no pattern or selectors set.
@@ -3000,8 +3000,8 @@ namespace message2 {
         // Helper
         void initBindings(const Binding*);
 
-        MessageFormatDataModel(const Builder& builder, UErrorCode&) noexcept;
-    }; // class MessageFormatDataModel
+        MFDataModel(const Builder& builder, UErrorCode&) noexcept;
+    }; // class MFDataModel
 
 } // namespace message2
 

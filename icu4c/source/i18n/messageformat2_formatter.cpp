@@ -29,7 +29,7 @@ namespace message2 {
     MessageFormatter::Builder& MessageFormatter::Builder::setPattern(const UnicodeString& pat, UParseError& parseError, UErrorCode& errorCode) {
         normalizedInput.remove();
         // Parse the pattern
-        MessageFormatDataModel::Builder tree(errorCode);
+        MFDataModel::Builder tree(errorCode);
         Parser(pat, tree, *errors, normalizedInput).parse(parseError, errorCode);
 
         // Build the data model based on what was parsed
@@ -53,7 +53,7 @@ namespace message2 {
         return *this;
     }
 
-    MessageFormatter::Builder& MessageFormatter::Builder::setDataModel(MessageFormatDataModel&& newDataModel) {
+    MessageFormatter::Builder& MessageFormatter::Builder::setDataModel(MFDataModel&& newDataModel) {
         normalizedInput.remove();
         delete errors;
         errors = nullptr;
@@ -67,7 +67,7 @@ namespace message2 {
     /*
       This build() method is non-destructive, which entails the risk that
       its borrowed FunctionRegistry and (if the setDataModel() method was called)
-      MessageFormatDataModel pointers could become invalidated.
+      MFDataModel pointers could become invalidated.
     */
     MessageFormatter MessageFormatter::Builder::build(UErrorCode& errorCode) const {
         return MessageFormatter(*this, errorCode);
@@ -190,7 +190,7 @@ namespace message2 {
         return *this;
     }
 
-    const MessageFormatDataModel& MessageFormatter::getDataModel() const { return dataModel; }
+    const MFDataModel& MessageFormatter::getDataModel() const { return dataModel; }
 
     UnicodeString MessageFormatter::getPattern() const {
         // Converts the current data model back to a string

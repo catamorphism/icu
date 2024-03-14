@@ -22,10 +22,10 @@ namespace message2 {
     // Converts a data model back to a string
     class Serializer : public UMemory {
     public:
-        Serializer(const MessageFormatDataModel& m, UnicodeString& s) : dataModel(m), result(s) {}
+        Serializer(const MFDataModel& m, UnicodeString& s) : dataModel(m), result(s) {}
         void serialize();
 
-        const MessageFormatDataModel& dataModel;
+        const MFDataModel& dataModel;
         UnicodeString& result;
 
     private:
