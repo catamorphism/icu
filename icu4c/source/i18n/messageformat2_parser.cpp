@@ -2100,19 +2100,19 @@ Markup Parser::parseMarkup(UErrorCode& status) {
 
     // Consume the '{'
     index++;
-    normalizedInput = LEFT_CURLY_BRACE;
+    normalizedInput += LEFT_CURLY_BRACE;
     parseOptionalWhitespace(status);
     bool closing = false;
     switch (source[index]) {
     case NUMBER_SIGN: {
         // Open or standalone; consume the '#'
-        normalizedInput = source[index];
+        normalizedInput += source[index];
         index++;
         break;
     }
     case SLASH: {
         // Closing
-        normalizedInput = source[index];
+        normalizedInput += source[index];
         closing = true;
         index++;
         break;
