@@ -145,6 +145,9 @@ namespace message2 {
                 status = U_SYNTAX_ERROR;
                 break;
             }
+            case StaticErrorType::UnsupportedStatementError: {
+                status = U_UNSUPPORTED_STATEMENT_ERROR;
+            }
             }
         } else {
             U_ASSERT(resolutionAndFormattingErrors->size() > 0);
@@ -166,7 +169,7 @@ namespace message2 {
                 break;
             }
             case DynamicErrorType::ReservedError: {
-                status = U_UNSUPPORTED_PROPERTY;
+                status = U_UNSUPPORTED_EXPRESSION_ERROR;
                 break;
             }
             case DynamicErrorType::SelectorError: {
@@ -190,36 +193,35 @@ namespace message2 {
         switch (e.type) {
         case StaticErrorType::SyntaxError: {
             syntaxError = true;
-            syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }
         case StaticErrorType::DuplicateDeclarationError: {
             dataModelError = true;
-            syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }
         case StaticErrorType::DuplicateOptionName: {
             dataModelError = true;
-            syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }
         case StaticErrorType::VariantKeyMismatchError: {
             dataModelError = true;
-            syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }
         case StaticErrorType::NonexhaustivePattern: {
             dataModelError = true;
-            syntaxAndDataModelErrors->adoptElement(errorP, status);
             break;
         }
         case StaticErrorType::MissingSelectorAnnotation: {
             missingSelectorAnnotationError = true;
             dataModelError = true;
-            syntaxAndDataModelErrors->adoptElement(errorP, status);
+            break;
+        }
+        case StaticErrorType::UnsupportedStatementError: {
+            dataModelError = true;
             break;
         }
         }
+        syntaxAndDataModelErrors->adoptElement(errorP, status);
     }
 
     void DynamicErrors::addError(DynamicError&& e, UErrorCode& status) {
