@@ -267,7 +267,7 @@ class TestUtils {
         errorCode.reset();
     }
 
-    static bool roundTrip(const UnicodeString& normalizedInput, const MessageFormatDataModel& dataModel, UnicodeString& result) {
+    static bool roundTrip(const UnicodeString& normalizedInput, const MFDataModel& dataModel, UnicodeString& result) {
         Serializer(dataModel, result).serialize();
         return (normalizedInput == result);
     }

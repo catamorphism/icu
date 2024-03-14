@@ -48,7 +48,7 @@ namespace message2 {
 	    UChar   postContext[U_PARSE_CONTEXT_LEN];
 	} MessageParseError;
 
-	Parser(const UnicodeString &input, MessageFormatDataModel::Builder& dataModelBuilder, StaticErrors& e, UnicodeString& normalizedInputRef)
+	Parser(const UnicodeString &input, MFDataModel::Builder& dataModelBuilder, StaticErrors& e, UnicodeString& normalizedInputRef)
 	  : source(input), index(0), errors(e), normalizedInput(normalizedInputRef), dataModel(dataModelBuilder) {
 	  parseError.line = 0;
 	  parseError.offset = 0;
@@ -129,7 +129,7 @@ namespace message2 {
 	UnicodeString& normalizedInput;
 
 	// The parent builder
-	MessageFormatDataModel::Builder &dataModel;
+	MFDataModel::Builder &dataModel;
     }; // class Parser
 
 } // namespace message2
