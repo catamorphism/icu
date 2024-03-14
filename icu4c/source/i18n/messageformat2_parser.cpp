@@ -1755,7 +1755,7 @@ void Parser::parseInputDeclaration(UErrorCode& status) {
     CHECK_BOUNDS(source, index, parseError, status);
 
     parseToken(ID_INPUT, status);
-    parseRequiredWhitespace(status);
+    parseOptionalWhitespace(status);
 
     // Restore precondition before calling parseExpression()
     CHECK_BOUNDS(source, index, parseError, status);
