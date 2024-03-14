@@ -337,7 +337,7 @@ namespace message2 {
 
         Selector* getSelector(MessageContext&, const FunctionName&, UErrorCode&) const;
         const Formatter& getFormatter(MessageContext&, const FunctionName&, UErrorCode&) const;
-        bool getFormatterByType(const UnicodeString&, FunctionName&) const;
+        bool getDefaultFormatterNameByType(const UnicodeString&, FunctionName&) const;
 
         // Checking for resolution errors
         void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;

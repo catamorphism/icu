@@ -56,7 +56,7 @@ MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::setFormatter(const Fun
     return *this;
 }
 
-MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::setFormatterByType(const UnicodeString& type, const FunctionName& functionName, UErrorCode& errorCode) {
+MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::setDefaultFormatterNameByType(const UnicodeString& type, const FunctionName& functionName, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
         U_ASSERT(formattersByType != nullptr);
         FunctionName* f = create<FunctionName>(FunctionName(functionName), errorCode);
@@ -100,7 +100,7 @@ FormatterFactory* MFFunctionRegistry::getFormatter(const FunctionName& formatter
     return static_cast<FormatterFactory*>(formatters->get(formatterName));
 }
 
-UBool MFFunctionRegistry::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
+UBool MFFunctionRegistry::getDefaultFormatterNameByType(const UnicodeString& type, FunctionName& name) const {
     U_ASSERT(formatters != nullptr);
     const FunctionName* f = static_cast<FunctionName*>(formattersByType->get(type));
     if (f != nullptr) {

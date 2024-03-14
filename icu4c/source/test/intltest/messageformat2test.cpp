@@ -438,9 +438,9 @@ void TestMessageFormat2::testAPICustomFunctions() {
         builderByType.setFormatter(personFormatterName,
                                    personFormatterFactory.getAlias(),
                                    errorCode)
-                     .setFormatterByType("person",
-                                         personFormatterName,
-                                         errorCode)
+                     .setDefaultFormatterNameByType("person",
+                                                    personFormatterName,
+                                                    errorCode)
                      .build();
     mfBuilder.setFunctionRegistry(functionRegistryByType);
     mf = mfBuilder.setPattern("Hello {$name}", parseError, errorCode)
