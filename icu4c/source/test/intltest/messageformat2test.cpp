@@ -392,9 +392,9 @@ void TestMessageFormat2::testAPICustomFunctions() {
     Locale locale = "en_US";
 
     // Set up custom function registry
-    FunctionRegistry::Builder builder(errorCode);
+    MFFunctionRegistry::Builder builder(errorCode);
     LocalPointer<PersonNameFormatterFactory> personFormatterFactory(new PersonNameFormatterFactory());
-    FunctionRegistry functionRegistry =
+    MFFunctionRegistry functionRegistry =
         builder.setFormatter(data_model::FunctionName("person"), personFormatterFactory.getAlias(), errorCode)
                .build();
 
@@ -432,9 +432,9 @@ void TestMessageFormat2::testAPICustomFunctions() {
     assertEquals("testAPICustomFunctions", "Hello Mr. John Doe", result);
 
     // By type
-    FunctionRegistry::Builder builderByType(errorCode);
+    MFFunctionRegistry::Builder builderByType(errorCode);
     FunctionName personFormatterName("person");
-    FunctionRegistry functionRegistryByType =
+    MFFunctionRegistry functionRegistryByType =
         builderByType.setFormatter(personFormatterName,
                                    personFormatterFactory.getAlias(),
                                    errorCode)

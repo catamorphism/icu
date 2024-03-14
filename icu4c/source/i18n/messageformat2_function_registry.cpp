@@ -29,9 +29,9 @@ Selector::~Selector() {}
 FormatterFactory::~FormatterFactory() {}
 SelectorFactory::~SelectorFactory() {}
 
-FunctionRegistry FunctionRegistry::Builder::build() {
+MFFunctionRegistry MFFunctionRegistry::Builder::build() {
     U_ASSERT(formatters != nullptr && selectors != nullptr && formattersByType != nullptr);
-    FunctionRegistry result = FunctionRegistry(formatters, selectors, formattersByType);
+    MFFunctionRegistry result = MFFunctionRegistry(formatters, selectors, formattersByType);
     formatters = nullptr;
     selectors = nullptr;
     formattersByType = nullptr;
@@ -39,7 +39,7 @@ FunctionRegistry FunctionRegistry::Builder::build() {
 }
 
 // Does not adopt its argument
-FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode) {
+MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
         U_ASSERT(selectors != nullptr);
         selectors->put(selectorName, selectorFactory, errorCode);
@@ -48,7 +48,7 @@ FunctionRegistry::Builder& FunctionRegistry::Builder::setSelector(const Function
 }
 
 // Does not adopt its argument
-FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode) {
+MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
         U_ASSERT(formatters != nullptr);
         formatters->put(formatterName, formatterFactory, errorCode);
@@ -56,7 +56,7 @@ FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatter(const Functio
     return *this;
 }
 
-FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatterByType(const UnicodeString& type, const FunctionName& functionName, UErrorCode& errorCode) {
+MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::setFormatterByType(const UnicodeString& type, const FunctionName& functionName, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
         U_ASSERT(formattersByType != nullptr);
         FunctionName* f = create<FunctionName>(FunctionName(functionName), errorCode);
@@ -65,7 +65,7 @@ FunctionRegistry::Builder& FunctionRegistry::Builder::setFormatterByType(const U
     return *this;
 }
 
-FunctionRegistry::Builder::Builder(UErrorCode& errorCode) {
+MFFunctionRegistry::Builder::Builder(UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
     formatters = new Hashtable();
@@ -83,7 +83,7 @@ FunctionRegistry::Builder::Builder(UErrorCode& errorCode) {
     formattersByType->setValueDeleter(uprv_deleteUObject);
 }
 
-FunctionRegistry::Builder::~Builder() {
+MFFunctionRegistry::Builder::~Builder() {
     if (formatters != nullptr) {
         delete formatters;
     }
@@ -95,12 +95,12 @@ FunctionRegistry::Builder::~Builder() {
     }
 }
 
-FormatterFactory* FunctionRegistry::getFormatter(const FunctionName& formatterName) const {
+FormatterFactory* MFFunctionRegistry::getFormatter(const FunctionName& formatterName) const {
     U_ASSERT(formatters != nullptr);
     return static_cast<FormatterFactory*>(formatters->get(formatterName));
 }
 
-UBool FunctionRegistry::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
+UBool MFFunctionRegistry::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
     U_ASSERT(formatters != nullptr);
     const FunctionName* f = static_cast<FunctionName*>(formattersByType->get(type));
     if (f != nullptr) {
@@ -110,20 +110,20 @@ UBool FunctionRegistry::getFormatterByType(const UnicodeString& type, FunctionNa
     return false;
 }
 
-const SelectorFactory* FunctionRegistry::getSelector(const FunctionName& selectorName) const {
+const SelectorFactory* MFFunctionRegistry::getSelector(const FunctionName& selectorName) const {
     U_ASSERT(selectors != nullptr);
     return static_cast<const SelectorFactory*>(selectors->get(selectorName));
 }
 
-bool FunctionRegistry::hasFormatter(const FunctionName& f) const {
+bool MFFunctionRegistry::hasFormatter(const FunctionName& f) const {
     return getFormatter(f) != nullptr;
 }
 
-bool FunctionRegistry::hasSelector(const FunctionName& s) const {
+bool MFFunctionRegistry::hasSelector(const FunctionName& s) const {
     return getSelector(s) != nullptr;
 }
 
-void FunctionRegistry::checkFormatter(const char* s) const {
+void MFFunctionRegistry::checkFormatter(const char* s) const {
 #if U_DEBUG
     U_ASSERT(hasFormatter(FunctionName(UnicodeString(s))));
 #else
@@ -131,7 +131,7 @@ void FunctionRegistry::checkFormatter(const char* s) const {
 #endif
 }
 
-void FunctionRegistry::checkSelector(const char* s) const {
+void MFFunctionRegistry::checkSelector(const char* s) const {
 #if U_DEBUG
     U_ASSERT(hasSelector(FunctionName(UnicodeString(s))));
 #else
@@ -140,7 +140,7 @@ void FunctionRegistry::checkSelector(const char* s) const {
 }
 
 // Debugging
-void FunctionRegistry::checkStandard() const {
+void MFFunctionRegistry::checkStandard() const {
     checkFormatter("datetime");
     checkFormatter("date");
     checkFormatter("time");
@@ -199,11 +199,11 @@ static int64_t getInt64Value(const Locale& locale, const Formattable& value, UEr
 }
 
 // Adopts its arguments
-FunctionRegistry::FunctionRegistry(FormatterMap* f, SelectorMap* s, Hashtable* byType) : formatters(f), selectors(s), formattersByType(byType) {
+MFFunctionRegistry::MFFunctionRegistry(FormatterMap* f, SelectorMap* s, Hashtable* byType) : formatters(f), selectors(s), formattersByType(byType) {
     U_ASSERT(f != nullptr && s != nullptr && byType != nullptr);
 }
 
-FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept {
+MFFunctionRegistry& MFFunctionRegistry::operator=(MFFunctionRegistry&& other) noexcept {
     cleanup();
 
     formatters = other.formatters;
@@ -216,7 +216,7 @@ FunctionRegistry& FunctionRegistry::operator=(FunctionRegistry&& other) noexcept
     return *this;
 }
 
-void FunctionRegistry::cleanup() noexcept {
+void MFFunctionRegistry::cleanup() noexcept {
     if (formatters != nullptr) {
         delete formatters;
     }
@@ -229,7 +229,7 @@ void FunctionRegistry::cleanup() noexcept {
 }
 
 
-FunctionRegistry::~FunctionRegistry() {
+MFFunctionRegistry::~MFFunctionRegistry() {
     cleanup();
 }
 

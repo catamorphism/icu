@@ -88,12 +88,12 @@ namespace message2 {
      * The required set of formatter and selector functions is defined in the spec. Users can
      * also define custom formatter and selector functions.
      *
-     * `FunctionRegistry` is immutable and movable. It is not copyable.
+     * `MFFunctionRegistry` is immutable and movable. It is not copyable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API FunctionRegistry : public UObject {
+    class U_I18N_API MFFunctionRegistry : public UObject {
     private:
 
         using FormatterMap = Hashtable; // Map from stringified function names to FormatterFactory*
@@ -142,7 +142,7 @@ namespace message2 {
         /**
          * The mutable Builder class allows each formatter and selector factory
          * to be initialized separately; calling its `build()` method yields an
-         * immutable FunctionRegistry object.
+         * immutable MFFunctionRegistry object.
          *
          * Builder is not copyable or movable.
          *
@@ -203,19 +203,19 @@ namespace message2 {
              */
             Builder& setSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode);
             /**
-             * Creates an immutable `FunctionRegistry` object with the selectors and formatters
+             * Creates an immutable `MFFunctionRegistry` object with the selectors and formatters
              * that were previously registered. The builder cannot be used after this call.
              * The `build()` method is destructive to avoid the need for a deep copy of the
              * `FormatterFactory` and `SelectorFactory` objects (this would be necessary because
              * `FormatterFactory` can have mutable state), which in turn would require implementors
              * of those interfaces to implement a `clone()` method.
              *
-             * @return The new FunctionRegistry
+             * @return The new MFFunctionRegistry
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            FunctionRegistry build();
+            MFFunctionRegistry build();
             /**
              * Default constructor.
              * Returns a Builder with no functions registered.
@@ -233,43 +233,43 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             virtual ~Builder();
-        }; // class FunctionRegistry::Builder
+        }; // class MFFunctionRegistry::Builder
 
         /**
          * Move assignment operator:
-         * The source FunctionRegistry will be left in a valid but undefined state.
+         * The source MFFunctionRegistry will be left in a valid but undefined state.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FunctionRegistry& operator=(FunctionRegistry&&) noexcept;
+        MFFunctionRegistry& operator=(MFFunctionRegistry&&) noexcept;
         /**
          * Move constructor:
-         * The source FunctionRegistry will be left in a valid but undefined state.
+         * The source MFFunctionRegistry will be left in a valid but undefined state.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FunctionRegistry(FunctionRegistry&& other) { *this = std::move(other); }
+        MFFunctionRegistry(MFFunctionRegistry&& other) { *this = std::move(other); }
         /**
          * Destructor.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual ~FunctionRegistry();
+        virtual ~MFFunctionRegistry();
 
     private:
         friend class MessageContext;
         friend class MessageFormatter;
 
         // Do not define copy constructor or copy assignment operator
-        FunctionRegistry& operator=(const FunctionRegistry&) = delete;
-        FunctionRegistry(const FunctionRegistry&) = delete;
+        MFFunctionRegistry& operator=(const MFFunctionRegistry&) = delete;
+        MFFunctionRegistry(const MFFunctionRegistry&) = delete;
 
-        FunctionRegistry(FormatterMap* f, SelectorMap* s, Hashtable* byType);
+        MFFunctionRegistry(FormatterMap* f, SelectorMap* s, Hashtable* byType);
 
-        FunctionRegistry() {}
+        MFFunctionRegistry() {}
 
         // Debugging; should only be called on a function registry with
         // all the standard functions registered
@@ -286,7 +286,7 @@ namespace message2 {
         SelectorMap* selectors = nullptr;
         // Mapping from strings (type tags) to FunctionNames
         Hashtable* formattersByType = nullptr;
-    }; // class FunctionRegistry
+    }; // class MFFunctionRegistry
 
     /**
      * Interface that formatter classes must implement.

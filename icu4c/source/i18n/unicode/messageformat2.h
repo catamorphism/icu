@@ -164,7 +164,7 @@ namespace message2 {
             StaticErrors* errors;
             Locale locale;
             // Not owned
-            const FunctionRegistry* customFunctionRegistry;
+            const MFFunctionRegistry* customMFFunctionRegistry;
 
         public:
             /**
@@ -206,7 +206,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setFunctionRegistry(const FunctionRegistry& functionRegistry);
+            Builder& setFunctionRegistry(const MFFunctionRegistry& functionRegistry);
             /**
              * Sets a data model. If a pattern was previously set, it is removed.
              *
@@ -316,14 +316,14 @@ namespace message2 {
         void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const;
 
         // Function registry methods
-        bool hasCustomFunctionRegistry() const {
-            return (customFunctionRegistry != nullptr);
+        bool hasCustomMFFunctionRegistry() const {
+            return (customMFFunctionRegistry != nullptr);
         }
 
         // Precondition: custom function registry exists
-        // Note: this is non-const because the values in the FunctionRegistry are mutable
+        // Note: this is non-const because the values in the MFFunctionRegistry are mutable
         // (a FormatterFactory can have mutable state)
-        const FunctionRegistry& getCustomFunctionRegistry() const;
+        const MFFunctionRegistry& getCustomMFFunctionRegistry() const;
 
         bool isCustomFormatter(const FunctionName&) const;
         FormatterFactory* lookupFormatterFactory(MessageContext&, const FunctionName&, UErrorCode& status) const;
@@ -353,7 +353,7 @@ namespace message2 {
         /* const */ Locale locale;
 
         // Registry for built-in functions
-        FunctionRegistry standardFunctionRegistry;
+        MFFunctionRegistry standardMFFunctionRegistry;
         // Registry for custom functions; may be null if no custom registry supplied
         // Note: this is *not* owned by the MessageFormatter object
         // The reason for this choice is to have a non-destructive MessageFormatter::Builder,
@@ -364,7 +364,7 @@ namespace message2 {
         // function registry (and thus double-frees)
         // Not deeply immutable (the values in the function registry are mutable,
         // as a FormatterFactory can have mutable state
-        const FunctionRegistry* customFunctionRegistry;
+        const MFFunctionRegistry* customMFFunctionRegistry;
 
         // Data model, representing the parsed message
         MFDataModel dataModel;
@@ -385,7 +385,7 @@ namespace message2 {
         // Owned by `this`
         StaticErrors* errors;
 
-        // Tracks built-in formatter objects for deletion, as the FunctionRegistry
+        // Tracks built-in formatter objects for deletion, as the MFFunctionRegistry
         // does not own its values
         UVector* standardFormatters;
     }; // class MessageFormatter

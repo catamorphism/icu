@@ -31,7 +31,7 @@ class TestCase : public UMemory {
     /* const */ bool ignoreError;
 
     // Function registry is not owned by the TestCase object
-    const FunctionRegistry* functionRegistry = nullptr;
+    const MFFunctionRegistry* functionRegistry = nullptr;
 
     public:
     const UnicodeString& getPattern() const { return pattern; }
@@ -71,7 +71,7 @@ class TestCase : public UMemory {
         return offset;
     }
     bool hasCustomRegistry() const { return functionRegistry != nullptr; }
-    const FunctionRegistry* getCustomRegistry() const {
+    const MFFunctionRegistry* getCustomRegistry() const {
         U_ASSERT(hasCustomRegistry());
         return functionRegistry;
     }
@@ -158,7 +158,7 @@ class TestCase : public UMemory {
             ignoreError = false;
             return *this;
         }
-        Builder& setFunctionRegistry(const FunctionRegistry* reg) {
+        Builder& setFunctionRegistry(const MFFunctionRegistry* reg) {
             U_ASSERT(reg != nullptr);
             functionRegistry = reg;
             return *this;
@@ -181,7 +181,7 @@ class TestCase : public UMemory {
         uint32_t lineNumber;
         uint32_t offset;
         bool ignoreError;
-        const FunctionRegistry* functionRegistry  = nullptr; // Not owned
+        const MFFunctionRegistry* functionRegistry  = nullptr; // Not owned
 
         public:
         Builder() : pattern(""), locale(Locale::getDefault()), hasExpectedOutput(false), expected(""), expectedError(U_ZERO_ERROR), expectNoSyntaxError(false), hasLineNumberAndOffset(false), ignoreError(false) {}
