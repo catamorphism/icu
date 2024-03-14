@@ -188,8 +188,8 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    // TODO: currently the expected output is based on using
-    // the first definition of the duplicate-declared variable;
+    // TODO(duplicates): currently the expected output is based on using
+    // the last definition of the duplicate-declared variable;
     // perhaps it's better to remove all declarations for $foo before formatting.
     // however if https://github.com/unicode-org/message-format-wg/pull/704 lands,
     // it'll be a moot point since the output will be expected to be the fallback string
@@ -197,7 +197,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     test = testBuilder.setPattern(".local $foo = {$foo} .local $foo = {42} {{bar {$foo}}}")
                                 .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
                                 .setArgument("foo", "foo")
-                                .setExpected("bar foo")
+                                .setExpected("bar 42")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -208,22 +208,17 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".local $foo = {$foo} .local $foo = {42} {{bar {$foo}}}")
-                                .clearArguments()
-                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
-                                .setExpected("bar {$foo}")
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
+    // see TODO(duplicates)
     test = testBuilder.setPattern(".local $foo = {:unknown} .local $foo = {42} {{bar {$foo}}}")
                                 .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
-                                .setExpected("bar {:unknown}")
+                                .setExpected("bar 42")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
+    // see TODO(duplicates)
     test = testBuilder.setPattern(".local $x = {42} .local $y = {$x} .local $x = {13} {{{$x} {$y}}}")
                                 .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
-                                .setExpected("42 42")
+                                .setExpected("13 42")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
