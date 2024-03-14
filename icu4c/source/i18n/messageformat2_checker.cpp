@@ -267,6 +267,11 @@ void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& status) {
         // Next, extend the type environment with a binding from lhs to its type
         t.extend(lhs, typeOf(t, rhs), status);
     }
+
+    // Check for unsupported statements
+    if (dataModel.unsupportedStatementsLen > 0) {
+        errors.addError(StaticErrorType::UnsupportedStatementError, status);
+    }
 }
 
 void Checker::check(UErrorCode& status) {

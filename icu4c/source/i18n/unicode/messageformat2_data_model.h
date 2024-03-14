@@ -1636,6 +1636,13 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             Expression();
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Expression();
         private:
             /*
               Internally, an expression is represented as the application of an optional operator to an operand.
@@ -1663,6 +1670,192 @@ namespace message2 {
 
 namespace message2 {
   namespace data_model {
+
+// TODO: add to design doc
+      /**
+         * The `UnsupportedStatement` class corresponds to the `reserved-statement` nonterminal in the MessageFormat 2
+         * grammar and the `unsupported-statement` type defined in:
+         * https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model/message.json#L169
+         *
+         * It represents a keyword (string) together with an optional
+         * `Reserved` annotation and a non-empty list of expressions.
+         *
+         * `UnsupportedStatement` is immutable, copyable and movable.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        class U_I18N_API UnsupportedStatement : public UObject {
+        public:
+            /**
+             * Accesses the keyword of this statement.
+             *
+             * @return A reference to a string.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const UnicodeString& getKeyword() const;
+            /**
+             * Accesses the `reserved-body` of this statement.
+             *
+             * @param status Input/output error code. Set to U_ILLEGAL_ARGUMENT_ERROR
+             *         if this unsupported statement has no body.
+             * @return A non-owned pointer to a `Reserved` annotation,
+             *         which is non-null if U_SUCCESS(status).
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const Reserved* getBody(UErrorCode& status) const;
+            /**
+             * Accesses the expressions of this statement.
+             *
+             * @return A vector of Expressions.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            std::vector<Expression> getExpressions() const;
+            /**
+             * The mutable `UnsupportedStatement::Builder` class allows the statement to be constructed
+             * incrementally.
+             *
+             * Builder is not copyable or movable.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            class U_I18N_API Builder : public UMemory {
+            private:
+                friend class UnsupportedStatement;
+                friend class message2::Parser;
+
+                UnicodeString keyword;
+                std::optional<Reserved> body;
+                UVector* expressions; // Vector of expressions;
+                                      // not a LocalPointer for
+                                      // the same reason as in `SelectorKeys::builder`
+            public:
+                /**
+                 * Sets the keyword of this statement.
+                 *
+                 * @param k The keyword to set.
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& setKeyword(const UnicodeString& k);
+                /**
+                 * Sets the body of this statement.
+                 *
+                 * @param r The `Reserved` annotation to set as the body. Passed by move.
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& setBody(Reserved&& r);
+                /**
+                 * Adds an expression to this statement.
+                 *
+                 * @param e The expression to add. Passed by move.
+                 * @param status Input/output error code.
+                 * @return A reference to the builder.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder& addExpression(Expression&& r, UErrorCode& status);
+                /**
+                 * Constructs a new immutable `UnsupportedStatement` using the keyword,
+                 * body and (if applicable) expressions that were previously set.
+                 * If `setKeyword()` was never called, then `status` is set to
+                 * U_INVALID_STATE_ERROR. If `setBody()` was never called, the body is
+                 * treated as absent (not an error). If `addExpression()` was not called
+                 * at least once, then `status` is set to U_INVALID_STATE_ERROR.
+                 *
+                 * The builder object (`this`) can still be used after calling `build()`.
+                 * @param status    Input/output error code.
+                 * @return          The new UnsupportedStatement
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                UnsupportedStatement build(UErrorCode& status) const;
+                /**
+                 * Default constructor.
+                 * Returns a Builder with no keyword or body set.
+                 *
+                 * @param status    Input/output error code.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                Builder(UErrorCode& status);
+                /**
+                 * Destructor.
+                 *
+                 * @internal ICU 75.0 technology preview
+                 * @deprecated This API is for technology preview only.
+                 */
+                virtual ~Builder();
+            }; // class Expression::Builder
+            /**
+             * Non-member swap function.
+             * @param s1 will get s2's contents
+             * @param s2 will get s1's contents
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            friend inline void swap(UnsupportedStatement& s1, UnsupportedStatement& s2) noexcept {
+                using std::swap;
+
+                swap(s1.keyword, s2.keyword);
+                swap(s1.body, s2.body);
+                swap(s1.expressions, s2.expressions);
+                swap(s1.expressionsLen, s2.expressionsLen);
+            }
+            /**
+             * Copy constructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            UnsupportedStatement(const UnsupportedStatement& other);
+            /**
+             * Assignment operator.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            UnsupportedStatement& operator=(UnsupportedStatement) noexcept;
+            /**
+             * Default constructor.
+             * Puts the UnsupportedStatement into a valid but undefined state.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            UnsupportedStatement() : expressions(LocalArray<Expression>()) {}
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~UnsupportedStatement();
+        private:
+            /* const */ UnicodeString keyword;
+            /* const */ std::optional<Reserved> body;
+            /* const */ LocalArray<Expression> expressions;
+            /* const */ int32_t expressionsLen = 0;
+
+            UnsupportedStatement(const UnicodeString&, const std::optional<Reserved>&, const UVector&, UErrorCode&);
+        }; // class UnsupportedStatement
+
       class Pattern;
 
       // TODO: internal only
@@ -2545,6 +2738,8 @@ namespace message2 {
             swap(m1.body, m2.body);
             swap(m1.bindings, m2.bindings);
             swap(m1.bindingsLen, m2.bindingsLen);
+            swap(m1.unsupportedStatements, m2.unsupportedStatements);
+            swap(m1.unsupportedStatementsLen, m2.unsupportedStatementsLen);
         }
         /**
          * Assignment operator
@@ -2588,6 +2783,7 @@ namespace message2 {
             UVector* selectors = nullptr;
             UVector* variants = nullptr;
             UVector* bindings = nullptr;
+            UVector* unsupportedStatements = nullptr;
         public:
             /**
              * Adds a binding, There must not already be a binding
@@ -2599,6 +2795,13 @@ namespace message2 {
              *                   with the same variable name as `b`.
              */
             Builder& addBinding(Binding&& b, UErrorCode& status);
+            /**
+             * Adds an unsupported statement.
+             *
+             * @param s The statement. Passed by move.
+             * @param status Input/output error code.
+             */
+            Builder& addUnsupportedStatement(UnsupportedStatement&& s, UErrorCode& status);
             /**
              * Adds a selector expression. Copies `expression`.
              * If a pattern was previously set, clears the pattern.
@@ -2696,6 +2899,14 @@ namespace message2 {
         // Bindings for local variables
         /* const */ LocalArray<Binding> bindings;
         int32_t bindingsLen = 0;
+
+        // Unsupported statements
+        // (Treated as a type of `declaration` in the data model spec;
+        // stored separately for convenience)
+        /* const */ LocalArray<UnsupportedStatement> unsupportedStatements;
+        int32_t unsupportedStatementsLen = 0;
+
+        // TODO accessors for unsupported statements (both public and internal)
 
         const Binding* getLocalVariablesInternal() const;
         const Expression* getSelectorsInternal() const;

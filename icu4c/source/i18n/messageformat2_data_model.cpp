@@ -592,6 +592,79 @@ Expression::Builder::~Builder() {
     }
 }
 
+Expression::~Expression() {}
+
+// ----------- UnsupportedStatement
+
+UnsupportedStatement::Builder::Builder(UErrorCode& status) {
+    expressions = createUVector(status);
+}
+
+UnsupportedStatement::Builder& UnsupportedStatement::Builder::setKeyword(const UnicodeString& k) {
+    keyword = k;
+    return *this;
+}
+
+UnsupportedStatement::Builder& UnsupportedStatement::Builder::setBody(Reserved&& r) {
+    body.emplace(r);
+    return *this;
+}
+
+UnsupportedStatement::Builder& UnsupportedStatement::Builder::addExpression(Expression&& e, UErrorCode& status) {
+    U_ASSERT(expressions != nullptr);
+    if (U_SUCCESS(status)) {
+        Expression* expr = create<Expression>(std::move(e), status);
+        expressions->adoptElement(expr, status);
+    }
+    return *this;
+}
+
+UnsupportedStatement UnsupportedStatement::Builder::build(UErrorCode& status) const {
+    if (U_SUCCESS(status)) {
+        U_ASSERT(expressions != nullptr);
+        if (keyword.length() <= 0) {
+            status = U_ILLEGAL_ARGUMENT_ERROR;
+        } else if (expressions->size() < 1) {
+            status = U_ILLEGAL_ARGUMENT_ERROR;
+        } else {
+            return UnsupportedStatement(keyword, body, *expressions, status);
+        }
+    }
+    return {};
+}
+
+UnsupportedStatement::UnsupportedStatement(const UnicodeString& k,
+                                           const std::optional<Reserved>& r,
+                                           const UVector& es,
+                                           UErrorCode& status) : keyword(k), body(r) {
+    CHECK_ERROR(status);
+
+    U_ASSERT(es.size() >= 1);
+    Expression* result = copyVectorToArray<Expression>(es, expressionsLen);
+    if (result == nullptr) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+        expressionsLen = 0;
+        return;
+    }
+    expressions.adoptInstead(result);
+}
+
+UnsupportedStatement::UnsupportedStatement(const UnsupportedStatement& other) {
+    keyword = other.keyword;
+    body = other.body;
+    expressionsLen = other.expressionsLen;
+    U_ASSERT(expressionsLen > 0);
+    expressions.adoptInstead(copyArray(other.expressions.getAlias(), expressionsLen));
+}
+
+UnsupportedStatement& UnsupportedStatement::operator=(UnsupportedStatement other) noexcept {
+    swap(*this, other);
+    return *this;
+}
+
+UnsupportedStatement::Builder::~Builder() {}
+
+UnsupportedStatement::~UnsupportedStatement() {}
 // ----------- PatternPart
 
 // PatternPart needs a copy constructor in order to make Pattern deeply copyable
@@ -813,6 +886,7 @@ const Variant* MessageFormatDataModel::getVariantsInternal() const {
 
 MessageFormatDataModel::Builder::Builder(UErrorCode& status) {
     bindings = createUVector(status);
+    unsupportedStatements = createUVector(status);
 }
 
 // Invalidate pattern and create selectors/variants if necessary
@@ -849,6 +923,14 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addBinding(Bin
         U_ASSERT(bindings != nullptr);
         checkDuplicate(b.getVariable(), status);
         bindings->adoptElement(create<Binding>(std::move(b), status), status);
+    }
+    return *this;
+}
+
+MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addUnsupportedStatement(UnsupportedStatement&& s, UErrorCode& status) {
+    if (U_SUCCESS(status)) {
+        U_ASSERT(unsupportedStatements != nullptr);
+        unsupportedStatements->adoptElement(create<UnsupportedStatement>(std::move(s), status), status);
     }
     return *this;
 }
@@ -912,6 +994,11 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel& oth
     if (!bindings.isValid()) {
         bogus = true;
     }
+    unsupportedStatementsLen = other.unsupportedStatementsLen;
+    unsupportedStatements.adoptInstead(copyArray(other.unsupportedStatements.getAlias(), unsupportedStatementsLen));
+    if (!unsupportedStatements.isValid()) {
+        bogus = true;
+    }
 }
 
 MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Builder& builder, UErrorCode& errorCode) noexcept : body(Pattern()) {
@@ -931,7 +1018,9 @@ MessageFormatDataModel::MessageFormatDataModel(const MessageFormatDataModel::Bui
     U_ASSERT(builder.bindings != nullptr);
     bindingsLen = builder.bindings->size();
     bindings.adoptInstead(copyVectorToArray<Binding>(*builder.bindings, bindingsLen));
-    bogus &= (bool) bindings.isValid();
+    unsupportedStatementsLen = builder.unsupportedStatements->size();
+    unsupportedStatements.adoptInstead(copyVectorToArray<UnsupportedStatement>(*builder.unsupportedStatements, unsupportedStatementsLen));
+    bogus &= ((bool) (bindings.isValid() && unsupportedStatements.isValid()));
 }
 
 MessageFormatDataModel::MessageFormatDataModel() : body(Pattern()) {}
