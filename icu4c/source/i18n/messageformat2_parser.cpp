@@ -2397,7 +2397,12 @@ void Parser::parse(UParseError &parseErrorResult, UErrorCode& status) {
     }
     if (simple) {
         // Simple message
+        // For normalization, quote the pattern
+        normalizedInput += LEFT_CURLY_BRACE;
+        normalizedInput += LEFT_CURLY_BRACE;
         dataModel.setPattern(parseSimpleMessage(status));
+        normalizedInput += RIGHT_CURLY_BRACE;
+        normalizedInput += RIGHT_CURLY_BRACE;
     }
 
     CHECK_ERROR(status);
