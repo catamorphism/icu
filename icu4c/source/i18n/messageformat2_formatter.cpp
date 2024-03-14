@@ -121,7 +121,9 @@ namespace message2 {
         CHECK_ERROR(success);
         standardFunctionRegistry.checkStandard();
 
-        // Validate pattern and build data model
+        normalizedInput = builder.normalizedInput;
+
+        // Build data model
         // First, check that there is a data model
         // (which might have been set by setDataModel(), or to
         // the data model parsed from the pattern by setPattern())
