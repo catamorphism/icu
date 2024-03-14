@@ -9,6 +9,7 @@
 #include "unicode/messageformat2.h"
 #include "intltest.h"
 #include "messageformat2_macros.h"
+#include "messageformat2_serializer.h"
 
 #if !UCONFIG_NO_FORMATTING
 
@@ -230,6 +231,17 @@ class TestUtils {
             result = mf.formatToString(MessageArguments(testCase.getArguments(), errorCode), errorCode);
         }
 
+        if (testCase.expectSuccess() || (testCase.expectedErrorCode() != U_SYNTAX_ERROR
+                                         // For now, don't round-trip messages with these errors,
+                                         // since duplicate options are dropped
+                                         && testCase.expectedErrorCode() != U_DUPLICATE_OPTION_NAME_ERROR)) {
+            const UnicodeString& in = mf.getNormalizedPattern();
+            UnicodeString out;
+            if (!roundTrip(in, mf.getDataModel(), out)) {
+                failRoundTrip(tmsg, testCase, in, out);
+            }
+        }
+
         if (testCase.expectNoSyntaxError()) {
             if (errorCode == U_SYNTAX_ERROR) {
                 failSyntaxError(tmsg, testCase);
@@ -255,6 +267,11 @@ class TestUtils {
         errorCode.reset();
     }
 
+    static bool roundTrip(const UnicodeString& normalizedInput, const MessageFormatDataModel& dataModel, UnicodeString& result) {
+        Serializer(dataModel, result).serialize();
+        return (normalizedInput == result);
+    }
+
     static void failSyntaxError(IntlTest& tmsg, const TestCase& testCase) {
         tmsg.dataerrln(testCase.getTestName());
         tmsg.logln(testCase.getTestName() + " failed test with pattern: " + testCase.getPattern() + " and error code U_SYNTAX_WARNING; expected no syntax error");
@@ -273,6 +290,11 @@ class TestUtils {
     static void failWrongOutput(IntlTest& tmsg, const TestCase& testCase, const UnicodeString& result) {
         tmsg.dataerrln(testCase.getTestName());
         tmsg.logln(testCase.getTestName() + " failed test with wrong output; pattern: " + testCase.getPattern() + " and expected output = " + testCase.expectedOutput() + " and actual output = " + result);
+    }
+
+    static void failRoundTrip(IntlTest& tmsg, const TestCase& testCase, const UnicodeString& in, const UnicodeString& output) {
+        tmsg.dataerrln(testCase.getTestName());
+        tmsg.logln(testCase.getTestName() + " failed test with wrong output; normalized input = " + in + " serialized data model = " + output);
     }
 
     static void failWrongOffset(IntlTest& tmsg, const TestCase& testCase, uint32_t actualLine, uint32_t actualOffset) {
