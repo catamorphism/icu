@@ -2704,7 +2704,7 @@ namespace message2 {
         /**
          * Accesses the local variable declarations for this data model.
          *
-         * @return A reference to a list of bindings for local variables.
+         * @return A vector of bindings for local variables.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
@@ -2719,7 +2719,7 @@ namespace message2 {
         /**
          * Accesses the selectors. Returns an empty vector if this is a pattern message.
          *
-         * @return A reference to the selector list.
+         * @return A vector of selectors.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
