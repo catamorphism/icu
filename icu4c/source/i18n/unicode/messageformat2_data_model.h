@@ -1284,6 +1284,33 @@ namespace message2 {
              */
             UBool isStandalone() const { return (type == UMARKUP_STANDALONE); }
             /**
+             * Gets the name of this markup
+             *
+             * @return A reference to the string identifying the markup
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const UnicodeString& getName() const { return name; }
+            /**
+             * Gets the options of this markup
+             *
+             * @return A reference to the string identifying the markup
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            std::vector<Option> getOptions() const { return options.getOptions(); }
+            /**
+             * Gets the attributes of this markup
+             *
+             * @return A vector of attributes
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            std::vector<Option> getAttributes() const { return attributes.getOptions(); }
+            /**
              * Default constructor.
              * Puts the Markup into a valid but undefined state.
              *
@@ -1422,11 +1449,14 @@ namespace message2 {
 
         private:
             friend class Builder;
+            friend class message2::Serializer;
 
             UMarkupType type;
             UnicodeString name;
             OptionMap options;
             OptionMap attributes;
+            const OptionMap& getOptionsInternal() const { return options; }
+            const OptionMap& getAttributesInternal() const { return attributes; }
             Markup(UMarkupType, UnicodeString, OptionMap&&, OptionMap&&);
         }; // class Markup
 
@@ -1707,7 +1737,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            const UnicodeString& getKeyword() const;
+            const UnicodeString& getKeyword() const { return keyword; }
             /**
              * Accesses the `reserved-body` of this statement.
              *
@@ -1728,7 +1758,13 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            std::vector<Expression> getExpressions() const;
+            std::vector<Expression> getExpressions() const {
+                if (expressionsLen <= 0 || !expressions.isValid()) {
+                    // This case should never happen, but we can't use an assertion here
+                    return {};
+                }
+                return toStdVector<Expression>(expressions.getAlias(), expressionsLen);
+            }
             /**
              * The mutable `UnsupportedStatement::Builder` class allows the statement to be constructed
              * incrementally.
@@ -1813,7 +1849,7 @@ namespace message2 {
                  * @deprecated This API is for technology preview only.
                  */
                 virtual ~Builder();
-            }; // class Expression::Builder
+            }; // class UnsupportedStatement::Builder
             /**
              * Non-member swap function.
              * @param s1 will get s2's contents
@@ -1860,10 +1896,14 @@ namespace message2 {
              */
             virtual ~UnsupportedStatement();
         private:
+            friend class message2::Serializer;
+
             /* const */ UnicodeString keyword;
             /* const */ std::optional<Reserved> body;
             /* const */ LocalArray<Expression> expressions;
             /* const */ int32_t expressionsLen = 0;
+
+            const Expression* getExpressionsInternal() const { return expressions.getAlias(); }
 
             UnsupportedStatement(const UnicodeString&, const std::optional<Reserved>&, const UVector&, UErrorCode&);
         }; // class UnsupportedStatement
@@ -1912,7 +1952,7 @@ namespace message2 {
             UBool isExpression() const { return std::holds_alternative<Expression>(piece); }
             /**
              * Accesses the expression of the part.
-             * Precondition: !isText()
+             * Precondition: isExpression()
              *
              * @return A reference to the part's underlying expression.
              *
@@ -1920,6 +1960,16 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             const Expression& contents() const;
+            /**
+             * Accesses the expression of the part.
+             * Precondition: isMarkup()
+             *
+             * @return A reference to the part's underlying expression.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            const Markup& asMarkup() const;
             /**
              * Accesses the text contents of the part.
              * Precondition: isText()
@@ -2701,6 +2751,21 @@ namespace message2 {
             return {};
         }
         /**
+         * Accesses the unsupported statements for this data model.
+         *
+         * @return A vector of unsupported statements.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        std::vector<UnsupportedStatement> getUnsupportedStatements() const {
+            std::vector<UnsupportedStatement> result;
+            if (!bogus) {
+                return toStdVector<UnsupportedStatement>(unsupportedStatements.getAlias(), unsupportedStatementsLen);
+            }
+            return {};
+        }
+        /**
          * Accesses the pattern (in a message without selectors).
          * Returns a reference to an empty pattern if the message has selectors.
          *
@@ -2918,11 +2983,11 @@ namespace message2 {
         /* const */ LocalArray<UnsupportedStatement> unsupportedStatements;
         int32_t unsupportedStatementsLen = 0;
 
-        // TODO accessors for unsupported statements (both public and internal)
-
         const Binding* getLocalVariablesInternal() const;
         const Expression* getSelectorsInternal() const;
         const Variant* getVariantsInternal() const;
+        const UnsupportedStatement* getUnsupportedStatementsInternal() const;
+
         int32_t numSelectors() const {
             const Matcher* matcher = std::get_if<Matcher>(&body);
             return (matcher == nullptr ? 0 : matcher->numSelectors);
