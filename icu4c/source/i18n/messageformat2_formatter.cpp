@@ -236,10 +236,10 @@ namespace message2 {
         return *maybeCachedFormatter(context, functionName, status);
     }
 
-    bool MessageFormatter::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
+    bool MessageFormatter::getDefaultFormatterNameByType(const UnicodeString& type, FunctionName& name) const {
         U_ASSERT(hasCustomMFFunctionRegistry());
         const MFFunctionRegistry& reg = getCustomMFFunctionRegistry();
-        return reg.getFormatterByType(type, name);
+        return reg.getDefaultFormatterNameByType(type, name);
     }
 
         // ---------------------------------------------------

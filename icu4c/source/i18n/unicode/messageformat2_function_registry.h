@@ -138,7 +138,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        UBool getFormatterByType(const UnicodeString& formatterType, FunctionName& name) const;
+        UBool getDefaultFormatterNameByType(const UnicodeString& formatterType, FunctionName& name) const;
         /**
          * The mutable Builder class allows each formatter and selector factory
          * to be initialized separately; calling its `build()` method yields an
@@ -187,7 +187,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setFormatterByType(const UnicodeString& type, const data_model::FunctionName& functionName, UErrorCode& errorCode);
+            Builder& setDefaultFormatterNameByType(const UnicodeString& type, const data_model::FunctionName& functionName, UErrorCode& errorCode);
 
             /**
              * Registers a selector factory to a given selector name. Adopts `selectorFactory`.

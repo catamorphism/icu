@@ -141,7 +141,7 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
         U_ASSERT(obj != nullptr);
         const UnicodeString& type = obj->tag();
         FunctionName functionName;
-        if (!getFormatterByType(type, functionName)) {
+        if (!getDefaultFormatterNameByType(type, functionName)) {
             // No formatter for this type -- follow default behavior
             break;
         }
