@@ -633,6 +633,16 @@ UnsupportedStatement UnsupportedStatement::Builder::build(UErrorCode& status) co
     return {};
 }
 
+const Reserved* UnsupportedStatement::getBody(UErrorCode& errorCode) const {
+    if (U_SUCCESS(errorCode)) {
+        if (body.has_value()) {
+            return &(*body);
+        }
+        errorCode = U_ILLEGAL_ARGUMENT_ERROR;
+    }
+    return nullptr;
+}
+
 UnsupportedStatement::UnsupportedStatement(const UnicodeString& k,
                                            const std::optional<Reserved>& r,
                                            const UVector& es,
@@ -675,6 +685,11 @@ PatternPart::PatternPart(const PatternPart& other) : piece(other.piece) {}
 const Expression& PatternPart::contents() const {
     U_ASSERT(isExpression());
     return *std::get_if<Expression>(&piece);
+}
+
+const Markup& PatternPart::asMarkup() const {
+    U_ASSERT(isMarkup());
+    return *std::get_if<Markup>(&piece);
 }
 
 // Precondition: isText();
@@ -881,6 +896,12 @@ const Variant* MessageFormatDataModel::getVariantsInternal() const {
     U_ASSERT(!bogus);
     U_ASSERT(!hasPattern());
     return std::get_if<Matcher>(&body)->variants.getAlias();
+}
+
+const UnsupportedStatement* MessageFormatDataModel::getUnsupportedStatementsInternal() const {
+    U_ASSERT(!bogus);
+    U_ASSERT(unsupportedStatements.isValid());
+    return unsupportedStatements.getAlias();
 }
 
 
