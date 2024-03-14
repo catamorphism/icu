@@ -677,42 +677,39 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
 
     test = testBuilder.setPattern("foo {+reserved}")
                                  .setExpected("foo {+}")
-                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .setExpectedError(U_UNSUPPORTED_EXPRESSION_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("foo {&private}")
                                  .setExpected("foo {&}")
-                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .setExpectedError(U_UNSUPPORTED_EXPRESSION_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("foo {?reserved @a @b=$c}")
                                  .setExpected("foo {?}")
-                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .setExpectedError(U_UNSUPPORTED_EXPRESSION_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-/*
-// TODO: reserved statements NYI
     test = testBuilder.setPattern(".foo {42} {{bar}}")
                                  .setExpected("bar")
-                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .setExpectedError(U_UNSUPPORTED_STATEMENT_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".foo {42}{{bar}}")
-                                 .setExpected(".foo {42} {{bar}}")
-                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .setExpected("bar")
+                                 .setExpectedError(U_UNSUPPORTED_STATEMENT_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".foo |}lit{| {42}{{bar}}")
                                  .setExpected("bar")
-                                 .setExpectedError(U_UNSUPPORTED_PROPERTY)
+                                 .setExpectedError(U_UNSUPPORTED_STATEMENT_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
-*/
 
     /* var2 is implicitly declared and can't be overridden by the second `.input` */
     test = testBuilder.setPattern(".input {$var :number minimumFractionDigits=$var2} .input {$var2 :number minimumFractionDigits=5} {{{$var} {$var2}}}")
