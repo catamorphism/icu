@@ -30,7 +30,7 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
     LocalPointer<PersonNameFormatterFactory> personNameFormatterFactory(new PersonNameFormatterFactory());
-    FunctionRegistry customRegistry(FunctionRegistry::Builder(errorCode)
+    MFFunctionRegistry customRegistry(MFFunctionRegistry::Builder(errorCode)
                                     .setFormatter(FunctionName("person"), personNameFormatterFactory.getAlias(), errorCode)
                                     .build());
     UnicodeString name = "name";
@@ -95,7 +95,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
     CHECK_ERROR(errorCode);
 
     LocalPointer<PersonNameFormatterFactory> personNameFormatterFactory(new PersonNameFormatterFactory());
-    FunctionRegistry customRegistry(FunctionRegistry::Builder(errorCode)
+    MFFunctionRegistry customRegistry(MFFunctionRegistry::Builder(errorCode)
                                     .setFormatter(FunctionName("person"), personNameFormatterFactory.getAlias(), errorCode)
                                     .build());
     UnicodeString host = "host";
@@ -358,7 +358,7 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
     CHECK_ERROR(errorCode);
 
     LocalPointer<GrammarCasesFormatterFactory> gcFormatterFactory(new GrammarCasesFormatterFactory());
-    FunctionRegistry customRegistry = FunctionRegistry::Builder(errorCode)
+    MFFunctionRegistry customRegistry = MFFunctionRegistry::Builder(errorCode)
         .setFormatter(FunctionName("grammarBB"), gcFormatterFactory.getAlias(), errorCode)
         .build();
 
@@ -512,7 +512,7 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     TestCase::Builder testBuilder;
 
     LocalPointer<ListFormatterFactory> listFormatterFactory(new ListFormatterFactory());
-    FunctionRegistry reg = FunctionRegistry::Builder(errorCode)
+    MFFunctionRegistry reg = MFFunctionRegistry::Builder(errorCode)
         .setFormatter(FunctionName("listformat"), listFormatterFactory.getAlias(), errorCode)
         .build();
     CHECK_ERROR(errorCode);
@@ -668,7 +668,7 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
         return;
     }
     LocalPointer<ResourceManagerFactory> resourceManagerFactory(new ResourceManagerFactory());
-    FunctionRegistry reg = FunctionRegistry::Builder(errorCode)
+    MFFunctionRegistry reg = MFFunctionRegistry::Builder(errorCode)
         .setFormatter(FunctionName("msgRef"), resourceManagerFactory.getAlias(), errorCode)
         .build();
     CHECK_ERROR(errorCode);

@@ -43,8 +43,8 @@ namespace message2 {
 
     // Precondition: `reg` is non-null
     // Does not adopt `reg`
-    MessageFormatter::Builder& MessageFormatter::Builder::setFunctionRegistry(const FunctionRegistry& reg) {
-        customFunctionRegistry = &reg;
+    MessageFormatter::Builder& MessageFormatter::Builder::setFunctionRegistry(const MFFunctionRegistry& reg) {
+        customMFFunctionRegistry = &reg;
         return *this;
     }
 
@@ -66,14 +66,14 @@ namespace message2 {
 
     /*
       This build() method is non-destructive, which entails the risk that
-      its borrowed FunctionRegistry and (if the setDataModel() method was called)
+      its borrowed MFFunctionRegistry and (if the setDataModel() method was called)
       MFDataModel pointers could become invalidated.
     */
     MessageFormatter MessageFormatter::Builder::build(UErrorCode& errorCode) const {
         return MessageFormatter(*this, errorCode);
     }
 
-    MessageFormatter::Builder::Builder(UErrorCode& errorCode) : locale(Locale::getDefault()), customFunctionRegistry(nullptr) {
+    MessageFormatter::Builder::Builder(UErrorCode& errorCode) : locale(Locale::getDefault()), customMFFunctionRegistry(nullptr) {
         // Initialize errors
         errors = new StaticErrors(errorCode);
         CHECK_ERROR(errorCode);
@@ -90,11 +90,11 @@ namespace message2 {
 
     // MessageFormatter
 
-    MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UErrorCode &success) : locale(builder.locale), customFunctionRegistry(builder.customFunctionRegistry) {
+    MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UErrorCode &success) : locale(builder.locale), customMFFunctionRegistry(builder.customMFFunctionRegistry) {
         // Set up the standard function registry
-        FunctionRegistry::Builder standardFunctionsBuilder(success);
+        MFFunctionRegistry::Builder standardFunctionsBuilder(success);
 
-        // FunctionRegistry does not own its formatter elements, so we keep a separate vector to ensure
+        // MFFunctionRegistry does not own its formatter elements, so we keep a separate vector to ensure
         // the elements are deleted
         standardFormatters = createUVector(success);
         CHECK_ERROR(success);
@@ -117,9 +117,9 @@ namespace message2 {
             .setSelector(FunctionName(UnicodeString("integer")), new StandardFunctions::PluralFactory(StandardFunctions::PluralFactory::integer()), success)
             .setSelector(FunctionName(UnicodeString("string")), new StandardFunctions::TextFactory(), success);
         CHECK_ERROR(success);
-        standardFunctionRegistry = standardFunctionsBuilder.build();
+        standardMFFunctionRegistry = standardFunctionsBuilder.build();
         CHECK_ERROR(success);
-        standardFunctionRegistry.checkStandard();
+        standardMFFunctionRegistry.checkStandard();
 
         normalizedInput = builder.normalizedInput;
 
@@ -176,8 +176,8 @@ namespace message2 {
         cleanup();
 
         locale = std::move(other.locale);
-        standardFunctionRegistry = std::move(other.standardFunctionRegistry);
-        customFunctionRegistry = other.customFunctionRegistry;
+        standardMFFunctionRegistry = std::move(other.standardMFFunctionRegistry);
+        customMFFunctionRegistry = other.customMFFunctionRegistry;
         dataModel = std::move(other.dataModel);
         normalizedInput = std::move(other.normalizedInput);
         cachedFormatters = other.cachedFormatters;
@@ -201,9 +201,9 @@ namespace message2 {
     }
 
     // Precondition: custom function registry exists
-    const FunctionRegistry& MessageFormatter::getCustomFunctionRegistry() const {
-        U_ASSERT(hasCustomFunctionRegistry());
-        return *customFunctionRegistry;
+    const MFFunctionRegistry& MessageFormatter::getCustomMFFunctionRegistry() const {
+        U_ASSERT(hasCustomMFFunctionRegistry());
+        return *customMFFunctionRegistry;
     }
 
     MessageFormatter::~MessageFormatter() {
@@ -237,8 +237,8 @@ namespace message2 {
     }
 
     bool MessageFormatter::getFormatterByType(const UnicodeString& type, FunctionName& name) const {
-        U_ASSERT(hasCustomFunctionRegistry());
-        const FunctionRegistry& reg = getCustomFunctionRegistry();
+        U_ASSERT(hasCustomMFFunctionRegistry());
+        const MFFunctionRegistry& reg = getCustomMFFunctionRegistry();
         return reg.getFormatterByType(type, name);
     }
 
@@ -247,11 +247,11 @@ namespace message2 {
 
 
     bool MessageFormatter::isBuiltInSelector(const FunctionName& functionName) const {
-        return standardFunctionRegistry.hasSelector(functionName);
+        return standardMFFunctionRegistry.hasSelector(functionName);
     }
 
     bool MessageFormatter::isBuiltInFormatter(const FunctionName& functionName) const {
-        return standardFunctionRegistry.hasFormatter(functionName);
+        return standardMFFunctionRegistry.hasFormatter(functionName);
     }
 
     // https://github.com/unicode-org/message-format-wg/issues/409
@@ -262,19 +262,19 @@ namespace message2 {
         DynamicErrors& err = context.getErrors();
 
         if (isBuiltInSelector(functionName)) {
-            return standardFunctionRegistry.getSelector(functionName);
+            return standardMFFunctionRegistry.getSelector(functionName);
         }
         if (isBuiltInFormatter(functionName)) {
             err.setSelectorError(functionName, status);
             return nullptr;
         }
-        if (hasCustomFunctionRegistry()) {
-            const FunctionRegistry& customFunctionRegistry = getCustomFunctionRegistry();
-            const SelectorFactory* selectorFactory = customFunctionRegistry.getSelector(functionName);
+        if (hasCustomMFFunctionRegistry()) {
+            const MFFunctionRegistry& customMFFunctionRegistry = getCustomMFFunctionRegistry();
+            const SelectorFactory* selectorFactory = customMFFunctionRegistry.getSelector(functionName);
             if (selectorFactory != nullptr) {
                 return selectorFactory;
             }
-            if (customFunctionRegistry.getFormatter(functionName) != nullptr) {
+            if (customMFFunctionRegistry.getFormatter(functionName) != nullptr) {
                 err.setSelectorError(functionName, status);
                 return nullptr;
             }
@@ -291,19 +291,19 @@ namespace message2 {
         DynamicErrors& err = context.getErrors();
 
         if (isBuiltInFormatter(functionName)) {
-            return standardFunctionRegistry.getFormatter(functionName);
+            return standardMFFunctionRegistry.getFormatter(functionName);
         }
         if (isBuiltInSelector(functionName)) {
             err.setFormattingError(functionName, status);
             return nullptr;
         }
-        if (hasCustomFunctionRegistry()) {
-            const FunctionRegistry& customFunctionRegistry = getCustomFunctionRegistry();
-            FormatterFactory* formatterFactory = customFunctionRegistry.getFormatter(functionName);
+        if (hasCustomMFFunctionRegistry()) {
+            const MFFunctionRegistry& customMFFunctionRegistry = getCustomMFFunctionRegistry();
+            FormatterFactory* formatterFactory = customMFFunctionRegistry.getFormatter(functionName);
             if (formatterFactory != nullptr) {
                 return formatterFactory;
             }
-            if (customFunctionRegistry.getSelector(functionName) != nullptr) {
+            if (customMFFunctionRegistry.getSelector(functionName) != nullptr) {
                 err.setFormattingError(functionName, status);
                 return nullptr;
             }
@@ -317,12 +317,12 @@ namespace message2 {
     }
 
     bool MessageFormatter::isCustomFormatter(const FunctionName& fn) const {
-        return hasCustomFunctionRegistry() && getCustomFunctionRegistry().getFormatter(fn) != nullptr;
+        return hasCustomMFFunctionRegistry() && getCustomMFFunctionRegistry().getFormatter(fn) != nullptr;
     }
 
 
     bool MessageFormatter::isCustomSelector(const FunctionName& fn) const {
-        return hasCustomFunctionRegistry() && getCustomFunctionRegistry().getSelector(fn) != nullptr;
+        return hasCustomMFFunctionRegistry() && getCustomMFFunctionRegistry().getSelector(fn) != nullptr;
     }
 
     const Formatter* MessageFormatter::maybeCachedFormatter(MessageContext& context, const FunctionName& functionName, UErrorCode& errorCode) const {

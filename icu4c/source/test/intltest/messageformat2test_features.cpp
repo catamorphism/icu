@@ -547,7 +547,7 @@ TemperatureFormatterFactory::~TemperatureFormatterFactory() {}
 void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode) {
     using Formattable = message2::Formattable;
 
-    FunctionRegistry::Builder frBuilder(errorCode);
+    MFFunctionRegistry::Builder frBuilder(errorCode);
     CHECK_ERROR(errorCode);
 
     LocalPointer<TemperatureFormatterFactory> counter(new TemperatureFormatterFactory());
@@ -559,7 +559,7 @@ void TestMessageFormat2::testFormatterIsCreatedOnce(IcuTestErrorCode& errorCode)
     UnicodeString message = "Testing {$count :temp unit=$unit skeleton=|.00/w|}.";
 
     MessageFormatter::Builder mfBuilder(errorCode);
-    FunctionRegistry reg = frBuilder.setFormatter(FunctionName("temp"), counter.getAlias(), errorCode)
+    MFFunctionRegistry reg = frBuilder.setFormatter(FunctionName("temp"), counter.getAlias(), errorCode)
         .build();
     CHECK_ERROR(errorCode);
     UParseError parseError;
