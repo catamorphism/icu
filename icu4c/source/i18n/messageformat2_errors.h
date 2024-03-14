@@ -54,6 +54,7 @@ namespace message2 {
         MissingSelectorAnnotation,
         NonexhaustivePattern,
         SyntaxError,
+        UnsupportedStatementError,
         VariantKeyMismatchError
     };
 
