@@ -943,7 +943,15 @@ MessageFormatDataModel::Builder& MessageFormatDataModel::Builder::addBinding(Bin
     if (U_SUCCESS(status)) {
         U_ASSERT(bindings != nullptr);
         checkDuplicate(b.getVariable(), status);
+        UErrorCode savedStatus = status;
+        if (status == U_DUPLICATE_DECLARATION_ERROR) {
+            // Want to add the binding anyway even if it's a duplicate
+            status = U_ZERO_ERROR;
+        }
         bindings->adoptElement(create<Binding>(std::move(b), status), status);
+        if (U_SUCCESS(status) || savedStatus == U_DUPLICATE_DECLARATION_ERROR) {
+            status = savedStatus;
+        }
     }
     return *this;
 }
