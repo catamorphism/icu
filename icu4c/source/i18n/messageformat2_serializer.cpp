@@ -115,7 +115,52 @@ void Serializer::emit(const OptionMap& options) {
     }
 }
 
-void Serializer::emit(const Expression& expr) {
+void Serializer::emitAttributes(const OptionMap& attributes) {
+    // Errors should have been checked before this point
+    UErrorCode localStatus = U_ZERO_ERROR;
+    U_ASSERT(!attributes.bogus);
+    for (int32_t i = 0; i < attributes.size(); i++) {
+        const Option& attr = attributes.getOption(i, localStatus);
+        // No need to check error code, since we already checked
+        // that !bogus
+        whitespace();
+        emit(AT);
+        emit(attr.getName());
+        const Operand& v = attr.getValue();
+        if (!v.isNull()) {
+            emit(EQUALS);
+            emit(v);
+        }
+    }
+}
+
+void Serializer::emit(const Reserved& reserved) {
+    // Re-escape '\' / '{' / '|' / '}'
+    for (int32_t i = 0; i < reserved.numParts(); i++) {
+        const Literal& l = reserved.getPart(i);
+        if (l.isQuoted()) {
+            emit(l);
+        } else {
+            const UnicodeString& s = l.unquoted();
+            for (int32_t j = 0; ((int32_t) j) < s.length(); j++) {
+                switch(s[j]) {
+                case LEFT_CURLY_BRACE:
+                case PIPE:
+                case RIGHT_CURLY_BRACE:
+                case BACKSLASH: {
+                    emit(BACKSLASH);
+                    break;
+                }
+                default:
+                    break;
+                }
+                emit(s[j]);
+            }
+        }
+    }
+}
+
+ void Serializer::emit(const Expression& expr) {
     emit(LEFT_CURLY_BRACE);
 
     if (!expr.isReserved() && !expr.isFunctionCall()) {
@@ -133,29 +178,7 @@ void Serializer::emit(const Expression& expr) {
         U_ASSERT(U_SUCCESS(localStatus));
         if (rator->isReserved()) {
           const Reserved& reserved = rator->asReserved();
-          // Re-escape '\' / '{' / '|' / '}'
-          for (int32_t i = 0; i < reserved.numParts(); i++) {
-            const Literal& l = reserved.getPart(i);
-            if (l.isQuoted()) {
-              emit(l);
-            } else {
-              const UnicodeString& s = l.unquoted();
-              for (int32_t j = 0; ((int32_t) j) < s.length(); j++) {
-                switch(s[j]) {
-                case LEFT_CURLY_BRACE:
-                case PIPE:
-                case RIGHT_CURLY_BRACE:
-                case BACKSLASH: {
-                  emit(BACKSLASH);
-                  break;
-                }
-                default:
-                  break;
-                }
-                emit(s[j]);
-              }
-            }
-          }
+          emit(reserved);
         } else {
             emit(COLON);
             emit(rator->getFunctionName());
@@ -165,7 +188,7 @@ void Serializer::emit(const Expression& expr) {
             emit(rator->getOptionsInternal());
         }
     }
-
+    emitAttributes(expr.getAttributesInternal());
     emit(RIGHT_CURLY_BRACE);
 }
 
@@ -189,17 +212,39 @@ void Serializer::emit(const PatternPart& part) {
         }
         return;
     }
+    // Markup
+    if (part.isMarkup()) {
+        const Markup& markup = part.asMarkup();
+        emit(LEFT_CURLY_BRACE);
+        if (markup.isClose()) {
+            emit(SLASH);
+            } else {
+            emit(NUMBER_SIGN);
+        }
+        emit(markup.getName());
+        emit(markup.getOptionsInternal());
+        emitAttributes(markup.getAttributesInternal());
+        if (markup.isStandalone()) {
+            emit(SLASH);
+        }
+        emit(RIGHT_CURLY_BRACE);
+        return;
+    }
     // Expression
     emit(part.contents());
 }
 
 void Serializer::emit(const Pattern& pat) {
     int32_t len = pat.numParts();
+    // Always quote pattern, which should match the normalized input
+    // if the parser is constructing it correctly
+    emit(LEFT_CURLY_BRACE);
     emit(LEFT_CURLY_BRACE);
     for (int32_t i = 0; i < len; i++) {
         // No whitespace is needed here -- see the `pattern` nonterminal in the grammar
         emit(pat.getPart(i));
     }
+    emit(RIGHT_CURLY_BRACE);
     emit(RIGHT_CURLY_BRACE);
 }
 
@@ -227,12 +272,32 @@ void Serializer::serializeDeclarations() {
     }
 }
 
+void Serializer::serializeUnsupported() {
+    const UnsupportedStatement* statements = dataModel.getUnsupportedStatementsInternal();
+    U_ASSERT(statements != nullptr);
+
+    for (int32_t i = 0; i < dataModel.unsupportedStatementsLen; i++) {
+        const UnsupportedStatement& s = statements[i];
+        emit(s.getKeyword());
+        UErrorCode localErrorCode = U_ZERO_ERROR;
+        const Reserved* r = s.getBody(localErrorCode);
+        if (U_SUCCESS(localErrorCode)) {
+            whitespace();
+            emit(*r);
+        }
+        const Expression* e = s.getExpressionsInternal();
+        for (int32_t j = 0; j < s.expressionsLen; j++) {
+            emit(e[j]);
+        }
+    }
+}
+
 void Serializer::serializeSelectors() {
     U_ASSERT(!dataModel.hasPattern());
     const Expression* selectors = dataModel.getSelectorsInternal();
 
     emit(ID_MATCH);
-    for (int32_t i = 0; i < dataModel.numVariants(); i++) {
+    for (int32_t i = 0; i < dataModel.numSelectors(); i++) {
         // No whitespace needed here -- see `selectors` in the grammar
         emit(selectors[i]);
     }
@@ -243,8 +308,6 @@ void Serializer::serializeVariants() {
     const Variant* variants = dataModel.getVariantsInternal();
     for (int32_t i = 0; i < dataModel.numVariants(); i++) {
         const Variant& v = variants[i];
-        emit(ID_WHEN);
-        whitespace();
         emit(v.getKeys());
         // No whitespace needed here -- see `variant` in the grammar
         emit(v.getPattern());
@@ -255,6 +318,7 @@ void Serializer::serializeVariants() {
 // Main (public) serializer method
 void Serializer::serialize() {
     serializeDeclarations();
+    serializeUnsupported();
     // Pattern message
     if (dataModel.hasPattern()) {
       emit(dataModel.getPattern());
