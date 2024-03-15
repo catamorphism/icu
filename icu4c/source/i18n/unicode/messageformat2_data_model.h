@@ -71,7 +71,6 @@ template class U_I18N_API LocalArray<message2::data_model::Literal>;
 
 namespace message2 {
     class Checker;
-    class MFDataModel;
     class MessageFormatter;
     class Parser;
     class Serializer;
@@ -2554,7 +2553,11 @@ namespace message2 {
             bool hasAnnotation() const { return !local && (annotation != nullptr); }
             void updateAnnotation();
         }; // class Binding
-    } // namespace data_model
+
+            class PatternMessage;
+            class SelectMessage;
+
+        } // namespace data_model
 } // namespace message2
 
   /// @cond DOXYGEN_IGNORE
@@ -2581,58 +2584,6 @@ template class U_I18N_API LocalArray<message2::data_model::Binding>;
 #endif
 /// @endcond
 
-namespace message2 {
-    using namespace data_model;
-
-
-    // Internal only
-
-    class MFDataModel;
-
-    class Matcher {
-    public:
-        Matcher& operator=(Matcher);
-        Matcher(const Matcher&);
-        /**
-         * Non-member swap function.
-         * @param m1 will get m2's contents
-         * @param m2 will get m1's contents
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        friend inline void swap(Matcher& m1, Matcher& m2) noexcept {
-            using std::swap;
-
-            swap(m1.selectors, m2.selectors);
-            swap(m1.numSelectors, m2.numSelectors);
-            swap(m1.variants, m2.variants);
-            swap(m1.numVariants, m2.numVariants);
-        }
-    private:
-
-        friend class MFDataModel;
-
-        Matcher(Expression* ss, int32_t ns, Variant* vs, int32_t nv) : selectors(ss), numSelectors(ns), variants(vs), numVariants(nv) {
-            if (selectors == nullptr) {
-                numSelectors = 0;
-            }
-            if (variants == nullptr) {
-                numVariants = 0;
-            }
-        }
-        Matcher() {}
-        // The expressions that are being matched on.
-        LocalArray<Expression> selectors;
-        // The number of selectors
-        int32_t numSelectors = 0;
-        // The list of `when` clauses (case arms).
-        LocalArray<Variant> variants;
-        // The number of variants
-        int32_t numVariants = 0;
-    }; // class Matcher
-} // namespace message2
-
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the std::variant that is used as a
 // data member of various MFDataModel classes.
@@ -2646,34 +2597,33 @@ template class U_I18N_API std::variant<message2::Matcher,message2::data_model::P
 /// @endcond
 
 namespace message2 {
+    using namespace data_model;
+
     // -----------------------------------------------------------------------
-    // Public MFDataModel class
+    // Public Message class
 
     /**
      *
-     * The `MFDataModel` class describes a parsed representation of the text of a message.
+     * The `Message` class describes a parsed representation of the text of a message.
      * This representation is public as higher-level APIs for messages will need to know its public
      * interface: for example, to re-instantiate a parsed message with different values for imported
      variables.
      *
-     * The MFDataModel API implements <a target="github"
+     * The Message API implements <a target="github"
      href="https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model.md">the
      * specification of the abstract syntax (data model representation)</a> for MessageFormat.
      *
-     * `MFDataModel` is immutable, copyable and movable.
+     * `Message` is immutable, copyable and movable.
      *
      * @internal ICU 75.0 technology preview
      * @deprecated This API is for technology preview only.
      */
-    class U_I18N_API MFDataModel : public UMemory {
+    class U_I18N_API Message : public UObject {
         /*
-          Classes that represent nodes in the data model are nested inside the
-          `MFDataModel` class.
-
           Classes such as `Expression`, `Pattern` and `VariantMap` are immutable and
           are constructed using the builder pattern.
 
-          Most classes representing nodes have copy constructors. This is because builders
+          Classes representing nodes have copy constructors. This is because builders
           contain immutable data that must be copied when calling `build()`, since the builder
           could go out of scope before the immutable result of the builder does. Copying is
           also necessary to prevent unexpected mutation if intermediate builders are saved
@@ -2716,40 +2666,11 @@ namespace message2 {
             }
             return {};
         }
-        /**
-         * Accesses the selectors. Returns an empty vector if this is a pattern message.
-         *
-         * @return A vector of selectors.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        const std::vector<Expression> getSelectors() const {
-            if (std::holds_alternative<Pattern>(body)) {
-                return {};
-            }
-            const Matcher* match = std::get_if<Matcher>(&body);
-            // match must be non-null, given the previous check
-            return toStdVector<Expression>(match->selectors.getAlias(), match->numSelectors);
-        }
-        /**
-         * Accesses the variants. Returns an empty vector if this is a pattern message.
-         *
-         * @return A vector of variants.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        std::vector<Variant> getVariants() const {
-            // Return empty vector if no variants
-            if (std::holds_alternative<Pattern>(body)) {
-                return {};
-            }
-            const Matcher* match = std::get_if<Matcher>(&body);
-            // match must be non-null, given the previous check
-            return toStdVector<Variant>(match->variants.getAlias(), match->numVariants);
-            return {};
-        }
+ // TODO
+        const PatternMessage* asPatternMessage(UErrorCode&) const;
+        const SelectMessage* asSelectMessage(UErrorCode&) const;
+        UBool isPatternMessage() const { return std::holds_alternative<LocalPointer<PatternMessage>>(body); }
+        UBool isSelectMessage() const { return std::holds_alternative<LocalPointer<SelectMessage>>(body); }
         /**
          * Accesses the unsupported statements for this data model.
          *
@@ -2766,18 +2687,7 @@ namespace message2 {
             return {};
         }
         /**
-         * Accesses the pattern (in a message without selectors).
-         * Returns a reference to an empty pattern if the message has selectors.
-         *
-         * @return A reference to the pattern.
-         *
-         * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        const Pattern& getPattern() const;
-
-        /**
-         * The mutable `MFDataModel::Builder` class allows the data model to be
+         * The mutable `Message::Builder` class allows the data model to be
          * constructed incrementally.
          *
          * @internal ICU 75.0 technology preview
@@ -2787,21 +2697,21 @@ namespace message2 {
 
         /**
          * Default constructor.
-         * Puts the MFDataModel into a valid but undefined state.
+         * Puts the Message into a valid but undefined state.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MFDataModel();
+        Message();
         /**
          * Non-member swap function.
          * @param m1 will get m2's contents
          * @param m2 will get m1's contents
          *
          * @internal ICU 75.0 technology preview
-         * @deprecated This API is for technology preview only.
+c         * @deprecated This API is for technology preview only.
          */
-        friend inline void swap(MFDataModel& m1, MFDataModel& m2) noexcept {
+        friend inline void swap(Message& m1, Message& m2) noexcept {
             using std::swap;
 
             if (m1.bogus) {
@@ -2824,41 +2734,38 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MFDataModel& operator=(MFDataModel) noexcept;
+        Message& operator=(Message) noexcept;
         /**
          * Copy constructor.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        MFDataModel(const MFDataModel& other);
+        Message(const Message& other);
         /**
          * Destructor.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual ~MFDataModel();
+        virtual ~Message();
 
         /**
-         * The mutable `MFDataModel::Builder` class allows the data model to be
+         * The mutable `Message::Builder` class allows the data model to be
          * constructed incrementally. Builder is not copyable or movable.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        class U_I18N_API Builder : public UMemory {
+
+        class U_I18N_API Builder : public UObject {
         private:
-            friend class MFDataModel;
+            friend class Message;
+
+            std::variant<LocalPointer<SelectMessage>, LocalPointer<PatternMessage>> body;
 
             void checkDuplicate(const VariableName&, UErrorCode&) const;
-            void buildSelectorsMessage(UErrorCode&);
-            bool hasPattern = true;
-            bool hasSelectors = false;
-            Pattern pattern;
             // The following members are not LocalPointers for the same reason as in SelectorKeys::Builder
-            UVector* selectors = nullptr;
-            UVector* variants = nullptr;
             UVector* bindings = nullptr;
             UVector* unsupportedStatements = nullptr;
         public:
@@ -2879,45 +2786,12 @@ namespace message2 {
              * @param status Input/output error code.
              */
             Builder& addUnsupportedStatement(UnsupportedStatement&& s, UErrorCode& status);
+  // TODO docs
+            Builder& setBody(PatternMessage&& body, UErrorCode& status);
+            Builder& setBody(SelectMessage&& body, UErrorCode& status);
+            virtual Message build(UErrorCode& status);
             /**
-             * Adds a selector expression. Copies `expression`.
-             * If a pattern was previously set, clears the pattern.
-             *
-             * @param selector Expression to add as a selector. Passed by move.
-             * @param errorCode Input/output error code
-             * @return A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& addSelector(Expression&& selector, UErrorCode& errorCode) noexcept;
-            /**
-             * Adds a single variant.
-             * If a pattern was previously set using `setPattern()`, clears the pattern.
-             *
-             * @param keys Keys for the variant. Passed by move.
-             * @param pattern Pattern for the variant. Passed by move.
-             * @param errorCode Input/output error code
-             * @return A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& errorCode) noexcept;
-            /**
-             * Sets the body of the message as a pattern.
-             * If selectors and/or variants were previously set, clears them.
-             *
-             * @param pattern Pattern to represent the body of the message.
-             *                Passed by move.
-             * @return A reference to the builder.
-             *
-             * @internal ICU 75.0 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            Builder& setPattern(Pattern&& pattern);
-            /**
-             * Constructs a new immutable data model.
+             * Constructs a new immutable message.
              * If `setPattern()` has not been called and if `addSelector()` and
              * `addVariant()` were not each called at least once,
              * `status` is set to `U_INVALID_STATE_ERROR`.
@@ -2930,18 +2804,18 @@ namespace message2 {
              * The builder object (`this`) can still be used after calling `build()`.
              *
              * @param status Input/output error code.
-             * @return       The new MFDataModel
+             * @return       The new Message
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            MFDataModel build(UErrorCode& status) const noexcept;
+            virtual Message build(UErrorCode& status) const;
             /**
              * Default constructor.
-             * Returns a Builder with no pattern or selectors set.
-             * Either `setPattern()` or both `addSelector()` and
-             * `addVariant()` must be called before calling `build()`
-             * on the resulting builder.
+             * Returns an empty Builder.
+             * (`build()` can only be called on a class that implements
+             * `Message::Builder`, i.e. PatternMessage::Builder or
+             * SelectMessage::Builder)
              *
              * @param status Input/output error code.
              *
@@ -2958,20 +2832,16 @@ namespace message2 {
             virtual ~Builder();
         }; // class Builder
 
+    protected:
+        bool bogus = false; // Set if a copy constructor fails
+
     private:
         friend class Checker;
         friend class MessageFormatter;
         friend class Serializer;
 
-        Pattern empty; // Provided so that `getPattern()` can return a result
-                       // if called on a selectors message
-        bool hasPattern() const { return std::holds_alternative<Pattern>(body); }
-
-        bool bogus = false; // Set if a copy constructor fails
-
-        // A message body is either a matcher (selector list and variant list),
-        // or a single pattern
-        std::variant<Matcher, Pattern> body;
+        // A message is either a SelectMessage or a PatternMessage
+        std::variant<LocalPointer<SelectMessage>, LocalPointer<PatternMessage>> body;
 
         // Bindings for local variables
         /* const */ LocalArray<Binding> bindings;
@@ -2984,25 +2854,177 @@ namespace message2 {
         int32_t unsupportedStatementsLen = 0;
 
         const Binding* getLocalVariablesInternal() const;
-        const Expression* getSelectorsInternal() const;
-        const Variant* getVariantsInternal() const;
         const UnsupportedStatement* getUnsupportedStatementsInternal() const;
-
-        int32_t numSelectors() const {
-            const Matcher* matcher = std::get_if<Matcher>(&body);
-            return (matcher == nullptr ? 0 : matcher->numSelectors);
-        }
-        int32_t numVariants() const {
-            const Matcher* matcher = std::get_if<Matcher>(&body);
-            return (matcher == nullptr ? 0 : matcher->numVariants);
-        }
 
         // Helper
         void initBindings(const Binding*);
 
-        MFDataModel(const Builder& builder, UErrorCode&) noexcept;
-    }; // class MFDataModel
+        Message(const Builder& builder, UErrorCode&);
+    }; // class Message
 
+    namespace data_model {
+
+    // TODO docs
+    class U_I18N_API PatternMessage : public Message {
+    public:
+        /**
+         * Accesses the pattern.
+         * Returns a reference to an empty pattern if the message has selectors.
+         *
+         * @return A reference to the pattern.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        const Pattern& getPattern() const { return pattern; }
+        // TODO docs
+        PatternMessage(Pattern&& p) : pattern(std::move(p)) {}
+    private:
+        Pattern pattern;
+    }; // class PatternMessage
+
+    // TODO docs
+    class U_I18N_API SelectMessage : public Message {
+    public:
+        SelectMessage& operator=(SelectMessage);
+        SelectMessage(const SelectMessage&);
+        /**
+         * Non-member swap function.
+         * @param m1 will get m2's contents
+         * @param m2 will get m1's contents
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        friend inline void swap(SelectMessage& m1, SelectMessage& m2) noexcept {
+            using std::swap;
+
+            swap(m1.selectors, m2.selectors);
+            swap(m1.selectorCount, m2.selectorCount);
+            swap(m1.variants, m2.variants);
+            swap(m1.variantCount, m2.variantCount);
+        }
+        /**
+         * Accesses the selectors.
+         *
+         * @return A vector of selectors.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        const std::vector<Expression> getSelectors() const {
+            return toStdVector<Expression>(selectors.getAlias(), selectorCount);
+        }
+        /**
+         * Accesses the variants. Returns an empty vector if this is a pattern message.
+         *
+         * @return A vector of variants.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        std::vector<Variant> getVariants() const {
+            return toStdVector<Variant>(variants.getAlias(), variantCount);
+        }
+        // TODO
+        SelectMessage() {}
+        class U_I18N_API Builder {
+        public:
+            /**
+             * Adds a selector expression. Copies `expression`.
+             *
+             * @param selector Expression to add as a selector. Passed by move.
+             * @param errorCode Input/output error code
+             * @return A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& addSelector(Expression&& selector, UErrorCode& errorCode);
+            /**
+             * Adds a single variant.
+             *
+             * @param keys Keys for the variant. Passed by move.
+             * @param pattern Pattern for the variant. Passed by move.
+             * @param errorCode Input/output error code
+             * @return A reference to the builder.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder& addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& errorCode);
+            /**
+             * Constructs a new immutable SelectMessage
+             * If `addSelector()` and
+             * `addVariant()` were not each called at least once,
+             * `status` is set to `U_INVALID_STATE_ERROR`.
+             * If `addSelector()` was called and `addVariant()` was never called,
+             * or vice versa, then `status` is set to U_INVALID_STATE_ERROR.
+             * Otherwise, a SelectMessage is constructed based on selectors and variants
+             * that were previously set.
+             *
+             * The builder object (`this`) can still be used after calling `build()`.
+             *
+             * @param status Input/output error code.
+             * @return       The new Message
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            SelectMessage build(UErrorCode& status) const;
+            /**
+             * Default constructor.
+             * Returns a Builder with no selectors or variants set.
+             * Both  `addSelector()` and
+             * `addVariant()` must be called before calling `build()`
+             * on the resulting builder.
+             *
+             * @param status Input/output error code.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            Builder(UErrorCode& status);
+            /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Builder();
+        private:
+            // The following members are not LocalPointers for the same reason as in SelectorKeys::Builder
+            UVector* selectors = nullptr;
+            UVector* variants = nullptr;
+        }; // class SelectMessage::Builder
+    private:
+        friend class message2::Checker;
+        friend class message2::MessageFormatter;
+        friend class message2::Serializer;
+
+        SelectMessage(Expression* ss, int32_t ns, Variant* vs, int32_t nv) : selectors(ss), selectorCount(ns), variants(vs), variantCount(nv) {
+            if (selectors == nullptr) {
+                selectorCount = 0;
+            }
+            if (variants == nullptr) {
+                variantCount = 0;
+            }
+        }
+        // The expressions that are being matched on.
+        LocalArray<Expression> selectors;
+        // The number of selectors
+        int32_t selectorCount = 0;
+        // The list of `when` clauses (case arms).
+        LocalArray<Variant> variants;
+        // The number of variants
+        int32_t variantCount = 0;
+
+        const Expression* getSelectorsInternal() const;
+        const Variant* getVariantsInternal() const;
+        int32_t numSelectors() const { return selectorCount; }
+        int32_t numVariants() const { return variantCount; }
+    }; // class SelectMessage
+    } // namespace data_model
 } // namespace message2
 
 U_NAMESPACE_END

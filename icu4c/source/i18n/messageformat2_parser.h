@@ -48,8 +48,8 @@ namespace message2 {
 	    UChar   postContext[U_PARSE_CONTEXT_LEN];
 	} MessageParseError;
 
-	Parser(const UnicodeString &input, MFDataModel::Builder& dataModelBuilder, StaticErrors& e, UnicodeString& normalizedInputRef)
-	  : source(input), index(0), errors(e), normalizedInput(normalizedInputRef), dataModel(dataModelBuilder) {
+	Parser(const UnicodeString &input, Message::Builder& builder, StaticErrors& e, UnicodeString& normalizedInputRef)
+            : source(input), index(0), errors(e), normalizedInput(normalizedInputRef), dataModel(builder) {
 	  parseError.line = 0;
 	  parseError.offset = 0;
 	  parseError.lengthBeforeCurrentLine = 0;
@@ -64,13 +64,14 @@ namespace message2 {
 	static void translateParseError(const MessageParseError&, UParseError&);
 	static void setParseError(MessageParseError&, uint32_t);
 	void maybeAdvanceLine();
-        Pattern parseSimpleMessage(UErrorCode&);
+        Pattern parsePattern(UErrorCode&);
+        PatternMessage parseSimpleMessage(UErrorCode&);
         void parseBody(UErrorCode&);
 	void parseDeclarations(UErrorCode&);
         void parseUnsupportedStatement(UErrorCode&);
         void parseLocalDeclaration(UErrorCode&);
         void parseInputDeclaration(UErrorCode&);
-	void parseSelectors(UErrorCode&);
+	SelectMessage parseSelectors(UErrorCode&);
 
 	void parseWhitespaceMaybeRequired(bool, UErrorCode&);
 	void parseRequiredWhitespace(UErrorCode&);
@@ -129,7 +130,7 @@ namespace message2 {
 	UnicodeString& normalizedInput;
 
 	// The parent builder
-	MFDataModel::Builder &dataModel;
+	Message::Builder &dataModel;
     }; // class Parser
 
 } // namespace message2

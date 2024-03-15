@@ -149,23 +149,22 @@ void Checker::addFreeVars(TypeEnvironment& t, const Expression& rhs, UErrorCode&
     addFreeVars(t, rhs.getOperand(), status);
 }
 
-void Checker::checkVariants(UErrorCode& status) {
+void Checker::checkVariants(const SelectMessage& message, UErrorCode& status) {
     CHECK_ERROR(status);
 
-    U_ASSERT(!dataModel.hasPattern());
 
     // Check that each variant has a key list with size
     // equal to the number of selectors
-    const Variant* variants = dataModel.getVariantsInternal();
+    const Variant* variants = message.getVariantsInternal();
 
     // Check that one variant includes only wildcards
     bool defaultExists = false;
 
-    for (int32_t i = 0; i < dataModel.numVariants(); i++) {
+    for (int32_t i = 0; i < message.numVariants(); i++) {
         const SelectorKeys& k = variants[i].getKeys();
         const Key* keys = k.getKeysInternal();
         int32_t len = k.len;
-        if (len != dataModel.numSelectors()) {
+        if (len != message.numSelectors()) {
             // Variant key mismatch
             errors.addError(StaticErrorType::VariantKeyMismatchError, status);
             return;
@@ -196,13 +195,11 @@ void Checker::requireAnnotated(const TypeEnvironment& t, const Expression& selec
     errors.addError(StaticErrorType::MissingSelectorAnnotation, status);
 }
 
-void Checker::checkSelectors(const TypeEnvironment& t, UErrorCode& status) {
-    U_ASSERT(!dataModel.hasPattern());
-
+void Checker::checkSelectors(const TypeEnvironment& t, const SelectMessage& message, UErrorCode& status) {
     // Check each selector; if it's not annotated, emit a
     // "missing selector annotation" error
-    const Expression* selectors = dataModel.getSelectorsInternal();
-    for (int32_t i = 0; i < dataModel.numSelectors(); i++) {
+    const Expression* selectors = message.getSelectorsInternal();
+    for (int32_t i = 0; i < message.numSelectors(); i++) {
         requireAnnotated(t, selectors[i], status);
     }
 }
@@ -279,14 +276,19 @@ void Checker::check(UErrorCode& status) {
 
     TypeEnvironment typeEnv(status);
     checkDeclarations(typeEnv, status);
-    // Pattern message
-    if (dataModel.hasPattern()) {
+
+    CHECK_ERROR(status);
+
+    const SelectMessage* message = dataModel.asSelectMessage(status);
+    if (status == U_ILLEGAL_ARGUMENT_ERROR) {
+        // Pattern -- return
+        status = U_ZERO_ERROR;
         return;
-    } else {
-      // Selectors message
-      checkSelectors(typeEnv, status);
-      checkVariants(status);
     }
+    status = U_ZERO_ERROR;
+    // Selectors message
+    checkSelectors(typeEnv, *message, status);
+    checkVariants(*message, status);
 }
 
 } // namespace message2

@@ -2078,7 +2078,7 @@ Pattern Parser::parseQuotedPattern(UErrorCode& status) {
 
     parseToken(LEFT_CURLY_BRACE, status);
     parseToken(LEFT_CURLY_BRACE, status);
-    Pattern p = parseSimpleMessage(status);
+    Pattern p = parsePattern(status);
     parseToken(RIGHT_CURLY_BRACE, status);
     parseToken(RIGHT_CURLY_BRACE, status);
     return p;
@@ -2188,7 +2188,7 @@ std::variant<Expression, Markup> Parser::parsePlaceholder(UErrorCode& status) {
   Postcondition: `index == source.length()` or U_FAILURE(status);
   for a syntactically correct message, this will consume the entire input
 */
-Pattern Parser::parseSimpleMessage(UErrorCode& status) {
+Pattern Parser::parsePattern(UErrorCode& status) {
     Pattern::Builder result(status);
 
     if (U_SUCCESS(status)) {
@@ -2226,6 +2226,9 @@ Pattern Parser::parseSimpleMessage(UErrorCode& status) {
     return result.build(status);
 }
 
+PatternMessage Parser::parseSimpleMessage(UErrorCode& status) {
+    return PatternMessage(parsePattern(status));
+}
 
 /*
   Consume a `selectors` (matching the nonterminal in the grammar),
@@ -2234,8 +2237,11 @@ Pattern Parser::parseSimpleMessage(UErrorCode& status) {
   No postcondition (on return, `index` might equal `source.length()` with no syntax error
   because a message can end with a variant)
 */
-void Parser::parseSelectors(UErrorCode& status) {
-    CHECK_ERROR(status);
+SelectMessage Parser::parseSelectors(UErrorCode& status) {
+    SelectMessage::Builder builder(status);
+    if (U_FAILURE(status)) {
+        return {};
+    }
 
     U_ASSERT(inBounds(source, index));
 
@@ -2248,7 +2254,10 @@ void Parser::parseSelectors(UErrorCode& status) {
     while (isWhitespace(source[index]) || source[index] == LEFT_CURLY_BRACE) {
         parseOptionalWhitespace(status);
         // Restore precondition
-        CHECK_BOUNDS(source, index, parseError, status);
+        if (!inBounds(source, index)) {
+            ERROR(parseError, status, index);
+            return {};
+        }
         if (source[index] != LEFT_CURLY_BRACE) {
             // This is not necessarily an error, but rather,
             // means the whitespace we parsed was the optional
@@ -2260,14 +2269,16 @@ void Parser::parseSelectors(UErrorCode& status) {
         expression = parseExpression(status);
         empty = false;
 
-        dataModel.addSelector(std::move(expression), status);
-        CHECK_ERROR(status);
+        builder.addSelector(std::move(expression), status);
+        if (U_FAILURE(status)) {
+            return {};
+        }
     }
 
     // At least one selector is required
     if (empty) {
         ERROR(parseError, status, index);
-        return;
+        return {};
     }
 
     #define CHECK_END_OF_INPUT                     \
@@ -2287,24 +2298,29 @@ void Parser::parseSelectors(UErrorCode& status) {
                 // Use index of first whitespace for error message
                 index = whitespaceStart;
                 ERROR(parseError, status, index);
-                return;
+                return {};
             }
         }
 
         // At least one key is required
         SelectorKeys keyList(parseNonEmptyKeys(status));
 
-        CHECK_ERROR(status);
+        if (U_FAILURE(status)) {
+            return {};
+        }
 
         // parseNonEmptyKeys() consumes any trailing whitespace,
         // so the pattern can be consumed next.
 
         // Restore precondition before calling parsePattern()
         // (which must return a non-null value)
-        CHECK_BOUNDS(source, index, parseError, status);
+        if (!inBounds(source, index)) {
+            ERROR(parseError, status, index);
+            return {};
+        }
         Pattern rhs = parseQuotedPattern(status);
 
-        dataModel.addVariant(std::move(keyList), std::move(rhs), status);
+        builder.addVariant(std::move(keyList), std::move(rhs), status);
 
         // Restore the precondition, *without* erroring out if we've
         // reached the end of input. That's because it's valid for the
@@ -2314,6 +2330,8 @@ void Parser::parseSelectors(UErrorCode& status) {
         // the loop head will read off the end of the input string.
         CHECK_END_OF_INPUT
     }
+
+    return builder.build(status);
 }
 
 /*
@@ -2343,7 +2361,7 @@ void Parser::errorPattern(UErrorCode& status) {
     // Add curly braces around the entire output (same comment as above)
     partStr += RIGHT_CURLY_BRACE;
     result.add(std::move(partStr), status);
-    dataModel.setPattern(result.build(status));
+    dataModel.setBody(PatternMessage(result.build(status)), status);
 }
 
 void Parser::parseBody(UErrorCode& status) {
@@ -2359,12 +2377,12 @@ void Parser::parseBody(UErrorCode& status) {
     switch (source[index]) {
     case LEFT_CURLY_BRACE: {
         // Pattern
-        dataModel.setPattern(parseQuotedPattern(status));
+        dataModel.setBody(PatternMessage(parseQuotedPattern(status)), status);
         break;
     }
     case ID_MATCH[0]: {
         // Selectors
-        parseSelectors(status);
+        dataModel.setBody(parseSelectors(status), status);
         return;
     }
     default: {
@@ -2400,7 +2418,7 @@ void Parser::parse(UParseError &parseErrorResult, UErrorCode& status) {
         // For normalization, quote the pattern
         normalizedInput += LEFT_CURLY_BRACE;
         normalizedInput += LEFT_CURLY_BRACE;
-        dataModel.setPattern(parseSimpleMessage(status));
+        dataModel.setBody(parseSimpleMessage(status), status);
         normalizedInput += RIGHT_CURLY_BRACE;
         normalizedInput += RIGHT_CURLY_BRACE;
     }

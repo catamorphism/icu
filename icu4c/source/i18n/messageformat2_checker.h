@@ -56,7 +56,7 @@ namespace message2 {
     class Checker {
     public:
         void check(UErrorCode&);
-        Checker(const MFDataModel& m, StaticErrors& e) : dataModel(m), errors(e) {}
+        Checker(const Message& m, StaticErrors& e) : dataModel(m), errors(e) {}
     private:
 
         void requireAnnotated(const TypeEnvironment&, const Expression&, UErrorCode&);
@@ -65,13 +65,13 @@ namespace message2 {
         void addFreeVars(TypeEnvironment& t, const OptionMap&, UErrorCode&);
         void addFreeVars(TypeEnvironment& t, const Expression&, UErrorCode&);
         void checkDeclarations(TypeEnvironment&, UErrorCode&);
-        void checkSelectors(const TypeEnvironment&, UErrorCode&);
-        void checkVariants(UErrorCode&);
+        void checkSelectors(const TypeEnvironment&, const SelectMessage&, UErrorCode&);
+        void checkVariants(const SelectMessage&, UErrorCode&);
         void check(const OptionMap&);
         void check(const Operand&);
         void check(const Expression&);
         void check(const Pattern&);
-        const MFDataModel& dataModel;
+        const Message& dataModel;
         StaticErrors& errors;
     }; // class Checker
 

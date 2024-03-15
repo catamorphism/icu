@@ -136,7 +136,7 @@ namespace message2 {
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const MFDataModel& getDataModel() const;
+        const Message& getDataModel() const;
 
         /**
          * The mutable Builder class allows each part of the MessageFormatter to be initialized
@@ -155,7 +155,7 @@ namespace message2 {
             // The data model to be used to generate the formatted message
             // Initialized either by `setDataModel()`, or by the parser
             // through a call to `setPattern()`
-            MFDataModel dataModel;
+            Message dataModel;
             // Normalized representation of the pattern;
             // ignored if `setPattern()` wasn't called
             UnicodeString normalizedInput;
@@ -216,7 +216,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setDataModel(MFDataModel&& dataModel);
+            Builder& setDataModel(Message&& dataModel);
             /**
              * Constructs a new immutable MessageFormatter using the pattern or data model
              * that was previously set, and the locale (if it was previously set)
@@ -281,16 +281,16 @@ namespace message2 {
         // Selection methods
 
         // Takes a vector of FormattedPlaceholders
-        void resolveSelectors(MessageContext&, const Environment& env, UErrorCode&, UVector&) const;
+        void resolveSelectors(MessageContext&, const SelectMessage& message, const Environment& env, UErrorCode&, UVector&) const;
         // Takes a vector of vectors of strings (input) and a vector of PrioritizedVariants (output)
-        void filterVariants(const UVector&, UVector&, UErrorCode&) const;
+        void filterVariants(const SelectMessage&, const UVector&, UVector&, UErrorCode&) const;
         // Takes a vector of vectors of strings (input) and a vector of PrioritizedVariants (input/output)
         void sortVariants(const UVector&, UVector&, UErrorCode&) const;
         // Takes a vector of strings (input) and a vector of strings (output)
         void matchSelectorKeys(const UVector&, MessageContext&, ResolvedSelector&& rv, UVector&, UErrorCode&) const;
         // Takes a vector of FormattedPlaceholders (input),
         // and a vector of vectors of strings (output)
-        void resolvePreferences(MessageContext&, UVector&, UVector&, UErrorCode&) const;
+        void resolvePreferences(MessageContext&, const SelectMessage&, UVector&, UVector&, UErrorCode&) const;
 
         // Formatting methods
         [[nodiscard]] FormattedPlaceholder formatLiteral(const data_model::Literal&) const;
@@ -313,7 +313,11 @@ namespace message2 {
         [[nodiscard]] FunctionOptions resolveOptions(const Environment& env, const OptionMap&, MessageContext&, UErrorCode&) const;
         [[nodiscard]] FormattedPlaceholder formatOperand(const Environment&, const data_model::Operand&, MessageContext&, UErrorCode&) const;
         [[nodiscard]] FormattedPlaceholder evalArgument(const data_model::VariableName&, MessageContext&) const;
-        void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const;
+        void formatSelectors(MessageContext& context,
+                             const Environment& env,
+                             const SelectMessage& message,
+                             UErrorCode &status,
+                             UnicodeString& result) const;
 
         // Function registry methods
         bool hasCustomMFFunctionRegistry() const {
@@ -367,7 +371,7 @@ namespace message2 {
         const MFFunctionRegistry* customMFFunctionRegistry;
 
         // Data model, representing the parsed message
-        MFDataModel dataModel;
+        Message dataModel;
 
         // Normalized version of the input string (optional whitespace removed)
         UnicodeString normalizedInput;

@@ -291,7 +291,11 @@ static UnicodeString reservedFallback (const Expression& e) {
 }
 
 // Formats each text and expression part of a pattern, appending the results to `result`
-void MessageFormatter::formatPattern(MessageContext& context, const Environment& globalEnv, const Pattern& pat, UErrorCode &status, UnicodeString& result) const {
+void MessageFormatter::formatPattern(MessageContext& context,
+                                     const Environment& globalEnv,
+                                     const Pattern& pat,
+                                     UErrorCode &status,
+                                     UnicodeString& result) const {
     CHECK_ERROR(status);
 
     for (int32_t i = 0; i < pat.numParts(); i++) {
@@ -325,15 +329,18 @@ void MessageFormatter::formatPattern(MessageContext& context, const Environment&
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-selectors
 // `res` is a vector of ResolvedSelectors
-void MessageFormatter::resolveSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UVector& res) const {
+void MessageFormatter::resolveSelectors(MessageContext& context,
+                                        const SelectMessage& message,
+                                        const Environment& env,
+                                        UErrorCode &status,
+                                        UVector& res) const {
     CHECK_ERROR(status);
-    U_ASSERT(!dataModel.hasPattern());
 
-    const Expression* selectors = dataModel.getSelectorsInternal();
+    const Expression* selectors = message.getSelectorsInternal();
     // 1. Let res be a new empty list of resolved values that support selection.
     // (Implicit, since `res` is an out-parameter)
     // 2. For each expression exp of the message's selectors
-    for (int32_t i = 0; i < dataModel.numSelectors(); i++) {
+    for (int32_t i = 0; i < message.numSelectors(); i++) {
         // 2i. Let rv be the resolved value of exp.
         ResolvedSelector rv = formatSelectorExpression(env, selectors[i], context, status);
         if (rv.hasSelector()) {
@@ -434,15 +441,19 @@ void MessageFormatter::matchSelectorKeys(const UVector& keys,
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-preferences
 // `res` is a vector of FormattedPlaceholders;
 // `pref` is a vector of vectors of strings
-void MessageFormatter::resolvePreferences(MessageContext& context, UVector& res, UVector& pref, UErrorCode &status) const {
+void MessageFormatter::resolvePreferences(MessageContext& context,
+                                          const SelectMessage& message,
+                                          UVector& res,
+                                          UVector& pref,
+                                          UErrorCode &status) const {
     CHECK_ERROR(status);
 
     // 1. Let pref be a new empty list of lists of strings.
     // (Implicit, since `pref` is an out-parameter)
     UnicodeString ks;
     LocalPointer<UnicodeString> ksP;
-    int32_t numVariants = dataModel.numVariants();
-    const Variant* variants = dataModel.getVariantsInternal();
+    int32_t numVariants = message.numVariants();
+    const Variant* variants = message.getVariantsInternal();
     // 2. For each index i in res
     for (int32_t i = 0; i < (int32_t) res.size(); i++) {
         // 2i. Let keys be a new empty list of strings.
@@ -497,13 +508,16 @@ static UBool vectorContains(const UVector& v, const UnicodeString& k) {
 
 // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#filter-variants
 // `pref` is a vector of vectors of strings. `vars` is a vector of PrioritizedVariants
-void MessageFormatter::filterVariants(const UVector& pref, UVector& vars, UErrorCode& status) const {
-    const Variant* variants = dataModel.getVariantsInternal();
+void MessageFormatter::filterVariants(const SelectMessage& message,
+                                      const UVector& pref,
+                                      UVector& vars,
+                                      UErrorCode& status) const {
+    const Variant* variants = message.getVariantsInternal();
 
     // 1. Let `vars` be a new empty list of variants.
     // (Not needed since `vars` is an out-parameter)
     // 2. For each variant `var` of the message:
-    for (int32_t j = 0; j < dataModel.numVariants(); j++) {
+    for (int32_t j = 0; j < message.numVariants(); j++) {
         const SelectorKeys& selectorKeys = variants[j].getKeys();
         const Pattern& p = variants[j].getPattern();
 
@@ -719,7 +733,11 @@ ResolvedSelector MessageFormatter::formatSelectorExpression(const Environment& g
     return ResolvedSelector(FormattedPlaceholder(exprResult.argument().fallback));
 }
 
-void MessageFormatter::formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const {
+void MessageFormatter::formatSelectors(MessageContext& context,
+                                       const Environment& env,
+                                       const SelectMessage& message,
+                                       UErrorCode &status,
+                                       UnicodeString& result) const {
     CHECK_ERROR(status);
 
     // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
@@ -728,19 +746,19 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
     // res is a vector of FormattedPlaceholders
     LocalPointer<UVector> res(createUVector(status));
     CHECK_ERROR(status);
-    resolveSelectors(context, env, status, *res);
+    resolveSelectors(context, message, env, status, *res);
 
     // Resolve Preferences
     // pref is a vector of vectors of strings
     LocalPointer<UVector> pref(createUVector(status));
     CHECK_ERROR(status);
-    resolvePreferences(context, *res, *pref, status);
+    resolvePreferences(context, message, *res, *pref, status);
 
     // Filter Variants
     // vars is a vector of PrioritizedVariants
     LocalPointer<UVector> vars(createUVector(status));
     CHECK_ERROR(status);
-    filterVariants(*pref, *vars, status);
+    filterVariants(message, *pref, *vars, status);
 
     // Sort Variants and select the final pattern
     // Note: `sortable` in the spec is just `vars` here,
@@ -776,8 +794,10 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
     LocalPointer<Environment> globalEnv(env);
 
     UnicodeString result;
-    if (dataModel.hasPattern()) {
-        formatPattern(context, *globalEnv, dataModel.getPattern(), status, result);
+    if (dataModel.isPatternMessage()) {
+        const PatternMessage* message = dataModel.asPatternMessage(status);
+        U_ASSERT(status == U_ZERO_ERROR);
+        formatPattern(context, *globalEnv, message->getPattern(), status, result);
     } else {
         // Check for errors/warnings -- if so, then the result of pattern selection is the fallback value
         // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
@@ -785,7 +805,9 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
         if (err.hasSyntaxError() || err.hasDataModelError()) {
             result += REPLACEMENT;
         } else {
-            formatSelectors(context, *globalEnv, status, result);
+            const SelectMessage* message = dataModel.asSelectMessage(status);
+            U_ASSERT(status == U_ZERO_ERROR);
+            formatSelectors(context, *globalEnv, *message, status, result);
         }
     }
     // Update status according to all errors seen while formatting

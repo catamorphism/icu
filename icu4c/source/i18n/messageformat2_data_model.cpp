@@ -856,74 +856,113 @@ Variant::Variant(const Variant& other) : k(other.k), p(other.p) {}
 
 Variant::~Variant() {}
 
-// ------------- Matcher
+// ------------- SelectMessage
 
-Matcher& Matcher::operator=(Matcher other) {
+SelectMessage& SelectMessage::operator=(SelectMessage other) {
     swap(*this, other);
     return *this;
 }
 
-Matcher::Matcher(const Matcher& other) {
-    numSelectors = other.numSelectors;
-    numVariants = other.numVariants;
-    selectors.adoptInstead(copyArray<Expression>(other.selectors.getAlias(), numSelectors));
-    variants.adoptInstead(copyArray<Variant>(other.variants.getAlias(), numVariants));
-}
-
-// --------------- MFDataModel
-
-const Pattern& MFDataModel::getPattern() const {
-    if (std::holds_alternative<Matcher>(body)) {
-        // Return reference to empty pattern if this is a selectors message
-        return empty;
+SelectMessage::SelectMessage(const SelectMessage& other) {
+    U_ASSERT(!other.bogus);
+    selectorCount = other.selectorCount;
+    variantCount = other.variantCount;
+    selectors.adoptInstead(copyArray<Expression>(other.selectors.getAlias(), selectorCount));
+    variants.adoptInstead(copyArray<Variant>(other.variants.getAlias(), variantCount));
+    if (!(selectors.isValid() && variants.isValid())) {
+        bogus = true;
     }
-    return *(std::get_if<Pattern>(&body));
 }
 
-const Binding* MFDataModel::getLocalVariablesInternal() const {
+SelectMessage::Builder::Builder(UErrorCode& status) {
+    variants = createUVector(status);
+    selectors = createUVector(status);
+}
+
+SelectMessage SelectMessage::Builder::build(UErrorCode& status) const {
+    if (U_SUCCESS(status)) {
+        if (variants == nullptr || variants->size() == 0) {
+            status = U_ILLEGAL_ARGUMENT_ERROR;
+        } else if (selectors == nullptr || selectors->size() == 0) {
+            status = U_ILLEGAL_ARGUMENT_ERROR;
+        } else {
+            int32_t variantCount = variants->size();
+            int32_t selectorCount = selectors->size();
+            LocalArray<Variant> vs(copyVectorToArray<Variant>(*variants, variantCount));
+            LocalArray<Expression> ss(copyVectorToArray<Expression>(*selectors, selectorCount));
+            if (!vs.isValid() || !ss.isValid()) {
+                status = U_MEMORY_ALLOCATION_ERROR;
+            } else {
+                return SelectMessage(ss.orphan(), selectorCount, vs.orphan(), variantCount);
+            }
+        }
+    }
+    return {};
+}
+// --------------- Message
+
+const PatternMessage* Message::asPatternMessage(UErrorCode& errorCode) const {
+    if (U_SUCCESS(errorCode)) {
+        if (std::holds_alternative<LocalPointer<SelectMessage>>(body)) {
+            errorCode = U_ILLEGAL_ARGUMENT_ERROR;
+        }
+        return (std::get_if<LocalPointer<PatternMessage>>(&body))->getAlias();
+    }
+    return nullptr;
+}
+
+const SelectMessage* Message::asSelectMessage(UErrorCode& errorCode) const {
+    if (U_SUCCESS(errorCode)) {
+        if (std::holds_alternative<LocalPointer<PatternMessage>>(body)) {
+            errorCode = U_ILLEGAL_ARGUMENT_ERROR;
+        }
+        return (std::get_if<LocalPointer<SelectMessage>>(&body))->getAlias();
+    }
+    return nullptr;
+}
+
+const Binding* Message::getLocalVariablesInternal() const {
     U_ASSERT(!bogus);
     U_ASSERT(bindings.isValid());
     return bindings.getAlias();
 }
 
-const Expression* MFDataModel::getSelectorsInternal() const {
+const Expression* SelectMessage::getSelectorsInternal() const {
     U_ASSERT(!bogus);
-    U_ASSERT(!hasPattern());
-    return std::get_if<Matcher>(&body)->selectors.getAlias();
+    return selectors.getAlias();
 }
 
-const Variant* MFDataModel::getVariantsInternal() const {
+const Variant* SelectMessage::getVariantsInternal() const {
     U_ASSERT(!bogus);
-    U_ASSERT(!hasPattern());
-    return std::get_if<Matcher>(&body)->variants.getAlias();
+    return variants.getAlias();
 }
 
-const UnsupportedStatement* MFDataModel::getUnsupportedStatementsInternal() const {
+const UnsupportedStatement* Message::getUnsupportedStatementsInternal() const {
     U_ASSERT(!bogus);
     U_ASSERT(unsupportedStatements.isValid());
     return unsupportedStatements.getAlias();
 }
 
+Message::Builder& Message::Builder::setBody(PatternMessage&& p, UErrorCode& status) {
+    if (U_SUCCESS(status)) {
+        body.emplace<LocalPointer<PatternMessage>>(LocalPointer<PatternMessage>(create<PatternMessage>(std::move(p), status)));
+    }
+    return *this;
+}
 
-MFDataModel::Builder::Builder(UErrorCode& status) {
+Message::Builder& Message::Builder::setBody(SelectMessage&& p, UErrorCode& status) {
+    if (U_SUCCESS(status)) {
+        body.emplace<LocalPointer<SelectMessage>>(LocalPointer<SelectMessage>(create<SelectMessage>(std::move(p), status)));
+    }
+    return *this;
+}
+
+Message::Builder::Builder(UErrorCode& status) {
     bindings = createUVector(status);
     unsupportedStatements = createUVector(status);
 }
 
-// Invalidate pattern and create selectors/variants if necessary
-void MFDataModel::Builder::buildSelectorsMessage(UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    if (hasPattern) {
-        selectors = createUVector(status);
-        variants = createUVector(status);
-        hasPattern = false;
-    }
-    hasPattern = false;
-    hasSelectors = true;
-}
-
-void MFDataModel::Builder::checkDuplicate(const VariableName& var, UErrorCode& status) const {
+void Message::Builder::checkDuplicate(const VariableName& var, UErrorCode& status) const {
     CHECK_ERROR(status);
 
     // This means that handling declarations is quadratic in the number of variables,
@@ -939,7 +978,7 @@ void MFDataModel::Builder::checkDuplicate(const VariableName& var, UErrorCode& s
     }
 }
 
-MFDataModel::Builder& MFDataModel::Builder::addBinding(Binding&& b, UErrorCode& status) {
+Message::Builder& Message::Builder::addBinding(Binding&& b, UErrorCode& status) {
     if (U_SUCCESS(status)) {
         U_ASSERT(bindings != nullptr);
         checkDuplicate(b.getVariable(), status);
@@ -956,7 +995,7 @@ MFDataModel::Builder& MFDataModel::Builder::addBinding(Binding&& b, UErrorCode& 
     return *this;
 }
 
-MFDataModel::Builder& MFDataModel::Builder::addUnsupportedStatement(UnsupportedStatement&& s, UErrorCode& status) {
+Message::Builder& Message::Builder::addUnsupportedStatement(UnsupportedStatement&& s, UErrorCode& status) {
     if (U_SUCCESS(status)) {
         U_ASSERT(unsupportedStatements != nullptr);
         unsupportedStatements->adoptElement(create<UnsupportedStatement>(std::move(s), status), status);
@@ -967,10 +1006,9 @@ MFDataModel::Builder& MFDataModel::Builder::addUnsupportedStatement(UnsupportedS
 /*
   selector must be non-null
 */
-MFDataModel::Builder& MFDataModel::Builder::addSelector(Expression&& selector, UErrorCode& status) noexcept {
+SelectMessage::Builder& SelectMessage::Builder::addSelector(Expression&& selector, UErrorCode& status) {
     THIS_ON_ERROR(status);
 
-    buildSelectorsMessage(status);
     U_ASSERT(selectors != nullptr);
     selectors->adoptElement(create<Expression>(std::move(selector), status), status);
 
@@ -980,8 +1018,7 @@ MFDataModel::Builder& MFDataModel::Builder::addSelector(Expression&& selector, U
 /*
   `pattern` must be non-null
 */
-MFDataModel::Builder& MFDataModel::Builder::addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& errorCode) noexcept {
-    buildSelectorsMessage(errorCode);
+SelectMessage::Builder& SelectMessage::Builder::addVariant(SelectorKeys&& keys, Pattern&& pattern, UErrorCode& errorCode) {
     Variant* v = create<Variant>(Variant(std::move(keys), std::move(pattern)), errorCode);
     if (U_SUCCESS(errorCode)) {
         variants->adoptElement(v, errorCode);
@@ -989,33 +1026,22 @@ MFDataModel::Builder& MFDataModel::Builder::addVariant(SelectorKeys&& keys, Patt
     return *this;
 }
 
-MFDataModel::Builder& MFDataModel::Builder::setPattern(Pattern&& pat) {
-    pattern = std::move(pat);
-    hasPattern = true;
-    hasSelectors = false;
-    // Invalidate variants
-    if (variants != nullptr) {
-        variants->removeAllElements();
-    }
-    return *this;
-}
-
-MFDataModel::MFDataModel(const MFDataModel& other) : body(Pattern()) {
+Message::Message(const Message& other) {
     U_ASSERT(!other.bogus);
 
-    if (other.hasPattern()) {
-        body.emplace<Pattern>(Pattern(*std::get_if<Pattern>(&other.body)));
+    UErrorCode localErrorCode = U_ZERO_ERROR;
+    if (other.isPatternMessage()) {
+        const PatternMessage* message = other.asPatternMessage(localErrorCode);
+        U_ASSERT(U_SUCCESS(localErrorCode));
+        body.emplace<LocalPointer<PatternMessage>>(LocalPointer<PatternMessage>(create<PatternMessage>(PatternMessage(*message), localErrorCode)));
     } else {
-        const Expression* otherSelectors = other.getSelectorsInternal();
-        const Variant* otherVariants = other.getVariantsInternal();
-        int32_t numSelectors = other.numSelectors();
-        int32_t numVariants = other.numVariants();
-        Expression* copiedSelectors = copyArray(otherSelectors, numSelectors);
-        Variant* copiedVariants = copyArray(otherVariants, numVariants);
-        if (!(copiedSelectors != nullptr && copiedVariants != nullptr)) {
-            bogus = true;
-        }
-        body.emplace<Matcher>(Matcher(copiedSelectors, numSelectors, copiedVariants, numVariants));
+        const SelectMessage* message = other.asSelectMessage(localErrorCode);
+        U_ASSERT(U_SUCCESS(localErrorCode));
+        body.emplace<LocalPointer<SelectMessage>>(LocalPointer<SelectMessage>(create<SelectMessage>(SelectMessage(*message), localErrorCode)));
+    }
+    if (U_FAILURE(localErrorCode)) {
+        bogus = true;
+        return;
     }
 
     bindingsLen = other.bindingsLen;
@@ -1030,19 +1056,20 @@ MFDataModel::MFDataModel(const MFDataModel& other) : body(Pattern()) {
     }
 }
 
-MFDataModel::MFDataModel(const MFDataModel::Builder& builder, UErrorCode& errorCode) noexcept : body(Pattern()) {
+Message::Message(const Message::Builder& builder, UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    if (builder.hasPattern) {
-        body.emplace<Pattern>(builder.pattern);
+    if (std::holds_alternative<LocalPointer<PatternMessage>>(builder.body)) {
+        const PatternMessage* message = (std::get_if<LocalPointer<PatternMessage>>(&builder.body))->getAlias();
+        U_ASSERT(message != nullptr);
+        body.emplace<LocalPointer<PatternMessage>>(LocalPointer<PatternMessage>(create<PatternMessage>(PatternMessage(*message), errorCode)));
     } else {
-        int32_t numVariants = builder.variants == nullptr ? 0 : builder.variants->size();
-        int32_t numSelectors = builder.selectors == nullptr ? 0 : builder.selectors->size();
-        Variant* variants = copyVectorToArray<Variant>(*builder.variants, numVariants);
-        Expression* selectors = copyVectorToArray<Expression>(*builder.selectors, numSelectors);
-        bogus &= (variants != nullptr && selectors != nullptr);
-        body.emplace<Matcher>(Matcher(selectors, numSelectors, variants, numVariants));
+        const SelectMessage* message = (std::get_if<LocalPointer<SelectMessage>>(&builder.body))->getAlias();
+        U_ASSERT(message != nullptr);
+        body.emplace<LocalPointer<SelectMessage>>(LocalPointer<SelectMessage>(create<SelectMessage>(SelectMessage(*message), errorCode)));
     }
+
+    CHECK_ERROR(errorCode);
 
     U_ASSERT(builder.bindings != nullptr);
     bindingsLen = builder.bindings->size();
@@ -1050,37 +1077,49 @@ MFDataModel::MFDataModel(const MFDataModel::Builder& builder, UErrorCode& errorC
     unsupportedStatementsLen = builder.unsupportedStatements->size();
     unsupportedStatements.adoptInstead(copyVectorToArray<UnsupportedStatement>(*builder.unsupportedStatements, unsupportedStatementsLen));
     bogus &= ((bool) (bindings.isValid() && unsupportedStatements.isValid()));
+    if (bogus) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
 }
 
-MFDataModel::MFDataModel() : body(Pattern()) {}
+Message Message::Builder::build(UErrorCode& errorCode) {
+    return Message(*this, errorCode);
+}
 
-MFDataModel& MFDataModel::operator=(MFDataModel other) noexcept {
+Message::Message() {}
+
+Message& Message::operator=(Message other) noexcept {
     swap(*this, other);
     return *this;
 }
 
-MFDataModel MFDataModel::Builder::build(UErrorCode& errorCode) const noexcept {
+Message Message::Builder::build(UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
-    if (!hasPattern && !hasSelectors) {
-        errorCode = U_INVALID_STATE_ERROR;
-    }
-    return MFDataModel(*this, errorCode);
+    return Message(*this, errorCode);
 }
 
-MFDataModel::~MFDataModel() {}
-MFDataModel::Builder::~Builder() {
+Message::~Message() {}
+
+SelectMessage::Builder::~Builder() {
     if (selectors != nullptr) {
         delete selectors;
     }
     if (variants != nullptr) {
         delete variants;
     }
+}
+
+Message::Builder::~Builder() {
     if (bindings != nullptr) {
         delete bindings;
     }
+    if (unsupportedStatements != nullptr) {
+        delete unsupportedStatements;
+    }
 }
+
 } // namespace message2
 
 U_NAMESPACE_END

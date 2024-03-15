@@ -292,21 +292,19 @@ void Serializer::serializeUnsupported() {
     }
 }
 
-void Serializer::serializeSelectors() {
-    U_ASSERT(!dataModel.hasPattern());
-    const Expression* selectors = dataModel.getSelectorsInternal();
+void Serializer::serializeSelectors(const SelectMessage& message) {
+    const Expression* selectors = message.getSelectorsInternal();
 
     emit(ID_MATCH);
-    for (int32_t i = 0; i < dataModel.numSelectors(); i++) {
+    for (int32_t i = 0; i < message.numSelectors(); i++) {
         // No whitespace needed here -- see `selectors` in the grammar
         emit(selectors[i]);
     }
 }
 
-void Serializer::serializeVariants() {
-    U_ASSERT(!dataModel.hasPattern());
-    const Variant* variants = dataModel.getVariantsInternal();
-    for (int32_t i = 0; i < dataModel.numVariants(); i++) {
+void Serializer::serializeVariants(const SelectMessage& message) {
+    const Variant* variants = message.getVariantsInternal();
+    for (int32_t i = 0; i < message.numVariants(); i++) {
         const Variant& v = variants[i];
         emit(v.getKeys());
         // No whitespace needed here -- see `variant` in the grammar
@@ -319,14 +317,20 @@ void Serializer::serializeVariants() {
 void Serializer::serialize() {
     serializeDeclarations();
     serializeUnsupported();
+    UErrorCode localErrorCode = U_ZERO_ERROR;
     // Pattern message
-    if (dataModel.hasPattern()) {
-      emit(dataModel.getPattern());
+    if (dataModel.isPatternMessage()) {
+        const PatternMessage* message = dataModel.asPatternMessage(localErrorCode);
+        U_ASSERT(U_SUCCESS(localErrorCode));
+        emit(message->getPattern());
     } else {
-      // Selectors message
-      serializeSelectors();
-      serializeVariants();
+        // Selectors message
+        const SelectMessage* message = dataModel.asSelectMessage(localErrorCode);
+        U_ASSERT(U_SUCCESS(localErrorCode));
+        serializeSelectors(*message);
+        serializeVariants(*message);
     }
+
 }
 
 } // namespace message2

@@ -22,10 +22,10 @@ namespace message2 {
     // Converts a data model back to a string
     class Serializer : public UMemory {
     public:
-        Serializer(const MFDataModel& m, UnicodeString& s) : dataModel(m), result(s) {}
+        Serializer(const Message& m, UnicodeString& s) : dataModel(m), result(s) {}
         void serialize();
 
-        const MFDataModel& dataModel;
+        const Message& dataModel;
         UnicodeString& result;
 
     private:
@@ -48,8 +48,8 @@ namespace message2 {
         void emit(const OptionMap&);
         void serializeUnsupported();
         void serializeDeclarations();
-        void serializeSelectors();
-        void serializeVariants();
+        void serializeSelectors(const SelectMessage&);
+        void serializeVariants(const SelectMessage&);
     }; // class Serializer
 
 } // namespace message2
