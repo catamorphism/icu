@@ -1129,7 +1129,7 @@ an option or an attribute.
             // whitespace, or consumed at least one option.)
             // Done.
             // Remove the required whitespace from normalizedInput
-            U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+            normalizedInput.truncate(normalizedInput.length() - 1);
             // "Backtrack" so as to leave the optional whitespace there
             // when parsing attributes
             index = firstWhitespace;
@@ -1224,7 +1224,7 @@ is involved and there's no state to save.
             // whitespace, or consumed at least one option.)
             // Done.
             // Remove the whitespace from normalizedInput
-            U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+            normalizedInput.truncate(normalizedInput.length() - 1);
             break;
         }
         parseOption(*optionVec, errorCode);
@@ -1285,7 +1285,7 @@ Arbitrary lookahead is required to parse attribute lists, similarly to option li
             // whitespace, or consumed at least one attribute.)
             // Done.
             // Remove the whitespace from normalizedInput
-            U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+            normalizedInput.truncate(normalizedInput.length() - 1);
             break;
         }
         parseAttribute(*options, errorCode);
@@ -2064,7 +2064,7 @@ This is addressed using "backtracking" (similarly to `parseOptions()`).
             // trailing whitespace. All the keys have been parsed.
 
             // Unpush the whitespace from `normalizedInput`
-            U_ASSERT(normalizedInput.truncate(normalizedInput.length() - 1));
+            normalizedInput.truncate(normalizedInput.length() - 1);
             break;
         }
         keysBuilder.add(parseKey(status), status);
