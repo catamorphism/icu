@@ -160,13 +160,6 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(".local $foo = {$bar :number minimumFractionDigits=foo} {{bar {$foo}}}")
-                                .setExpected("bar {$bar}")
-                                .setExpectedError(U_FORMATTING_ERROR)
-                                .setArgument("bar", 4.2)
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
     test = testBuilder.setPattern(".local $foo = {$bar :number} {{bar {$foo}}}")
                                 .setExpected("bar {$bar}")
                                 .setExpectedError(U_OPERAND_MISMATCH_ERROR)
@@ -366,9 +359,6 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
                                 .setExpectedError(U_SYNTAX_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
-
-    // TODO: make sure there are round-trip tests for these
-    // (add to runTestCase()?)
 
     // Markup is ignored when formatting to string
     test = testBuilder.setPattern("{#tag}")
@@ -766,6 +756,9 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
 
     // Functions: number (formatting)
 
+    // TODO: Need more test coverage for all the :number and other built-in
+    // function options
+
     test = testBuilder.setPattern("hello {4.2 :number}")
                                 .setExpectSuccess()
                                 .setExpected("hello 4.2")
@@ -836,12 +829,17 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
+    /*
+      This is underspecified -- commented out until https://github.com/unicode-org/message-format-wg/issues/738
+      is resolved
+
     test = testBuilder.setPattern(".local $foo = {$bar :number minimumFractionDigits=foo} {{bar {$foo}}}")
                                 .setExpectedError(U_FORMATTING_ERROR)
                                 .setArgument("bar", 4.2)
                                 .setExpected("bar {$bar}")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
+    */
 
     test = testBuilder.setPattern(".local $foo = {$bar :number} {{bar {$foo}}}")
                                   .setExpectedError(U_OPERAND_MISMATCH_ERROR)
@@ -864,13 +862,17 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    // TODO: Test other option names and make sure all of them error out properly
+    /*
+    This is underspecified -- commented out until https://github.com/unicode-org/message-format-wg/issues/738
+      is resolved
+
     test = testBuilder.setPattern(".input {$foo :number minimumFractionDigits=foo} {{bar {$foo}}}")
                                 .setExpectedError(U_FORMATTING_ERROR)
                                 .setArgument("foo", 4.2)
                                 .setExpected("bar {$foo}")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
+    */
 
     test = testBuilder.setPattern(".input {$foo :number} {{bar {$foo}}}")
                                   .setExpectedError(U_OPERAND_MISMATCH_ERROR)
