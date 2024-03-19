@@ -1094,8 +1094,8 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
             toFormat = FormattedPlaceholder(message2::Formattable::forDate(d),
                                             toFormat.getFallback());
             df->format(d, result, 0, errorCode);
-            break;
         }
+        break;
     }
     case UFMT_DATE: {
         df->format(source.asICUFormattable(errorCode), result, 0, errorCode);
