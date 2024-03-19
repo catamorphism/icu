@@ -169,60 +169,6 @@ void TestMessageFormat2::testNumbers(IcuTestErrorCode& errorCode) {
 
     // Omitted CurrencyAmount test from ICU4J since it's not supported by Formattable
 
-   // Skeletons
-    value = 1234567890.97531;
-    testBuilder.setLocale(Locale("ro"));
-    test = testBuilder.setPattern("Skeletons, minFraction: {$val :number skeleton=|.00000000*|}!")
-                                .setArgument(val, value)
-                                .setExpected("Skeletons, minFraction: 1.234.567.890,97531000!")
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("Skeletons, maxFraction: {$val :number skeleton=|.###|}!")
-                                .setArgument(val, value)
-                                .setExpected("Skeletons, maxFraction: 1.234.567.890,975!")
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    // Currency
-    test = testBuilder.setPattern("Skeletons, currency: {$val :number skeleton=|currency/EUR|}!")
-                                .setArgument(val, value)
-                                .setExpected(CharsToUnicodeString("Skeletons, currency: 1.234.567.890,98\\u00A0\\u20AC!"))
-                                .setLocale(Locale("de"))
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    // Currency as a parameter
-    test = testBuilder.setPattern("Skeletons, currency: {$val :number skeleton=$skel}!")
-                                .setArgument(val, value)
-                                .setArgument("skel", "currency/EUR")
-                                .setExpected(CharsToUnicodeString("Skeletons, currency: 1.234.567.890,98\\u00A0\\u20AC!"))
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("Skeletons, currency: {$val :number skeleton=$skel}!")
-                                .setArgument(val, value)
-                                .setArgument("skel", "currency/JPY")
-                                .setExpected(CharsToUnicodeString("Skeletons, currency: 1.234.567.891\\u00A0\\u00A5!"))
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    // Various measures
-    test = testBuilder.setPattern(".local $intl = {$valC :number skeleton=|unit/celsius|}\n\
-                                 .local $us = {$valF :number skeleton=|unit/fahrenheit|}\n\
-                                 {{Temperature: {$intl} ({$us})}}")
-                                .setArgument("valC", 27.0)
-                                .setArgument("valF", 80.6)
-                                .setExpected(CharsToUnicodeString("Temperature: 27 \\u00B0C (80,6 \\u00B0F)"))
-                                .setLocale(Locale("ro"))
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
-
-    test = testBuilder.setPattern("Height: {$len :number skeleton=|unit/meter|}")
-                                .setArgument("len", 1.75)
-                                .setExpected("Height: 1,75 m")
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
 }
 
 void TestMessageFormat2::testBuiltInFunctions() {

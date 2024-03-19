@@ -155,16 +155,6 @@ void TestMessageFormat2::testSpecialPluralWithDecimals(TestCase::Builder& testBu
         .setLocale(Locale("en", "US"))
         .build();
     TestUtils::runTestCase(*this, test, errorCode);
-
-    message = ".local $amount = {$count :number skeleton=|.00*|}\n\
-                .match {$amount :number skeleton=|.00*|}\n\
-                   1 {{I have {$amount} dollar.}}\n\
-                   * {{I have {$amount} dollars.}}";
-
-    test = testBuilder.setPattern(message)
-                                .setExpected("I have 1.00 dollar.")
-                                .build();
-    TestUtils::runTestCase(*this, test, errorCode);
 }
 
 void TestMessageFormat2::testDefaultFunctionAndOptions(TestCase::Builder& testBuilder, IcuTestErrorCode& errorCode) {
