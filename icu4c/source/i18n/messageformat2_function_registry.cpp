@@ -241,31 +241,108 @@ MFFunctionRegistry::~MFFunctionRegistry() {
                                                                                      const FunctionOptions& opts,
                                                                                      UErrorCode& status) {
     number::UnlocalizedNumberFormatter nf;
+
+    using namespace number;
+
     if (U_SUCCESS(status)) {
         Formattable opt;
-        if (opts.getFunctionOption(UnicodeString("skeleton"), opt) && opt.getType() == UFMT_STRING) {
-            const UnicodeString& skeletonStr = opt.getString(status);
-            U_ASSERT(U_SUCCESS(status));
-            nf = number::NumberFormatter::forSkeleton(skeletonStr, status);
-        } else {
-            int64_t minFractionDigits = 0;
-            int64_t maxFractionDigits = number.maximumFractionDigits(opts);
-            if (opts.getFunctionOption(UnicodeString("minimumFractionDigits"), opt)) {
-                UErrorCode localErrorCode = U_ZERO_ERROR;
-                minFractionDigits = getInt64Value(number.locale, opt, localErrorCode);
-                if (U_FAILURE(localErrorCode)) {
-                    // Bad option => formatting error
-                    status = U_FORMATTING_ERROR;
+        nf = NumberFormatter::with();
+        bool isInteger = number.isInteger;
+
+        if (isInteger) {
+            nf = nf.precision(Precision::integer());
+        }
+
+        // Notation options
+        if (!isInteger) {
+            // These options only apply to `:number`
+
+            // Default notation is simple
+            Notation notation = Notation::simple();
+            UnicodeString notationOpt = opts.getStringFunctionOption(UnicodeString("notation"));
+            if (notationOpt == UnicodeString("scientific")) {
+                notation = Notation::scientific();
+            } else if (notationOpt == UnicodeString("engineering")) {
+                notation = Notation::engineering();
+            } else if (notationOpt == UnicodeString("compact")) {
+                UnicodeString displayOpt = opts.getStringFunctionOption(UnicodeString("compactDisplay"));
+                if (displayOpt == UnicodeString("long")) {
+                    notation = Notation::compactLong();
+                } else {
+                    // Default is short
+                    notation = Notation::compactShort();
                 }
+            } else {
+                // Already set to default
             }
-            nf = number::NumberFormatter::with()
-                .precision(number::Precision::minMaxFraction(minFractionDigits, maxFractionDigits));
+            nf = nf.notation(notation);
+        }
+
+        // Style options -- specific to `:number`
+        if (!isInteger) {
             if (number.usePercent(opts)) {
                 nf = nf.unit(NoUnit::percent());
             }
         }
+
+        int64_t maxSignificantDigits = number.maximumSignificantDigits(opts);
+        if (!isInteger) {
+            int64_t minFractionDigits = number.minimumFractionDigits(opts);
+            int64_t maxFractionDigits = number.maximumFractionDigits(opts);
+            int64_t minSignificantDigits = number.minimumSignificantDigits(opts);
+            Precision p = Precision::minMaxFraction(minFractionDigits, maxFractionDigits);
+            if (minSignificantDigits > 0) {
+                p = p.minSignificantDigits(minSignificantDigits);
+            }
+            if (maxSignificantDigits > 0) {
+                p = p.maxSignificantDigits(maxSignificantDigits);
+            }
+            nf = nf.precision(p);
+        } else {
+            // maxSignificantDigits applies to `:integer`, but the other precision options don't
+            Precision p = Precision::integer();
+            if (maxSignificantDigits > 0) {
+                p = p.maxSignificantDigits(maxSignificantDigits);
+            }
+            nf = nf.precision(p);
+        }
+
+        // All other options apply to both `:number` and `:integer`
+        int64_t minIntegerDigits = number.minimumIntegerDigits(opts);
+        nf = nf.integerWidth(IntegerWidth::zeroFillTo(minIntegerDigits));
+
+        // signDisplay
+        UnicodeString sd = opts.getStringFunctionOption(UnicodeString("signDisplay"));
+        UNumberSignDisplay signDisplay;
+        if (sd == UnicodeString("always")) {
+            signDisplay = UNumberSignDisplay::UNUM_SIGN_ALWAYS;
+        } else if (sd == UnicodeString("exceptZero")) {
+            signDisplay = UNumberSignDisplay::UNUM_SIGN_EXCEPT_ZERO;
+        } else if (sd == UnicodeString("negative")) {
+            signDisplay = UNumberSignDisplay::UNUM_SIGN_NEGATIVE;
+        } else if (sd == UnicodeString("never")) {
+            signDisplay = UNumberSignDisplay::UNUM_SIGN_NEVER;
+        } else {
+            signDisplay = UNumberSignDisplay::UNUM_SIGN_AUTO;
+        }
+        nf = nf.sign(signDisplay);
+
+        // useGrouping
+        UnicodeString ug = opts.getStringFunctionOption(UnicodeString("useGrouping"));
+        UNumberGroupingStrategy grp;
+        if (ug == UnicodeString("always")) {
+            grp = UNumberGroupingStrategy::UNUM_GROUPING_ON_ALIGNED;
+        } else if (ug == UnicodeString("never")) {
+            grp = UNumberGroupingStrategy::UNUM_GROUPING_OFF;
+        } else if (ug == UnicodeString("min2")) {
+            grp = UNumberGroupingStrategy::UNUM_GROUPING_MIN2;
+        } else {
+            // Default is "auto"
+            grp = UNumberGroupingStrategy::UNUM_GROUPING_AUTO;
+        }
+        nf = nf.grouping(grp);
     }
-    return number::LocalizedNumberFormatter(nf.locale(number.locale));
+    return LocalizedNumberFormatter(nf.locale(number.locale));
 }
 
 Formatter* StandardFunctions::NumberFactory::createFormatter(const Locale& locale, UErrorCode& errorCode) {
@@ -337,6 +414,68 @@ int32_t StandardFunctions::Number::maximumFractionDigits(const FunctionOptions& 
         }
     }
     return number::impl::kMaxIntFracSig;
+}
+
+int32_t StandardFunctions::Number::minimumFractionDigits(const FunctionOptions& opts) const {
+    Formattable opt;
+
+    if (!isInteger) {
+        if (opts.getFunctionOption(UnicodeString("minimumFractionDigits"), opt)) {
+            UErrorCode localErrorCode = U_ZERO_ERROR;
+            int64_t val = getInt64Value(locale, opt, localErrorCode);
+            if (U_SUCCESS(localErrorCode)) {
+                return static_cast<int32_t>(val);
+            }
+        }
+    }
+    return 0;
+}
+
+int32_t StandardFunctions::Number::minimumIntegerDigits(const FunctionOptions& opts) const {
+    Formattable opt;
+
+    if (opts.getFunctionOption(UnicodeString("minimumIntegerDigits"), opt)) {
+        UErrorCode localErrorCode = U_ZERO_ERROR;
+        int64_t val = getInt64Value(locale, opt, localErrorCode);
+        if (U_SUCCESS(localErrorCode)) {
+            return static_cast<int32_t>(val);
+        }
+    }
+    return 0;
+}
+
+int32_t StandardFunctions::Number::minimumSignificantDigits(const FunctionOptions& opts) const {
+    Formattable opt;
+
+    if (!isInteger) {
+        if (opts.getFunctionOption(UnicodeString("minimumSignificantDigits"), opt)) {
+            UErrorCode localErrorCode = U_ZERO_ERROR;
+            int64_t val = getInt64Value(locale, opt, localErrorCode);
+            if (U_SUCCESS(localErrorCode)) {
+                return static_cast<int32_t>(val);
+            }
+        }
+    }
+    // Returning 0 indicates that the option wasn't provided or was a non-integer.
+    // The caller needs to check for that case, since passing 0 to Precision::minSignificantDigits()
+    // is an error.
+    return 0;
+}
+
+int32_t StandardFunctions::Number::maximumSignificantDigits(const FunctionOptions& opts) const {
+    Formattable opt;
+
+    if (opts.getFunctionOption(UnicodeString("maximumSignificantDigits"), opt)) {
+        UErrorCode localErrorCode = U_ZERO_ERROR;
+        int64_t val = getInt64Value(locale, opt, localErrorCode);
+        if (U_SUCCESS(localErrorCode)) {
+            return static_cast<int32_t>(val);
+        }
+    }
+    // Returning 0 indicates that the option wasn't provided or was a non-integer.
+    // The caller needs to check for that case, since passing 0 to Precision::maxSignificantDigits()
+    // is an error.
+    return 0; // Not a valid value for Precision; has to be checked
 }
 
 bool StandardFunctions::Number::usePercent(const FunctionOptions& opts) const {

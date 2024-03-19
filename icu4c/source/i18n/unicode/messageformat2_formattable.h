@@ -549,6 +549,8 @@ class U_I18N_API FunctionOptions : public UObject {
 
     const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const;
     UBool getFunctionOption(const UnicodeString&, Formattable&) const;
+    // Returns empty string if option doesn't exist
+    UnicodeString getStringFunctionOption(const UnicodeString&) const;
     int32_t optionsCount() const { return functionOptionsLen; }
 
     // Named options passed to functions

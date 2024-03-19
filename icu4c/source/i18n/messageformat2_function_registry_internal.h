@@ -117,7 +117,13 @@ namespace message2 {
             Number(const Locale& loc, bool isInt) : locale(loc), isInteger(isInt), icuFormatter(number::NumberFormatter::withLocale(loc)) {}
             static Number integer(const Locale& loc);
 
+        // These options have their own accessor methods, since they have different default values.
             int32_t maximumFractionDigits(const FunctionOptions& options) const;
+            int32_t minimumFractionDigits(const FunctionOptions& options) const;
+            int32_t minimumSignificantDigits(const FunctionOptions& options) const;
+            int32_t maximumSignificantDigits(const FunctionOptions& options) const;
+            int32_t minimumIntegerDigits(const FunctionOptions& options) const;
+
             bool usePercent(const FunctionOptions& options) const;
             const Locale& locale;
             const bool isInteger = false;

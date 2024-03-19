@@ -59,6 +59,22 @@ UBool FunctionOptions::getFunctionOption(const UnicodeString& key, Formattable& 
     return false;
 }
 
+UnicodeString FunctionOptions::getStringFunctionOption(const UnicodeString& key) const {
+    Formattable option;
+    if (getFunctionOption(key, option)) {
+        if (option.getType() == UFMT_STRING) {
+            UErrorCode localErrorCode = U_ZERO_ERROR;
+            UnicodeString val = option.getString(localErrorCode);
+            U_ASSERT(U_SUCCESS(localErrorCode));
+            return val;
+        }
+    }
+    // For anything else, including non-string values, return "".
+    // Alternately, could try to stringify the non-string option.
+    // (Currently, no tests require that.)
+    return {};
+}
+
 FunctionOptions& FunctionOptions::operator=(FunctionOptions&& other) noexcept {
     functionOptionsLen = other.functionOptionsLen;
     options = other.options;
