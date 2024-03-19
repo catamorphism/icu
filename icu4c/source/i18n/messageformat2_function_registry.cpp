@@ -16,6 +16,7 @@
 #include "number_types.h"
 #include "uvector.h" // U_ASSERT
 
+#include <inttypes.h>
 #include <math.h>
 
 U_NAMESPACE_BEGIN
@@ -633,7 +634,7 @@ static UnicodeString toJSONString(double d) {
     // TODO :(
     char buffer[512];
     // "Only integer matching is required in the Technical Preview."
-    snprintf(buffer, 512, "%ji", static_cast<int64_t>(d));
+    snprintf(buffer, 512, "%" PRId64, static_cast<int64_t>(d));
     return UnicodeString(buffer);
 }
 
