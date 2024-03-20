@@ -91,6 +91,8 @@ namespace message2 {
     // MessageFormatter
 
     MessageFormatter::MessageFormatter(const MessageFormatter::Builder& builder, UErrorCode &success) : locale(builder.locale), customMFFunctionRegistry(builder.customMFFunctionRegistry) {
+        CHECK_ERROR(success);
+
         // Set up the standard function registry
         MFFunctionRegistry::Builder standardFunctionsBuilder(success);
 
