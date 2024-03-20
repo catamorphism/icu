@@ -950,17 +950,24 @@ void Parser::parseAttribute(UVector& options, UErrorCode& errorCode) {
 
     CHECK_ERROR(errorCode);
 
-    // Finally, add the key=value mapping
-    if (options.contains(&lhs)) {
-        errors.setDuplicateOptionName(errorCode);
-    } else {
-        Option* opt = new Option(lhs, std::move(rand));
-        if (opt == nullptr) {
-            errorCode = U_MEMORY_ALLOCATION_ERROR;
-            return;
-        }
-        options.adoptElement(static_cast<void*>(opt), errorCode);
+    // No duplicate check -- the spec doesn't require one
+    Option* opt = new Option(lhs, std::move(rand));
+    if (opt == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+        return;
     }
+    options.adoptElement(static_cast<void*>(opt), errorCode);
+}
+
+// `options` is a vector of Option*
+static bool hasOption(const UVector& options, const UnicodeString& optionName) {
+    for (int32_t i = 0; i < options.size(); i++) {
+        const Option* opt = static_cast<Option*>(options.elementAt(i));
+        if (opt->getName() == optionName) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /*
@@ -994,7 +1001,7 @@ void Parser::parseOption(UVector& options, UErrorCode& errorCode) {
     U_ASSERT(!rand.isNull());
 
     // Finally, add the key=value mapping
-    if (options.contains(&lhs)) {
+    if (hasOption(options, lhs)) {
         errors.setDuplicateOptionName(errorCode);
     } else {
         Option* opt = new Option(lhs, std::move(rand));
