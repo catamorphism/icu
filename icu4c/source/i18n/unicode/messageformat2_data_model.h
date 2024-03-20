@@ -1319,6 +1319,13 @@ namespace message2 {
              */
             Markup() {}
             /**
+             * Destructor.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
+            virtual ~Markup();
+            /**
              * The mutable `Markup::Builder` class allows the markup to be constructed
              * incrementally.
              *

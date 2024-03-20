@@ -1153,7 +1153,7 @@ OptionMap Parser::parseOptions(UErrorCode& errorCode) {
     }
 
     // Initialize options vector, which supports equality on elements
-    UVector* optionVec = createStringUVector(errorCode);
+    LocalPointer<UVector> optionVec(createStringUVector(errorCode));
     if (U_FAILURE(errorCode)) {
         return options;
     }
@@ -1247,7 +1247,7 @@ OptionMap Parser::parseAttributes(UErrorCode& errorCode) {
     }
 
     // Initialize options vector, which supports equality on elements
-    UVector* options = createStringUVector(errorCode);
+    LocalPointer<UVector> options(createStringUVector(errorCode));
     if (U_FAILURE(errorCode)) {
         return attributes;
     }

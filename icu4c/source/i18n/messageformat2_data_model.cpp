@@ -497,6 +497,9 @@ Markup::Builder::~Builder() {
         delete attributes;
     }
 }
+
+Markup::~Markup() {}
+
 // ------------ Expression
 
 Expression::Builder::Builder(UErrorCode& status) {
@@ -672,7 +675,11 @@ UnsupportedStatement& UnsupportedStatement::operator=(UnsupportedStatement other
     return *this;
 }
 
-UnsupportedStatement::Builder::~Builder() {}
+UnsupportedStatement::Builder::~Builder() {
+    if (expressions != nullptr) {
+        delete expressions;
+    }
+}
 
 UnsupportedStatement::~UnsupportedStatement() {}
 // ----------- PatternPart
@@ -1079,6 +1086,9 @@ MFDataModel::Builder::~Builder() {
     }
     if (bindings != nullptr) {
         delete bindings;
+    }
+    if (unsupportedStatements != nullptr) {
+        delete unsupportedStatements;
     }
 }
 } // namespace message2
