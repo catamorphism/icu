@@ -363,6 +363,8 @@ namespace message2 {
   } // namespace data_model
 } // namespace message2
 
+U_NAMESPACE_END
+
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the std::variants and std::optionals
 // that are used as a data member of various MFDataModel classes.
@@ -370,13 +372,17 @@ namespace message2 {
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
 struct U_I18N_API std::_Nontrivial_dummy_type;
 template class U_I18N_API std::_Variant_storage_<false, message2::data_model::VariableName,message2::data_model::Literal>;
-template class U_I18N_API std::variant<message2::data_model::VariableName,message2::data_model::Literal>;
-template class U_I18N_API std::optional<std::variant<message2::data_model::VariableName,message2::data_model::Literal>>;
-template class U_I18N_API std::optional<message2::data_model::Literal>;
+#endif
+template class U_I18N_API std::variant<icu::message2::data_model::VariableName,icu::message2::data_model::Literal>;
+template class U_I18N_API std::optional<std::variant<icu::message2::data_model::VariableName,icu::message2::data_model::Literal>>;
+template class U_I18N_API std::optional<icu::message2::data_model::Literal>;
 #endif
 /// @endcond
+
+U_NAMESPACE_BEGIN
 
 namespace message2 {
   namespace data_model {
@@ -985,6 +991,8 @@ namespace message2 {
   } // namespace data_model
 } // namespace message2
 
+U_NAMESPACE_END
+
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the std::variant that is used as a
 // data member of various MFDataModel classes.
@@ -992,10 +1000,14 @@ namespace message2 {
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-template class U_I18N_API std::_Variant_storage_<false, message2::data_model::Reserved,message2::data_model::Callable>;
-template class U_I18N_API std::variant<message2::data_model::Reserved,message2::data_model::Callable>;
+#if defined(_MSC_VER)
+template class U_I18N_API std::_Variant_storage_<false, icu::message2::data_model::Reserved,icu::message2::data_model::Callable>;
+#endif
+template class U_I18N_API std::variant<icu::message2::data_model::Reserved,icu::message2::data_model::Callable>;
 #endif
 /// @endcond
+
+U_NAMESPACE_BEGIN
 
 namespace message2 {
   namespace data_model {
@@ -1223,6 +1235,8 @@ namespace message2 {
   } // namespace data_model
 } // namespace message2
 
+U_NAMESPACE_END
+
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the std::optional that is used as a
 // data member of various MFDataModel classes.
@@ -1230,9 +1244,11 @@ namespace message2 {
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-template class U_I18N_API std::optional<message2::data_model::Operator>;
+template class U_I18N_API std::optional<icu::message2::data_model::Operator>;
 #endif
 /// @endcond
+
+U_NAMESPACE_BEGIN
 
 namespace message2 {
   namespace data_model {
@@ -2576,10 +2592,8 @@ namespace message2 {
 #pragma warning(push)
 #pragma warning(disable: 4661)
 #endif
-template class U_I18N_API LocalPointerBase<message2::data_model::Expression>;
 template class U_I18N_API LocalPointerBase<message2::data_model::Variant>;
 template class U_I18N_API LocalPointerBase<message2::data_model::Binding>;
-template class U_I18N_API LocalArray<message2::data_model::Expression>;
 template class U_I18N_API LocalArray<message2::data_model::Variant>;
 template class U_I18N_API LocalArray<message2::data_model::Binding>;
 #if defined(_MSC_VER)
@@ -2640,6 +2654,8 @@ namespace message2 {
     }; // class Matcher
 } // namespace message2
 
+U_NAMESPACE_END
+
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the std::variant that is used as a
 // data member of various MFDataModel classes.
@@ -2647,10 +2663,14 @@ namespace message2 {
 // (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
 // for similar examples.)
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-template class U_I18N_API std::_Variant_storage_<false, message2::Matcher,message2::data_model::Pattern>;
-template class U_I18N_API std::variant<message2::Matcher,message2::data_model::Pattern>;
+#if defined(_MSC_VER)
+template class U_I18N_API std::_Variant_storage_<false, icu::message2::Matcher,icu::message2::data_model::Pattern>;
+#endif
+template class U_I18N_API std::variant<icu::message2::Matcher,icu::message2::data_model::Pattern>;
 #endif
 /// @endcond
+
+U_NAMESPACE_BEGIN
 
 namespace message2 {
     // -----------------------------------------------------------------------

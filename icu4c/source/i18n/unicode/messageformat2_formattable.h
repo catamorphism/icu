@@ -65,6 +65,8 @@ namespace message2 {
     class Formattable;
 } // namespace message2
 
+U_NAMESPACE_END
+
 /// @cond DOXYGEN_IGNORE
 // Export an explicit template instantiation of the std::variant that is used
 // to represent the message2::Formattable class.
@@ -77,25 +79,29 @@ namespace message2 {
 #pragma warning(push)
 #pragma warning(disable: 4661)
 #endif
-class Formattable;
+#if defined(_MSC_VER)
 template class U_I18N_API std::_Variant_storage_<false,
   double,
   int64_t,
-  UnicodeString,
+  icu::UnicodeString,
   icu::Formattable,
   const message2::FormattableObject *,
   std::pair<const message2::Formattable *,int32_t>>;
+#endif
+typedef std::pair<const icu::message2::Formattable*, int32_t> P;
 template class U_I18N_API std::variant<double,
 				       int64_t,
-				       UnicodeString,
+				       icu::UnicodeString,
 				       icu::Formattable,
-				       const message2::FormattableObject*,
-				       std::pair<const message2::Formattable*, int32_t>>;
+				       const icu::message2::FormattableObject*,
+                                       P>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 #endif
 /// @endcond
+
+U_NAMESPACE_BEGIN
 
 namespace message2 {
     /**
