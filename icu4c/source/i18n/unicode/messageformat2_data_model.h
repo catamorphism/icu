@@ -374,10 +374,10 @@ U_NAMESPACE_END
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
 #if defined(_MSC_VER)
 struct U_I18N_API std::_Nontrivial_dummy_type;
-template class U_I18N_API std::_Variant_storage_<false, message2::data_model::VariableName,message2::data_model::Literal>;
+template class U_I18N_API std::_Variant_storage_<false, icu::UnicodeString, icu::message2::data_model::Literal>;
 #endif
-template class U_I18N_API std::variant<icu::message2::data_model::VariableName,icu::message2::data_model::Literal>;
-template class U_I18N_API std::optional<std::variant<icu::message2::data_model::VariableName,icu::message2::data_model::Literal>>;
+template class U_I18N_API std::variant<icu::UnicodeString, icu::message2::data_model::Literal>;
+template class U_I18N_API std::optional<std::variant<icu::UnicodeString, icu::message2::data_model::Literal>>;
 template class U_I18N_API std::optional<icu::message2::data_model::Literal>;
 #endif
 /// @endcond
@@ -1245,6 +1245,7 @@ U_NAMESPACE_END
 // for similar examples.)
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
 template class U_I18N_API std::optional<icu::message2::data_model::Operator>;
+template class U_I18N_API std::optional<icu::message2::data_model::Reserved>;
 #endif
 /// @endcond
 
@@ -1733,6 +1734,26 @@ namespace message2 {
   } // namespace data_model
 } // namespace message2
 
+/// @cond DOXYGEN_IGNORE
+// Export an explicit template instantiation of the LocalPointer that is used as a
+// data member of various MFDataModel classes.
+// (When building DLLs for Windows this is required.)
+// (See measunit_impl.h, datefmt.h, collationiterator.h, erarules.h and others
+// for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointerBase<message2::data_model::Expression>;
+template class U_I18N_API LocalArray<message2::data_model::Expression>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+/// @endcond
+
 namespace message2 {
   namespace data_model {
 
@@ -2097,6 +2118,8 @@ namespace message2 {
 #endif
 template class U_I18N_API LocalPointerBase<message2::data_model::PatternPart>;
 template class U_I18N_API LocalArray<message2::data_model::PatternPart>;
+template class U_I18N_API LocalPointerBase<message2::data_model::UnsupportedStatement>;
+template class U_I18N_API LocalArray<message2::data_model::UnsupportedStatement>;
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
