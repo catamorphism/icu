@@ -7,8 +7,10 @@
 #define MESSAGEFORMAT_PARSER_H
 
 #include "unicode/messageformat2_data_model.h"
+#include "unicode/parseerr.h"
 
 #include "messageformat2_allocation.h"
+#include "messageformat2_errors.h"
 
 #if U_SHOW_CPLUSPLUS_API
 
