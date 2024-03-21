@@ -164,7 +164,7 @@ static void strToDouble(const UnicodeString& s, const Locale& loc, double& resul
     result = asNumber.getDouble(errorCode);
 }
 
-static int64_t tryStringAsNumber(const Locale& locale, const Formattable& val, UErrorCode& errorCode) {
+static double tryStringAsNumber(const Locale& locale, const Formattable& val, UErrorCode& errorCode) {
     // Check for a string option, try to parse it as a number if present
     UnicodeString tempString = val.getString(errorCode);
     LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(locale, errorCode));
@@ -284,11 +284,11 @@ MFFunctionRegistry::~MFFunctionRegistry() {
             }
         }
 
-        int64_t maxSignificantDigits = number.maximumSignificantDigits(opts);
+        int32_t maxSignificantDigits = number.maximumSignificantDigits(opts);
         if (!isInteger) {
-            int64_t minFractionDigits = number.minimumFractionDigits(opts);
-            int64_t maxFractionDigits = number.maximumFractionDigits(opts);
-            int64_t minSignificantDigits = number.minimumSignificantDigits(opts);
+            int32_t minFractionDigits = number.minimumFractionDigits(opts);
+            int32_t maxFractionDigits = number.maximumFractionDigits(opts);
+            int32_t minSignificantDigits = number.minimumSignificantDigits(opts);
             Precision p = Precision::minMaxFraction(minFractionDigits, maxFractionDigits);
             if (minSignificantDigits > 0) {
                 p = p.minSignificantDigits(minSignificantDigits);
@@ -307,7 +307,7 @@ MFFunctionRegistry::~MFFunctionRegistry() {
         }
 
         // All other options apply to both `:number` and `:integer`
-        int64_t minIntegerDigits = number.minimumIntegerDigits(opts);
+        int32_t minIntegerDigits = number.minimumIntegerDigits(opts);
         nf = nf.integerWidth(IntegerWidth::zeroFillTo(minIntegerDigits));
 
         // signDisplay
