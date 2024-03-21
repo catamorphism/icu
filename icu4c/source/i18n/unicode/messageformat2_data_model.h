@@ -969,6 +969,7 @@ namespace message2 {
         #endif
 
       // Internal use only
+      #ifndef U_IN_DOXYGEN
       class U_I18N_API Callable : public UObject {
       public:
           friend inline void swap(Callable& c1, Callable& c2) noexcept {
@@ -988,6 +989,7 @@ namespace message2 {
           /* const */ FunctionName name;
           /* const */ OptionMap options;
       };
+      #endif
   } // namespace data_model
 } // namespace message2
 
@@ -1376,7 +1378,7 @@ namespace message2 {
                 /**
                  * Sets the name of this markup.
                  *
-                 * @param name A string representing the name.
+                 * @param n A string representing the name.
                  * @return A reference to the builder.
                  *
                  * @internal ICU 75.0 technology preview
@@ -1756,8 +1758,6 @@ template class U_I18N_API LocalArray<message2::data_model::Expression>;
 
 namespace message2 {
   namespace data_model {
-
-// TODO: add to design doc
       /**
          * The `UnsupportedStatement` class corresponds to the `reserved-statement` nonterminal in the MessageFormat 2
          * grammar and the `unsupported-statement` type defined in:
@@ -1859,7 +1859,7 @@ namespace message2 {
                  * @internal ICU 75.0 technology preview
                  * @deprecated This API is for technology preview only.
                  */
-                Builder& addExpression(Expression&& r, UErrorCode& status);
+                Builder& addExpression(Expression&& e, UErrorCode& status);
                 /**
                  * Constructs a new immutable `UnsupportedStatement` using the keyword,
                  * body and (if applicable) expressions that were previously set.
@@ -1954,7 +1954,7 @@ namespace message2 {
 
       class Pattern;
 
-      // TODO: internal only
+  // Despite the comments, `PatternPart` is internal-only
        /**
          *  A `PatternPart` is a single element (text or expression) in a `Pattern`.
          * It corresponds to the `body` field of the `Pattern` interface
@@ -2292,6 +2292,16 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             virtual ~Pattern();
+
+            /**
+             *  The `Pattern::Iterator` class provides an iterator over the formattable
+             * parts of a pattern.
+             *
+             * `Pattern::Iterator` is mutable and is not copyable or movable.
+             *
+             * @internal ICU 75.0 technology preview
+             * @deprecated This API is for technology preview only.
+             */
             struct U_I18N_API Iterator {
             private:
                 using iterator_category = std::forward_iterator_tag;
@@ -2507,7 +2517,6 @@ namespace message2 {
              *                   If `rhs` has an operator, it must be a function call.
              *                   If either of these properties is violated, `errorCode` is set to
              *                   U_INVALID_STATE_ERROR.
-             * @param options A vector of options in the annotation (right-hand side). Passed by move.
              * @param errorCode Input/output error code
              *
              * @internal ICU 75.0 technology preview
@@ -2633,6 +2642,7 @@ namespace message2 {
 
     class MFDataModel;
 
+    #ifndef U_IN_DOXYGEN
     class Matcher {
     public:
         Matcher& operator=(Matcher);
@@ -2675,6 +2685,7 @@ namespace message2 {
         // The number of variants
         int32_t numVariants = 0;
     }; // class Matcher
+    #endif
 } // namespace message2
 
 U_NAMESPACE_END
