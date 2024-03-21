@@ -653,6 +653,13 @@ class U_I18N_API FunctionOptions : public UObject {
          * @deprecated This API is for technology preview only.
          */
         FormattedValue(FormattedValue&& other) { *this = std::move(other); }
+        /**
+         * Destructor.
+         *
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        virtual ~FormattedValue();
     private:
         enum Type {
             kString,

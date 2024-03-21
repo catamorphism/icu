@@ -175,6 +175,8 @@ namespace message2 {
         return *this;
     }
 
+    FormattedValue::~FormattedValue() {}
+
     FormattedPlaceholder& FormattedPlaceholder::operator=(FormattedPlaceholder&& other) noexcept {
         type = other.type;
         source = other.source;
