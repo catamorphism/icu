@@ -95,7 +95,6 @@ private:
     void testPlural(message2::TestCase::Builder&, IcuTestErrorCode&);
 
     void testPluralOrdinal(message2::TestCase::Builder&, IcuTestErrorCode&);
-    void testFormatterIsCreatedOnce(IcuTestErrorCode&);
     void testDeclareBeforeUse(message2::TestCase::Builder&, IcuTestErrorCode&);
 
     // MessageFormat 1 tests
@@ -193,32 +192,6 @@ class ResourceManager : public Formatter {
     friend class ResourceManagerFactory;
     ResourceManager(const Locale& loc) : locale(loc) {}
     const Locale& locale;
-};
-
-class TemperatureFormatterFactory : public FormatterFactory {
-    public:
-    Formatter* createFormatter(const Locale&, UErrorCode&) override;
-    TemperatureFormatterFactory() : constructCount(0), formatCount(0), fFormatterCount(0), cFormatterCount(0) {}
-    ~TemperatureFormatterFactory();
-
-    int32_t constructCount;
-    int32_t formatCount;
-    int32_t fFormatterCount;
-    int32_t cFormatterCount;
-};
-
-class TemperatureFormatter : public Formatter {
-    public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
-    static MFFunctionRegistry customRegistry(UErrorCode&);
-    ~TemperatureFormatter();
-    private:
-    friend class TemperatureFormatterFactory;
-    const Locale& locale;
-    TemperatureFormatterFactory& counter;
-    Hashtable* cachedFormatters;
-
-    TemperatureFormatter(const Locale&, TemperatureFormatterFactory&, UErrorCode&);
 };
 
 } // namespace message2

@@ -39,8 +39,7 @@ MFFunctionRegistry MFFunctionRegistry::Builder::build() {
     return result;
 }
 
-// Does not adopt its argument
-MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::setSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode) {
+MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::adoptSelector(const FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
         U_ASSERT(selectors != nullptr);
         selectors->put(selectorName, selectorFactory, errorCode);
@@ -48,8 +47,7 @@ MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::setSelector(const Func
     return *this;
 }
 
-// Does not adopt its argument
-MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::setFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode) {
+MFFunctionRegistry::Builder& MFFunctionRegistry::Builder::adoptFormatter(const FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode) {
     if (U_SUCCESS(errorCode)) {
         U_ASSERT(formatters != nullptr);
         formatters->put(formatterName, formatterFactory, errorCode);
@@ -75,11 +73,7 @@ MFFunctionRegistry::Builder::Builder(UErrorCode& errorCode) {
     if (!(formatters != nullptr && selectors != nullptr && formattersByType != nullptr)) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
-    /*
-      The `formatters` hash doesn't own its values. For motivation,
-      see the TemperatureFormatter class and testFormatterIsCreatedOnce() test case,
-      in messageformat2test_features.cpp
-     */
+    formatters->setValueDeleter(uprv_deleteUObject);
     selectors->setValueDeleter(uprv_deleteUObject);
     formattersByType->setValueDeleter(uprv_deleteUObject);
 }
@@ -96,6 +90,10 @@ MFFunctionRegistry::Builder::~Builder() {
     }
 }
 
+// Returns non-owned pointer. Returns pointer rather than reference because it can fail.
+// Returns non-const because FormatterFactory is mutable.
+// TODO: This is unsafe because of the cached-formatters map
+// (the caller could delete the resulting pointer)
 FormatterFactory* MFFunctionRegistry::getFormatter(const FunctionName& formatterName) const {
     U_ASSERT(formatters != nullptr);
     return static_cast<FormatterFactory*>(formatters->get(formatterName));

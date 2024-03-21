@@ -376,6 +376,10 @@ namespace message2 {
         // Must be a raw pointer to avoid including the internal header file
         // defining CachedFormatters
         // Owned by `this`
+        // TODO: This is an optimization that the "TemperatureFormatter" test
+        // (ported from ICU4J) was checking for; however, that test was removed
+        // in order to make `setFormatter()` safe, so maybe this should be
+        // removed too
         CachedFormatters* cachedFormatters;
 
         // Errors -- only used while parsing and checking for data model errors; then
@@ -385,9 +389,6 @@ namespace message2 {
         // Owned by `this`
         StaticErrors* errors;
 
-        // Tracks built-in formatter objects for deletion, as the MFFunctionRegistry
-        // does not own its values
-        UVector* standardFormatters;
     }; // class MessageFormatter
 
 } // namespace message2

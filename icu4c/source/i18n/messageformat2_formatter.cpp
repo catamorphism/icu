@@ -96,28 +96,19 @@ namespace message2 {
         // Set up the standard function registry
         MFFunctionRegistry::Builder standardFunctionsBuilder(success);
 
-        // MFFunctionRegistry does not own its formatter elements, so we keep a separate vector to ensure
-        // the elements are deleted
-        standardFormatters = createUVector(success);
-        CHECK_ERROR(success);
         FormatterFactory* dateTime = StandardFunctions::DateTimeFactory::dateTime(success);
         FormatterFactory* date = StandardFunctions::DateTimeFactory::date(success);
         FormatterFactory* time = StandardFunctions::DateTimeFactory::time(success);
         FormatterFactory* number = new StandardFunctions::NumberFactory();
         FormatterFactory* integer = new StandardFunctions::IntegerFactory();
-        standardFormatters->adoptElement(dateTime, success);
-        standardFormatters->adoptElement(time, success);
-        standardFormatters->adoptElement(date, success);
-        standardFormatters->adoptElement(number, success);
-        standardFormatters->adoptElement(integer, success);
-        standardFunctionsBuilder.setFormatter(FunctionName(UnicodeString("datetime")), dateTime, success)
-            .setFormatter(FunctionName(UnicodeString("date")), date, success)
-            .setFormatter(FunctionName(UnicodeString("time")), time, success)
-            .setFormatter(FunctionName(UnicodeString("number")), number, success)
-            .setFormatter(FunctionName(UnicodeString("integer")), integer, success)
-            .setSelector(FunctionName(UnicodeString("number")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
-            .setSelector(FunctionName(UnicodeString("integer")), new StandardFunctions::PluralFactory(StandardFunctions::PluralFactory::integer()), success)
-            .setSelector(FunctionName(UnicodeString("string")), new StandardFunctions::TextFactory(), success);
+        standardFunctionsBuilder.adoptFormatter(FunctionName(UnicodeString("datetime")), dateTime, success)
+            .adoptFormatter(FunctionName(UnicodeString("date")), date, success)
+            .adoptFormatter(FunctionName(UnicodeString("time")), time, success)
+            .adoptFormatter(FunctionName(UnicodeString("number")), number, success)
+            .adoptFormatter(FunctionName(UnicodeString("integer")), integer, success)
+            .adoptSelector(FunctionName(UnicodeString("number")), new StandardFunctions::PluralFactory(UPLURAL_TYPE_CARDINAL), success)
+            .adoptSelector(FunctionName(UnicodeString("integer")), new StandardFunctions::PluralFactory(StandardFunctions::PluralFactory::integer()), success)
+            .adoptSelector(FunctionName(UnicodeString("string")), new StandardFunctions::TextFactory(), success);
         CHECK_ERROR(success);
         standardMFFunctionRegistry = standardFunctionsBuilder.build();
         CHECK_ERROR(success);
@@ -169,9 +160,6 @@ namespace message2 {
         if (errors != nullptr) {
             delete errors;
         }
-        if (standardFormatters != nullptr) {
-            delete standardFormatters;
-        }
     }
 
     MessageFormatter& MessageFormatter::operator=(MessageFormatter&& other) noexcept {
@@ -186,9 +174,6 @@ namespace message2 {
         other.cachedFormatters = nullptr;
         errors = other.errors;
         other.errors = nullptr;
-        standardFormatters = other.standardFormatters;
-        other.standardFormatters = nullptr;
-
         return *this;
     }
 
@@ -289,6 +274,8 @@ namespace message2 {
         return nullptr;
     }
 
+// Returns non-owned pointer. Returns pointer rather than reference because it can fail.
+// Returns non-const because FormatterFactory is mutable.
     FormatterFactory* MessageFormatter::lookupFormatterFactory(MessageContext& context, const FunctionName& functionName, UErrorCode& status) const {
         DynamicErrors& err = context.getErrors();
 

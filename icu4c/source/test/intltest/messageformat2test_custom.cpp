@@ -29,10 +29,9 @@ using namespace data_model;
 void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    LocalPointer<PersonNameFormatterFactory> personNameFormatterFactory(new PersonNameFormatterFactory());
     MFFunctionRegistry customRegistry(MFFunctionRegistry::Builder(errorCode)
-                                    .setFormatter(FunctionName("person"), personNameFormatterFactory.getAlias(), errorCode)
-                                    .build());
+                                      .adoptFormatter(FunctionName("person"), new PersonNameFormatterFactory(), errorCode)
+                                      .build());
     UnicodeString name = "name";
     LocalPointer<Person> person(new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe")));
     TestCase::Builder testBuilder;
@@ -94,10 +93,9 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
 void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    LocalPointer<PersonNameFormatterFactory> personNameFormatterFactory(new PersonNameFormatterFactory());
     MFFunctionRegistry customRegistry(MFFunctionRegistry::Builder(errorCode)
-                                    .setFormatter(FunctionName("person"), personNameFormatterFactory.getAlias(), errorCode)
-                                    .build());
+                                      .adoptFormatter(FunctionName("person"), new PersonNameFormatterFactory(), errorCode)
+                                      .build());
     UnicodeString host = "host";
     UnicodeString hostGender = "hostGender";
     UnicodeString guest = "guest";
@@ -357,9 +355,8 @@ message2::FormattedPlaceholder GrammarCasesFormatter::format(FormattedPlaceholde
 void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    LocalPointer<GrammarCasesFormatterFactory> gcFormatterFactory(new GrammarCasesFormatterFactory());
     MFFunctionRegistry customRegistry = MFFunctionRegistry::Builder(errorCode)
-        .setFormatter(FunctionName("grammarBB"), gcFormatterFactory.getAlias(), errorCode)
+        .adoptFormatter(FunctionName("grammarBB"), new GrammarCasesFormatterFactory(), errorCode)
         .build();
 
     TestCase::Builder testBuilder;
@@ -511,9 +508,8 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
 
     TestCase::Builder testBuilder;
 
-    LocalPointer<ListFormatterFactory> listFormatterFactory(new ListFormatterFactory());
     MFFunctionRegistry reg = MFFunctionRegistry::Builder(errorCode)
-        .setFormatter(FunctionName("listformat"), listFormatterFactory.getAlias(), errorCode)
+        .adoptFormatter(FunctionName("listformat"), new ListFormatterFactory(), errorCode)
         .build();
     CHECK_ERROR(errorCode);
 
@@ -667,9 +663,8 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
         ((UErrorCode&) errorCode) = U_MEMORY_ALLOCATION_ERROR;
         return;
     }
-    LocalPointer<ResourceManagerFactory> resourceManagerFactory(new ResourceManagerFactory());
     MFFunctionRegistry reg = MFFunctionRegistry::Builder(errorCode)
-        .setFormatter(FunctionName("msgRef"), resourceManagerFactory.getAlias(), errorCode)
+        .adoptFormatter(FunctionName("msgRef"), new ResourceManagerFactory(), errorCode)
         .build();
     CHECK_ERROR(errorCode);
 

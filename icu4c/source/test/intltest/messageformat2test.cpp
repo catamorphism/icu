@@ -393,9 +393,8 @@ void TestMessageFormat2::testAPICustomFunctions() {
 
     // Set up custom function registry
     MFFunctionRegistry::Builder builder(errorCode);
-    LocalPointer<PersonNameFormatterFactory> personFormatterFactory(new PersonNameFormatterFactory());
     MFFunctionRegistry functionRegistry =
-        builder.setFormatter(data_model::FunctionName("person"), personFormatterFactory.getAlias(), errorCode)
+        builder.adoptFormatter(data_model::FunctionName("person"), new PersonNameFormatterFactory(), errorCode)
                .build();
 
     Person* person = new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe"));
@@ -435,8 +434,8 @@ void TestMessageFormat2::testAPICustomFunctions() {
     MFFunctionRegistry::Builder builderByType(errorCode);
     FunctionName personFormatterName("person");
     MFFunctionRegistry functionRegistryByType =
-        builderByType.setFormatter(personFormatterName,
-                                   personFormatterFactory.getAlias(),
+        builderByType.adoptFormatter(personFormatterName,
+                                   new PersonNameFormatterFactory(),
                                    errorCode)
                      .setDefaultFormatterNameByType("person",
                                                     personFormatterName,

@@ -96,12 +96,13 @@ namespace message2 {
     public:
         /**
          * Looks up a formatter factory by the name of the formatter. The result is non-const,
-         * since formatter factories may have local state. (This returns the result by pointer
-         * rather than by reference since `FormatterFactory` is an abstract class.)
+         * since formatter factories may have local state. Returns the result by pointer
+         * rather than by reference since it can fail.
          *
          * @param formatterName Name of the desired formatter.
          * @return A pointer to the `FormatterFactory` registered under `formatterName`, or null
-         *         if no formatter was registered under that name.
+         *         if no formatter was registered under that name. The pointer is not owned
+         *         by the caller.
          *
          * @internal ICU 75.0 technology preview
          * @deprecated This API is for technology preview only.
@@ -155,19 +156,35 @@ namespace message2 {
             Builder(const Builder&) = delete;
 
         public:
+            /*
+              Notes about `adoptFormatter()`'s type signature:
+
+              Alternative considered: take a non-owned FormatterFactory*
+              This is unsafe.
+
+              Alternative considered: take a FormatterFactory&
+                 This requires getFormatter() to cast the reference to a pointer,
+                 as it must return an unowned FormatterFactory* since it can fail.
+                 That is also unsafe, since the caller could delete the pointer.
+
+              The "TemperatureFormatter" test from the previous ICU4J version doesn't work now,
+              as it only works if the `formatterFactory` argument is non-owned.
+              If registering a non-owned FormatterFactory is desirable, this could
+              be re-thought.
+              */
             /**
-             * Registers a formatter factory to a given formatter name. Does not adopt `formatterFactory`.
+             * Registers a formatter factory to a given formatter name.
              *
              * @param formatterName Name of the formatter being registered.
-             * @param formatterFactory A FormatterFactory object to use for creating `formatterName`
-             *        formatters.
+             * @param formatterFactory A pointer to a FormatterFactory object to use
+             *        for creating `formatterName` formatters. This argument is adopted.
              * @param errorCode Input/output error code
              * @return A reference to the builder.
              *
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode);
+            Builder& adoptFormatter(const data_model::FunctionName& formatterName, FormatterFactory* formatterFactory, UErrorCode& errorCode);
             /**
              * Registers a formatter factory to a given type tag.
              * (See `FormattableObject` for details on type tags.)
@@ -195,7 +212,7 @@ namespace message2 {
              * @internal ICU 75.0 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& setSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode);
+            Builder& adoptSelector(const data_model::FunctionName& selectorName, SelectorFactory* selectorFactory, UErrorCode& errorCode);
             /**
              * Creates an immutable `MFFunctionRegistry` object with the selectors and formatters
              * that were previously registered. The builder cannot be used after this call.
