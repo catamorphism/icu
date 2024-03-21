@@ -23,12 +23,6 @@ class UVector;
 
 namespace message2 {
 
-    /*
-    class Formatter;
-    class MessageContext;
-    class Selector;
-    */
-
     using namespace data_model;
 
     /**
