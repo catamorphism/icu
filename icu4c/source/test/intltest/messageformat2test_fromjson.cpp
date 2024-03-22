@@ -588,7 +588,13 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("hello {\u3000world\r}")
+    // TODO:
+    // For some reason, this test fails on Windows if
+    // `pattern` is replaced with "hello {\\u3000world\r}".
+    UnicodeString pattern("hello {");
+    pattern += ((UChar32) 0x3000);
+    pattern += "world\r}";
+    test = testBuilder.setPattern(pattern)
                                 .setExpected("hello world")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
