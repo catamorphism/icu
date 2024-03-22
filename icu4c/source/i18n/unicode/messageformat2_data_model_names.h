@@ -3,8 +3,6 @@
 
 #include "unicode/utypes.h"
 
-#ifndef U_HIDE_DEPRECATED_API
-
 #ifndef MESSAGEFORMAT_DATA_MODEL_NAMES_H
 #define MESSAGEFORMAT_DATA_MODEL_NAMES_H
 
@@ -13,6 +11,8 @@
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/unistr.h"
+
+#ifndef U_HIDE_DEPRECATED_API
 
 U_NAMESPACE_BEGIN
 
@@ -26,12 +26,13 @@ namespace message2 {
 
 U_NAMESPACE_END
 
+#endif // U_HIDE_DEPRECATED_API
+
 #endif /* #if !UCONFIG_NO_FORMATTING */
 
 #endif /* U_SHOW_CPLUSPLUS_API */
 
 #endif // MESSAGEFORMAT_DATA_MODEL_NAMES_H
 
-#endif // U_HIDE_DEPRECATED_API
 // eof
 

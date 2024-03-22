@@ -3,8 +3,6 @@
 
 #include "unicode/utypes.h"
 
-#ifndef U_HIDE_DEPRECATED_API
-
 #ifndef MESSAGEFORMAT_DATA_MODEL_H
 #define MESSAGEFORMAT_DATA_MODEL_H
 
@@ -14,6 +12,8 @@
 
 #include "unicode/localpointer.h"
 #include "unicode/messageformat2_data_model_names.h"
+
+#ifndef U_HIDE_DEPRECATED_API
 
 #include <algorithm>
 #include <cstddef>
@@ -3068,12 +3068,13 @@ namespace message2 {
 
 U_NAMESPACE_END
 
+#endif // U_HIDE_DEPRECATED_API
+
 #endif /* #if !UCONFIG_NO_FORMATTING */
 
 #endif /* U_SHOW_CPLUSPLUS_API */
 
 #endif // MESSAGEFORMAT_DATA_MODEL_H
 
-#endif // U_HIDE_DEPRECATED_API
 // eof
 

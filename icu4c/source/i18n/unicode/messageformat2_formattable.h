@@ -3,8 +3,6 @@
 
 #include "unicode/utypes.h"
 
-#ifndef U_HIDE_DEPRECATED_API
-
 #ifndef MESSAGEFORMAT2_FORMATTABLE_H
 #define MESSAGEFORMAT2_FORMATTABLE_H
 
@@ -15,6 +13,8 @@
 #include "unicode/chariter.h"
 #include "unicode/numberformatter.h"
 #include "unicode/messageformat2_data_model_names.h"
+
+#ifndef U_HIDE_DEPRECATED_API
 
 #include <map>
 #include <variant>
@@ -208,7 +208,8 @@ namespace message2 {
          * the status is set to U_INVALID_FORMAT_ERROR.
          * @param status the error code
          * @return    the int64 value of this object.
-         * @stable ICU 3.0
+         * @internal ICU 75.0 technology preview
+         * @deprecated This API is for technology preview only.
          */
         int64_t         getInt64(UErrorCode& status) const;
         /**
@@ -1003,11 +1004,12 @@ class U_I18N_API FunctionOptions : public UObject {
 
 U_NAMESPACE_END
 
+#endif // U_HIDE_DEPRECATED_API
+
 #endif /* #if !UCONFIG_NO_FORMATTING */
 
 #endif /* U_SHOW_CPLUSPLUS_API */
 
 #endif // MESSAGEFORMAT2_FORMATTABLE_H
 
-#endif // U_HIDE_DEPRECATED_API
 // eof
