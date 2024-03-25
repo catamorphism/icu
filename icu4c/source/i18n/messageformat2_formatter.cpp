@@ -232,7 +232,6 @@ namespace message2 {
     // ---------------------------------------------------
     // Function registry
 
-
     bool MessageFormatter::isBuiltInSelector(const FunctionName& functionName) const {
         return standardMFFunctionRegistry.hasSelector(functionName);
     }

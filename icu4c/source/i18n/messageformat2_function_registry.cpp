@@ -153,10 +153,15 @@ void MFFunctionRegistry::checkStandard() const {
 // Formatter/selector helpers
 
 // Converts `s` to a double, indicating failure via `errorCode`
-static void strToDouble(const UnicodeString& s, const Locale& loc, double& result, UErrorCode& errorCode) {
+static void strToDouble(const UnicodeString& s, double& result, UErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
-    LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(loc, errorCode));
+    // Using en-US locale because it happens to correspond to the spec:
+    // https://github.com/unicode-org/message-format-wg/blob/main/spec/registry.md#number-operands
+    // Ideally, this should re-use the code for parsing number literals (Parser::parseUnquotedLiteral())
+    // It's hard to reuse the same code because of how parse errors work.
+    // TODO: Refactor
+    LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(Locale("en-US"), errorCode));
     CHECK_ERROR(errorCode);
     icu::Formattable asNumber;
     numberFormat->parse(s, asNumber, errorCode);
@@ -370,7 +375,7 @@ static FormattedPlaceholder notANumber(const FormattedPlaceholder& input) {
     return FormattedPlaceholder(input, FormattedValue(UnicodeString("NaN")));
 }
 
-static FormattedPlaceholder stringAsNumber(const Locale& locale, const number::LocalizedNumberFormatter& nf, const FormattedPlaceholder& input, UErrorCode& errorCode) {
+static FormattedPlaceholder stringAsNumber(const number::LocalizedNumberFormatter& nf, const FormattedPlaceholder& input, UErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -384,7 +389,7 @@ static FormattedPlaceholder stringAsNumber(const Locale& locale, const number::L
         return {};
     }
     UErrorCode localErrorCode = U_ZERO_ERROR;
-    strToDouble(inputStr, locale, numberValue, localErrorCode);
+    strToDouble(inputStr, numberValue, localErrorCode);
     if (U_FAILURE(localErrorCode)) {
         errorCode = U_OPERAND_MISMATCH_ERROR;
         return notANumber(input);
@@ -533,7 +538,7 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
         }
         case UFMT_STRING: {
             // Try to parse the string as a number
-            return stringAsNumber(locale, realFormatter, arg, errorCode);
+            return stringAsNumber(realFormatter, arg, errorCode);
         }
         default: {
             // Other types can't be parsed as a number
@@ -586,17 +591,17 @@ Selector* StandardFunctions::PluralFactory::createSelector(const Locale& locale,
     return result;
 }
 
-static double tryAsString(const Locale& locale, const UnicodeString& s, UErrorCode& errorCode) {
+static double tryAsString(const UnicodeString& s, UErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {
         return 0;
     }
     // Try parsing the inputString as a double
     double valToCheck;
-    strToDouble(s, locale, valToCheck, errorCode);
+    strToDouble(s, valToCheck, errorCode);
     return valToCheck;
 }
 
-static double tryWithFormattable(const Locale& locale, const Formattable& value, UErrorCode& errorCode) {
+static double tryWithFormattable(const Formattable& value, UErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {
         return 0;
     }
@@ -617,7 +622,7 @@ static double tryWithFormattable(const Locale& locale, const Formattable& value,
         case UFMT_STRING: {
             const UnicodeString& s = value.getString(errorCode);
             U_ASSERT(U_SUCCESS(errorCode));
-            return tryAsString(locale, s, errorCode);
+            return tryAsString(s, errorCode);
         }
         default: {
             errorCode = U_ILLEGAL_ARGUMENT_ERROR;
@@ -659,10 +664,10 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
 
     if (isFormattedString) {
         // Formatted string: try parsing it as a number
-        valToCheck = tryAsString(locale, toFormat.output().getString(), errorCode);
+        valToCheck = tryAsString(toFormat.output().getString(), errorCode);
     } else {
         // Already checked that contents can be formatted
-        valToCheck = tryWithFormattable(locale, toFormat.asFormattable(), errorCode);
+        valToCheck = tryWithFormattable(toFormat.asFormattable(), errorCode);
     }
 
     if (U_FAILURE(errorCode)) {
@@ -684,7 +689,7 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
     for (int32_t i = 0; i < keysLen; i++) {
         // Try parsing the key as a double
         UErrorCode localErrorCode = U_ZERO_ERROR;
-        strToDouble(keys[i], locale, keyAsDouble, localErrorCode);
+        strToDouble(keys[i], keyAsDouble, localErrorCode);
         if (U_SUCCESS(localErrorCode)) {
             if (exact == keys[i]) {
 		prefs[prefsLen] = keys[i];

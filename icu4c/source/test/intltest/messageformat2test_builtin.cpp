@@ -121,14 +121,24 @@ void TestMessageFormat2::testNumbers(IcuTestErrorCode& errorCode) {
         .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern("From literal: {|123456789,531| :number}!")
+    test = testBuilder.setPattern("From literal: {|123456789.531| :number}!")
                                 .setArgument(val, value)
                                 .setExpected("From literal: 123.456.789,531!")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
-    test = testBuilder.setPattern(CharsToUnicodeString("From literal: {|\\u1041\\u1042\\u1043,\\u1044\\u1045\\u1046,\\u1047\\u1048\\u1049.\\u1045\\u1043\\u1041| :number}!"))
+    // This should fail, because number literals are not treated
+    // as localized numbers
+    test = testBuilder.setPattern("From literal: {|123456789,531| :number}!")
                                 .setArgument(val, value)
+                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpected("From literal: {|123456789,531|}!")
+                                .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("From literal: {|123456789.531| :number}!")
+                                .setArgument(val, value)
+                                .setExpectSuccess()
                                 .setExpected(CharsToUnicodeString("From literal: \\u1041\\u1042\\u1043,\\u1044\\u1045\\u1046,\\u1047\\u1048\\u1049.\\u1045\\u1043\\u1041!"))
                                 .setLocale(Locale("my"))
                                 .build();
