@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+// © 2024 and later: Unicode, Inc. and others.
 
 #include "unicode/utypes.h"
 
