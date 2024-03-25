@@ -23,7 +23,7 @@ namespace message2 {
 
     // MessageFormatter::Builder
 
-        // -------------------------------------
+    // -------------------------------------
     // Creates a MessageFormat instance based on the pattern.
 
     MessageFormatter::Builder& MessageFormatter::Builder::setPattern(const UnicodeString& pat, UParseError& parseError, UErrorCode& errorCode) {
@@ -229,7 +229,7 @@ namespace message2 {
         return reg.getDefaultFormatterNameByType(type, name);
     }
 
-        // ---------------------------------------------------
+    // ---------------------------------------------------
     // Function registry
 
 
@@ -274,8 +274,8 @@ namespace message2 {
         return nullptr;
     }
 
-// Returns non-owned pointer. Returns pointer rather than reference because it can fail.
-// Returns non-const because FormatterFactory is mutable.
+    // Returns non-owned pointer. Returns pointer rather than reference because it can fail.
+    // Returns non-const because FormatterFactory is mutable.
     FormatterFactory* MessageFormatter::lookupFormatterFactory(MessageContext& context, const FunctionName& functionName, UErrorCode& status) const {
         DynamicErrors& err = context.getErrors();
 
