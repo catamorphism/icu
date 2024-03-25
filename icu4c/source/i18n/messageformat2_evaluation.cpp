@@ -193,13 +193,8 @@ PrioritizedVariant::~PrioritizedVariant() {}
         errors.checkErrors(status);
     }
 
-    bool MessageContext::hasGlobal(const VariableName& v) const {
-        return arguments.hasArgument(v);
-    }
-
-    const Formattable& MessageContext::getGlobal(const VariableName& v) const {
-        U_ASSERT(hasGlobal(v));
-        return arguments.getArgument(v);
+    const Formattable* MessageContext::getGlobal(const VariableName& v, UErrorCode& errorCode) const {
+       return arguments.getArgument(v, errorCode);
     }
 
     MessageContext::MessageContext(const MessageArguments& args,

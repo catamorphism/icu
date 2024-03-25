@@ -30,12 +30,17 @@ static Formattable evalLiteral(const Literal& lit) {
 }
 
 // Assumes that `var` is a message argument; returns the argument's value.
-[[nodiscard]] FormattedPlaceholder MessageFormatter::evalArgument(const VariableName& var, MessageContext& context) const {
-    U_ASSERT(context.hasGlobal(var));
-    // The fallback for a variable name is itself.
-    UnicodeString str(DOLLAR);
-    str += var;
-    return (FormattedPlaceholder(context.getGlobal(var), str));
+[[nodiscard]] FormattedPlaceholder MessageFormatter::evalArgument(const VariableName& var, MessageContext& context, UErrorCode& errorCode) const {
+    if (U_SUCCESS(errorCode)) {
+        // The fallback for a variable name is itself.
+        UnicodeString str(DOLLAR);
+        str += var;
+        const Formattable* val = context.getGlobal(var, errorCode);
+        if (U_SUCCESS(errorCode)) {
+            return (FormattedPlaceholder(*val, str));
+        }
+    }
+    return {};
 }
 
 // Returns the contents of the literal
@@ -72,9 +77,9 @@ static Formattable evalLiteral(const Literal& lit) {
           return formatExpression(rhs.getEnv(), rhs.getExpr(), context, status);
         }
         // Variable wasn't found in locals -- check if it's global
-        if (context.hasGlobal(var)) {
-            return evalArgument(var, context);
-        } else {
+        FormattedPlaceholder result = evalArgument(var, context, status);
+        if (status == U_ILLEGAL_ARGUMENT_ERROR) {
+            status = U_ZERO_ERROR;
             // Unbound variable -- set a resolution error
             context.getErrors().setUnresolvedVariable(var, status);
             // Use fallback per
@@ -83,6 +88,7 @@ static Formattable evalLiteral(const Literal& lit) {
             str += var;
             return FormattedPlaceholder(str);
         }
+        return result;
     } else {
         U_ASSERT(rand.isLiteral());
         return formatLiteral(rand.asLiteral());
@@ -631,13 +637,15 @@ ResolvedSelector MessageFormatter::resolveVariables(const Environment& env, cons
     // Either this is a global var or an unbound var --
     // either way, it can't be bound to a function call.
     // Check globals
-    if (context.hasGlobal(var)) {
-        return ResolvedSelector(evalArgument(var, context));
-    } else {
+    FormattedPlaceholder val = evalArgument(var, context, status);
+    if (status == U_ILLEGAL_ARGUMENT_ERROR) {
+        status = U_ZERO_ERROR;
         // Unresolved variable -- could be a previous warning. Nothing to resolve
         U_ASSERT(context.getErrors().hasUnresolvedVariableError());
         return ResolvedSelector(FormattedPlaceholder(var));
     }
+    // Pass through other errors
+    return ResolvedSelector(std::move(val));
 }
 
 // Evaluate the expression except for not performing the top-level function call
@@ -818,10 +826,14 @@ void MessageFormatter::check(MessageContext& context, const Environment& localEn
         return;
     }
     // Check global scope
-    if (context.hasGlobal(var)) {
-        return;
+    context.getGlobal(var, status);
+    if (status == U_ILLEGAL_ARGUMENT_ERROR) {
+        status = U_ZERO_ERROR;
+        context.getErrors().setUnresolvedVariable(var, status);
     }
-    context.getErrors().setUnresolvedVariable(var, status);
+    // Either `var` is a global, or some other error occurred.
+    // Nothing more to do either way
+    return;
 }
 
 void MessageFormatter::check(MessageContext& context, const Environment& localEnv, const Expression& expr, UErrorCode& status) const {

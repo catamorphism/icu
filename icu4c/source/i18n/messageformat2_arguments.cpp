@@ -20,24 +20,17 @@ namespace message2 {
 
     using Arguments = MessageArguments;
 
-    int32_t Arguments::findArg(const VariableName& arg) const {
-        U_ASSERT(argsLen == 0 || arguments.isValid());
-        for (int32_t i = 0; i < argsLen; i++) {
-            if (argumentNames[i] == arg) {
-                return i;
+    const Formattable* Arguments::getArgument(const VariableName& arg, UErrorCode& errorCode) const {
+        if (U_SUCCESS(errorCode)) {
+            U_ASSERT(argsLen == 0 || arguments.isValid());
+            for (int32_t i = 0; i < argsLen; i++) {
+                if (argumentNames[i] == arg) {
+                    return &arguments[i];
+                }
             }
+            errorCode = U_ILLEGAL_ARGUMENT_ERROR;
         }
-        return -1;
-    }
-
-    bool Arguments::hasArgument(const VariableName& arg) const {
-        int32_t i = findArg(arg);
-        return i != -1;
-    }
-
-    const Formattable& Arguments::getArgument(const VariableName& arg) const {
-        int32_t i = findArg(arg);
-        return arguments[i];
+        return nullptr;
     }
 
     MessageArguments::~MessageArguments() {}

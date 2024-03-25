@@ -119,9 +119,7 @@ namespace message2 {
     private:
         friend class MessageContext;
 
-        int32_t findArg(const data_model::VariableName&) const;
-        bool hasArgument(const data_model::VariableName&) const;
-        const Formattable& getArgument(const data_model::VariableName&) const;
+        const Formattable* getArgument(const data_model::VariableName&, UErrorCode&) const;
 
         // Avoids using Hashtable so that code constructing a Hashtable
         // doesn't have to appear in this header file

@@ -174,8 +174,7 @@ namespace message2 {
     public:
         MessageContext(const MessageArguments&, const StaticErrors&, UErrorCode&);
 
-        bool hasGlobal(const VariableName&) const;
-        const Formattable& getGlobal(const VariableName&) const;
+        const Formattable* getGlobal(const VariableName&, UErrorCode&) const;
 
         // If any errors were set, update `status` accordingly
         void checkErrors(UErrorCode& status) const;

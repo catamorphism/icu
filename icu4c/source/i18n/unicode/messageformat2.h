@@ -312,7 +312,7 @@ namespace message2 {
         [[nodiscard]] FormattedPlaceholder formatExpression(const Environment&, const data_model::Expression&, MessageContext&, UErrorCode&) const;
         [[nodiscard]] FunctionOptions resolveOptions(const Environment& env, const OptionMap&, MessageContext&, UErrorCode&) const;
         [[nodiscard]] FormattedPlaceholder formatOperand(const Environment&, const data_model::Operand&, MessageContext&, UErrorCode&) const;
-        [[nodiscard]] FormattedPlaceholder evalArgument(const data_model::VariableName&, MessageContext&) const;
+        [[nodiscard]] FormattedPlaceholder evalArgument(const data_model::VariableName&, MessageContext&, UErrorCode&) const;
         void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const;
 
         // Function registry methods
