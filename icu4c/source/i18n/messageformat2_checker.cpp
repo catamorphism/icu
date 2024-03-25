@@ -68,7 +68,7 @@ TypeEnvironment::Type TypeEnvironment::get(const VariableName& var) const {
     }
     U_ASSERT(freeVars.isValid());
     if (has(*freeVars, var)) {
-        return Free;
+        return FreeVariable;
     }
     // This case is a "free variable without an implicit declaration",
     // i.e. one used only in a selector expression and not in a declaration RHS
@@ -83,7 +83,7 @@ void TypeEnvironment::extend(const VariableName& var, TypeEnvironment::Type t, U
         return;
     }
 
-    if (t == Free) {
+    if (t == FreeVariable) {
         U_ASSERT(freeVars.isValid());
         // See comment below
         freeVars->addElement(const_cast<void*>(static_cast<const void*>(&var)), status);
@@ -117,7 +117,7 @@ void Checker::addFreeVars(TypeEnvironment& t, const Operand& rand, UErrorCode& s
     if (rand.isVariable()) {
         const VariableName& v = rand.asVariable();
         if (!t.known(v)) {
-            t.extend(v, TypeEnvironment::Type::Free, status);
+            t.extend(v, TypeEnvironment::Type::FreeVariable, status);
         }
     }
 }
@@ -247,7 +247,7 @@ void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& status) {
 
             // Next, check if the LHS equals any free variables
             // whose implicit declarations are in scope
-            if (t.known(lhs) && t.get(lhs) == TypeEnvironment::Type::Free) {
+            if (t.known(lhs) && t.get(lhs) == TypeEnvironment::Type::FreeVariable) {
                 errors.addError(StaticErrorType::DuplicateDeclarationError, status);
             }
         } else {
@@ -260,7 +260,7 @@ void Checker::checkDeclarations(TypeEnvironment& t, UErrorCode& status) {
              }
             // Next, check if the LHS equals any free variables
             // whose implicit declarations are in scope
-            if (t.known(lhs) && t.get(lhs) == TypeEnvironment::Type::Free) {
+            if (t.known(lhs) && t.get(lhs) == TypeEnvironment::Type::FreeVariable) {
                 errors.addError(StaticErrorType::DuplicateDeclarationError, status);
             }
         }

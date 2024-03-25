@@ -26,11 +26,12 @@ namespace message2 {
     public:
         // MessageFormat has a simple type system;
         // variables are in-scope and annotated; in-scope and unannotated;
-        // or free
+        // or free (a free variable has no explicit declaration in the scope
+        // of its use.)
         enum Type {
             Annotated,
             Unannotated,
-            Free
+            FreeVariable
         };
         void extend(const VariableName&, Type, UErrorCode& status);
         Type get(const VariableName&) const;
