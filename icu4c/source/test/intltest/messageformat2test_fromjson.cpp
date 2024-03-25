@@ -67,7 +67,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     test = testBuilder.setPattern("hello {$place}")
                                 .setExpected("hello {$place}")
                                 .clearArguments()
-                                .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                .setExpectedError(U_MF_UNRESOLVED_VARIABLE_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -98,13 +98,13 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
 
     test = testBuilder.setPattern("hello {|foo| :number}")
                                 .setExpected("hello {|foo|}")
-                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("hello {:number}")
                                 .setExpected("hello {:number}")
-                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -162,7 +162,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
 
     test = testBuilder.setPattern(".local $foo = {$bar :number} {{bar {$foo}}}")
                                 .setExpected("bar {$bar}")
-                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                 .setArgument("bar", "foo")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -175,7 +175,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $foo = {$foo} {{bar {$foo}}}")
-                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpectedError(U_MF_DUPLICATE_DECLARATION_ERROR)
                                 .setExpected("bar foo")
                                 .setArgument("foo", "foo")
                                 .build();
@@ -188,14 +188,14 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     // it'll be a moot point since the output will be expected to be the fallback string
     // (This applies to the expected output for all the U_DUPLICATE_DECLARATION_ERROR tests)
     test = testBuilder.setPattern(".local $foo = {$foo} .local $foo = {42} {{bar {$foo}}}")
-                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpectedError(U_MF_DUPLICATE_DECLARATION_ERROR)
                                 .setArgument("foo", "foo")
                                 .setExpected("bar 42")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $foo = {42} .local $foo = {$foo} {{bar {$foo}}}")
-                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpectedError(U_MF_DUPLICATE_DECLARATION_ERROR)
                                 .setExpected("bar 42")
                                 .setArgument("foo", "foo")
                                 .build();
@@ -203,14 +203,14 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
 
     // see TODO(duplicates)
     test = testBuilder.setPattern(".local $foo = {:unknown} .local $foo = {42} {{bar {$foo}}}")
-                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpectedError(U_MF_DUPLICATE_DECLARATION_ERROR)
                                 .setExpected("bar 42")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     // see TODO(duplicates)
     test = testBuilder.setPattern(".local $x = {42} .local $y = {$x} .local $x = {13} {{{$x} {$y}}}")
-                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpectedError(U_MF_DUPLICATE_DECLARATION_ERROR)
                                 .setExpected("13 42")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -244,7 +244,7 @@ void TestMessageFormat2::jsonTests(IcuTestErrorCode& errorCode) {
     test = testBuilder.setPattern(".match {$foo :number}  1 {{one}}  * {{other}}")
                                 .setExpected("other")
                                 .setArgument("foo", "", errorCode)
-                                .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                .setExpectedError(U_MF_UNRESOLVED_VARIABLE_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 */
@@ -330,7 +330,7 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
     test = testBuilder.setPattern(".local $bar = {$none} .match {$foo :number}  one {{one}}  * {{{$bar}}}")
                                 .setExpected("{$none}")
                                 .setArgument("foo", (int64_t) 2)
-                                .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                .setExpectedError(U_MF_UNRESOLVED_VARIABLE_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -338,7 +338,7 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
     test = testBuilder.setPattern(".local bar = {|foo|} {{{$bar}}}")
                                 .setExpected("{$bar}")
                                 .clearArguments()
-                                .setExpectedError(U_SYNTAX_ERROR)
+                                .setExpectedError(U_MF_SYNTAX_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -349,14 +349,14 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
      */
     test = testBuilder.setPattern(".local $bar {|foo|} {{{$bar}}}")
                                 .setExpected("{$bar}")
-                                .setExpectedError(U_SYNTAX_ERROR)
+                                .setExpectedError(U_MF_SYNTAX_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     // Missing '{'/'}' around `foo`
     test = testBuilder.setPattern(".local $bar = |foo| {{{$bar}}}")
                                 .setExpected("{$bar}")
-                                .setExpectedError(U_SYNTAX_ERROR)
+                                .setExpectedError(U_MF_SYNTAX_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -426,13 +426,13 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
 
     test = testBuilder.setPattern("{{missing end brace")
                       .setExpected("missing end brace")
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{missing end {$brace")
                       .setExpected("missing end {$brace}")
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -445,7 +445,7 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
     test = testBuilder.setPattern("{{extra}} content")
                       .setExpected("extra") // Everything after the closing '{{' should be ignored
                                             // per the `complex-body- production in the grammar
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -455,14 +455,14 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
     };
 
     test = testBuilder.setPattern("empty { }")
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .setExpected(UnicodeString(emptyWithReplacement))
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{{bad {:}}")
                       .setExpected("bad {:}")
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -474,49 +474,49 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
 
     test = testBuilder.setPattern(CharsToUnicodeString("bad {\\u0000placeholder}"))
                       .clearExpected()
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("no-equal {|42| :number minimumFractionDigits 2}")
                       .setExpected("no-equal 42.00")
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("bad {:placeholder option=}")
                       .setExpected("bad {:placeholder}")
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("bad {:placeholder option value}")
                       .setExpected("bad {:placeholder}")
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("bad {:placeholder option}")
                       .setExpected("bad {:placeholder}")
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("bad {$placeholder option}")
                       .clearExpected()
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("no {$placeholder end")
                       .clearExpected()
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".match {}  * {{foo}}")
                       .clearExpected()
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -527,43 +527,43 @@ https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fa
 
     test = testBuilder.setPattern(".match {#foo}  * {{foo}}")
                       .setExpected(UnicodeString(replacement))
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".match  * {{foo}}")
                       .clearExpected()
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".match {|x|}  * foo")
                       .clearExpected()
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".match {|x|}  * {{foo}} extra")
                       .clearExpected()
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".match |x|  * {{foo}}")
                       .clearExpected()
-                      .setExpectedError(U_SYNTAX_ERROR)
+                      .setExpectedError(U_MF_SYNTAX_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".match {$foo :number}  * * {{foo}}")
                       .clearExpected()
-                      .setExpectedError(U_VARIANT_KEY_MISMATCH_ERROR)
+                      .setExpectedError(U_MF_VARIANT_KEY_MISMATCH_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".match {$foo :number} {$bar :number}  * {{foo}}")
                       .clearExpected()
-                      .setExpectedError(U_VARIANT_KEY_MISMATCH_ERROR)
+                      .setExpectedError(U_MF_VARIANT_KEY_MISMATCH_ERROR)
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 }
@@ -668,43 +668,43 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
 
     test = testBuilder.setPattern("foo {+reserved}")
                                  .setExpected("foo {+}")
-                                 .setExpectedError(U_UNSUPPORTED_EXPRESSION_ERROR)
+                                 .setExpectedError(U_MF_UNSUPPORTED_EXPRESSION_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("foo {&private}")
                                  .setExpected("foo {&}")
-                                 .setExpectedError(U_UNSUPPORTED_EXPRESSION_ERROR)
+                                 .setExpectedError(U_MF_UNSUPPORTED_EXPRESSION_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("foo {?reserved @a @b=$c}")
                                  .setExpected("foo {?}")
-                                 .setExpectedError(U_UNSUPPORTED_EXPRESSION_ERROR)
+                                 .setExpectedError(U_MF_UNSUPPORTED_EXPRESSION_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".foo {42} {{bar}}")
                                  .setExpected("bar")
-                                 .setExpectedError(U_UNSUPPORTED_STATEMENT_ERROR)
+                                 .setExpectedError(U_MF_UNSUPPORTED_STATEMENT_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".foo {42}{{bar}}")
                                  .setExpected("bar")
-                                 .setExpectedError(U_UNSUPPORTED_STATEMENT_ERROR)
+                                 .setExpectedError(U_MF_UNSUPPORTED_STATEMENT_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".foo |}lit{| {42}{{bar}}")
                                  .setExpected("bar")
-                                 .setExpectedError(U_UNSUPPORTED_STATEMENT_ERROR)
+                                 .setExpectedError(U_MF_UNSUPPORTED_STATEMENT_ERROR)
                                  .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     /* var2 is implicitly declared and can't be overridden by the second `.input` */
     test = testBuilder.setPattern(".input {$var :number minimumFractionDigits=$var2} .input {$var2 :number minimumFractionDigits=5} {{{$var} {$var2}}}")
-                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpectedError(U_MF_DUPLICATE_DECLARATION_ERROR)
                                 .setArgument("var", (int64_t) 1)
                                 .setArgument("var2", (int64_t) 3)
         // Note: the more "correct" fallback output seems like it should be "1.000 3" (ignoring the
@@ -719,7 +719,7 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
 
     /* var2 is implicitly declared and can't be overridden by the second `.local` */
     test = testBuilder.setPattern(".local $var = {$var2} .local $var2 = {1} {{{$var} {$var2}}}")
-                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpectedError(U_MF_DUPLICATE_DECLARATION_ERROR)
                                 .setArgument("var2", (int64_t) 5)
         // Same comment as above about the output
                                 .setExpected("5 1")
@@ -784,13 +784,13 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("hello {foo :number}")
-                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                 .setExpected("hello {|foo|}")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("hello {:number}")
-                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                 .setExpected("hello {:number}")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -840,7 +840,7 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
       is resolved
 
     test = testBuilder.setPattern(".local $foo = {$bar :number minimumFractionDigits=foo} {{bar {$foo}}}")
-                                .setExpectedError(U_FORMATTING_ERROR)
+                                .setExpectedError(U_MF_FORMATTING_ERROR)
                                 .setArgument("bar", 4.2)
                                 .setExpected("bar {$bar}")
                                 .build();
@@ -848,7 +848,7 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
     */
 
     test = testBuilder.setPattern(".local $foo = {$bar :number} {{bar {$foo}}}")
-                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                   .setArgument("bar", "foo")
                                   .setExpected("bar {$bar}")
                                   .build();
@@ -873,7 +873,7 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
       is resolved
 
     test = testBuilder.setPattern(".input {$foo :number minimumFractionDigits=foo} {{bar {$foo}}}")
-                                .setExpectedError(U_FORMATTING_ERROR)
+                                .setExpectedError(U_MF_FORMATTING_ERROR)
                                 .setArgument("foo", 4.2)
                                 .setExpected("bar {$foo}")
                                 .build();
@@ -881,7 +881,7 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
     */
 
     test = testBuilder.setPattern(".input {$foo :number} {{bar {$foo}}}")
-                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                   .setArgument("foo", "foo")
                                   .setExpected("bar {$foo}")
                                   .build();
@@ -1005,7 +1005,7 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".local $bar = {$none} .match {$foo :number} one {{one}} * {{{$bar}}}")
-                                  .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                  .setExpectedError(U_MF_UNRESOLVED_VARIABLE_ERROR)
                                   .setArgument("foo", (int64_t) 2)
                                   .setExpected("{$none}")
                                   .build();
@@ -1019,27 +1019,27 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
 
     // Neither `ordinal` nor `selectordinal` exists in this spec version
     test = testBuilder.setPattern(".match {$foo :ordinal} one {{st}} two {{nd}} few {{rd}} * {{th}}")
-                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setExpectedError(U_MF_UNKNOWN_FUNCTION_ERROR)
                                   .setArgument("foo", (int64_t) 1)
                                   .setExpected("th")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("hello {42 :ordinal}")
-                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setExpectedError(U_MF_UNKNOWN_FUNCTION_ERROR)
                                   .setExpected("hello {|42|}")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".match {$foo :stringordinal} one {{st}} two {{nd}} few {{rd}} * {{th}}")
-                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setExpectedError(U_MF_UNKNOWN_FUNCTION_ERROR)
                                   .setArgument("foo", (int64_t) 1)
                                   .setExpected("th")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("hello {42 :stringordinal}")
-                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setExpectedError(U_MF_UNKNOWN_FUNCTION_ERROR)
                                   .setExpected("hello {|42|}")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -1048,14 +1048,14 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
     // Same for `plural`
 
     test = testBuilder.setPattern(".match {$foo :plural} one {{one}} * {{other}}")
-                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setExpectedError(U_MF_UNKNOWN_FUNCTION_ERROR)
                                   .setArgument("foo", (int64_t) 1)
                                   .setExpected("other")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("hello {42 :plural}")
-                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setExpectedError(U_MF_UNKNOWN_FUNCTION_ERROR)
                                   .setExpected("hello {|42|}")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -1087,7 +1087,7 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern(".match {$foo :string} 1 {{one}} * {{other}}")
-                                  .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                  .setExpectedError(U_MF_UNRESOLVED_VARIABLE_ERROR)
                                   .clearArguments()
                                   .setExpected("other")
                                   .build();
@@ -1096,7 +1096,7 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
 
     // There is no `:select` in this version of the spec
     test = testBuilder.setPattern(".match {$foo :select} one {{one}} * {{other}}")
-                                  .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                  .setExpectedError(U_MF_UNKNOWN_FUNCTION_ERROR)
                                   .setArgument("foo", (int64_t) 1)
                                   .setExpected("other")
                                   .build();
@@ -1104,13 +1104,13 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
 
     // :date
     test = testBuilder.setPattern("{:date}")
-                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                   .setExpected("{:date}")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{horse :date}")
-                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                   .setExpected("{|horse|}")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -1147,13 +1147,13 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
 
     // :time
     test = testBuilder.setPattern("{:time}")
-                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                   .setExpected("{:time}")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{horse :time}")
-                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                   .setExpected("{|horse|}")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -1185,27 +1185,27 @@ void TestMessageFormat2::runSpecTests(IcuTestErrorCode& errorCode) {
 
     // :datetime
     test = testBuilder.setPattern("{:datetime}")
-                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                   .setExpected("{:datetime}")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{$x :datetime}")
-                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                   .setExpected("{$x}")
                                   .setArgument("x", (int64_t) 1)
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{$x :datetime}")
-                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                   .setExpected("{$x}")
                                   .setArgument("x", "true")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("{horse :datetime}")
-                                  .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                  .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                   .setExpected("{|horse|}")
                                   .build();
     TestUtils::runTestCase(*this, test, errorCode);

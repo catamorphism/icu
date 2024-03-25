@@ -284,7 +284,7 @@ namespace message2 {
         }
         default: {
             // No default formatters for other types; use fallback
-            status = U_FORMATTING_ERROR;
+            status = U_MF_FORMATTING_ERROR;
             // Note: it would be better to set an internal formatting error so that a string
             // (e.g. the type tag) can be provided. However, this  method is called by the
             // public method formatToString() and thus can't take a MessageContext
@@ -316,7 +316,7 @@ namespace message2 {
         // Unevaluated value: first evaluate it fully, then format
         UErrorCode savedStatus = status;
         FormattedPlaceholder evaluated = formatWithDefaults(locale, *this, status);
-        if (status == U_FORMATTING_ERROR) {
+        if (status == U_MF_FORMATTING_ERROR) {
             U_ASSERT(evaluated.isFallback());
             return evaluated.getFallback();
         }

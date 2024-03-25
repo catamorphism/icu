@@ -126,7 +126,7 @@ void TestMessageFormat2::testMf1Behavior(TestCase::Builder& testBuilder, IcuTest
                                 .setArgument(badArgumentsNames[0], user)
                                 .setDateArgument(badArgumentsNames[1], testDate)
                                 .setExpected("Hello {$user}, today is {$today}.")
-                                .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                .setExpectedError(U_MF_UNRESOLVED_VARIABLE_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 

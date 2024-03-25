@@ -372,7 +372,7 @@ Operator::Builder& Operator::Builder::addOption(const UnicodeString &key, Operan
     U_ASSERT(options != nullptr);
     // If the option name is already in the map, emit a data model error
     if (hasOptionNamed(*options, key)) {
-        errorCode = U_DUPLICATE_OPTION_NAME_ERROR;
+        errorCode = U_MF_DUPLICATE_OPTION_NAME_ERROR;
     } else {
         Option* newOption = create<Option>(Option(key, std::move(value)), errorCode);
         THIS_ON_ERROR(errorCode);
@@ -940,7 +940,7 @@ void MFDataModel::Builder::checkDuplicate(const VariableName& var, UErrorCode& s
     // see MessageFormatter::Checker::checkDeclarations()
     for (int32_t i = 0; i < bindings->size(); i++) {
         if ((static_cast<Binding*>(bindings->elementAt(i)))->getVariable() == var) {
-            status = U_DUPLICATE_DECLARATION_ERROR;
+            status = U_MF_DUPLICATE_DECLARATION_ERROR;
             break;
         }
     }
@@ -951,12 +951,12 @@ MFDataModel::Builder& MFDataModel::Builder::addBinding(Binding&& b, UErrorCode& 
         U_ASSERT(bindings != nullptr);
         checkDuplicate(b.getVariable(), status);
         UErrorCode savedStatus = status;
-        if (status == U_DUPLICATE_DECLARATION_ERROR) {
+        if (status == U_MF_DUPLICATE_DECLARATION_ERROR) {
             // Want to add the binding anyway even if it's a duplicate
             status = U_ZERO_ERROR;
         }
         bindings->adoptElement(create<Binding>(std::move(b), status), status);
-        if (U_SUCCESS(status) || savedStatus == U_DUPLICATE_DECLARATION_ERROR) {
+        if (U_SUCCESS(status) || savedStatus == U_MF_DUPLICATE_DECLARATION_ERROR) {
             status = savedStatus;
         }
     }

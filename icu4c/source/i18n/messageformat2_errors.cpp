@@ -122,58 +122,58 @@ namespace message2 {
         if (staticErrors.syntaxAndDataModelErrors->size() > 0) {
             switch (staticErrors.first().type) {
             case StaticErrorType::DuplicateDeclarationError: {
-                status = U_DUPLICATE_DECLARATION_ERROR;
+                status = U_MF_DUPLICATE_DECLARATION_ERROR;
                 break;
             }
             case StaticErrorType::DuplicateOptionName: {
-                status = U_DUPLICATE_OPTION_NAME_ERROR;
+                status = U_MF_DUPLICATE_OPTION_NAME_ERROR;
                 break;
             }
             case StaticErrorType::VariantKeyMismatchError: {
-                status = U_VARIANT_KEY_MISMATCH_ERROR;
+                status = U_MF_VARIANT_KEY_MISMATCH_ERROR;
                 break;
             }
             case StaticErrorType::NonexhaustivePattern: {
-                status = U_NONEXHAUSTIVE_PATTERN_ERROR;
+                status = U_MF_NONEXHAUSTIVE_PATTERN_ERROR;
                 break;
             }
             case StaticErrorType::MissingSelectorAnnotation: {
-                status = U_MISSING_SELECTOR_ANNOTATION_ERROR;
+                status = U_MF_MISSING_SELECTOR_ANNOTATION_ERROR;
                 break;
             }
             case StaticErrorType::SyntaxError: {
-                status = U_SYNTAX_ERROR;
+                status = U_MF_SYNTAX_ERROR;
                 break;
             }
             case StaticErrorType::UnsupportedStatementError: {
-                status = U_UNSUPPORTED_STATEMENT_ERROR;
+                status = U_MF_UNSUPPORTED_STATEMENT_ERROR;
             }
             }
         } else {
             U_ASSERT(resolutionAndFormattingErrors->size() > 0);
             switch (first().type) {
             case DynamicErrorType::UnknownFunction: {
-                status = U_UNKNOWN_FUNCTION_ERROR;
+                status = U_MF_UNKNOWN_FUNCTION_ERROR;
                 break;
             }
             case DynamicErrorType::UnresolvedVariable: {
-                status = U_UNRESOLVED_VARIABLE_ERROR;
+                status = U_MF_UNRESOLVED_VARIABLE_ERROR;
                 break;
             }
             case DynamicErrorType::FormattingError: {
-                status = U_FORMATTING_ERROR;
+                status = U_MF_FORMATTING_ERROR;
                 break;
             }
             case DynamicErrorType::OperandMismatchError: {
-                status = U_OPERAND_MISMATCH_ERROR;
+                status = U_MF_OPERAND_MISMATCH_ERROR;
                 break;
             }
             case DynamicErrorType::ReservedError: {
-                status = U_UNSUPPORTED_EXPRESSION_ERROR;
+                status = U_MF_UNSUPPORTED_EXPRESSION_ERROR;
                 break;
             }
             case DynamicErrorType::SelectorError: {
-                status = U_SELECTOR_ERROR;
+                status = U_MF_SELECTOR_ERROR;
                 break;
             }
             }

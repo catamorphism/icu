@@ -74,13 +74,13 @@ void TestMessageFormat2::testArgumentMissing(TestCase::Builder& testBuilder, Icu
                                 .clearArguments()
                                 .setArgument("name", "John")
                                 .setExpected("Hello John, today is {$today}.")
-                                .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                .setExpectedError(U_MF_UNRESOLVED_VARIABLE_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
     test = testBuilder.setPattern(message)
                                 .clearArguments()
                                 .setDateArgument("today", TEST_DATE)
-                                .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                .setExpectedError(U_MF_UNRESOLVED_VARIABLE_ERROR)
                                 .setExpected("Hello {$name}, today is November 23, 2022.")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -88,7 +88,7 @@ void TestMessageFormat2::testArgumentMissing(TestCase::Builder& testBuilder, Icu
     // Both arguments missing
     test = testBuilder.setPattern(message)
                                 .clearArguments()
-                                .setExpectedError(U_UNRESOLVED_VARIABLE_ERROR)
+                                .setExpectedError(U_MF_UNRESOLVED_VARIABLE_ERROR)
                                 .setExpected("Hello {$name}, today is {$today}.")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
@@ -438,7 +438,7 @@ void TestMessageFormat2::testDeclareBeforeUse(TestCase::Builder& testBuilder, Ic
     testBuilder.setName("declare-before-use");
 
     TestCase test = testBuilder.clearArguments().setExpected("The message uses {$baz} and works")
-                                .setExpectedError(U_DUPLICATE_DECLARATION_ERROR)
+                                .setExpectedError(U_MF_DUPLICATE_DECLARATION_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 }

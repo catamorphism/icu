@@ -1049,7 +1049,7 @@ void Parser::parseOption(Operator::Builder &builder, UErrorCode& errorCode) {
     UErrorCode status = U_ZERO_ERROR;
     builder.addOption(lhs, std::move(rand), status);
     if (U_FAILURE(status)) {
-      U_ASSERT(status == U_DUPLICATE_OPTION_NAME_ERROR);
+      U_ASSERT(status == U_MF_DUPLICATE_OPTION_NAME_ERROR);
       errors.setDuplicateOptionName(errorCode);
     }
 }
@@ -1745,7 +1745,7 @@ void Parser::parseLocalDeclaration(UErrorCode& status) {
         dataModel.addBinding(Binding(std::move(lhs), std::move(rhs)), status);
         // Check if status is U_DUPLICATE_DECLARATION_ERROR
         // and add that as an internal error if so
-        if (status == U_DUPLICATE_DECLARATION_ERROR) {
+        if (status == U_MF_DUPLICATE_DECLARATION_ERROR) {
             status = U_ZERO_ERROR;
             errors.addError(StaticErrorType::DuplicateDeclarationError, status);
         }
@@ -1789,9 +1789,9 @@ void Parser::parseInputDeclaration(UErrorCode& status) {
     CHECK_ERROR(status);
     if (!errors.hasSyntaxError()) {
         dataModel.addBinding(Binding::input(std::move(lhs), std::move(rhs), status), status);
-        // Check if status is U_DUPLICATE_DECLARATION_ERROR
+        // Check if status is U_MF_DUPLICATE_DECLARATION_ERROR
         // and add that as an internal error if so
-        if (status == U_DUPLICATE_DECLARATION_ERROR) {
+        if (status == U_MF_DUPLICATE_DECLARATION_ERROR) {
             status = U_ZERO_ERROR;
             errors.addError(StaticErrorType::DuplicateDeclarationError, status);
         }

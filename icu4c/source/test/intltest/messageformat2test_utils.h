@@ -231,10 +231,10 @@ class TestUtils {
             result = mf.formatToString(MessageArguments(testCase.getArguments(), errorCode), errorCode);
         }
 
-        if (testCase.expectSuccess() || (testCase.expectedErrorCode() != U_SYNTAX_ERROR
+        if (testCase.expectSuccess() || (testCase.expectedErrorCode() != U_MF_SYNTAX_ERROR
                                          // For now, don't round-trip messages with these errors,
                                          // since duplicate options are dropped
-                                         && testCase.expectedErrorCode() != U_DUPLICATE_OPTION_NAME_ERROR)) {
+                                         && testCase.expectedErrorCode() != U_MF_DUPLICATE_OPTION_NAME_ERROR)) {
             const UnicodeString& in = mf.getNormalizedPattern();
             UnicodeString out;
             if (!roundTrip(in, mf.getDataModel(), out)) {
@@ -243,7 +243,7 @@ class TestUtils {
         }
 
         if (testCase.expectNoSyntaxError()) {
-            if (errorCode == U_SYNTAX_ERROR) {
+            if (errorCode == U_MF_SYNTAX_ERROR) {
                 failSyntaxError(tmsg, testCase);
             }
             errorCode.reset();
@@ -274,7 +274,7 @@ class TestUtils {
 
     static void failSyntaxError(IntlTest& tmsg, const TestCase& testCase) {
         tmsg.dataerrln(testCase.getTestName());
-        tmsg.logln(testCase.getTestName() + " failed test with pattern: " + testCase.getPattern() + " and error code U_SYNTAX_WARNING; expected no syntax error");
+        tmsg.logln(testCase.getTestName() + " failed test with pattern: " + testCase.getPattern() + " and error code U_MF_SYNTAX_WARNING; expected no syntax error");
     }
 
     static void failExpectedSuccess(IntlTest& tmsg, const TestCase& testCase, IcuTestErrorCode& errorCode) {

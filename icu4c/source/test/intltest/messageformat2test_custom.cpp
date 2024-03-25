@@ -41,14 +41,14 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
     TestCase test = testBuilder.setPattern("Hello {$name :person formality=formal}")
         .setArgument(name, person.getAlias())
         .setExpected("Hello {$name}")
-        .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+        .setExpectedError(U_MF_UNKNOWN_FUNCTION_ERROR)
         .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
     test = testBuilder.setPattern("Hello {$name :person formality=informal}")
                                 .setArgument(name, person.getAlias())
                                 .setExpected("Hello {$name}")
-                                .setExpectedError(U_UNKNOWN_FUNCTION_ERROR)
+                                .setExpectedError(U_MF_UNKNOWN_FUNCTION_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
@@ -321,7 +321,7 @@ message2::FormattedPlaceholder GrammarCasesFormatter::format(FormattedPlaceholde
 
     // Argument must be present
     if (!arg.canFormat()) {
-        errorCode = U_FORMATTING_ERROR;
+        errorCode = U_MF_FORMATTING_ERROR;
         return message2::FormattedPlaceholder("grammarBB");
     }
 
@@ -432,7 +432,7 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
 
     // Argument must be present
     if (!arg.canFormat()) {
-        errorCode = U_FORMATTING_ERROR;
+        errorCode = U_MF_FORMATTING_ERROR;
         return errorVal;
     }
     // Assumes arg is not-yet-formatted
@@ -470,7 +470,7 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
             int32_t n_items;
             const Formattable* objs = toFormat.getArray(n_items, errorCode);
             if (U_FAILURE(errorCode)) {
-                errorCode = U_FORMATTING_ERROR;
+                errorCode = U_MF_FORMATTING_ERROR;
                 return errorVal;
             }
             UnicodeString* parts = new UnicodeString[n_items];
@@ -596,7 +596,7 @@ message2::FormattedPlaceholder ResourceManager::format(FormattedPlaceholder&& ar
 
     // Argument must be present
     if (!arg.canFormat()) {
-        errorCode = U_FORMATTING_ERROR;
+        errorCode = U_MF_FORMATTING_ERROR;
         return errorVal;
     }
 
@@ -624,7 +624,7 @@ message2::FormattedPlaceholder ResourceManager::format(FormattedPlaceholder&& ar
         UnicodeString* msg = static_cast<UnicodeString*>(properties->properties->get(in));
         if (msg == nullptr) {
             // No message given for this key -- error out
-            errorCode = U_FORMATTING_ERROR;
+            errorCode = U_MF_FORMATTING_ERROR;
             return errorVal;
         }
 	MessageFormatter::Builder mfBuilder(errorCode);
@@ -647,7 +647,7 @@ message2::FormattedPlaceholder ResourceManager::format(FormattedPlaceholder&& ar
         return FormattedPlaceholder(arg, FormattedValue(std::move(result)));
     } else {
         // Properties must be provided
-        errorCode = U_FORMATTING_ERROR;
+        errorCode = U_MF_FORMATTING_ERROR;
     }
     return errorVal;
 }

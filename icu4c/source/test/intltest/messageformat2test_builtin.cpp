@@ -91,13 +91,13 @@ void TestMessageFormat2::testDateTime(IcuTestErrorCode& errorCode) {
                                               {{Testing date formatting: {$num :datetime}}}")
                                 .clearArguments()
                                 .setExpected("Testing date formatting: {|42|}")
-                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
     // Literal string as argument
     test = testBuilder.setPattern("Testing date formatting: {|horse| :datetime}")
                                 .setExpected("Testing date formatting: {|horse|}")
-                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                 .build();
 
     TestUtils::runTestCase(*this, test, errorCode);
@@ -131,7 +131,7 @@ void TestMessageFormat2::testNumbers(IcuTestErrorCode& errorCode) {
     // as localized numbers
     test = testBuilder.setPattern("From literal: {|123456789,531| :number}!")
                                 .setArgument(val, value)
-                                .setExpectedError(U_OPERAND_MISMATCH_ERROR)
+                                .setExpectedError(U_MF_OPERAND_MISMATCH_ERROR)
                                 .setExpected("From literal: {|123456789,531|}!")
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);

@@ -194,7 +194,7 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
         // Update errors
         if (savedStatus != status) {
             if (U_FAILURE(status)) {
-                if (status == U_OPERAND_MISMATCH_ERROR) {
+                if (status == U_MF_OPERAND_MISMATCH_ERROR) {
                     status = U_ZERO_ERROR;
                     errs.setOperandMismatchError(functionName, status);
                 } else {
@@ -315,7 +315,7 @@ void MessageFormatter::formatPattern(MessageContext& context, const Environment&
               result += partResult;
               // Handle formatting errors. `formatToString()` can't take a context and thus can't
               // register an error directly
-              if (status == U_FORMATTING_ERROR) {
+              if (status == U_MF_FORMATTING_ERROR) {
                   status = U_ZERO_ERROR;
                   // TODO: The name of the formatter that failed is unavailable.
                   // Not ideal, but it's hard for `formatToString()`

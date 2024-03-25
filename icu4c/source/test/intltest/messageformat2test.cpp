@@ -97,9 +97,9 @@ TestResult validTestCases[] = {
 
 static const int32_t numResolutionErrors = 3;
 TestResultError jsonTestCasesResolutionError[] = {
-    {".local $foo = {$bar} .match {$foo :number}  one {{one}}  * {{other}}", "other", U_UNRESOLVED_VARIABLE_ERROR},
-    {".local $foo = {$bar} .match {$foo :number}  one {{one}}  * {{other}}", "other", U_UNRESOLVED_VARIABLE_ERROR},
-    {".local $bar = {$none :number} .match {$foo :string}  one {{one}}  * {{{$bar}}}", "{$none}", U_UNRESOLVED_VARIABLE_ERROR}
+    {".local $foo = {$bar} .match {$foo :number}  one {{one}}  * {{other}}", "other", U_MF_UNRESOLVED_VARIABLE_ERROR},
+    {".local $foo = {$bar} .match {$foo :number}  one {{one}}  * {{other}}", "other", U_MF_UNRESOLVED_VARIABLE_ERROR},
+    {".local $bar = {$none :number} .match {$foo :string}  one {{one}}  * {{{$bar}}}", "{$none}", U_MF_UNRESOLVED_VARIABLE_ERROR}
 };
 
 static const int32_t numReservedErrors = 34;
@@ -410,7 +410,7 @@ void TestMessageFormat2::testAPICustomFunctions() {
                                     .setLocale(locale)
                                     .build(errorCode);
     result = mf.formatToString(arguments, errorCode);
-    assertEquals("testAPICustomFunctions", U_UNKNOWN_FUNCTION_ERROR, errorCode);
+    assertEquals("testAPICustomFunctions", U_MF_UNKNOWN_FUNCTION_ERROR, errorCode);
 
     errorCode = U_ZERO_ERROR;
     mfBuilder.setFunctionRegistry(functionRegistry).setLocale(locale);
@@ -553,7 +553,7 @@ void TestMessageFormat2::testInvalidPattern(uint32_t testNum, const UnicodeStrin
     testBuilder.setName("testName");
 
     TestUtils::runTestCase(*this, testBuilder.setPattern(s)
-                           .setExpectedError(U_SYNTAX_ERROR)
+                           .setExpectedError(U_MF_SYNTAX_ERROR)
                            .setExpectedLineNumberAndOffset(expectedErrorLine, expectedErrorOffset)
                            .build(), errorCode);
 }
@@ -637,75 +637,75 @@ void TestMessageFormat2::testDataModelErrors() {
     // Examples taken from https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md
 
     // Variant key mismatch
-    testSemanticallyInvalidPattern(++i, ".match {$foo :number} {$bar :number}  one{{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, ".match {$foo :number} {$bar :number}  one {{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, ".match {$foo :number} {$bar :number}  one  {{one}}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :number} {$bar :number}  one{{one}}", U_MF_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :number} {$bar :number}  one {{one}}", U_MF_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :number} {$bar :number}  one  {{one}}", U_MF_VARIANT_KEY_MISMATCH_ERROR);
 
-    testSemanticallyInvalidPattern(++i, ".match {$foo :number}  * * {{foo}}", U_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :number}  * * {{foo}}", U_MF_VARIANT_KEY_MISMATCH_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {$one :number}\n\
                               1 2 {{Too many}}\n\
-                              * {{Otherwise}}", U_VARIANT_KEY_MISMATCH_ERROR);
+                              * {{Otherwise}}", U_MF_VARIANT_KEY_MISMATCH_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {$one :number} {$two :number}\n\
                               1 2 {{Two keys}}\n\
                               * {{Missing a key}}\n\
-                              * * {{Otherwise}}", U_VARIANT_KEY_MISMATCH_ERROR);
-    testSemanticallyInvalidPattern(++i, ".match {$foo :x} {$bar :x} * {{foo}}", U_VARIANT_KEY_MISMATCH_ERROR);
+                              * * {{Otherwise}}", U_MF_VARIANT_KEY_MISMATCH_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {$foo :x} {$bar :x} * {{foo}}", U_MF_VARIANT_KEY_MISMATCH_ERROR);
 
     // Non-exhaustive patterns
     testSemanticallyInvalidPattern(++i, ".match {$one :number}\n\
                                           1 {{Value is one}}\n\
-                                          2 {{Value is two}}", U_NONEXHAUSTIVE_PATTERN_ERROR);
+                                          2 {{Value is two}}", U_MF_NONEXHAUSTIVE_PATTERN_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {$one :number} {$two :number}\n\
                                           1 * {{First is one}}\n\
-                                          * 1 {{Second is one}}", U_NONEXHAUSTIVE_PATTERN_ERROR);
-    testSemanticallyInvalidPattern(++i, ".match {:foo} 1 {{_}}", U_NONEXHAUSTIVE_PATTERN_ERROR);
-    testSemanticallyInvalidPattern(++i, ".match {:foo} other {{_}}", U_NONEXHAUSTIVE_PATTERN_ERROR);
+                                          * 1 {{Second is one}}", U_MF_NONEXHAUSTIVE_PATTERN_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {:foo} 1 {{_}}", U_MF_NONEXHAUSTIVE_PATTERN_ERROR);
+    testSemanticallyInvalidPattern(++i, ".match {:foo} other {{_}}", U_MF_NONEXHAUSTIVE_PATTERN_ERROR);
 
     // Duplicate option names
-    testSemanticallyInvalidPattern(++i, "{:foo a=1 b=2 a=1}", U_DUPLICATE_OPTION_NAME_ERROR);
-    testSemanticallyInvalidPattern(++i, "{:foo a=1 a=1}", U_DUPLICATE_OPTION_NAME_ERROR);
-    testSemanticallyInvalidPattern(++i, "{:foo a=1 a=2}", U_DUPLICATE_OPTION_NAME_ERROR);
-    testSemanticallyInvalidPattern(++i, "{|x| :foo a=1 a=2}", U_DUPLICATE_OPTION_NAME_ERROR);
-    testSemanticallyInvalidPattern(++i, "bad {:placeholder option=x option=x}", U_DUPLICATE_OPTION_NAME_ERROR);
-    testSemanticallyInvalidPattern(++i, "bad {:placeholder ns:option=x ns:option=y}", U_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "{:foo a=1 b=2 a=1}", U_MF_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "{:foo a=1 a=1}", U_MF_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "{:foo a=1 a=2}", U_MF_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "{|x| :foo a=1 a=2}", U_MF_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "bad {:placeholder option=x option=x}", U_MF_DUPLICATE_OPTION_NAME_ERROR);
+    testSemanticallyInvalidPattern(++i, "bad {:placeholder ns:option=x ns:option=y}", U_MF_DUPLICATE_OPTION_NAME_ERROR);
 
     // Missing selector annotation
     testSemanticallyInvalidPattern(++i, ".match {$one}\n\
                                           1 {{Value is one}}\n\
-                                          * {{Value is not one}}", U_MISSING_SELECTOR_ANNOTATION_ERROR);
+                                          * {{Value is not one}}", U_MF_MISSING_SELECTOR_ANNOTATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".local $one = {|The one|}\n\
                                          .match {$one}\n\
                                           1 {{Value is one}}\n\
-                                          * {{Value is not one}}", U_MISSING_SELECTOR_ANNOTATION_ERROR);
+                                          * {{Value is not one}}", U_MF_MISSING_SELECTOR_ANNOTATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {|horse| ^private}\n\
                                           1 {{The value is one.}}\n          \
-                                          * {{The value is not one.}}", U_MISSING_SELECTOR_ANNOTATION_ERROR);
+                                          * {{The value is not one.}}", U_MF_MISSING_SELECTOR_ANNOTATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {$foo !select}  |1| {{one}}  * {{other}}",
-                                   U_MISSING_SELECTOR_ANNOTATION_ERROR);
+                                   U_MF_MISSING_SELECTOR_ANNOTATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".match {$foo ^select}  |1| {{one}}  * {{other}}",
-                                   U_MISSING_SELECTOR_ANNOTATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".input {$foo} .match {$foo} one {{one}} * {{other}}", U_MISSING_SELECTOR_ANNOTATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar} .match {$foo} one {{one}} * {{other}}", U_MISSING_SELECTOR_ANNOTATION_ERROR);
+                                   U_MF_MISSING_SELECTOR_ANNOTATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".input {$foo} .match {$foo} one {{one}} * {{other}}", U_MF_MISSING_SELECTOR_ANNOTATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar} .match {$foo} one {{one}} * {{other}}", U_MF_MISSING_SELECTOR_ANNOTATION_ERROR);
 
     // Duplicate declaration errors
     testSemanticallyInvalidPattern(++i, ".local $x = {|1|} .input {$x :number} {{{$x}}}",
-                                   U_DUPLICATE_DECLARATION_ERROR);
+                                   U_MF_DUPLICATE_DECLARATION_ERROR);
     testSemanticallyInvalidPattern(++i, ".input {$x :number} .input {$x :string} {{{$x}}}",
-                                   U_DUPLICATE_DECLARATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".input {$foo} .input {$foo} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".input {$foo} .local $foo = {42} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".local $foo = {42} .input {$foo} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".local $foo = {:unknown} .local $foo = {42} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar} .local $bar = {42} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".local $foo = {$foo} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar} .local $bar = {$baz} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar :func} .local $bar = {$baz} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".local $foo = {42 :func opt=$foo} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
-    testSemanticallyInvalidPattern(++i, ".local $foo = {42 :func opt=$bar} .local $bar = {42} {{_}}", U_DUPLICATE_DECLARATION_ERROR);
+                                   U_MF_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".input {$foo} .input {$foo} {{_}}", U_MF_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".input {$foo} .local $foo = {42} {{_}}", U_MF_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {42} .input {$foo} {{_}}", U_MF_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {:unknown} .local $foo = {42} {{_}}", U_MF_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar} .local $bar = {42} {{_}}", U_MF_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {$foo} {{_}}", U_MF_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar} .local $bar = {$baz} {{_}}", U_MF_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {$bar :func} .local $bar = {$baz} {{_}}", U_MF_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {42 :func opt=$foo} {{_}}", U_MF_DUPLICATE_DECLARATION_ERROR);
+    testSemanticallyInvalidPattern(++i, ".local $foo = {42 :func opt=$bar} .local $bar = {42} {{_}}", U_MF_DUPLICATE_DECLARATION_ERROR);
 
     // Disambiguating unsupported statements from match
-    testSemanticallyInvalidPattern(++i, ".matc {-1} {{hello}}", U_UNSUPPORTED_STATEMENT_ERROR);
-    testSemanticallyInvalidPattern(++i, ".m {-1} {{hello}}", U_UNSUPPORTED_STATEMENT_ERROR);
+    testSemanticallyInvalidPattern(++i, ".matc {-1} {{hello}}", U_MF_UNSUPPORTED_STATEMENT_ERROR);
+    testSemanticallyInvalidPattern(++i, ".m {-1} {{hello}}", U_MF_UNSUPPORTED_STATEMENT_ERROR);
 
     TestCase::Builder testBuilder;
     testBuilder.setName("testDataModelErrors");
@@ -738,43 +738,43 @@ void TestMessageFormat2::testResolutionErrors() {
     // but should trigger a resolution error
 
     // Unresolved variable
-    testRuntimeWarningPattern(++i, "{$oops}", "{$oops}", U_UNRESOLVED_VARIABLE_ERROR);
+    testRuntimeWarningPattern(++i, "{$oops}", "{$oops}", U_MF_UNRESOLVED_VARIABLE_ERROR);
     // .input of $x but $x is not supplied as an argument -- also unresolved variable
-    testRuntimeWarningPattern(++i, ".input {$x :number} {{{$x}}}", "{$x}", U_UNRESOLVED_VARIABLE_ERROR);
+    testRuntimeWarningPattern(++i, ".input {$x :number} {{{$x}}}", "{$x}", U_MF_UNRESOLVED_VARIABLE_ERROR);
 
     // Unknown function
-    testRuntimeWarningPattern(++i, "The value is {horse :func}.", "The value is {|horse|}.", U_UNKNOWN_FUNCTION_ERROR);
+    testRuntimeWarningPattern(++i, "The value is {horse :func}.", "The value is {|horse|}.", U_MF_UNKNOWN_FUNCTION_ERROR);
     testRuntimeWarningPattern(++i, ".match {|horse| :func}\n\
                                           1 {{The value is one.}}\n\
                                           * {{The value is not one.}}",
-                              "The value is not one.", U_UNKNOWN_FUNCTION_ERROR);
+                              "The value is not one.", U_MF_UNKNOWN_FUNCTION_ERROR);
     // Using formatter as selector
     // The fallback string will match the '*' variant
     testRuntimeWarningPattern(++i, ".match {|horse| :number}\n\
                                           1 {{The value is one.}}\n\
-                                          * {{The value is not one.}}", "The value is not one.", U_SELECTOR_ERROR);
+                                          * {{The value is not one.}}", "The value is not one.", U_MF_SELECTOR_ERROR);
 
     // Using selector as formatter
     testRuntimeWarningPattern(++i, ".match {|horse| :string}\n\
                                           1 {{The value is one.}}\n   \
                                           * {{{|horse| :string}}}",
-                              "{|horse|}", U_FORMATTING_ERROR);
+                              "{|horse|}", U_MF_FORMATTING_ERROR);
 
     // Unsupported expressions
-    testRuntimeErrorPattern(++i, "hello {|4.2| !number}", U_UNSUPPORTED_EXPRESSION_ERROR);
-    testRuntimeErrorPattern(++i, "{<tag}", U_UNSUPPORTED_EXPRESSION_ERROR);
+    testRuntimeErrorPattern(++i, "hello {|4.2| !number}", U_MF_UNSUPPORTED_EXPRESSION_ERROR);
+    testRuntimeErrorPattern(++i, "{<tag}", U_MF_UNSUPPORTED_EXPRESSION_ERROR);
     testRuntimeErrorPattern(++i, ".local $bar = {|42| ~plural} .match {|horse| :string}  * {{{$bar}}}",
-                            U_UNSUPPORTED_EXPRESSION_ERROR);
+                            U_MF_UNSUPPORTED_EXPRESSION_ERROR);
 
     // Selector error
     // Here, the plural selector returns "no match" so the * variant matches
     testRuntimeWarningPattern(++i, ".match {|horse| :number}\n\
                                    1 {{The value is one.}}\n\
-                                   * {{The value is not one.}}", "The value is not one.", U_SELECTOR_ERROR);
+                                   * {{The value is not one.}}", "The value is not one.", U_MF_SELECTOR_ERROR);
     testRuntimeWarningPattern(++i, ".local $sel = {|horse| :number}\n\
                                   .match {$sel}\n\
                                    1 {{The value is one.}}\n\
-                                   * {{The value is not one.}}", "The value is not one.", U_SELECTOR_ERROR);
+                                   * {{The value is not one.}}", "The value is not one.", U_MF_SELECTOR_ERROR);
 }
 
 void TestMessageFormat2::testInvalidPatterns() {

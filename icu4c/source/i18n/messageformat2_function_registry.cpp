@@ -391,7 +391,7 @@ static FormattedPlaceholder stringAsNumber(const number::LocalizedNumberFormatte
     UErrorCode localErrorCode = U_ZERO_ERROR;
     strToDouble(inputStr, numberValue, localErrorCode);
     if (U_FAILURE(localErrorCode)) {
-        errorCode = U_OPERAND_MISMATCH_ERROR;
+        errorCode = U_MF_OPERAND_MISMATCH_ERROR;
         return notANumber(input);
     }
     UErrorCode savedStatus = errorCode;
@@ -506,7 +506,7 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
 
     // No argument => return "NaN"
     if (!arg.canFormat()) {
-        errorCode = U_OPERAND_MISMATCH_ERROR;
+        errorCode = U_MF_OPERAND_MISMATCH_ERROR;
         return notANumber(arg);
     }
 
@@ -542,7 +542,7 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
         }
         default: {
             // Other types can't be parsed as a number
-            errorCode = U_OPERAND_MISMATCH_ERROR;
+            errorCode = U_MF_OPERAND_MISMATCH_ERROR;
             return notANumber(arg);
         }
         }
@@ -652,7 +652,7 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
 
     // No argument => return "NaN"
     if (!toFormat.canFormat()) {
-        errorCode = U_SELECTOR_ERROR;
+        errorCode = U_MF_SELECTOR_ERROR;
         return;
     }
 
@@ -672,7 +672,7 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
 
     if (U_FAILURE(errorCode)) {
         // Non-number => selector error
-        errorCode = U_SELECTOR_ERROR;
+        errorCode = U_MF_SELECTOR_ERROR;
         return;
     }
     // TODO: This needs to be checked against https://github.com/unicode-org/message-format-wg/blob/main/spec/registry.md#number-selection
@@ -890,7 +890,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
 
     // Argument must be present
     if (!toFormat.canFormat()) {
-        errorCode = U_OPERAND_MISMATCH_ERROR;
+        errorCode = U_MF_OPERAND_MISMATCH_ERROR;
         return std::move(toFormat);
     }
 
@@ -1073,7 +1073,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
         UnicodeString pattern("YYYY-MM-dd'T'HH:mm:ss");
         LocalPointer<DateFormat> dateParser(new SimpleDateFormat(pattern, errorCode));
         if (U_FAILURE(errorCode)) {
-            errorCode = U_FORMATTING_ERROR;
+            errorCode = U_MF_FORMATTING_ERROR;
         } else {
             // Parse the date
             UDate d = dateParser->parse(sourceStr, errorCode);
@@ -1083,11 +1083,11 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
                 errorCode = U_ZERO_ERROR;
                 dateParser.adoptInstead(new SimpleDateFormat(pattern, errorCode));
                 if (U_FAILURE(errorCode)) {
-                    errorCode = U_FORMATTING_ERROR;
+                    errorCode = U_MF_FORMATTING_ERROR;
                 } else {
                     d = dateParser->parse(sourceStr, errorCode);
                     if (U_FAILURE(errorCode)) {
-                        errorCode = U_OPERAND_MISMATCH_ERROR;
+                        errorCode = U_MF_OPERAND_MISMATCH_ERROR;
                     }
                 }
             }
@@ -1104,14 +1104,14 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
         df->format(source.asICUFormattable(errorCode), result, 0, errorCode);
         if (U_FAILURE(errorCode)) {
             if (errorCode == U_ILLEGAL_ARGUMENT_ERROR) {
-                errorCode = U_OPERAND_MISMATCH_ERROR;
+                errorCode = U_MF_OPERAND_MISMATCH_ERROR;
             }
         }
         break;
     }
     // Any other cases are an error
     default: {
-        errorCode = U_OPERAND_MISMATCH_ERROR;
+        errorCode = U_MF_OPERAND_MISMATCH_ERROR;
         break;
     }
     }
@@ -1151,7 +1151,7 @@ void StandardFunctions::TextSelector::selectKey(FormattedPlaceholder&& toFormat,
 
     // Argument must be present
     if (!toFormat.canFormat()) {
-        errorCode = U_SELECTOR_ERROR;
+        errorCode = U_MF_SELECTOR_ERROR;
         return;
     }
 
