@@ -11,8 +11,10 @@
 
 #include "charstr.h"
 #include "json-json.hpp"
+#include "messageformat2_allocation.h"
 #include "messageformat2test.h"
 #include "messageformat2test_utils.h"
+#include "unicode/messageformat2_messagepart.h"
 
 using namespace nlohmann;
 
@@ -82,6 +84,250 @@ static void makeTestName(char* buffer, size_t size, std::string fileName, int32_
     snprintf(buffer, size, "test from file: %s[%u]", fileName.c_str(), ++testNum);
 }
 
+Hashtable* createHashtable(UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return nullptr;
+    }
+    Hashtable* result = new Hashtable();
+    if (result != nullptr) {
+        result->setValueDeleter(uprv_deleteUObject);
+    } else {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
+
+static void initOptions(const std::map<std::string, std::string>& in,
+                        Hashtable& out,
+                        UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return;
+    }
+
+    for (auto iter = in.begin(); iter != in.end(); ++iter) {
+        LocalPointer<UnicodeString> val(create<UnicodeString>(u_str(iter->second), errorCode));
+        if (U_FAILURE(errorCode)) {
+            return;
+        }
+        out.put(u_str(iter->first), val.orphan(), errorCode);
+    }
+}
+
+static void addMarkupPart(const json& part, std::vector<MessagePart>& parts, UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return;
+    }
+
+    auto partObj = part.template get<json::object_t>();
+    U_ASSERT(partObj["type"].is_string()
+             && part["type"].template get<std::string>() == "markup");
+    // Get the name
+    if (partObj["name"].is_string() && partObj["kind"].is_string()) {
+        // Get the kind
+        std::string k = part["kind"].template get<std::string>();
+        // Get the options
+        Hashtable* optionsHash = createHashtable(errorCode);
+        if (U_FAILURE(errorCode)) {
+            return;
+        }
+        if (partObj["options"].is_object()) {
+            initOptions(part["options"].template get<std::map<std::string, std::string>>(),
+                        *optionsHash,
+                        errorCode);
+        }
+        // Use an empty hashtable if no options
+        parts.push_back(MessagePart::markup(u_str(part["name"].template get<std::string>()),
+                                            k == "open" ? UMARKUP_OPEN
+                                            : k == "close" ? UMARKUP_CLOSE
+                                            : UMARKUP_STANDALONE,
+                                            std::move(*optionsHash),
+                                            errorCode));
+    }
+    // If name and/or kind are missing, ignore this part
+}
+
+static void addLiteralPart(const json& part, std::vector<MessagePart>& parts) {
+    auto partObj = part.template get<json::object_t>();
+    U_ASSERT(partObj["type"].is_string()
+             && part["type"].template get<std::string>() == "literal");
+
+    // Value should be a string
+    if (partObj["value"].is_string()) {
+        parts.push_back(MessagePart::literal(u_str(part["value"])));
+    }
+    // Otherwise, ignore this part
+}
+
+static void addFallbackPart(const json& part, std::vector<MessagePart>& parts) {
+    auto partObj = part.template get<json::object_t>();
+    U_ASSERT(partObj["type"].is_string()
+             && part["type"].template get<std::string>() == "fallback");
+
+    // Source should be a string
+    if (partObj["source"].is_string()) {
+        parts.push_back(MessagePart::fallback(u_str(part["source"])));
+    }
+    // Otherwise, ignore this part
+}
+
+static void addNumberPart(const json& part, std::vector<MessagePart>& parts) {
+    auto partObj = part.template get<json::object_t>();
+    U_ASSERT(partObj["type"].is_string()
+             && part["type"].template get<std::string>() == "number");
+
+    (void) parts;
+    // TODO: This is not implemented yet
+    // https://messageformat.github.io/messageformat/api/messageformat.messageexpressionpart/
+    // doesn't make it clear how `number` should be used
+}
+
+// This looks the same as addLiteralPart, but won't be eventually,
+// because a string is an "expression part" that can have sub-parts
+static void addStringPart(const json& part, std::vector<MessagePart>& parts) {
+    auto partObj = part.template get<json::object_t>();
+    U_ASSERT(partObj["type"].is_string()
+             && part["type"].template get<std::string>() == "string");
+
+    // Value should be a string
+    if (partObj["value"].is_string()) {
+        parts.push_back(MessagePart::string(u_str(part["value"])));
+    }
+    // Otherwise, ignore this part
+}
+
+static UnicodeString markupTypeToString(UMarkupType t) {
+    switch(t) {
+    case UMARKUP_OPEN: {
+        return "open";
+    }
+    case UMARKUP_CLOSE: {
+        return "close";
+    }
+    default: {
+        return "standalone";
+    }
+    }
+}
+
+static std::string optionsToString(const std::map<std::string, std::string> options) {
+    std::string result;
+    bool first = true;
+    result += "{";
+    for (auto opt = options.begin(); opt != options.end(); ++opt) {
+        if (!first) {
+            result += ", ";
+        }
+        first = false;
+        result += "\"" + opt->first + "\"";
+        result += ":";
+        result += "\"" + opt->second + "\"";
+    }
+    result += "}";
+    return result;
+}
+
+static std::string partsToJson(const std::vector<MessagePart>& partsVec) {
+    UnicodeString result = "[";
+    bool first = true;
+    UErrorCode localErrorCode = U_ZERO_ERROR;
+    for (auto parts = partsVec.begin(); parts != partsVec.end(); ++parts) {
+        if (!first) {
+            result += ", ";
+        }
+        first = false;
+        switch (parts->getType()) {
+        case MessagePart::UPART_LITERAL: {
+            result += "{\"type\": \"literal\", \"value\": \""
+                + parts->getValue(localErrorCode)
+                + "\"}";
+            break;
+        }
+        case MessagePart::UPART_MARKUP: {
+            result += "{\"type\": \"markup\", \"kind\": \""
+                + markupTypeToString(parts->getMarkupType(localErrorCode))
+                + "\", \"name\": \""
+                + parts->getMarkupName(localErrorCode)
+                + "\"";
+
+            std::map<std::string, std::string> opts = parts->getMarkupOptions(localErrorCode);
+            if (opts.size() > 0) {
+                result += ", \"options\": "
+                    + u_str(optionsToString(parts->getMarkupOptions(localErrorCode)));
+            }
+            result += "}";
+            break;
+        }
+        case MessagePart::UPART_FALLBACK: {
+            result += "{\"type\": \"fallback\", \"source\": \""
+                + parts->getFallbackSource(localErrorCode)
+                + "\"}";
+            break;
+        }
+        case MessagePart::UPART_NUMBER: {
+            result += "\"type\": \"number\", \"parts\": [{ \"type\": \"integer\", \"value\": \""
+                    + parts->getNumberValue(localErrorCode).toString(localErrorCode)
+                    + "\"}]";
+            break;
+        }
+        default:
+            /*       case MessagePart::UPART_STRING: */ {
+            result += "{\"type\": \"string\", \"value\": \""
+                + parts->getStringValue(localErrorCode)
+                + "\"}";
+            break;
+        }
+    }
+    }
+    result += "]";
+    std::string resultStr;
+    return result.toUTF8String(resultStr);
+}
+
+static bool checkParts(TestMessageFormat2& t, const json& parts, UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return true;
+    }
+    std::vector<MessagePart> partsVec;
+    for (auto partsIter = parts.begin(); partsIter != parts.end(); ++partsIter) {
+        const json& part = *partsIter;
+        if (part.is_object()) {
+            auto partObj = part.template get<json::object_t>();
+            // types: markup, literal, string, fallback, number
+            // Other types are not represented in tests
+            // markup; expression (string, number); literal; fallback
+            if (partObj["type"].is_string()) {
+                std::string partType = part["type"].template get<std::string>();
+                if (partType == "markup") {
+                    addMarkupPart(part, partsVec, errorCode);
+                } else if (partType == "literal") {
+                    addLiteralPart(part, partsVec);
+                } else if (partType == "fallback") {
+                    addFallbackPart(part, partsVec);
+                } else if (partType == "number") {
+                    addNumberPart(part, partsVec);
+                } else if (partType == "string") {
+                    addStringPart(part, partsVec);
+                } else {
+                    return false;
+                }
+                t.logln("A part with type:");
+                t.logln(u_str(partType));
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    // Now that we have a vector of parts, re-serialize to JSON
+    // This checks that our representation isn't missing anything
+    std::string serializedStr = partsToJson(partsVec);
+    // Parse the string we just created
+    const json serialized = json::parse(serializedStr);
+    return (serialized == parts);
+}
+
 static bool setArguments(TestCase::Builder& test, const json::object_t& params, UErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {
         return true;
@@ -145,6 +391,13 @@ static void runValidTest(TestMessageFormat2& icuTest,
         // Set expected result if it's present
         std::string expectedOutput = j["exp"].template get<std::string>();
         test.setExpected(u_str(expectedOutput));
+    }
+
+    // Experimental: If `parts` is present, set it; in the test, parts
+    // will be re-serialized and checked against original parts
+    if (!j_object["parts"].is_null()) {
+        auto expectedParts = j["parts"].template get<std::vector<json::object_t>>();
+        U_ASSERT(checkParts(icuTest, expectedParts, errorCode));
     }
 
     if (!j_object["locale"].is_null()) {
