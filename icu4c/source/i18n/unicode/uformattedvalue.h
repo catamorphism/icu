@@ -74,6 +74,30 @@ typedef enum UFieldCategory {
      */
     UFIELD_CATEGORY_DATE_INTERVAL,
 
+    /**
+     * Category for MessageFormat 2.0 messages.
+     *
+     * @internal ICU 76 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    UFIELD_CATEGORY_MF2,
+
+    /**
+     * Category for MessageFormat 2.0 markup placeholders.
+     *
+     * @internal ICU 76 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    UFIELD_CATEGORY_MF2_MARKUP,
+
+    /**
+     * Category for MessageFormat 2.0 expressions.
+     *
+     * @internal ICU 76 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    UFIELD_CATEGORY_MF2_EXPRESSION,
+
 #ifndef U_HIDE_INTERNAL_API
     /** @internal */
     UFIELD_CATEGORY_COUNT,

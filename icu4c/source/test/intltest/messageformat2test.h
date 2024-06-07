@@ -47,9 +47,23 @@ public:
     void testDataModelAPI(void);
     void testAPI(void);
     void testAPISimple(void);
+    // Test formatting to parts
+    void testAPIParts(void);
 
 private:
     void jsonTestsFromFiles(IcuTestErrorCode&);
+
+    // Helpers
+    void testCfp(const ConstrainedFieldPosition&, int32_t, int32_t, int32_t, int32_t);
+    void testCfp(const ConstrainedFieldPosition&, int32_t, int32_t, int32_t);
+    void testExpressionPart(const message2::FormattedMessage& formattedMessage,
+                            const message2::MessageExpressionPart& exprPart,
+                            const UnicodeString& expectedType,
+                            int32_t expectedStart,
+                            int32_t expectedLimit,
+                            const UnicodeString& expectedContents,
+                            const UnicodeString& expectedSource);
+
 
     // Built-in function testing
     void testNumbers(IcuTestErrorCode&);

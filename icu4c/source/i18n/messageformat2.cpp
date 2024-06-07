@@ -784,11 +784,17 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
     formatPattern(context, env, pat, status, result);
 }
 
+UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments, UErrorCode &status) {
+    EMPTY_ON_ERROR(status);
+    FormattedMessage msg = format(arguments, status);
+    return msg.toString();
+}
+
 // Note: this is non-const due to the function registry being non-const, which is in turn
 // due to the values (`FormatterFactory` objects in the map) having mutable state.
 // In other words, formatting a message can mutate the underlying `MessageFormatter` by changing
 // state within the factory objects that represent custom formatters.
-UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments, UErrorCode &status) {
+FormattedMessage MessageFormatter::format(const MessageArguments& arguments, UErrorCode &status) {
     EMPTY_ON_ERROR(status);
 
     // Create a new environment that will store closures for all local variables
@@ -800,7 +806,7 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
     checkDeclarations(context, env, status);
     LocalPointer<Environment> globalEnv(env);
 
-    UnicodeString result;
+    FormattedStringBuilder result;
     if (dataModel.hasPattern()) {
         formatPattern(context, *globalEnv, dataModel.getPattern(), status, result);
     } else {
@@ -808,7 +814,7 @@ UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments
         // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
         const DynamicErrors& err = context.getErrors();
         if (err.hasSyntaxError() || err.hasDataModelError()) {
-            result += REPLACEMENT;
+            result.append(REPLACEMENT, kUndefinedField, status);
         } else {
             formatSelectors(context, *globalEnv, status, result);
         }

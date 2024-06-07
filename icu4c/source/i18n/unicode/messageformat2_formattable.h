@@ -868,6 +868,20 @@ class U_I18N_API FunctionOptions : public UObject {
         Type type;
     }; // class FormattedPlaceholder
 
+    typedef enum UMessageFormatter2Field {
+        UMF2_LITERAL_FIELD,
+        UMF2_EXPRESSION_FIELD,
+        UMF2_MARKUP_FIELD,
+        UMF2_ERROR_FIELD,
+    } UMessageFormatter2Field;
+
+    // Specific kinds of formatted parts
+    struct U_I18N_API MessageExpressionPart : public UObject {
+        const UnicodeString type; // Type of part
+        const UnicodeString source; // Name of source variable that was formatted to produce this result.
+                                    // Empty if the source was a literal.
+    };
+
     /**
      * Not yet implemented: The result of a message formatting operation. Based on
      * ICU4J's FormattedMessage.java.
@@ -991,6 +1005,27 @@ class U_I18N_API FunctionOptions : public UObject {
             }
             return nullptr;
         }
+
+        /**
+         * Returns true iff there's a part in the expression mapping
+         * corresponding to `fieldId`.
+         *
+         * @internal ICU 76 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        UBool isExpressionPart(int32_t fieldId) const;
+
+        /**
+         * Looks up an expression part by a field ID. If there is no
+         * such part, set the error code to U_INVALID_STATE_ERROR.
+         *
+         * @param fieldId Field ID to look up
+         * @param errorCode Input/output errorCode
+         * @internal ICU 76 technology preview
+         * @deprecated This API is for ICU internal use only.
+         */
+        const MessageExpressionPart* getExpressionPart(int32_t fieldId, UErrorCode& errorCode) const;
+
         /**
          * Destructor.
          *

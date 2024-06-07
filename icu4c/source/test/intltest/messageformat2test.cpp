@@ -29,6 +29,7 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(testCustomFunctions);
     TESTCASE_AUTO(testAPI);
     TESTCASE_AUTO(testAPISimple);
+    TESTCASE_AUTO(testAPIParts);
     TESTCASE_AUTO(testDataModelAPI);
     TESTCASE_AUTO(dataDrivenTests);
     TESTCASE_AUTO_END;
@@ -62,6 +63,40 @@ void TestMessageFormat2::testDataModelAPI() {
         i++;
     }
     assertEquals("testDataModelAPI", i, 3);
+}
+
+void TestMessageFormat2::testCfp(const ConstrainedFieldPosition& cfp,
+                                 int32_t expectedStart,
+                                 int32_t expectedLimit,
+                                 int32_t expectedCategory) {
+    assertEquals("testCfp", cfp.getStart(), expectedStart);
+    assertEquals("testCfp", cfp.getLimit(), expectedLimit);
+    assertEquals("testCfp", cfp.getCategory(), expectedCategory);
+}
+
+void TestMessageFormat2::testCfp(const ConstrainedFieldPosition& cfp,
+                                 int32_t expectedStart,
+                                 int32_t expectedLimit,
+                                 int32_t expectedCategory,
+                                 int32_t expectedField) {
+    testCfp(cfp, expectedStart, expectedLimit, expectedCategory);
+    assertEquals("testCfp", cfp.getField(), expectedField);
+}
+
+void TestMessageFormat2::testExpressionPart(const message2::FormattedMessage& formattedMessage,
+                                            const MessageExpressionPart& exprPart,
+                                            const UnicodeString& expectedType,
+                                            int32_t expectedStart,
+                                            int32_t expectedLimit,
+                                            const UnicodeString& expectedContents,
+                                            const UnicodeString& expectedSource
+                                            ) {
+    assertEquals("testExpressionPart", exprPart.type, expectedType);
+    UErrorCode localErrorCode = U_ZERO_ERROR;
+    const StringPiece contents = formattedMessage.subSequence(expectedStart, expectedLimit, localErrorCode);
+    assertEquals("testExpressionPart", localErrorCode, U_ZERO_ERROR);
+    assertEquals("testExpressionPart", UnicodeString::fromUTF8(contents), expectedContents);
+    assertEquals("testExpressionPart", exprPart.source, expectedSource);
 }
 
 // Example for design doc -- version without null and error checks
@@ -261,6 +296,55 @@ void TestMessageFormat2::testAPICustomFunctions() {
     // "informal" is the default formality and "length" is the default length
     assertEquals("testAPICustomFunctions", "Hello John", result);
     delete person;
+}
+
+// Testing formatting to parts
+void TestMessageFormat2::testAPIParts() {
+    IcuTestErrorCode errorCode(*this, "testAPIParts");
+    UParseError parseError;
+
+    MessageFormatter::Builder builder(errorCode);
+    CHECK_ERROR(errorCode);
+
+    MessageFormatter mf = builder.setPattern(u"Hello, {$userName}!", parseError, errorCode)
+        .build(errorCode);
+
+    std::map<UnicodeString, message2::Formattable> argsBuilder;
+    argsBuilder["userName"] = message2::Formattable("John");
+    MessageArguments args(argsBuilder, errorCode);
+
+    FormattedMessage result(errorCode);
+    result = mf.format(args, errorCode);
+
+    assertEquals("testAPIParts", U_ZERO_ERROR, errorCode);
+
+    ConstrainedFieldPosition cfp;
+
+    int32_t i = 0;
+
+    // Result: "Hello, John!"
+    // Fields: 0-7 UFIELD_CATEGORY_MF2 UMF2_LITERAL_FIELD
+    //         7-10 UFIELD_CATEGORY_MF2_EXPRESSION 0
+    //         11-12 UFIELD_CATEGORY_MF2 UMF2_LITERAL_FIELD
+    //         result.isExpressionPart(0) == true
+    //         result.getExpressionPart(0) == { "kind": "string", "contents": "John", "sourceVariable": "userName" }
+    while (result.nextPosition(cfp, errorCode)) {
+        if (i == 0) {
+            testCfp(cfp, 0, 7, UFIELD_CATEGORY_MF2, UMF2_LITERAL_FIELD);
+        } else if (i == 1) {
+            testCfp(cfp, 7, 10, UFIELD_CATEGORY_MF2_EXPRESSION);
+            int32_t field = cfp.getField();
+            assertEquals("testAPIParts", result.isExpressionPart(field), (UBool) true);
+            const MessageExpressionPart* part = result.getExpressionPart(field, errorCode);
+            assertEquals("testAPIParts", errorCode, U_ZERO_ERROR);
+            testExpressionPart(result, *part, "string", 7, 10, "John", "userName");
+        } else if (i == 2) {
+            testCfp(cfp, 11, 12, UFIELD_CATEGORY_MF2, UMF2_LITERAL_FIELD);
+        }
+        i++;
+    }
+
+    assertEquals("testAPIParts", i, 3);
 }
 
 void TestMessageFormat2::dataDrivenTests() {
