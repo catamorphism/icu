@@ -294,26 +294,26 @@ namespace message2 {
         void resolvePreferences(MessageContext&, UVector&, UVector&, UErrorCode&) const;
 
         // Formatting methods
-        [[nodiscard]] FormattedPlaceholder formatLiteral(const data_model::Literal&) const;
+        [[nodiscard]] FormattedPlaceholder* formatLiteral(const data_model::Literal&, UErrorCode&) const;
         void formatPattern(MessageContext&, const Environment&, const data_model::Pattern&, UErrorCode&, UnicodeString&) const;
         // Formats a call to a formatting function
         // Dispatches on argument type
-        [[nodiscard]] FormattedPlaceholder evalFormatterCall(FormattedPlaceholder&& argument,
-                                                       MessageContext& context,
-                                                       UErrorCode& status) const;
+        [[nodiscard]] FormattedPlaceholder* evalFormatterCall(FormattedPlaceholder&& argument,
+                                                              MessageContext& context,
+                                                              UErrorCode& status) const;
         // Dispatches on function name
-        [[nodiscard]] FormattedPlaceholder evalFormatterCall(const FunctionName& functionName,
-                                                       FormattedPlaceholder&& argument,
-                                                       FunctionOptions&& options,
-                                                       MessageContext& context,
-                                                       UErrorCode& status) const;
+        [[nodiscard]] FormattedPlaceholder* evalFormatterCall(const FunctionName& functionName,
+                                                              FormattedPlaceholder&& argument,
+                                                              FunctionOptions&& options,
+                                                              MessageContext& context,
+                                                              UErrorCode& status) const;
         // Formats an expression that appears as a selector
         ResolvedSelector formatSelectorExpression(const Environment& env, const data_model::Expression&, MessageContext&, UErrorCode&) const;
         // Formats an expression that appears in a pattern or as the definition of a local variable
-        [[nodiscard]] FormattedPlaceholder formatExpression(const Environment&, const data_model::Expression&, MessageContext&, UErrorCode&) const;
+        [[nodiscard]] FormattedPlaceholder* formatExpression(const Environment&, const data_model::Expression&, MessageContext&, UErrorCode&) const;
         [[nodiscard]] FunctionOptions resolveOptions(const Environment& env, const OptionMap&, MessageContext&, UErrorCode&) const;
-        [[nodiscard]] FormattedPlaceholder formatOperand(const Environment&, const data_model::Operand&, MessageContext&, UErrorCode&) const;
-        [[nodiscard]] FormattedPlaceholder evalArgument(const data_model::VariableName&, MessageContext&, UErrorCode&) const;
+        [[nodiscard]] FormattedPlaceholder* formatOperand(const Environment&, const data_model::Operand&, MessageContext&, UErrorCode&) const;
+        [[nodiscard]] FormattedPlaceholder* evalArgument(const data_model::VariableName&, MessageContext&, UErrorCode&) const;
         void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const;
 
         // Function registry methods

@@ -66,7 +66,7 @@ UnicodeString FunctionOptions::getStringFunctionOption(const UnicodeString& key)
     UErrorCode localErrorCode = U_ZERO_ERROR;
     const FormattedPlaceholder* option = getFunctionOption(key, localErrorCode);
     if (U_SUCCESS(localErrorCode)) {
-        Formattable opt = option->asFormattable();
+        Formattable opt = option->getSource();
         if (opt.getType() == UFMT_STRING) {
             UnicodeString val = opt.getString(localErrorCode);
             U_ASSERT(U_SUCCESS(localErrorCode));
@@ -102,12 +102,12 @@ FunctionOptions::~FunctionOptions() {
 ResolvedSelector::ResolvedSelector(const FunctionName& fn,
                                    Selector* sel,
                                    FunctionOptions&& opts,
-                                   FormattedPlaceholder&& val)
-    : selectorName(fn), selector(sel), options(std::move(opts)), value(std::move(val))  {
+                                   FormattedPlaceholder* val)
+    : selectorName(fn), selector(sel), options(std::move(opts)), value(val)  {
     U_ASSERT(sel != nullptr);
 }
 
-ResolvedSelector::ResolvedSelector(FormattedPlaceholder&& val) : value(std::move(val)) {}
+ResolvedSelector::ResolvedSelector(FormattedPlaceholder* val) : value(val) {}
 
 ResolvedSelector& ResolvedSelector::operator=(ResolvedSelector&& other) noexcept {
     selectorName = std::move(other.selectorName);

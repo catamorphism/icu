@@ -61,7 +61,7 @@ namespace message2 {
 
         class DateTime : public Formatter {
         public:
-            FormattedPlaceholder format(FormattedPlaceholder&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
+            FormattedPlaceholder* format(FormattedPlaceholder&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
             virtual ~DateTime();
 
         private:
@@ -110,7 +110,7 @@ namespace message2 {
 
         class Number : public Formatter {
         public:
-            FormattedPlaceholder format(FormattedPlaceholder&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
+            FormattedPlaceholder* format(FormattedPlaceholder&& toFormat, FunctionOptions&& options, UErrorCode& status) const override;
             virtual ~Number();
 
         private:

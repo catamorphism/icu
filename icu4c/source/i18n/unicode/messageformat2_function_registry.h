@@ -352,9 +352,9 @@ namespace message2 {
          * @internal ICU 75 technology preview
          * @deprecated This API is for technology preview only.
          */
-        virtual FormattedPlaceholder format(FormattedPlaceholder&& toFormat,
-                                      FunctionOptions&& options,
-                                      UErrorCode& status) const = 0;
+        virtual FormattedPlaceholder* format(FormattedPlaceholder&& toFormat,
+                                             FunctionOptions&& options,
+                                             UErrorCode& status) const = 0;
         /**
          * Destructor.
          *

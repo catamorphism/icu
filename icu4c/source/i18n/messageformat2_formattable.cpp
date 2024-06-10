@@ -20,6 +20,7 @@ namespace message2 {
     // Fallback values are enclosed in curly braces;
     // see https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#formatting-fallback-values
 
+/*
     static UnicodeString fallbackToString(const UnicodeString& s) {
         UnicodeString result;
         result += LEFT_CURLY_BRACE;
@@ -27,6 +28,7 @@ namespace message2 {
         result += RIGHT_CURLY_BRACE;
         return result;
     }
+*/
 
     Formattable& Formattable::operator=(Formattable other) noexcept {
         swap(*this, other);
@@ -182,15 +184,13 @@ namespace message2 {
     FormattedPlaceholder& FormattedPlaceholder::operator=(FormattedPlaceholder&& other) noexcept {
         type = other.type;
         source = other.source;
-        if (type == kEvaluated) {
-            formatted = std::move(other.formatted);
-            previousOptions = std::move(other.previousOptions);
-        }
-        fallback = other.fallback;
+        previousOptions = other.previousOptions;
+        other.previousOptions = nullptr;
+        fallbackString = other.fallbackString;
         return *this;
     }
 
-    const Formattable& FormattedPlaceholder::asFormattable() const {
+    const Formattable& FormattedPlaceholder::getSource() const {
         return source;
     }
 
@@ -231,6 +231,7 @@ namespace message2 {
         df->format(date, result, 0, errorCode);
     }
 
+#if false
     // Called when output is required and the contents are an unevaluated `Formattable`;
     // formats the source `Formattable` to a string with defaults, if it can be
     // formatted with a default formatter
@@ -239,7 +240,7 @@ namespace message2 {
             return {};
         }
 
-        const Formattable& toFormat = input.asFormattable();
+        const Formattable& toFormat = input.getSource();
         // Try as decimal number first
         if (toFormat.isNumeric()) {
             // Note: the ICU Formattable has to be created here since the StringPiece
@@ -251,7 +252,8 @@ namespace message2 {
                 return {};
             }
             if (asDecimal != nullptr) {
-                return FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, asDecimal, status)));
+                return FormattedNumber(input, asDecimal, status);
+// FormattedPlaceholder(input, FormattedValue(formatNumberWithDefaults(locale, asDecimal, status)));
             }
         }
 
@@ -294,7 +296,9 @@ namespace message2 {
         }
         }
     }
+#endif
 
+#if false
     // Called when string output is required; forces output to be produced
     // if none is present (including formatting number output as a string)
     UnicodeString FormattedPlaceholder::formatToString(const Locale& locale,
@@ -303,7 +307,7 @@ namespace message2 {
             return {};
         }
         if (isFallback() || isNullOperand()) {
-            return fallbackToString(fallback);
+            return fallbackToString(fallback, status);
         }
 
         // Evaluated value: either just return the string, or format the number
@@ -328,6 +332,7 @@ namespace message2 {
         }
         return evaluated.formatToString(locale, status);
     }
+#endif
 
 } // namespace message2
 

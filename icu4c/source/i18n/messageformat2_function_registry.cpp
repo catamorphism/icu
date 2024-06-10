@@ -414,11 +414,11 @@ Formatter* StandardFunctions::IntegerFactory::createFormatter(const Locale& loca
 
 StandardFunctions::IntegerFactory::~IntegerFactory() {}
 
-static FormattedPlaceholder notANumber(const FormattedPlaceholder& input) {
-    return FormattedPlaceholder(input, FormattedValue(UnicodeString("NaN")));
+static FormattedStringPlaceholder notANumber() {
+    return FormattedStringPlaceholder(UnicodeString("NaN"));
 }
 
-static FormattedPlaceholder stringAsNumber(const number::LocalizedNumberFormatter& nf, const FormattedPlaceholder& input, UErrorCode& errorCode) {
+static FormattedPlaceholder* stringAsNumber(const FormattedPlaceholder& input, FunctionOptions&& opts, UErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -426,7 +426,7 @@ static FormattedPlaceholder stringAsNumber(const number::LocalizedNumberFormatte
     double numberValue;
     // Copying string to avoid GCC dangling-reference warning
     // (although the reference is safe)
-    UnicodeString inputStr = input.asFormattable().getString(errorCode);
+    UnicodeString inputStr = input.getSource().getString(errorCode);
     // Precondition: `input`'s source Formattable has type string
     if (U_FAILURE(errorCode)) {
         return {};
@@ -435,15 +435,17 @@ static FormattedPlaceholder stringAsNumber(const number::LocalizedNumberFormatte
     strToDouble(inputStr, numberValue, localErrorCode);
     if (U_FAILURE(localErrorCode)) {
         errorCode = U_MF_OPERAND_MISMATCH_ERROR;
-        return notANumber(input);
+        return FormattedPlaceholder::clone(notANumber(), errorCode);
     }
     UErrorCode savedStatus = errorCode;
-    number::FormattedNumber result = nf.formatDouble(numberValue, errorCode);
+// TODO: construct number formatter in formatToString() method
+//    number::FormattedNumber result = nf.formatDouble(numberValue, errorCode);
     // Ignore U_USING_DEFAULT_WARNING
     if (errorCode == U_USING_DEFAULT_WARNING) {
         errorCode = savedStatus;
     }
-    return FormattedPlaceholder(input, FormattedValue(std::move(result)));
+  //  return FormattedPlaceholder(input, FormattedValue(std::move(result)));
+    return FormattedNumberPlaceholder::create(numberValue, std::move(opts), errorCode);
 }
 
 // Returns -1 if option is not present
@@ -513,7 +515,7 @@ bool StandardFunctions::Number::usePercent(const FunctionOptions& opts) const {
     return StandardFunctions::Number(loc, true);
 }
 
-FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& arg, FunctionOptions&& opts, UErrorCode& errorCode) const {
+FormattedPlaceholder* StandardFunctions::Number::format(FormattedPlaceholder&& arg, FunctionOptions&& opts, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -521,9 +523,39 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
     // No argument => return "NaN"
     if (!arg.canFormat()) {
         errorCode = U_MF_OPERAND_MISMATCH_ERROR;
-        return notANumber(arg);
+        return FormattedPlaceholder::clone(notANumber(), errorCode);
     }
 
+    // TODO: this doesn't merge arg's options with opts
+    const Formattable& toFormat = arg.getSource();
+    switch (toFormat.getType()) {
+        case UFMT_DOUBLE: {
+            double d = toFormat.getDouble(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            return FormattedNumberPlaceholder::create(d, std::move(opts), errorCode);
+        }
+        case UFMT_LONG: {
+            int32_t l = toFormat.getLong(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            return FormattedNumberPlaceholder::create(l, std::move(opts), errorCode);
+        }
+        case UFMT_INT64: {
+            int64_t i = toFormat.getInt64(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            return FormattedNumberPlaceholder::create(i, std::move(opts), errorCode);
+        }
+        case UFMT_STRING: {
+            // Try to parse the string as a number
+            return stringAsNumber(arg, std::move(opts), errorCode);
+        }
+        default: {
+            // Other types can't be parsed as a number
+            errorCode = U_MF_OPERAND_MISMATCH_ERROR;
+            return FormattedPlaceholder::clone(notANumber(), errorCode);
+        }
+    }
+
+/*
     number::LocalizedNumberFormatter realFormatter;
     realFormatter = formatterForOptions(*this, opts, errorCode);
 
@@ -563,6 +595,7 @@ FormattedPlaceholder StandardFunctions::Number::format(FormattedPlaceholder&& ar
     }
 
     return FormattedPlaceholder(arg, FormattedValue(std::move(numberResult)));
+*/
 }
 
 StandardFunctions::Number::~Number() {}
@@ -615,17 +648,16 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
 
     // Handle any formatting options
     PluralType type = pluralType(opts);
-    FormattedPlaceholder resolvedSelector = numberFormatter->format(std::move(toFormat),
-                                                                    std::move(opts),
-                                                                    errorCode);
+    LocalPointer<FormattedPlaceholder> resolvedSelector(numberFormatter->format(std::move(toFormat),
+                                                                                std::move(opts),
+                                                                                errorCode));
     CHECK_ERROR(errorCode);
-
-    U_ASSERT(resolvedSelector.isEvaluated() && resolvedSelector.output().isNumber());
 
     // See  https://github.com/unicode-org/message-format-wg/blob/main/spec/registry.md#number-selection
     // 1. Let exact be the JSON string representation of the numeric value of resolvedSelector
-    const number::FormattedNumber& formattedNumber = resolvedSelector.output().getNumber();
-    UnicodeString exact = formattedNumber.toString(errorCode);
+ //   number::FormattedNumber formattedNumber = resolvedSelector.asNumber();
+
+    UnicodeString exact = resolvedSelector->formatToString(Locale("en"), errorCode);
 
     if (U_FAILURE(errorCode)) {
         // Non-number => selector error
@@ -642,7 +674,7 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
         LocalPointer<PluralRules> rules(PluralRules::forLocale(locale, t, errorCode));
         CHECK_ERROR(errorCode);
 
-        keyword = rules->select(formattedNumber, errorCode);
+        keyword = rules->select(resolvedSelector->formatToNumber(locale, errorCode), errorCode);
     }
 
     // Steps 3-4 elided:
@@ -735,7 +767,7 @@ StandardFunctions::PluralFactory::~PluralFactory() {}
             errorCode = U_ZERO_ERROR;
         } else if (U_SUCCESS(errorCode)) {
             // In case it's not a string, error code will be set
-            return opt->asFormattable().getString(errorCode);
+            return opt->getSource().getString(errorCode);
         }
     }
     // Default is empty string
@@ -868,9 +900,9 @@ Formatter* StandardFunctions::DateTimeFactory::createFormatter(const Locale& loc
     return result;
 }
 
-FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& toFormat,
-                                                   FunctionOptions&& opts,
-                                                   UErrorCode& errorCode) const {
+FormattedPlaceholder* StandardFunctions::DateTime::format(FormattedPlaceholder&& toFormat,
+                                                          FunctionOptions&& opts,
+                                                          UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
@@ -878,7 +910,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
     // Argument must be present
     if (!toFormat.canFormat()) {
         errorCode = U_MF_OPERAND_MISMATCH_ERROR;
-        return std::move(toFormat);
+        return FormattedPlaceholder::create(std::move(toFormat), errorCode);
     }
 
     LocalPointer<DateFormat> df;
@@ -1053,7 +1085,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
     }
 
     UnicodeString result;
-    const Formattable& source = toFormat.asFormattable();
+    const Formattable& source = toFormat.getSource();
     switch (source.getType()) {
     case UFMT_STRING: {
         const UnicodeString& sourceStr = source.getString(errorCode);
@@ -1080,34 +1112,31 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
                     }
                 }
             }
-            // Use the parsed date as the source value
-            // in the returned FormattedPlaceholder; this is necessary
-            // so the date can be re-formatted
-            toFormat = FormattedPlaceholder(message2::Formattable::forDate(d),
-                                            toFormat.getFallback());
-            df->format(d, result, 0, errorCode);
+            return FormattedDatePlaceholder::create(d, std::move(opts));
+      //      df->format(d, result, 0, errorCode);
         }
         break;
     }
     case UFMT_DATE: {
+/*
         df->format(source.asICUFormattable(errorCode), result, 0, errorCode);
         if (U_FAILURE(errorCode)) {
             if (errorCode == U_ILLEGAL_ARGUMENT_ERROR) {
                 errorCode = U_MF_OPERAND_MISMATCH_ERROR;
             }
         }
-        break;
+*/
+        UDate d = source.getDate(errorCode);
+        U_ASSERT(U_SUCCESS(errorCode));
+        return FormattedDatePlaceholder::create(d, std::move(opts));
     }
     // Any other cases are an error
     default: {
         errorCode = U_MF_OPERAND_MISMATCH_ERROR;
-        break;
-    }
-    }
-    if (U_FAILURE(errorCode)) {
         return {};
     }
-    return FormattedPlaceholder(toFormat, std::move(opts), FormattedValue(std::move(result)));
+    }
+    return {};
 }
 
 StandardFunctions::DateTimeFactory::~DateTimeFactory() {}

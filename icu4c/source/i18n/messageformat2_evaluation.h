@@ -62,7 +62,8 @@ namespace message2 {
         }
         return 1;
     }
-
+// TODO: This can actually just be a FormattedPlaceholder
+// if a selectKeys() method is added to that class
     // Encapsulates a value to be scrutinized by a `match` with its resolved
     // options and the name of the selector
     class ResolvedSelector : public UObject {
@@ -71,12 +72,12 @@ namespace message2 {
         ResolvedSelector(const FunctionName& fn,
                          Selector* selector,
                          FunctionOptions&& options,
-                         FormattedPlaceholder&& value);
+                         FormattedPlaceholder* value);
         // Used either for errors, or when selector isn't yet known
-        explicit ResolvedSelector(FormattedPlaceholder&& value);
+        explicit ResolvedSelector(FormattedPlaceholder* value);
         bool hasSelector() const { return selector.isValid(); }
-        const FormattedPlaceholder& argument() const { return value; }
-        FormattedPlaceholder&& takeArgument() { return std::move(value); }
+        const FormattedPlaceholder& argument() const { return *value; }
+        FormattedPlaceholder* takeArgument(); // { Formatted *value.orphan(); }
         const Selector* getSelector() {
             U_ASSERT(selector.isValid());
             return selector.getAlias();
@@ -92,7 +93,7 @@ namespace message2 {
         FunctionName selectorName; // For error reporting
         LocalPointer<Selector> selector;
         FunctionOptions options;
-        FormattedPlaceholder value;
+        LocalPointer<FormattedPlaceholder> value;
     }; // class ResolvedSelector
 
     // Closures and environments

@@ -463,7 +463,7 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
   public:
       const UnicodeString& getName() const { return name; }
       const message2::FormattedPlaceholder* getValue() const { return value.getAlias(); }
-      ResolvedFunctionOption(const UnicodeString& n, message2::FormattedPlaceholder&& f);
+      ResolvedFunctionOption(const UnicodeString& n, message2::FormattedPlaceholder* f);
       ResolvedFunctionOption() {}
       ResolvedFunctionOption(ResolvedFunctionOption&&);
       ResolvedFunctionOption& operator=(ResolvedFunctionOption&& other) noexcept {
@@ -579,14 +579,78 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
 
     class FunctionOptions;
 
+/*
+  TODO: more explanation
+
+The idea is that users can define subclasses of FormattedPlaceholder;
+each custom function might return its own subclass.
+The formatToString() method (and formatToParts() in the future)
+defines how to format the "source" Formattable with its options.
+In this way, the formatted result is computed lazily
+(and a FormattedValue, which is non-copyable, doesn't need
+to be stored in a FormattedPlaceholder; so a FormattedPlaceholder
+is copyable. Copyability is helpful since the std::map of function
+options needs to be created by copying.)
+
+The other reason this needs to be an abstract class is to avoid
+limiting the types of possible "formatted results" to ints and strings.
+An alternative would be to contain a FormattedValue as a member
+and not define this as an abstract class, but FormattedValue is an
+abstract class itself so we're still allocating.
+
+---
+actually I think the real reason is this:
+- FormattedPlaceholders need to be copyable because they can be
+the values of resolved options.
+  example:
+    .input {$item :noun case=accusative}
+    .local $colorMatchingItem = {$color :adjective accord=$item}
+    .local $sizeMatchingItem  = {$size :adjective accord=$item}
+
+The value bound to $item appears more than once, so its
+options are used more than once.
+
+- They are currently not copyable because FormattedNumber is not copyable.
+
+- Even if we implemented formatting to parts
+and  replaced (FormattedNumber | UnicodeString) with
+FormattedValue*, it would be non-copyable because the pointer wouldn't be
+uniquely owned if it was copied.
+
+- Hence, methods that compute the FormattedNumber or FormattedValue
+result, rather than storing the data as members in the class.
+
+Each custom function, then, has to define its own class that
+realizes its formatting behavior by overriding
+the formatToString() and formatToParts() methods.
+
+---
+
+The real reason is: creating the FunctionOptionsMap from a FunctionOptions
+copies, and so FunctionOptions has to be made copyable. Which means
+FormattedPlaceholder needs to be made copyable if the range of
+a FunctionOptions is to be a FormattedPlaceholder.
+
+The creation of the FunctionOptionsMap can't be done via move,
+because within the function invocation it needs to both use the options
+of the options, and return the options for itself.
+
+For example:
+
+.local ".input {$item :noun case=accusative count=1} \
+.local $colorMatchingGrammaticalNumberGenderCase = {$color :adjective accord=$item}
+
+In the body of :adjective, the option map corresponding to accord=$item needs to be
+returned. But the value of $item is a FormattedPlaceholder that has its own
+option map {case=accusative, count=1}.
+*/
     /**
      * A `FormattablePlaceholder` encapsulates an input value (a `message2::Formattable`)
      * together with an optional output value (a `message2::FormattedValue`).
      *  More information, such as source line/column numbers, could be added to the class
      * in the future.
      *
-     * `FormattablePlaceholder` is immutable (not deeply immutable) and movable.
-     * It is not copyable.
+     * Subclasses should be immutable.
      *
      * @internal ICU 75 technology preview
      * @deprecated This API is for technology preview only.
@@ -603,52 +667,55 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
          * @internal ICU 75 technology preview
          * @deprecated This API is for technology preview only.
          */
-        explicit FormattedPlaceholder(const UnicodeString& s) : fallback(s), type(kFallback) {}
-        /**
-         * Constructor for fully formatted placeholders.
-         *
-         * @param input A `FormattedPlaceholder` containing the fallback string and source
-         *        `Formattable` used to construct the formatted value.
-         * @param output A `FormattedValue` representing the formatted output of `input`.
-         *        Passed by move.
-         *
-         * @internal ICU 75 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        FormattedPlaceholder(const FormattedPlaceholder& input,
-                             FormattedValue&& output);
-/*
-            : fallback(input.fallback), source(input.source),
-            formatted(std::move(output)), previousOptions(nullptr), type(kEvaluated) {}
-*/
+//        explicit FormattedPlaceholder(const UnicodeString& s) : fallback(s), type(kFallback) {}
         /**
          * Constructor for fully formatted placeholders with options.
          *
          * @param input A `FormattedPlaceholder` containing the fallback string and source
          *        `Formattable` used to construct the formatted value.
          * @param opts Function options that were used to construct `output`. May be the empty map.
-         * @param output A `FormattedValue` representing the formatted output of `input`.
-         *        Passed by move.
          *
          * @internal ICU 75 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FormattedPlaceholder(const FormattedPlaceholder& input, FunctionOptions&& opts, FormattedValue&& output);
+        FormattedPlaceholder(const FormattedPlaceholder& input, FunctionOptions&& opts);
 /*
             : fallback(input.fallback), source(input.source),
             formatted(std::move(output)), previousOptions(std::move(opts)), type(kEvaluated) {}
 */
         /**
-         * Constructor for unformatted placeholders.
+         * Factory method for formatted placeholders with default formatting.
          *
-         * @param input A `Formattable` object.
+         * @param val A `Formattable` object.
          * @param fb Fallback string to use if an error occurs while formatting the input.
+         * @param status Input/output error code.
          *
-         * @internal ICU 75 technology preview
+         * @internal ICU 76 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FormattedPlaceholder(const Formattable& input, const UnicodeString& fb)
-            : fallback(fb), source(input), type(kUnevaluated) {}
+        static FormattedPlaceholder* of(const Formattable& val,
+                                        const UnicodeString& fallback,
+                                        UErrorCode& status);
+        /**
+         * Factory method for null formatted placeholders.
+         *
+         * @param val A `Formattable` object.
+         * @param status Input/output error code.
+         *
+         * @internal ICU 76 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        static FormattedPlaceholder* null(UErrorCode& status);
+        /**
+         * Factory method for fallback formatted placeholders.
+         *
+         * @param fb Fallback string.
+         * @param status Input/output error code.
+         *
+         * @internal ICU 76 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        static FormattedPlaceholder* fallback(const UnicodeString& fb, UErrorCode& status);
         /**
          * Default constructor. Leaves the FormattedPlaceholder in a
          * valid but undefined state.
@@ -657,7 +724,6 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
          * @deprecated This API is for technology preview only.
          */
         FormattedPlaceholder() : type(kNull) {}
-// TODO: Rename to getSource() or getValue()?
         /**
          * Returns the source `Formattable` value for this placeholder.
          * The result is undefined if this is a null operand.
@@ -667,7 +733,7 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
          * @internal ICU 75 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const message2::Formattable& asFormattable() const;
+        virtual const message2::Formattable& getSource() const = 0;
         /**
          * Returns true iff this is a fallback placeholder.
          *
@@ -689,16 +755,6 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
          */
         bool isNullOperand() const { return type == kNull; }
         /**
-         * Returns true iff this has formatting output.
-         *
-         * @return True if and only if this was constructed from both an input `Formattable` and
-         *         output `FormattedValue`.
-         *
-         * @internal ICU 75 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        bool isEvaluated() const { return (type == kEvaluated); }
-        /**
          * Returns true iff this represents a valid argument to the formatter.
          *
          * @return True if and only if this is neither the null argument nor a fallback placeholder.
@@ -714,7 +770,7 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
          * @internal ICU 75 technology preview
          * @deprecated This API is for technology preview only.
          */
-        const UnicodeString& getFallback() const { return fallback; }
+        const UnicodeString& getFallback() const { return fallbackString; }
         /**
          * Returns the options of this placeholder. The result is the empty map if !isEvaluated().
          * @return A reference to an option map, capturing the options that were used
@@ -725,35 +781,39 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
          */
         const FunctionOptions& options() const; // { return *previousOptions; }
         /**
-         * Returns the formatted output of this placeholder. The result is undefined if !isEvaluated().
-         * @return          A fully formatted `FormattedPlaceholder`.
-         * @internal ICU 75 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        const FormattedValue& output() const { return formatted; }
-        /**
          * Move assignment operator:
          * The source FormattedPlaceholder will be left in a valid but undefined state.
          *
          * @internal ICU 75 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FormattedPlaceholder& operator=(FormattedPlaceholder&&) noexcept;
+        virtual FormattedPlaceholder& operator=(FormattedPlaceholder&&) noexcept;
         /**
-         * Move constructor:
+         * Virtual move constructor:
          * The source FormattedPlaceholder will be left in a valid but undefined state.
          *
          * @internal ICU 75 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FormattedPlaceholder(FormattedPlaceholder&& other) { *this = std::move(other); }
+        static FormattedPlaceholder* create(FormattedPlaceholder&& other, UErrorCode& status);
         /**
-         * Formats this as a string, using defaults.  If this is
+         * Virtual copy constructor.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+        static FormattedPlaceholder* clone(const FormattedPlaceholder& other, UErrorCode& status);
+        /**
+         * Copy assignment operator.
+         *
+         * @internal ICU 75 technology preview
+         * @deprecated This API is for technology preview only.
+         */
+//        virtual FormattedPlaceholder& operator=(const FormattedPlaceholder& other) const = 0;
+        /**
+         * Formats this as a string.  If this is
          * either the null operand or is a fallback value, the return value is the result of formatting the
          * fallback value (which is the default fallback string if this is the null operand).
-         * If there is no formatted output and the input is object- or array-typed,
-         * then the argument is treated as a fallback value, since there is no default formatter
-         * for objects or arrays.
          *
          * @param locale The locale to use for formatting numbers or dates
          * @param status Input/output error code
@@ -762,8 +822,12 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
          * @internal ICU 75 technology preview
          * @deprecated This API is for technology preview only.
          */
-        UnicodeString formatToString(const Locale& locale,
-                                     UErrorCode& status) const;
+        virtual UnicodeString formatToString(const Locale& locale,
+                                             UErrorCode& status) const = 0;
+// TODO doc comment
+        virtual number::FormattedNumber formatToNumber(const Locale& locale,
+                                                       UErrorCode& status) const = 0;
+// TODO: add stub for formatToParts
 
     private:
         friend class MessageFormatter;
@@ -771,12 +835,10 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
         enum Type {
             kFallback,    // Represents the result of formatting that encountered an error
             kNull,        // Represents the absence of both an output and an input (not necessarily an error)
-            kUnevaluated, // `source` should be valid, but there's no result yet
-            kEvaluated,   // `formatted` exists
+            kSource       // Represents a formattable FormattedPlaceholder
         };
-        UnicodeString fallback;
+        UnicodeString fallbackString;
         Formattable source;
-        FormattedValue formatted;
 // TODO: destructor
         // Options from previous evaluation. Non-null (map is empty if
         // type != kEvaluated)
@@ -786,6 +848,46 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
         FunctionOptions* previousOptions;
         Type type;
     }; // class FormattedPlaceholder
+
+// TODO doc comments
+    class U_I18N_API FormattedNumberPlaceholder : public FormattedPlaceholder {
+        public:
+        UnicodeString formatToString(const Locale& locale,
+                                     UErrorCode& status) const override;
+// convert `contents` back to a Formattable
+        const message2::Formattable& getSource() const override;
+        static FormattedNumberPlaceholder* create(double, FunctionOptions&&, UErrorCode&);
+        number::FormattedNumber formatToNumber(const Locale&, UErrorCode& status) const override;
+        private:
+//        std::variant<int64_t, StringPiece> contents;
+    }; // class FormattedNumberPlaceholder
+
+    class U_I18N_API FormattedStringPlaceholder : public FormattedPlaceholder {
+        public:
+        FormattedStringPlaceholder(const UnicodeString& s);
+        UnicodeString formatToString(const Locale& locale,
+                                     UErrorCode& status) const override;
+        static FormattedStringPlaceholder* create(const UnicodeString, FunctionOptions&&, UErrorCode&);
+        // Errors out
+        number::FormattedNumber formatToNumber(const Locale&,
+                                               UErrorCode& status) const override;
+        // convert `contents` back to a Formattable
+        const message2::Formattable& getSource() const override;
+        private:
+    }; // class FormattedStringPlaceholder
+
+    class U_I18N_API FormattedDatePlaceholder : public FormattedPlaceholder {
+        public:
+        static FormattedDatePlaceholder* create(UDate d, FunctionOptions&& opts);
+        UnicodeString formatToString(const Locale& locale,
+                                     UErrorCode& status) const override;
+        // Errors out
+        number::FormattedNumber formatToNumber(const Locale&,
+                                               UErrorCode& status) const override;
+        // convert `contents` back to a Formattable
+        const message2::Formattable& getSource() const override;
+        private:
+    }; // class FormattedDatePlaceholder
 
 
 /**
@@ -797,7 +899,7 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
  * @internal ICU 75 technology preview
  * @deprecated This API is for technology preview only.
  */
-using FunctionOptionsMap = std::map<UnicodeString, message2::FormattedPlaceholder>;
+using FunctionOptionsMap = std::map<UnicodeString, const message2::FormattedPlaceholder*>;
 
 /**
  * Structure encapsulating named options passed to a custom selector or formatter.
@@ -821,16 +923,20 @@ class U_I18N_API FunctionOptions : public UObject {
      * @internal ICU 75 technology preview
      * @deprecated This API is for technology preview only.
      */
-    static FunctionOptionsMap getOptions(FunctionOptions&& opts) {
+    static FunctionOptionsMap getOptions(FunctionOptions&& opts, UErrorCode& status) {
+        if (U_FAILURE(status)) {
+            return {};
+        }
         int32_t len;
         LocalArray<ResolvedFunctionOption> resolvedOptions(getResolvedFunctionOptions(std::move(opts), len));
         FunctionOptionsMap result;
         for (int32_t i = 0; i < len; i++) {
             ResolvedFunctionOption& opt = resolvedOptions[i];
-            UnicodeString name = opt.getName();
-            FormattedPlaceholder* val = opt.value.orphan();
-            std::pair<UnicodeString, FormattedPlaceholder> p = std::make_pair(name, std::move(*val));
-            result.insert(std::move(p));
+            LocalPointer<FormattedPlaceholder> rhs(FormattedPlaceholder::clone(*opt.value, status));
+            if (U_FAILURE(status)) {
+                return {};
+            }
+            result[opt.getName()] = rhs.orphan();
         }
         return result;
     }

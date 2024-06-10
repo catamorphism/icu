@@ -256,34 +256,36 @@ static bool hasStringOption(const FunctionOptionsMap& opt,
         return false;
     }
     UErrorCode localErrorCode = U_ZERO_ERROR;
-    UnicodeString optVal = opt.at(k).asFormattable().getString(localErrorCode);
+    UnicodeString optVal = opt.at(k)->getSource().getString(localErrorCode);
     return U_SUCCESS(localErrorCode) && optVal == v;
 }
 
-message2::FormattedPlaceholder PersonNameFormatter::format(FormattedPlaceholder&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
+message2::FormattedPlaceholder* PersonNameFormatter::format(FormattedPlaceholder&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode)) {
         return {};
     }
 
-    message2::FormattedPlaceholder errorVal = message2::FormattedPlaceholder("not a person");
+    const Formattable& toFormat = arg.getSource();
 
-    if (!arg.canFormat() || arg.asFormattable().getType() != UFMT_OBJECT) {
-        return errorVal;
+    if (!arg.canFormat() || toFormat.getType() != UFMT_OBJECT) {
+        LocalPointer<message2::FormattedPlaceholder> errorVal(message2::FormattedStringPlaceholder::create(UnicodeString("not a person"), std::move(options), errorCode));
+        return errorVal.orphan();
     }
-    const Formattable& toFormat = arg.asFormattable();
 
-    FunctionOptionsMap opt = FunctionOptions::getOptions(std::move(options));
-
-    bool useFormal = hasStringOption(opt, "formality", "formal");
-    UnicodeString length = hasStringOption(opt, "length", "short");
+    FunctionOptionsMap opt = FunctionOptions::getOptions(std::move(options), errorCode);
 
     const FormattableObject* fp = toFormat.getObject(errorCode);
     U_ASSERT(U_SUCCESS(errorCode));
 
     if (fp == nullptr || fp->tag() != u"person") {
-        return errorVal;
+        LocalPointer<message2::FormattedPlaceholder> errorVal(message2::FormattedStringPlaceholder::create(UnicodeString("not a person"), std::move(options), errorCode));
+        return errorVal.orphan();
     }
     const Person* p = static_cast<const Person*>(fp);
+
+/*
+    bool useFormal = hasStringOption(opt, "formality", "formal");
+    UnicodeString length = hasStringOption(opt, "length", "short");
 
     UnicodeString title = p->title;
     UnicodeString firstName = p->firstName;
@@ -314,8 +316,8 @@ message2::FormattedPlaceholder PersonNameFormatter::format(FormattedPlaceholder&
     } else {
         result += firstName;
     }
-
-    return FormattedPlaceholder(arg, FormattedValue(std::move(result)));
+*/
+    return FormattedPerson::create(p, std::move(options), errorCode);
 }
 
 FormattableProperties::~FormattableProperties() {}

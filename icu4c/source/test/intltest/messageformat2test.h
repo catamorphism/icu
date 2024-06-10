@@ -115,7 +115,14 @@ class Person : public FormattableObject {
 
 class PersonNameFormatter : public Formatter {
     public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FormattedPlaceholder* format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+};
+
+class FormattedPerson : public FormattedPlaceholder {
+    public:
+    UnicodeString formatToString(const Locale& locale,
+                                 UErrorCode& status) const override;
+    static FormattedPerson* create(const Person*, FunctionOptions&&, UErrorCode&);
 };
 
 class FormattableProperties : public FormattableObject {
@@ -137,7 +144,7 @@ class GrammarCasesFormatterFactory : public FormatterFactory {
 
 class GrammarCasesFormatter : public Formatter {
     public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FormattedPlaceholder* format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
     static MFFunctionRegistry customRegistry(UErrorCode&);
     private:
     void getDativeAndGenitive(const UnicodeString&, UnicodeString& result) const;
@@ -150,7 +157,7 @@ class ListFormatterFactory : public FormatterFactory {
 
 class ListFormatter : public Formatter {
     public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FormattedPlaceholder* format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
     static MFFunctionRegistry customRegistry(UErrorCode&);
     private:
     friend class ListFormatterFactory;
@@ -165,7 +172,7 @@ class ResourceManagerFactory : public FormatterFactory {
 
 class ResourceManager : public Formatter {
     public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FormattedPlaceholder* format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
     static MFFunctionRegistry customRegistry(UErrorCode&);
     static Hashtable* properties(UErrorCode&);
     static UnicodeString propertiesAsString(const Hashtable&);
@@ -191,7 +198,7 @@ class AdjectiveFormatterFactory : public FormatterFactory {
 
 class NounFormatter : public Formatter {
     public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FormattedPlaceholder* format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
     private:
     friend class NounFormatterFactory;
     NounFormatter() { }
@@ -199,7 +206,7 @@ class NounFormatter : public Formatter {
 
 class AdjectiveFormatter : public Formatter {
     public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FormattedPlaceholder* format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
     private:
     friend class AdjectiveFormatterFactory;
     AdjectiveFormatter() { }
