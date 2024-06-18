@@ -100,7 +100,7 @@ static bool setArguments(TestCase::Builder& test, const json::object_t& params, 
             // from number values
             auto obj = argsIter->second.template get<json::object_t>();
             if (obj["date"].is_number()) {
-                test.setDateArgument(argName, obj["date"], errorCode);
+                test.setDateArgument(argName, obj["date"]);
             } else if (obj["decimal"].is_string()) {
                 // Decimal strings: represent in tests as { "decimal" : string },
                 // to distinguish from string values
