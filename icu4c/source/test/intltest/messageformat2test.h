@@ -60,6 +60,7 @@ private:
     void testGrammarCasesFormatter(IcuTestErrorCode&);
     void testListFormatter(IcuTestErrorCode&);
     void testMessageRefFormatter(IcuTestErrorCode&);
+    void testRangeFormatterSelector(IcuTestErrorCode&);
 
     // Feature tests
     void testEmptyMessage(message2::TestCase::Builder&, IcuTestErrorCode&);
@@ -174,6 +175,51 @@ class ResourceManager : public Formatter {
     friend class ResourceManagerFactory;
     ResourceManager(const Locale& loc) : locale(loc) {}
     const Locale& locale;
+};
+
+// Custom function classes
+class RangeFormatterFactory : public FormatterFactory {
+
+    public:
+    Formatter* createFormatter(const Locale&, UErrorCode&) override;
+};
+
+class Range : public FormattableObject {
+    public:
+    int32_t start;
+    int32_t end;
+    Range(int32_t s, int32_t e) : start(s), end(e), tagName("range") {}
+    ~Range();
+    const UnicodeString& tag() const override { return tagName; }
+    private:
+    const UnicodeString tagName;
+};
+
+class RangeFormatter : public Formatter {
+    public:
+    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    RangeFormatter(const Locale& l) : locale(l) {}
+    private:
+    Locale locale;
+};
+
+class RangeSelectorFactory : public SelectorFactory {
+    public:
+    Selector* createSelector(const Locale&, UErrorCode&) const override;
+};
+
+class RangeSelector : public Selector {
+    public:
+    void selectKey(FormattedPlaceholder&& val,
+                   FunctionOptions&& options,
+                   const UnicodeString* keys,
+                   int32_t keysLen,
+                   UnicodeString* prefs,
+                   int32_t& prefsLen,
+                   UErrorCode& status) const override;
+    RangeSelector(const Locale& l) : locale(l) {}
+    private:
+    Locale locale;
 };
 
 } // namespace message2

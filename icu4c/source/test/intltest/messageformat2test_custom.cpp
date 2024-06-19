@@ -12,7 +12,7 @@
 #include "messageformat2test.h"
 #include "hash.h"
 #include "intltest.h"
-
+#include "plurrule_impl.h"
 
 using namespace message2;
 using namespace pluralimpl;
@@ -182,6 +182,48 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
+
+// Based on "Plural Range Selectors & Range Formatters
+// in https://github.com/messageformat/messageformat/blob/main/packages/mf2-messageformat/src/mf2-features.test.ts
+void TestMessageFormat2::testRangeFormatterSelector(IcuTestErrorCode& errorCode) {
+    CHECK_ERROR(errorCode);
+
+    MFFunctionRegistry customRegistry(MFFunctionRegistry::Builder(errorCode)
+                                      .adoptFormatter(FunctionName("range"), new RangeFormatterFactory(), errorCode)
+                                      .adoptSelector(FunctionName("range"), new RangeSelectorFactory(), errorCode)
+                                      .build());
+
+    LocalPointer<Range> range1(new Range(0, 1));
+    LocalPointer<Range> range2(new Range(1, 2));
+    if (!range1.isValid() || !range2.isValid()) {
+       ((UErrorCode&) errorCode) = U_MEMORY_ALLOCATION_ERROR;
+       return;
+   }
+
+    UnicodeString message = ".input {$range :range}\
+        .match {$range}\
+        one {{{$range} dag}}\
+        * {{{$range} dagen}}";
+
+    TestCase::Builder testBuilder;
+    testBuilder.setName("testRangeFormatterSelector");
+    testBuilder.setLocale(Locale("nl"));
+    testBuilder.setPattern(message);
+    testBuilder.setFunctionRegistry(&customRegistry);
+
+    TestCase test = testBuilder.setArgument("range", range1.getAlias())
+        .setExpected("0 - 1 dag")
+        .setExpectSuccess()
+        .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setArgument("range", range2.getAlias())
+        .setExpected("1 - 2 dagen")
+        .setExpectSuccess()
+        .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+}
+
 void TestMessageFormat2::testCustomFunctions() {
   IcuTestErrorCode errorCode(*this, "testCustomFunctions");
 
@@ -190,8 +232,8 @@ void TestMessageFormat2::testCustomFunctions() {
   testGrammarCasesFormatter(errorCode);
   testListFormatter(errorCode);
   testMessageRefFormatter(errorCode);
+  testRangeFormatterSelector(errorCode);
 }
-
 
 // -------------- Custom function implementations
 
@@ -726,6 +768,116 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
                                 .build();
     TestUtils::runTestCase(*this, test, errorCode);
 }
+
+Range::~Range() {}
+
+Formatter* RangeFormatterFactory::createFormatter(const Locale& locale, UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return nullptr;
+    }
+
+    Formatter* result = new RangeFormatter(locale);
+    if (result == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
+
+FormattedPlaceholder RangeFormatter::format(FormattedPlaceholder&& arg,
+                                            FunctionOptions&& opts,
+                                            UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode)) {
+        return {};
+    }
+
+    (void) opts; // Options not used
+
+    message2::FormattedPlaceholder errorVal = message2::FormattedPlaceholder("not a range");
+
+    if (!arg.canFormat() || arg.asFormattable().getType() != UFMT_OBJECT) {
+        return errorVal;
+    }
+    const Formattable& toFormat = arg.asFormattable();
+    const FormattableObject* fRange = toFormat.getObject(errorCode);
+    U_ASSERT(U_SUCCESS(errorCode));
+
+    if (fRange == nullptr || fRange->tag() != u"range") {
+        return errorVal;
+    }
+    const Range* range = static_cast<const Range*>(fRange);
+
+    char buffer[50];
+    snprintf(buffer, sizeof(buffer), "%i - %i", range->start, range->end);
+    UnicodeString result(buffer);
+    return FormattedPlaceholder(arg, FormattedValue(result));
+}
+
+Selector* RangeSelectorFactory::createSelector(const Locale& locale, UErrorCode& errorCode) const {
+    NULL_ON_ERROR(errorCode);
+
+    Selector* result = new RangeSelector(locale);
+    if (result == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return result;
+}
+
+void RangeSelector::selectKey(FormattedPlaceholder&& arg,
+                              FunctionOptions&& opts,
+                              const UnicodeString* keys,
+                              int32_t keysLen,
+                              UnicodeString* prefs,
+                              int32_t& prefsLen,
+                              UErrorCode& errorCode) const {
+    CHECK_ERROR(errorCode);
+
+    (void) opts; // Options not used
+
+    // No argument => error out
+    if (!arg.canFormat()) {
+        errorCode = U_MF_SELECTOR_ERROR;
+        return;
+    }
+
+    if (locale != Locale("nl")) {
+        // Test only supports Dutch
+        errorCode = U_MF_SELECTOR_ERROR;
+        return;
+    }
+
+    // Extract the range object
+    if (!arg.canFormat() || arg.asFormattable().getType() != UFMT_OBJECT) {
+        errorCode = U_MF_SELECTOR_ERROR;
+        return;
+    }
+    const Formattable& toFormat = arg.asFormattable();
+    const FormattableObject* fRange = toFormat.getObject(errorCode);
+    U_ASSERT(U_SUCCESS(errorCode));
+
+    if (fRange == nullptr || fRange->tag() != u"range") {
+        errorCode = U_MF_SELECTOR_ERROR;
+        return;
+    }
+    const Range* range = static_cast<const Range*>(fRange);
+
+    // Look up plural rules
+    LocalPointer<PluralRules> rules(PluralRules::forLocale(locale, UPluralType::UPLURAL_TYPE_CARDINAL, errorCode));
+    CHECK_ERROR(errorCode);
+    UnicodeString keyword = rules->select(range->end);
+
+    // This test only does keyword matching
+    prefsLen = 0;
+    for (int32_t i = 0; i < keysLen; i++) {
+        if (prefsLen >= keysLen) {
+            break;
+        }
+        if (keyword == keys[i]) {
+            prefs[prefsLen] = keys[i];
+            prefsLen++;
+        }
+    }
+}
+
 
 #endif /* #if !UCONFIG_NO_MF2 */
 
