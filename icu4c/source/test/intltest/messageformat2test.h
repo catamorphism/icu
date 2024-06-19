@@ -146,6 +146,25 @@ class GrammarCasesFormatter : public Formatter {
 class ListFormatterFactory : public FormatterFactory {
     public:
     Formatter* createFormatter(const Locale&, UErrorCode&) override;
+    // Takes a hash table mapping function names
+    // onto pointers to instances of StringTransform
+    ListFormatterFactory(Hashtable*);
+    virtual ~ListFormatterFactory();
+    private:
+    LocalPointer<Hashtable> functionDictionary;
+};
+
+class StringTransform : public UObject {
+    public:
+    virtual UnicodeString transform(const UnicodeString& s) const = 0;
+};
+
+class Dative : public StringTransform {
+    virtual UnicodeString transform(const UnicodeString& s) const override;
+};
+
+class Identity : public StringTransform {
+    virtual UnicodeString transform(const UnicodeString& s) const override;
 };
 
 class ListFormatter : public Formatter {
@@ -155,7 +174,8 @@ class ListFormatter : public Formatter {
     private:
     friend class ListFormatterFactory;
     const Locale& locale;
-    ListFormatter(const Locale& loc) : locale(loc) {}
+    const Hashtable* functionDictionary;
+    ListFormatter(const Locale& loc, const Hashtable* dict) : locale(loc), functionDictionary(dict) {}
 };
 
 class ResourceManagerFactory : public FormatterFactory {

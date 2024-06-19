@@ -460,11 +460,30 @@ Formatter* ListFormatterFactory::createFormatter(const Locale& locale, UErrorCod
         return nullptr;
     }
 
-    Formatter* result = new ListFormatter(locale);
+    Formatter* result = new ListFormatter(locale, functionDictionary.getAlias());
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
     return result;
+}
+
+ListFormatterFactory::ListFormatterFactory(Hashtable* dict) : functionDictionary(dict) {}
+
+UnicodeString Dative::transform(const UnicodeString& s) const {
+    if (s == "Maria") {
+        return "Mariei";
+    }
+    if (s == "Ileana") {
+        return "Ilenei";
+    }
+    if (s == "Petre") {
+        return "lui Petre";
+    }
+    return s;
+}
+
+UnicodeString Identity::transform(const UnicodeString& s) const {
+    return s;
 }
 
 message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlaceholder&& arg, FunctionOptions&& options, UErrorCode& errorCode) const {
@@ -517,6 +536,22 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
 
     UnicodeString result;
 
+    // Check if the `each` option was specified
+    // (names a function to apply to each element)
+    bool hasEach = opt.count("each") > 0 && opt["each"].getType() == UFMT_STRING;
+    StringTransform* transform = nullptr;
+    if (hasEach) {
+        // Look up function in dictionary
+        if (functionDictionary != nullptr) {
+            void* maybeFn = functionDictionary->get(opt["each"].getString(errorCode));
+            transform = static_cast<StringTransform*>(maybeFn);
+        }
+        // Error to use `each` option with nonexistent function
+        if (transform == nullptr) {
+            errorCode = U_MF_FORMATTING_ERROR; // Should be a "bad option" error
+            return {};
+        }
+    }
     switch (toFormat.getType()) {
         case UFMT_ARRAY: {
             int32_t n_items;
@@ -532,6 +567,9 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
             }
             for (int32_t i = 0; i < n_items; i++) {
                 parts[i] = objs[i].getString(errorCode);
+                if (transform != nullptr) {
+                    parts[i] = transform->transform(parts[i]);
+                }
             }
             U_ASSERT(U_SUCCESS(errorCode));
             lf->format(parts, n_items, result, errorCode);
@@ -548,6 +586,19 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
     return FormattedPlaceholder(arg, FormattedValue(std::move(result)));
 }
 
+static Hashtable* getFunctionDictionary(UErrorCode& errorCode) {
+    // Create a hash table mapping strings onto functions
+    // that the listformat implementation can map onto a list
+    Hashtable* result = new Hashtable(uhash_compareUnicodeString, nullptr, errorCode);
+    if (result == nullptr) {
+        return nullptr;
+    }
+    result->put("dative", new Dative(), errorCode);
+    result->put("identity", new Identity(), errorCode);
+    result->setValueDeleter(uprv_deleteUObject);
+    return result;
+}
+
 void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {
         return;
@@ -561,7 +612,9 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     TestCase::Builder testBuilder;
 
     MFFunctionRegistry reg = MFFunctionRegistry::Builder(errorCode)
-        .adoptFormatter(FunctionName("listformat"), new ListFormatterFactory(), errorCode)
+        .adoptFormatter(FunctionName("listformat"),
+                        new ListFormatterFactory(getFunctionDictionary(errorCode)),
+                        errorCode)
         .build();
     CHECK_ERROR(errorCode);
 
@@ -580,6 +633,8 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
+    // All remaining examples are from
+    // https://github.com/messageformat/messageformat/blob/main/packages/mf2-messageformat/src/mf2-features.test.ts
     const message2::Formattable vehicles[3] = {
         message2::Formattable("Motorcycle"),
         message2::Formattable("Bus"),
@@ -601,7 +656,45 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
 
+    // List formatting, mapping a function onto each item
+    const message2::Formattable names1[1] = {
+        message2::Formattable("Petre")};
+
+    const message2::Formattable names3[3] = {
+        message2::Formattable("Maria"),
+        message2::Formattable("Ileana"),
+        message2::Formattable("Petre")};
+
+    test = testBuilder.setPattern(".match {$count :number} \
+        one {{I-am dat cadouri {$list :listformat each=dative}.}} \
+        * {{Le-am dat cadouri {$list :listformat each=dative}.}}")
+                      .setArgument("count", (int64_t) 1)
+                      .setArgument("list", names1, 1)
+                      .setLocale(Locale("ro"))
+                      .setExpected("I-am dat cadouri lui Petre.")
+                      .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setArgument("count", (int64_t) 3)
+                      .setArgument("list", names3, 3)
+                      .setLocale(Locale("ro"))
+                      .setExpected("Le-am dat cadouri Mariei, Ilenei și lui Petre.")
+                      .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern(".match {$count :number} \
+        one {{1. {$list :listformat each=identity}.}} \
+        * {{2. {$list :listformat each=identity}.}}")
+                      .setArgument("count", (int64_t) 1)
+                      .setArgument("list", names1, 1)
+                      .setLocale(Locale("ro"))
+                      .setExpected("1. Petre.")
+                      .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
 }
+
+ListFormatterFactory::~ListFormatterFactory() {}
 
 /*
   See ICU4J: CustomFormatterMessageRefTest.java
