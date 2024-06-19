@@ -486,18 +486,26 @@ message2::FormattedPlaceholder message2::ListFormatter::format(FormattedPlacehol
     bool hasType = opt.count("type") > 0 && opt["type"].getType() == UFMT_STRING;
     UListFormatterType type = UListFormatterType::ULISTFMT_TYPE_AND;
     if (hasType) {
-        if (opt["type"].getString(errorCode) == "OR") {
+        if (opt["type"].getString(errorCode) == "OR" || opt["type"].getString(errorCode) == "disjunction") {
             type = UListFormatterType::ULISTFMT_TYPE_OR;
         } else if (opt["type"].getString(errorCode) == "UNITS") {
             type = UListFormatterType::ULISTFMT_TYPE_UNITS;
         }
     }
-    bool hasWidth = opt.count("width") > 0 && opt["width"].getType() == UFMT_STRING;
+    bool hasWidth = (opt.count("width") > 0 && opt["width"].getType() == UFMT_STRING);
     UListFormatterWidth width = UListFormatterWidth::ULISTFMT_WIDTH_WIDE;
+    bool hasStyle = (opt.count("style") > 0 && opt["style"].getType() == UFMT_STRING);
     if (hasWidth) {
         if (opt["width"].getString(errorCode) == "SHORT") {
             width = UListFormatterWidth::ULISTFMT_WIDTH_SHORT;
         } else if (opt["width"].getString(errorCode) == "NARROW") {
+            width = UListFormatterWidth::ULISTFMT_WIDTH_NARROW;
+        }
+    }
+    if (hasStyle) {
+        if (opt["style"].getString(errorCode) == "short") {
+            width = UListFormatterWidth::ULISTFMT_WIDTH_SHORT;
+        } else if (opt["style"].getString(errorCode) == "narrow") {
             width = UListFormatterWidth::ULISTFMT_WIDTH_NARROW;
         }
     }
@@ -571,6 +579,28 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
                       .setExpected("You are allowed to use C/C++, Java, or Python!")
                       .build();
     TestUtils::runTestCase(*this, test, errorCode);
+
+    const message2::Formattable vehicles[3] = {
+        message2::Formattable("Motorcycle"),
+        message2::Formattable("Bus"),
+        message2::Formattable("Car")};
+
+    test = testBuilder.setArgument("list", vehicles, 3)
+                      .setPattern("{$list :listformat}")
+                      .setExpected("Motorcycle, Bus, and Car")
+                      .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{$list :listformat style=short type=conjunction}")
+                      .setExpected("Motorcycle, Bus, & Car")
+                      .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
+    test = testBuilder.setPattern("{$list :listformat style=long type=disjunction}")
+                      .setExpected("Motorcycle, Bus, or Car")
+                      .build();
+    TestUtils::runTestCase(*this, test, errorCode);
+
 }
 
 /*
