@@ -139,5 +139,7 @@ public class TestUtils {
         URI getPath = cls.getClassLoader().getResource(packageName).toURI();
         Path filePath = Paths.get(getPath);
         Path json = Paths.get(fileName);
-        return filePath.resolve(json);
+        // Test files are in icu/testdata/
+        Path icuTestdataDir = filePath.resolve("../../../../../../../../../../../testdata/").normalize();
+        return icuTestdataDir.resolve(json);
     }}
