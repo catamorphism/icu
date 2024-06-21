@@ -143,8 +143,9 @@ static void runValidTest(TestMessageFormat2& icuTest,
 
     // Certain ICU4J tests don't work yet in ICU4C.
     // See ICU-22754
-    // Also, some ICU4J tests are already marked as "ignore"
-    if (!j_object["ignore"].is_null()) {
+    // ignoreCpp => only works in Java
+    // ignore => expected to fail
+    if (!j_object["ignore"].is_null() || !j_object["ignoreCpp"].is_null()) {
         return;
     }
 
