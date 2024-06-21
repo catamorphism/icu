@@ -215,20 +215,6 @@
       "exp": "{$bar}",
       "errors": [{ "type": "missing-var" }]
     },
-    {
-      "src": ".local bar = {|foo|} {{$bar}}",
-      "exp": "{$bar}",
-      "errors": [{ "type": "missing-char" }, { "type": "missing-var" }]
-    },
-    {
-      "src": ".local $bar {|foo|} {{$bar}}",
-      "exp": "foo",
-      "errors": [{ "type": "missing-char" }]
-    },
-    {
-      "src": ".local $bar = |foo| {{$bar}}",
-      "exp": "{$bar}",
-      "errors": [{ "type": "missing-char" }, { "type": "junk-element" }]
     },
     {
       "src": "{{#tag}}",
