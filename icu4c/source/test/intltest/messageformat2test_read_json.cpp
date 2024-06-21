@@ -39,7 +39,13 @@ static UErrorCode getExpectedErrorFromString(const std::string& errorName) {
 }
 
 static UErrorCode getExpectedRuntimeErrorFromString(const std::string& errorName) {
-    if (errorName == "unresolved-var") {
+    if (errorName == "parse-error" || errorName == "empty-token" || errorName == "extra-content") {
+        return U_MF_SYNTAX_ERROR;
+    }
+    if (errorName == "key-mismatch") {
+        return U_MF_VARIANT_KEY_MISMATCH_ERROR;
+    }
+    if (errorName == "missing-var" || errorName == "unresolved-var") {
         return U_MF_UNRESOLVED_VARIABLE_ERROR;
     }
     if (errorName == "unsupported-annotation") {
