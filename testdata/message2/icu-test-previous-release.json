@@ -267,21 +267,6 @@
       "errorsJs": [{ "type":  "parse-error" }, { "type": "junk-element" }]
     },
     {
-      "src": "{missing end brace",
-      "exp": "missing end brace",
-      "errors": [{ "type": "missing-char" }]
-    },
-    {
-      "src": "{missing end {$brace",
-      "exp": "missing end {$brace}",
-      "errors": [{ "type": "missing-char" }, { "type": "missing-char" }, { "type": "missing-var" }]
-    },
-    {
-      "src": "{{extra}} content",
-      "exp": "extra",
-      "errors": [{ "type": "extra-content" }]
-    },
-    {
       "src": "empty { }",
       "exp": "empty ",
       "errors": [{ "type": "parse-error" }, { "type": "junk-element" }]
