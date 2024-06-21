@@ -210,7 +210,7 @@
     },
     {
       "srcJs": ".local $bar = {$none} .match {$foo} one {{one}} * {{{$bar}}}",
-      "src": ".local $bar = {$none :number} .match {$foo} one {{one}} * {{{$bar}}}",
+      "src": ".local $bar = {$none :number} .match {$foo :string} one {{one}} * {{{$bar}}}",
       "params": { "foo": 2 },
       "exp": "{$bar}",
       "errors": [{ "type": "missing-var" }]
