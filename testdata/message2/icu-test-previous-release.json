@@ -19,7 +19,7 @@
     {
       "src": "hello {$place}",
       "exp": "hello {$place}",
-      "errorsJs": [{ "type": "missing-var" }]
+      "errors": [{ "type": "unresolved-var" }]
     },
     {
       "src": "{$one} and {$two}",
