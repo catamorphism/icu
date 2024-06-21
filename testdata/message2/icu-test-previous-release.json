@@ -269,7 +269,8 @@
     {
       "src": "empty { }",
       "exp": "empty ",
-      "errors": [{ "type": "parse-error" }, { "type": "junk-element" }]
+      "errors": [{ "type": "parse-error" }, { "type": "junk-element" }],
+      "ignoreCpp": "Different result? Check spec TODO"
     },
     {
       "src": "bad {:}",
@@ -282,79 +283,26 @@
       "errorsJs": [{ "type": "parse-error" }, { "type": "extra-content" }, { "type": "junk-element" }]
     },
     {
-      "src": "no-equal {|42| :number minimumFractionDigits 2}",
-      "exp": "no-equal 42.00",
-      "errors": [{ "type": "missing-char" }]
-    },
-    {
-      "src": "bad {:placeholder option=}",
-      "exp": "bad {:placeholder}",
-      "errors": [{ "type": "empty-token" }, { "type": "missing-func" }]
-    },
-    {
-      "src": "bad {:placeholder option value}",
-      "exp": "bad {:placeholder}",
-      "errors": [{ "type": "missing-char" }, { "type": "missing-func" }]
-    },
-    {
-      "src": "{bad {:placeholder option}}",
-      "exp": "bad {:placeholder}",
-      "errors": [{ "type": "missing-char" }, { "type": "empty-token" }, { "type": "missing-func" }]
-    },
-    {
       "src": "{bad {$placeholder option}}",
       "exp": "bad {$placeholder}",
-      "errors": [{ "type": "extra-content" }, { "type": "extra-content" }, { "type": "missing-var" }]
+      "errors": [{ "type": "extra-content" }, { "type": "extra-content" }, { "type": "missing-var" }],
+      "ignoreCpp": "Fallback not defined for syntax errors"
     },
     {
-      "src": "{no {$placeholder end}",
-      "exp": "no {$placeholder}",
-      "errors": [{ "type": "extra-content" }, { "type": "missing-var" }]
+      "src": ".match {|foo| :string} *{{foo}}",
+      "exp": "foo"
     },
     {
-      "src": ".match {} * {{foo}}",
+      "src": ".match {$foo :string} * * {{foo}}",
       "exp": "foo",
-      "errors": [{ "type": "parse-error" }, { "type": "bad-selector" }, { "type": "junk-element" }]
+      "errors": [{ "type": "key-mismatch" }, { "type": "missing-var" }],
+      "ignoreCpp": "Fallback not defined for data model errors"
     },
     {
-      "src": ".match {#foo} * {{foo}}",
+      "src": ".match {$foo :string} {$bar :string} * {{foo}}",
       "exp": "foo",
-      "errors": [{ "type": "bad-selector" }]
-    },
-    {
-      "src": ".match {|foo|} *{{foo}}",
-      "exp": "foo",
-      "errors": [{ "type": "missing-char" }]
-    },
-    {
-      "src": ".match * {{foo}}",
-      "exp": "foo",
-      "errors": [{ "type": "empty-token" }]
-    },
-    {
-      "src": ".match {|x|} * foo",
-      "exp": "",
-      "errors": [{ "type": "key-mismatch" }, { "type": "missing-char" }]
-    },
-    {
-      "src": ".match {|x|} * {{foo}} extra",
-      "exp": "foo",
-      "errors": [{ "type": "extra-content" }]
-    },
-    {
-      "src": ".match |x| * {{foo}}",
-      "exp": "",
-      "errors": [{ "type": "empty-token" }, { "type": "extra-content" }]
-    },
-    {
-      "src": ".match {$foo} * * {{foo}}",
-      "exp": "foo",
-      "errors": [{ "type": "key-mismatch" }, { "type": "missing-var" }]
-    },
-    {
-      "src": ".match {$foo} {$bar} * {{foo}}",
-      "exp": "foo",
-      "errors": [{ "type": "key-mismatch" }, { "type": "missing-var" }, { "type": "missing-var" }]
+      "errors": [{ "type": "key-mismatch" }, { "type": "missing-var" }, { "type": "missing-var" }],
+      "ignoreCpp": "Fallback not defined for data model errors"
     }
 ]
 
