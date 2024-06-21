@@ -124,9 +124,7 @@
     {
       "src": ".match {$foo :number} 1 {{one}} * {{other}}",
       "params": { "foo": "1" },
-      "comment": "Should this be error? Plural on string?",
-      "expectedJs": "one",
-      "exp": "other"
+      "exp": "one"
     },
     {
       "src": ".match {$foo :string} 1 {{one}} * {{other}}",
