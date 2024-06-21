@@ -61,7 +61,7 @@
     },
     {
       "src": "hello {|4.2| :number minimumFractionDigits=$foo}",
-      "params": { "foo": 2f },
+      "params": { "foo": 2.0 },
       "exp": "hello 4.20"
     },
     {

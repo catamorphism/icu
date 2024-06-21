@@ -140,6 +140,6 @@ public class TestUtils {
         Path filePath = Paths.get(getPath);
         Path json = Paths.get(fileName);
         // Test files are in icu/testdata/
-        Path icuTestdataDir = filePath.resolve("../../../../../../../../../../../testdata/").normalize();
+        Path icuTestdataDir = filePath.resolve("../../../../../../../../../../../testdata/message2/").normalize();
         return icuTestdataDir.resolve(json);
     }}

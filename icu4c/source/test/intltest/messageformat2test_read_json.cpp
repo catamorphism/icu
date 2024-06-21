@@ -137,7 +137,8 @@ static void runValidTest(TestMessageFormat2& icuTest,
 
     // Certain ICU4J tests don't work yet in ICU4C.
     // See ICU-22754
-    if (!j_object["ignoreTest"].is_null()) {
+    // Also, some ICU4J tests are already marked as "ignore"
+    if (!j_object["ignore"].is_null()) {
         return;
     }
 
@@ -210,7 +211,7 @@ static void runSyntaxErrorTest(TestMessageFormat2& icuTest,
 static void runICU4JSyntaxTestsFromJsonFile(TestMessageFormat2& t,
                                             const std::string& fileName,
                                             IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getSourceTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string testFileName(testDataDirectory);
@@ -252,7 +253,7 @@ static void runICU4JSyntaxTestsFromJsonFile(TestMessageFormat2& t,
 static void runICU4JSelectionTestsFromJsonFile(TestMessageFormat2& t,
                                             const std::string& fileName,
                                             IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getSourceTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string testFileName(testDataDirectory);
@@ -315,7 +316,7 @@ static void runICU4JSelectionTestsFromJsonFile(TestMessageFormat2& t,
 static void runValidTestsFromJsonFile(TestMessageFormat2& t,
                                       const std::string& fileName,
                                       IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getSourceTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string testFileName(testDataDirectory);
@@ -341,7 +342,7 @@ static void runValidTestsFromJsonFile(TestMessageFormat2& t,
 static void runDataModelErrorTestsFromJsonFile(TestMessageFormat2& t,
                                                const std::string& fileName,
                                                IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getSourceTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string dataModelErrorsFileName(testDataDirectory);
@@ -386,7 +387,7 @@ static void runDataModelErrorTestsFromJsonFile(TestMessageFormat2& t,
 static void runSyntaxErrorTestsFromJsonFile(TestMessageFormat2& t,
                                             const std::string& fileName,
                                             IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getSourceTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string syntaxErrorsFileName(testDataDirectory);
@@ -420,7 +421,7 @@ static void runSyntaxErrorTestsFromJsonFile(TestMessageFormat2& t,
 static void runSyntaxTestsWithDiagnosticsFromJsonFile(TestMessageFormat2& t,
                                                       const std::string& fileName,
                                                       IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getSourceTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string testFileName(testDataDirectory);
@@ -446,7 +447,7 @@ static void runFunctionTestsFromJsonFile(TestMessageFormat2& t,
                                          const std::string& fileName,
                                          IcuTestErrorCode& errorCode) {
     // Get the test data directory
-    const char* testDataDirectory = IntlTest::getSourceTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string functionTestsFileName(testDataDirectory);
@@ -540,13 +541,14 @@ void TestMessageFormat2::jsonTestsFromFiles(IcuTestErrorCode& errorCode) {
     runSyntaxTestsWithDiagnosticsFromJsonFile(*this, "syntax-errors-diagnostics-multiline.json", errorCode);
 
     // ICU4J tests
-    runFunctionTestsFromJsonFile(*this, "icu4j/icu-test-functions.json", errorCode);
+    runFunctionTestsFromJsonFile(*this, "icu-test-functions.json", errorCode);
     // Changes made to get these tests to work:
     // * removed double backslashes from  "Hello \\t \\n \\r \\{ world!"
     // * added empty {{}} pattern at the end of the tests under "Simple messages, with declarations"
     //   and the first one under "Multiple declarations in one message"
-    runICU4JSyntaxTestsFromJsonFile(*this, "icu4j/icu-parser-tests.json", errorCode);
-    runICU4JSelectionTestsFromJsonFile(*this, "icu4j/icu-test-selectors.json", errorCode);
+    runICU4JSyntaxTestsFromJsonFile(*this, "icu-parser-tests.json", errorCode);
+    runICU4JSelectionTestsFromJsonFile(*this, "icu-test-selectors.json", errorCode);
+    runValidTestsFromJsonFile(*this, "icu-test-previous-release.json", errorCode);
 }
 
 #endif /* #if !UCONFIG_NO_MF2 */

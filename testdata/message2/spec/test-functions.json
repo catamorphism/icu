@@ -1,9 +1,13 @@
 {
   "date": [
-    { "src": "{:date}", "exp": "{:date}", "errorsJs": [{ "type": "bad-input" }] },
+    { "src": "{:date}",
+      "exp": "{:date}",
+      "errors": [{ "type": "bad-input" }]
+    },
     {
       "src": "{horse :date}",
       "exp": "{|horse|}",
+      "errors": [{ "type": "bad-input" }],
       "errorsJs": [{ "name": "RangeError" }]
     },
     { "src": "{|2006-01-02| :date}", "exp": "1/2/06" },
@@ -20,11 +24,11 @@
     }
   ],
   "time": [
-    { "src": "{:time}", "exp": "{:time}", "errorsJs": [{ "type": "bad-input" }] },
+    { "src": "{:time}", "exp": "{:time}", "errors": [{ "type": "bad-input" }] },
     {
       "src": "{horse :time}",
       "exp": "{|horse|}",
-      "errorsJs": [{ "name": "RangeError" }]
+      "errors": [{ "type": "bad-input" }]
     },
     { "src": "{|2006-01-02T15:04:06| :time}", "expJs": "3:04 PM", "exp": "3:04 PM" },
     {
@@ -47,7 +51,7 @@
     {
       "src": "{:datetime}",
       "exp": "{:datetime}",
-      "errorsJs": [{ "type": "bad-input" }]
+      "errors": [{ "type": "bad-input" }]
     },
     {
       "src": "{$x :datetime}",
@@ -58,7 +62,7 @@
     {
       "src": "{horse :datetime}",
       "exp": "{|horse|}",
-      "errorsJs": [{ "name": "RangeError" }]
+      "errors": [{ "type": "bad-input" }]
     },
     { "src": "{|2006-01-02T15:04:06| :datetime}", "expJs": "1/2/06, 3:04 PM", "exp": "1/2/06, 3:04 PM" },
     {
@@ -104,7 +108,7 @@
     {
       "src": "hello {foo :number}",
       "exp": "hello {|foo|}",
-      "errorsJs": [{ "type": "bad-input" }]
+      "errors": [{ "type": "bad-input" }]
     },
     {
       "src": "hello {:number}",
@@ -150,9 +154,8 @@
     {
       "src": ".local $foo = {$bar :number} {{bar {$foo}}}",
       "params": { "bar": "foo" },
-      "expJs": "bar {$bar}",
-      "exp": "bar {|foo|}",
-      "errorsJs": [{ "type": "bad-input" }]
+      "exp": "bar {$bar}",
+      "errors": [{ "type": "bad-input" }]
     },
     {
       "src": ".input {$foo :number} {{bar {$foo}}}",
@@ -175,9 +178,8 @@
     {
       "src": ".input {$foo :number} {{bar {$foo}}}",
       "params": { "foo": "foo" },
-      "expJs": "bar {$foo}",
-      "exp": "bar {|foo|}",
-      "errorsJs": [{ "type": "bad-input" }]
+      "exp": "bar {$foo}",
+      "errors": [{ "type": "bad-input" }]
     },
     {
       "src": ".match {$foo :number} one {{one}} * {{other}}",
@@ -283,7 +285,7 @@
     {
       "src": "hello {42 :ordinal}",
       "exp": "hello {|42|}",
-      "errorsJs": [{ "type": "missing-func" }]
+      "errors": [{ "type": "missing-func" }]
     }
   ],
   "plural": [
@@ -296,7 +298,7 @@
     {
       "src": "hello {42 :plural}",
       "exp": "hello {|42|}",
-      "errorsJs": [{ "type": "missing-func" }]
+      "errors": [{ "type": "missing-func" }]
     }
   ],
   "string": [
@@ -308,8 +310,7 @@
     {
       "src": ".match {$foo :string} 1 {{one}} * {{other}}",
       "params": { "foo": 1 },
-      "expJs": "one",
-      "exp": "other"
+      "exp": "one"
     },
     {
       "src": ".match {$foo :string} 1 {{one}} * {{other}}",
@@ -319,7 +320,7 @@
     {
       "src": ".match {$foo :string} 1 {{one}} * {{other}}",
       "exp": "other",
-      "errorsJs": [{ "type": "unresolved-var" }]
+      "errors": [{ "type": "unresolved-var" }]
     }
   ]
 }
