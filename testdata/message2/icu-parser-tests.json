@@ -3,7 +3,7 @@
     "",
     "Hello",
     "Hello world!",
-    "Hello \\t \\n \\r \\{ world!",
+    "Hello \t \n \r \\{ world!",
     "Hello world {:datetime}",
     "Hello world {foo}",
     "Hello {0} world",
