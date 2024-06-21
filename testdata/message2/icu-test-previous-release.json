@@ -43,13 +43,14 @@
     },
     {
       "src": "hello {|foo| :number}",
-      "exp": "hello {|foo|}"
+      "exp": "hello {|foo|}",
+      "errors": [{ "type": "bad-input" }]
     },
     {
       "src": "hello {:number}",
-      "exp": "hello {|foo|}",
+      "exp": "hello {:number}",
       "comment": "This is different from JS, should be an error.",
-      "errors": [{ "type": "ICU4J: exception" }]
+      "errors": [{ "type": "bad-input" }]
     },
     {
       "src": "hello {|4.2| :number minimumFractionDigits=2}",
@@ -106,7 +107,8 @@
     {
       "src": ".local $foo = {$bar :number} {{bar {$foo}}}",
       "params": { "bar": "foo" },
-      "exp": "bar {|foo|}"
+      "exp": "bar {$bar}",
+      "errors": [{ "type": "bad-input" }]
     },
     {
       "src": ".local $bar = {$baz} .local $foo = {$bar} {{bar {$foo}}}",
