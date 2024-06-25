@@ -173,14 +173,30 @@ public class MFParser {
         return result;
     }
 
-    private MFDataModel.Annotation getAnnotation() throws MFParseException {
+    private MFDataModel.Annotation getAnnotation(boolean whitespaceRequired) throws MFParseException {
         int position = input.getPosition();
-        skipOptionalWhitespaces();
 
+        // Handle absent annotation first (before parsing mandatory whitespace)
         int cp = input.peekChar();
+        if (cp == '}') {
+            return null;
+        }
+
+        int whitespaceCount = 0;
+        if (whitespaceRequired) {
+            whitespaceCount = skipMandatoryWhitespaces();
+        } else {
+            whitespaceCount = skipOptionalWhitespaces();
+        }
+
+        cp = input.peekChar();
         switch (cp) {
-            case '}':
+            case '}': {
+                // No annotation -- push the whitespace back,
+                // in case it's the required whitespace before an attribute
+                input.backup(whitespaceCount);
                 return null;
+            }
             case ':': // annotation, function
                 // abnf: function = ":" identifier *(s option)
                 input.readCodePoint(); // Consume the sigil
@@ -231,13 +247,13 @@ public class MFParser {
         checkCondition(literal != null, "Literal expression expected.");
 
         MFDataModel.Annotation annotation = null;
-        int wsCount = skipWhitespaces();
-        if (wsCount > 0) { // we might have an annotation
-            annotation = getAnnotation();
+        boolean hasWhitespace = StringUtils.isWhitespace(input.peekChar());
+        if (hasWhitespace) { // we might have an annotation
+            annotation = getAnnotation(true);
             if (annotation == null) {
                 // We had some spaces, but no annotation.
                 // So we put (some) back for the possible attributes.
-                input.backup(1);
+             //   input.backup(1);
             }
         }
 
@@ -250,7 +266,7 @@ public class MFParser {
     // abnf: variable-expression = "{" [s] variable [s annotation] *(s attribute) [s] "}"
     private MFDataModel.VariableExpression getVariableExpression() throws MFParseException {
         MFDataModel.VariableRef variableRef = getVariableRef();
-        MFDataModel.Annotation annotation = getAnnotation();
+        MFDataModel.Annotation annotation = getAnnotation(true);
         List<MFDataModel.Attribute> attributes = getAttributes();
         // Variable without a function, for example {$foo}
         return new MFDataModel.VariableExpression(variableRef, annotation, attributes);
@@ -258,7 +274,7 @@ public class MFParser {
 
     // abnf: annotation-expression = "{" [s] annotation *(s attribute) [s] "}"
     private MFDataModel.Expression getAnnotationExpression() throws MFParseException {
-        MFDataModel.Annotation annotation = getAnnotation();
+        MFDataModel.Annotation annotation = getAnnotation(false);
         List<MFDataModel.Attribute> attributes = getAttributes();
 
         if (annotation instanceof MFDataModel.FunctionAnnotation) {
