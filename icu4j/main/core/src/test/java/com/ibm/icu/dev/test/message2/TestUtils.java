@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 
@@ -71,6 +72,24 @@ public class TestUtils {
 
     // ======= Same functionality with Unit, usable with JSON ========
 
+    static void rewriteDates(Map<String, Object> params) {
+        // For each value in `params` that's a map with the single key
+        // `date` and a double value d,
+        // return a map with that value changed to Date(d)
+        // In JSON this looks like:
+        //    "params": {"exp": { "date": 1722746637000 } }
+        for (Map.Entry<String, Object> pair : params.entrySet()) {
+            if (pair.getValue() instanceof Map) {
+                Map innerMap = (Map) pair.getValue();
+                if (innerMap.size() == 1 && innerMap.containsKey("date") && innerMap.get("date") instanceof Double) {
+                    Long dateValue = Double.valueOf((Double) innerMap.get("date")).longValue();
+                    params.put(pair.getKey(), new Date(dateValue));
+                }
+            }
+        }
+    }
+
+
     static boolean expectsErrors(Unit unit) {
         return unit.errors != null && !unit.errors.isEmpty();
     }
@@ -107,6 +126,7 @@ public class TestUtils {
             MessageFormatter mf = mfBuilder.build();
             if (unit.params != null) {
                 params = unit.params;
+                rewriteDates(params);
             }
             String result = mf.formatToString(params);
             if (expectsErrors(unit)) {
