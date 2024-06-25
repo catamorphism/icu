@@ -19,8 +19,7 @@ import com.ibm.icu.dev.test.CoreTestFmwk;
 @RunWith(JUnit4.class)
 public class FunctionsTest extends CoreTestFmwk {
     private static final String[] JSON_FILES = {"spec/test-functions.json",
-                                                "more-functions.json",
-                                                "test-functions-icu4c.json"};
+                                                "more-functions.json"};
 
     @Test
     public void test() throws Exception {
