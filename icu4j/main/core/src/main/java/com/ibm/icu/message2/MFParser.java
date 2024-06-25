@@ -554,13 +554,10 @@ public class MFParser {
         } else { // Expect {{...}} or end of message
             skipOptionalWhitespaces();
             int cp = input.peekChar();
-            if (cp == EOF) {
-                // Only declarations, no pattern
-                return new MFDataModel.PatternMessage(declarations, null);
-            } else {
-                MFDataModel.Pattern pattern = getQuotedPattern();
-                return new MFDataModel.PatternMessage(declarations, pattern);
-            }
+            // complex-message   = *(declaration [s]) complex-body
+            checkCondition(cp != EOF, "Expected a quoted pattern or .match; got end-of-input");
+            MFDataModel.Pattern pattern = getQuotedPattern();
+            return new MFDataModel.PatternMessage(declarations, pattern);
         }
     }
 
