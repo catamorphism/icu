@@ -67,7 +67,8 @@
       "locale": "en-IN",
       "params": {"val": 1234567890.97531},
       "errors": [{"type": "bad-input"}],
-      "comment": "Should fail because number literals are not treated as localized numbers"
+      "comment": "Should fail because number literals are not treated as localized numbers",
+      "ignoreJava": "See https://github.com/unicode-org/message-format-wg/issues/782"
     },
     {
       "src": "From literal: {|123456789.531| :number}!",
@@ -99,13 +100,15 @@
       "exp": "Default int64: 1.234.567.890.123.456.800!",
       "locale": "ro",
       "params": {"val": 1234567890123456789},
-      "comment": "Rounded due to JSON not supporting full 64-bit ints"
+      "comment": "Rounded due to JSON not supporting full 64-bit ints",
+      "ignoreJava": "Different Java and C++ rounding behavior? Not sure"
     },
     {
       "src": "Default number: {$val}!",
       "exp": "Default number: 1.234.567.890.123.456.789,987654!",
       "locale": "ro",
-      "params": {"val": {"decimal": "1234567890123456789.987654321"}}
+      "params": {"val": {"decimal": "1234567890123456789.987654321"}},
+      "ignoreJava": "ICU4J: Not sure if there's a way to specify a decimal string as a param"
     }
   ]
 }

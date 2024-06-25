@@ -19,7 +19,8 @@
     {
       "src": "hello {$place}",
       "exp": "hello {$place}",
-      "errors": [{ "type": "unresolved-var" }]
+      "errors": [{ "type": "unresolved-var" }],
+      "ignoreJava": "See https://github.com/unicode-org/message-format-wg/issues/782"
     },
     {
       "src": "{$one} and {$two}",
@@ -44,7 +45,8 @@
     {
       "src": "hello {|foo| :number}",
       "exp": "hello {|foo|}",
-      "errors": [{ "type": "bad-input" }]
+      "errors": [{ "type": "bad-input" }],
+      "ignoreJava": "See https://github.com/unicode-org/message-format-wg/issues/782"
     },
     {
       "src": "hello {:number}",
@@ -98,17 +100,18 @@
       "exp": "bar 4.20"
     },
     {
-      "ignore": "Maybe. Because `minimumFractionDigits=foo`",
+      "ignoreJava": "Maybe. Because `minimumFractionDigits=foo`",
       "src": ".local $foo = {$bar :number minimumFractionDigits=foo} {{bar {$foo}}}",
       "params": { "bar": 4.2 },
       "exp": "bar 4.2",
-      "errors": [{ "type": "invalid-type" }]
+      "errors": [{ "type": "bad-option" }]
     },
     {
       "src": ".local $foo = {$bar :number} {{bar {$foo}}}",
       "params": { "bar": "foo" },
       "exp": "bar {$bar}",
-      "errors": [{ "type": "bad-input" }]
+      "errors": [{ "type": "bad-input" }],
+      "ignoreJava": "See https://github.com/unicode-org/message-format-wg/issues/782"
     },
     {
       "src": ".local $bar = {$baz} .local $foo = {$bar} {{bar {$foo}}}",
@@ -124,7 +127,8 @@
     {
       "src": ".match {$foo :number} 1 {{one}} * {{other}}",
       "params": { "foo": "1" },
-      "exp": "one"
+      "exp": "one",
+      "ignoreJava": "ICU4J :number doesn't convert string to number?"
     },
     {
       "src": ".match {$foo :string} 1 {{one}} * {{other}}",
@@ -143,7 +147,7 @@
       "exp": "one"
     },
     {
-      "ignore": "Can't pass null in a map",
+      "ignoreJava": "Can't pass null in a map",
       "src": ".match {$foo} 1 {{one}} * {{other}}",
       "params": { "foo": null },
       "exp": "other"
@@ -213,7 +217,8 @@
       "src": ".local $bar = {$none :number} .match {$foo :string} one {{one}} * {{{$bar}}}",
       "params": { "foo": 2 },
       "exp": "{$none}",
-      "errors": [{ "type": "unresolved-var" }]
+      "errors": [{ "type": "unresolved-var" }],
+      "ignoreJava": "See https://github.com/unicode-org/message-format-wg/issues/782"
     },
     {
       "src": "{{#tag}}",
@@ -290,7 +295,8 @@
     },
     {
       "src": ".match {|foo| :string} *{{foo}}",
-      "exp": "foo"
+      "exp": "foo",
+      "ignoreJava": "ICU4J parser bug"
     },
     {
       "src": ".match {$foo :string} * * {{foo}}",

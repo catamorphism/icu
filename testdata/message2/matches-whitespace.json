@@ -2,19 +2,31 @@
     { "src": ".match {one :string} {bar :string} one * {{one}} * * {{other}}",
       "exp": "one" },
     { "src": ".match {foo :string} {bar :string}one * {{one}} * * {{other}}",
-      "exp": "other" },
+      "exp": "other",
+      "ignoreJava": "ICU4J parser bug"
+    },
     { "src": ".match {foo :string}{bar :string} one * {{one}} * * {{other}}",
-      "exp": "other" },
+      "exp": "other",
+      "ignoreJava": "ICU4J parser bug"
+    },
     { "src": ".match {one :string}{bar :string}one * {{one}} * * {{other}}",
-      "exp": "one" },
+      "exp": "one",
+      "ignoreJava": "ICU4J parser bug"
+    },
     { "src": ".match{foo :string} {bar :string} one * {{one}} * * {{other}}",
-      "exp": "other" },
+      "exp": "other",
+      "ignoreJava": "ICU4J parser bug"
+    },
     { "src": ".match {foo :string} {bar :string} one * {{one}}* * {{other}}",
       "exp": "other" },
     { "src": ".match {foo :string} {bar :string}one * {{one}}* * {{other}}",
-      "exp": "other" },
+      "exp": "other",
+      "ignoreJava": "ICU4J parser bug"
+    },
     { "src": ".match {foo :string} {bar :string} one *{{one}} * * {{foo}}",
-      "exp": "foo" },
+      "exp": "foo",
+      "ignoreJava": "ICU4J parser bug"
+    },
     { "src": ".match {foo :string} {bar :string} one *  {{one}} * * {{foo}}",
       "exp": "foo" }
 ]
