@@ -23,6 +23,7 @@ public class CoreTest extends CoreTestFmwk {
                                                 "resolution-errors.json",
                                                 "runtime-errors.json",
                                                 "spec/test-core.json",
+                                                "syntax-errors-diagnostics.json",
                                                 "tricky-declarations.json",
                                                 "valid-tests.json"};
 
