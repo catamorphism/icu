@@ -15,17 +15,13 @@ import com.ibm.icu.message2.MessageFormatter;
 @SuppressWarnings({"static-method", "javadoc"})
 @RunWith(JUnit4.class)
 public class SyntaxErrorsTest extends CoreTestFmwk {
-    private static final String[] JSON_FILES = {"invalid-number-literals-diagnostics.json",
-                                                "spec/syntax-errors.json",
-                                                "syntax-errors-diagnostics.json",
-                                                "syntax-errors-diagnostics-multiline.json",
-                                                "syntax-errors-end-of-input.json"};
+    private static final String[] JSON_FILES = {"more-syntax-errors.json",
+                                                "spec/syntax-errors.json"};
 
     @Test
     public void test() throws Exception {
         for (String jsonFile : JSON_FILES) {
             try (Reader reader = TestUtils.jsonReader(jsonFile)) {
-                System.out.println("///////// " + jsonFile);
                 String[] srcList = TestUtils.GSON.fromJson(reader, String[].class);
                 for (String source : srcList) {
                     try {

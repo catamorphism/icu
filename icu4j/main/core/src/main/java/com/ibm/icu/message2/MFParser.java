@@ -701,14 +701,11 @@ public class MFParser {
                 skipMandatoryWhitespaces();
                 expression = getPlaceholder();
                 String inputVarName = null;
-                if (expression instanceof MFDataModel.VariableExpression) {
-                    inputVarName = ((MFDataModel.VariableExpression) expression).arg.name;
-                }
-                if (expression instanceof MFDataModel.VariableExpression) {
-                    return new MFDataModel.InputDeclaration(
-                            inputVarName, (MFDataModel.VariableExpression) expression);
-                }
-                break;
+                checkCondition(expression instanceof MFDataModel.VariableExpression,
+                               "Variable expression required in .input declaration");
+                inputVarName = ((MFDataModel.VariableExpression) expression).arg.name;
+                return new MFDataModel.InputDeclaration(inputVarName,
+                                                        (MFDataModel.VariableExpression) expression);
             case "local":
                 // abnf: local-declaration = local s variable [s] "=" [s] expression
                 skipMandatoryWhitespaces();
