@@ -144,8 +144,7 @@ static void runValidTest(TestMessageFormat2& icuTest,
     // Certain ICU4J tests don't work yet in ICU4C.
     // See ICU-22754
     // ignoreCpp => only works in Java
-    // ignore => expected to fail
-    if (!j_object["ignore"].is_null() || !j_object["ignoreCpp"].is_null()) {
+    if (!j_object["ignoreCpp"].is_null()) {
         return;
     }
 
@@ -278,7 +277,7 @@ static void runICU4JSelectionTestsFromJsonFile(TestMessageFormat2& t,
         auto variations = j_object["variations"];
 
         // Skip ignored tests
-        if (!j_object["ignoreTest"].is_null()) {
+        if (!j_object["ignoreCpp"].is_null()) {
             return;
         }
 
