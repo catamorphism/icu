@@ -2,30 +2,24 @@
     { "src": ".match {one :string} {bar :string} one * {{one}} * * {{other}}",
       "exp": "one" },
     { "src": ".match {foo :string} {bar :string}one * {{one}} * * {{other}}",
-      "exp": "other",
-      "ignoreJava": "ICU4J parser bug"
+      "exp": "other"
     },
     { "src": ".match {foo :string}{bar :string} one * {{one}} * * {{other}}",
-      "exp": "other",
-      "ignoreJava": "ICU4J parser bug"
+      "exp": "other"
     },
     { "src": ".match {one :string}{bar :string}one * {{one}} * * {{other}}",
-      "exp": "one",
-      "ignoreJava": "ICU4J parser bug"
+      "exp": "one"
     },
     { "src": ".match{foo :string} {bar :string} one * {{one}} * * {{other}}",
-      "exp": "other",
-      "ignoreJava": "ICU4J parser bug"
+      "exp": "other"
     },
     { "src": ".match {foo :string} {bar :string} one * {{one}}* * {{other}}",
       "exp": "other" },
     { "src": ".match {foo :string} {bar :string}one * {{one}}* * {{other}}",
-      "exp": "other",
-      "ignoreJava": "ICU4J parser bug"
+      "exp": "other"
     },
     { "src": ".match {foo :string} {bar :string} one *{{one}} * * {{foo}}",
-      "exp": "foo",
-      "ignoreJava": "ICU4J parser bug"
+      "exp": "foo"
     },
     { "src": ".match {foo :string} {bar :string} one *  {{one}} * * {{foo}}",
       "exp": "foo" }

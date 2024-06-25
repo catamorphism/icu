@@ -602,7 +602,11 @@ public class MFParser {
         // Look for selectors
         List<MFDataModel.Expression> expressions = new ArrayList<>();
         while (true) {
-            skipMandatoryWhitespaces();
+            // Whitespace not required between selectors:
+            // match 1*([s] selector)
+            // Whitespace not required before first variant:
+            // matcher = match-statement 1*([s] variant)
+            skipOptionalWhitespaces();
             MFDataModel.Expression expression = getPlaceholder();
             if (expression == null) {
                 break;
