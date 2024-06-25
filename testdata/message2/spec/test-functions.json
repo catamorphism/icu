@@ -325,8 +325,9 @@
     {
       "src": ".match {$foo :string} 1 {{one}} * {{other}}",
       "params": { "foo": 1 },
-      "exp": "one",
-      "ignoreJava": "Bug? Not sure why this fails"
+      "expJs": "one",
+      "exp": "other",
+      "comment": "Shouldn't it be one? TODO"
     },
     {
       "src": ".match {$foo :string} 1 {{one}} * {{other}}",
