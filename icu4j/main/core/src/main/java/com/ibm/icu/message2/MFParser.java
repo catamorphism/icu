@@ -65,7 +65,6 @@ public class MFParser {
             MFDataModel.Pattern pattern = getPattern();
             result = new MFDataModel.PatternMessage(new ArrayList<>(), pattern);
         }
-        skipOptionalWhitespaces();
         checkCondition(input.atEnd(), "Content detected after the end of the message.");
         new MFDataModelValidator(result).validate();
         return result;
@@ -511,13 +510,14 @@ public class MFParser {
         return null;
     }
 
-    private void skipMandatoryWhitespaces() throws MFParseException {
+    private int skipMandatoryWhitespaces() throws MFParseException {
         int count = skipWhitespaces();
         checkCondition(count > 0, "Space expected");
+        return count;
     }
 
-    private void skipOptionalWhitespaces() {
-        skipWhitespaces();
+    private int skipOptionalWhitespaces() {
+        return skipWhitespaces();
     }
 
     private int skipWhitespaces() {
@@ -557,6 +557,7 @@ public class MFParser {
             // complex-message   = *(declaration [s]) complex-body
             checkCondition(cp != EOF, "Expected a quoted pattern or .match; got end-of-input");
             MFDataModel.Pattern pattern = getQuotedPattern();
+            checkCondition(input.atEnd(), "Content detected after the end of the message.");
             return new MFDataModel.PatternMessage(declarations, pattern);
         }
     }
@@ -594,6 +595,7 @@ public class MFParser {
             }
             variants.add(variant);
         }
+        checkCondition(input.atEnd(), "Content detected after the end of the message.");
         return new MFDataModel.SelectMessage(declarations, expressions, variants);
     }
 
@@ -610,7 +612,12 @@ public class MFParser {
             }
             keys.add(key);
         }
-        skipOptionalWhitespaces();
+        // Only want to skip whitespace if we parsed at least one key --
+        // otherwise, we might fail to catch trailing whitespace at the end of
+        // the message, which is a parse error
+        if (!keys.isEmpty()) {
+            skipOptionalWhitespaces();
+        }
         if (input.atEnd()) {
             checkCondition(
                     keys.isEmpty(), "After selector keys it is mandatory to have a pattern.");
@@ -621,10 +628,11 @@ public class MFParser {
     }
 
     private MFDataModel.LiteralOrCatchallKey getKey(boolean requireSpaces) throws MFParseException {
+        int skipCount = 0;
         if (requireSpaces) {
-            skipMandatoryWhitespaces();
+            skipCount = skipMandatoryWhitespaces();
         } else {
-            skipOptionalWhitespaces();
+            skipCount = skipOptionalWhitespaces();
         }
         int cp = input.peekChar();
         if (cp == '*') {
@@ -632,6 +640,8 @@ public class MFParser {
             return new MFDataModel.CatchallKey();
         }
         if (cp == EOF) {
+            // Restore whitespace, in order to detect the error case of whitespace at the end of a message
+            input.backup(skipCount);
             return null;
         }
         return getLiteral();
