@@ -693,6 +693,17 @@ public class MFParser {
                 List<MFDataModel.Expression> expressions = new ArrayList<>();
                 while (true) {
                     skipOptionalWhitespaces();
+                    // Look ahead to detect the end of the unsupported statement
+                    // (next token either begins a placeholder or begins a complex body)
+                    cp = input.readCodePoint();
+                    int cp1 = input.readCodePoint();
+                    if (cp == '{' && cp1 == '{') {
+                        // End of unsupported statement
+                        input.backup(2);
+                        break;
+                    } else {
+                        input.backup(2);
+                    }
                     expression = getPlaceholder();
                     // This also covers != null
                     if (expression instanceof MFDataModel.VariableExpression) {
