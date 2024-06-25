@@ -80,7 +80,7 @@ public class TestUtils {
     }
 
     static void runTestCase(Unit unit, Map<String, Object> params) {
-        if (unit.ignore != null) {
+        if (unit.ignoreJava != null) {
             return;
         }
 
