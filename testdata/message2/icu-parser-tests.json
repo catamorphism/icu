@@ -55,7 +55,7 @@
     ".something |reserved=| {$foo :date} {{}}"
   ],
   "Multiple declarations in one message": [
-    ".input {$a :date} .local $b = {$a :date year=numeric month=long day=numeric} .local $c = {$b :date month=medium} .someting |reserved = \\| and more| {$x :date} {$y :date} {$z :number} {{}}",
-    ".input {$a :date} .local $exp = {$a :date style=full} {{Your card expires on {$exp}!}}"
+    ".input {$a :date} .local $exp = {$a :date style=full} {{Your card expires on {$exp}!}}",
+    ".input {$a :date} .local $b = {$a :date year=numeric month=long day=numeric} .local $c = {$b :date month=medium} .someting |reserved = \\| and more| {$x :date} {$y :date} {$z :number} {{}}"
   ]
 }
