@@ -656,13 +656,19 @@ public class MFParser {
     }
 
     private MFDataModel.LiteralOrCatchallKey getKey(boolean requireSpaces) throws MFParseException {
+        int cp = input.peekChar();
+        // Whitespace not required between last key and pattern:
+        // variant = key *(s key) [s] quoted-pattern
+        if (cp == '{') {
+            return null;
+        }
         int skipCount = 0;
         if (requireSpaces) {
             skipCount = skipMandatoryWhitespaces();
         } else {
             skipCount = skipOptionalWhitespaces();
         }
-        int cp = input.peekChar();
+        cp = input.peekChar();
         if (cp == '*') {
             input.readCodePoint(); // consume the '*'
             return new MFDataModel.CatchallKey();

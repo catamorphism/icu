@@ -295,8 +295,7 @@
     },
     {
       "src": ".match {|foo| :string} *{{foo}}",
-      "exp": "foo",
-      "ignoreJava": "ICU4J parser bug"
+      "exp": "foo"
     },
     {
       "src": ".match {$foo :string} * * {{foo}}",
