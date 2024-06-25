@@ -412,16 +412,28 @@ public class MFParser {
     // abnf helper: *(s option)
     private Map<String, MFDataModel.Option> getOptions() throws MFParseException {
         Map<String, MFDataModel.Option> options = new LinkedHashMap<>();
+        boolean first = true;
+        int skipCount = 0;
         while (true) {
             MFDataModel.Option option = getOption();
             if (option == null) {
                 break;
             }
+            // function = ":" identifier *(s option)
+            checkCondition(first || skipCount != 0,
+                           "Expected whitespace before option " + option.name);
+            first = false;
             if (options.containsKey(option.name)) {
                 error("Duplicated option '" + option.name + "'");
             }
             options.put(option.name, option);
+            // Can't just call skipMandatoryWhitespaces() here, because it
+            // might be the last option. So check for whitespace when
+            // parsing the next option instead.
+            skipCount = skipOptionalWhitespaces();
         }
+        // Restore the last chunk of whitespace in case there's an attribute following
+        input.backup(skipCount);
         return options;
     }
 
