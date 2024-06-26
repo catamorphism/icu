@@ -449,7 +449,7 @@ public class MFParser {
         skipOptionalWhitespaces();
         int cp = input.readCodePoint();
         checkCondition(cp == '=', "Expected '='");
-        // skipOptionalWhitespaces();
+        skipOptionalWhitespaces();
         MFDataModel.LiteralOrVariableRef litOrVar = getLiteralOrVariableRef();
         if (litOrVar == null) {
             error("Options must have a value. An empty string should be quoted.");

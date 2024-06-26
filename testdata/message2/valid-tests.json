@@ -1,10 +1,8 @@
 [
     { "src": "hello {|4.2| :number}", "exp": "hello 4.2"},
     { "src": "hello {|4.2| :number minimumFractionDigits=2}", "exp": "hello 4.20"},
-    { "src": "hello {|4.2| :number minimumFractionDigits = 2}", "exp": "hello 4.20",
-      "ignoreJava": "ICU4J parser bug"},
-    { "src": "hello {|4.2| :number minimumFractionDigits= 2}", "exp": "hello 4.20",
-      "ignoreJava": "ICU4J parser bug"},
+    { "src": "hello {|4.2| :number minimumFractionDigits = 2}", "exp": "hello 4.20" },
+    { "src": "hello {|4.2| :number minimumFractionDigits= 2}", "exp": "hello 4.20" },
     { "src": "hello {|4.2| :number minimumFractionDigits =2}", "exp": "hello 4.20"},
     { "src": "hello {|4.2| :number minimumFractionDigits=2  }", "exp": "hello 4.20"},
     { "src": "hello {|4.2| :number minimumFractionDigits=2 bar=3}", "exp": "hello 4.20"},
