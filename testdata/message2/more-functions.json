@@ -101,7 +101,15 @@
       "locale": "ro",
       "params": {"val": 1234567890123456789},
       "comment": "Rounded due to JSON not supporting full 64-bit ints",
-      "ignoreJava": "Different Java and C++ rounding behavior? Not sure"
+      "ignoreJava": "Different rounding behavior"
+    },
+    {
+      "src": "Default int64: {$val}!",
+      "exp": "Default int64: 1.234.567.890.123.456.770!",
+      "locale": "ro",
+      "params": {"val": 1234567890123456789},
+      "comment": "Rounded due to JSON not supporting full 64-bit ints",
+      "ignoreCpp": "Different rounding behavior"
     },
     {
       "src": "Default number: {$val}!",

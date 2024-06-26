@@ -275,7 +275,7 @@
       "src": "empty { }",
       "exp": "empty ",
       "errors": [{ "type": "parse-error" }, { "type": "junk-element" }],
-      "ignoreCpp": "Different result? Check spec TODO"
+      "ignoreCpp": "Fallback is unclear. See https://github.com/unicode-org/message-format-wg/issues/703"
     },
     {
       "src": "bad {:}",
@@ -291,7 +291,7 @@
       "src": "{bad {$placeholder option}}",
       "exp": "bad {$placeholder}",
       "errors": [{ "type": "extra-content" }, { "type": "extra-content" }, { "type": "missing-var" }],
-      "ignoreCpp": "Fallback not defined for syntax errors"
+      "ignoreCpp": "Fallback is unclear. See https://github.com/unicode-org/message-format-wg/issues/703"
     },
     {
       "src": ".match {|foo| :string} *{{foo}}",
@@ -301,13 +301,13 @@
       "src": ".match {$foo :string} * * {{foo}}",
       "exp": "foo",
       "errors": [{ "type": "key-mismatch" }, { "type": "missing-var" }],
-      "ignoreCpp": "Fallback not defined for data model errors"
+      "ignoreCpp": "Fallback is unclear. See https://github.com/unicode-org/message-format-wg/issues/735"
     },
     {
       "src": ".match {$foo :string} {$bar :string} * {{foo}}",
       "exp": "foo",
       "errors": [{ "type": "key-mismatch" }, { "type": "missing-var" }, { "type": "missing-var" }],
-      "ignoreCpp": "Fallback not defined for data model errors"
+      "ignoreCpp": "Fallback is unclear. See https://github.com/unicode-org/message-format-wg/issues/735"
     }
 ]
 
