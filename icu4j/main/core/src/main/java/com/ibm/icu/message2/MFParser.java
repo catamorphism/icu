@@ -505,8 +505,9 @@ public class MFParser {
                 result.appendCodePoint(cp);
             } else if (cp == '\\') {
                 cp = input.readCodePoint();
-                checkCondition(cp == '|', "Invalid escape sequence, only \"\\|\" is valid here");
-                result.appendCodePoint('|');
+                boolean isValidEscape = cp == '|' || cp == '\\' || cp == '{' || cp == '}';
+                checkCondition(isValidEscape, "Invalid escape sequence inside quoted literal");
+                result.appendCodePoint(cp);
             } else {
                 break;
             }
