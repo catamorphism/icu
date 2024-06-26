@@ -301,6 +301,9 @@ public class MFParser {
         MFDataModel.Annotation annotation = getMarkupAnnotation();
         List<MFDataModel.Attribute> attributes = getAttributes();
 
+        // Parse optional whitespace after attribute list
+        skipOptionalWhitespaces();
+
         cp = input.peekChar();
         if (cp == '/') {
             kind = MFDataModel.Markup.Kind.STANDALONE;
