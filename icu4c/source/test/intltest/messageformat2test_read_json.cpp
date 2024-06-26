@@ -288,7 +288,7 @@ static void runICU4JSelectionTestsFromJsonFile(TestMessageFormat2& t,
             messageText += piece;
         }
 
-        t.logln("ICU4J selectors tests:");
+        t.logln(u_str("ICU4J selectors tests: " + fileName));
         t.logln(u_str(iter->dump()));
 
         TestCase::Builder test;
@@ -375,7 +375,7 @@ static void runDataModelErrorTestsFromJsonFile(TestMessageFormat2& t,
         for (auto messagesIter = messages.begin(); messagesIter != messages.end(); ++messagesIter) {
             makeTestName(testName, sizeof(testName), errorName, testNum);
             testBuilder.setName(testName);
-            t.logln(testName);
+            t.logln(u_str(fileName + ": " + testName));
             testNum++;
             UnicodeString messageText = u_str(*messagesIter);
             t.logln(messageText);
@@ -467,7 +467,7 @@ static void runFunctionTestsFromJsonFile(TestMessageFormat2& t,
     for (auto iter = tests.begin(); iter != tests.end(); ++iter) {
         int32_t testNum = 0;
         auto functionName = iter->first;
-        t.logln("Function tests:");
+        t.logln(u_str("Function tests: " + fileName));
         t.logln(u_str(iter->second.dump()));
 
         // Array of tests
@@ -494,6 +494,7 @@ void TestMessageFormat2::jsonTestsFromFiles(IcuTestErrorCode& errorCode) {
 
     // Do spec tests for syntax errors
     runSyntaxErrorTestsFromJsonFile(*this, "spec/syntax-errors.json", errorCode);
+    runSyntaxErrorTestsFromJsonFile(*this, "more-syntax-errors.json", errorCode);
 
     // Do tests for data model errors
     runDataModelErrorTestsFromJsonFile(*this, "spec/data-model-errors.json", errorCode);
@@ -548,10 +549,6 @@ void TestMessageFormat2::jsonTestsFromFiles(IcuTestErrorCode& errorCode) {
 
     // ICU4J tests
     runFunctionTestsFromJsonFile(*this, "icu-test-functions.json", errorCode);
-    // Changes made to get these tests to work:
-    // * removed double backslashes from  "Hello \\t \\n \\r \\{ world!"
-    // * added empty {{}} pattern at the end of the tests under "Simple messages, with declarations"
-    //   and the first one under "Multiple declarations in one message"
     runICU4JSyntaxTestsFromJsonFile(*this, "icu-parser-tests.json", errorCode);
     runICU4JSelectionTestsFromJsonFile(*this, "icu-test-selectors.json", errorCode);
     runValidTestsFromJsonFile(*this, "icu-test-previous-release.json", errorCode);
