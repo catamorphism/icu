@@ -326,7 +326,7 @@
       "src": ".match {$foo :string} 1 {{one}} * {{other}}",
       "params": { "foo": 1 },
       "exp": "one",
-      "ignoreJava": "Wrong result? :string should stringify input"
+      "ignoreJava": "See https://unicode-org.atlassian.net/browse/ICU-22754?focusedCommentId=175933"
     },
     {
       "src": ".match {$foo :string} 1 {{one}} * {{other}}",

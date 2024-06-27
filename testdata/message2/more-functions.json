@@ -101,7 +101,7 @@
       "locale": "ro",
       "params": {"val": 1234567890123456789},
       "comment": "Rounded due to JSON not supporting full 64-bit ints",
-      "ignoreJava": "Different rounding behavior"
+      "ignoreJava": "See https://unicode-org.atlassian.net/browse/ICU-22754?focusedCommentId=175932"
     },
     {
       "src": "Default int64: {$val}!",
@@ -109,7 +109,7 @@
       "locale": "ro",
       "params": {"val": 1234567890123456789},
       "comment": "Rounded due to JSON not supporting full 64-bit ints",
-      "ignoreCpp": "Different rounding behavior"
+      "ignoreCpp": "See https://unicode-org.atlassian.net/browse/ICU-22754?focusedCommentId=175932"
     },
     {
       "src": "Default number: {$val}!",

@@ -128,7 +128,7 @@
       "src": ".match {$foo :number} 1 {{one}} * {{other}}",
       "params": { "foo": "1" },
       "exp": "one",
-      "ignoreJava": "ICU4J :number doesn't convert string to number?"
+      "ignoreJava": "See ICU-22809"
     },
     {
       "src": ".match {$foo :string} 1 {{one}} * {{other}}",
