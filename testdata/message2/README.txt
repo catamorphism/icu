@@ -21,6 +21,10 @@ In the "params" field, a date parameter can be expressed as:
 { "date": n }
 where n is a number representing a Unix timestamp.
 
+In the "params" field, a decimal string parameter can be expressed as:
+{ "decimal": s }
+where s is a string.
+
 Optional fields, "ignoreJava" and "ignoreCpp" can be used
 for tests currently expected to fail in the respective language.
 The field may have any value; if it's
