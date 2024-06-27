@@ -115,8 +115,7 @@
       "src": "Default number: {$val}!",
       "exp": "Default number: 1.234.567.890.123.456.789,987654!",
       "locale": "ro",
-      "params": {"val": {"decimal": "1234567890123456789.987654321"}},
-      "ignoreJava": "ICU4J: Not sure if there's a way to specify a decimal string as a param"
+      "params": {"val": {"decimal": "1234567890123456789.987654321"}}
     }
   ]
 }

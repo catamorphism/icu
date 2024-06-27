@@ -89,6 +89,24 @@ public class TestUtils {
         }
     }
 
+    static void rewriteDecimals(Map<String, Object> params) {
+        // For each value in `params` that's a map with the single key
+        // `decimal` and a string value s
+        // return a map with that value changed to Decimal(s)
+        // In JSON this looks like:
+        //    "params": {"val": {"decimal": "1234567890123456789.987654321"}},
+        for (Map.Entry<String, Object> pair : params.entrySet()) {
+            if (pair.getValue() instanceof Map) {
+                Map innerMap = (Map) pair.getValue();
+                if (innerMap.size() == 1 && innerMap.containsKey("decimal")
+                    && innerMap.get("decimal") instanceof String) {
+                    String decimalValue = (String) innerMap.get("decimal");
+                    params.put(pair.getKey(), new com.ibm.icu.math.BigDecimal(decimalValue));
+                }
+            }
+        }
+    }
+
 
     static boolean expectsErrors(Unit unit) {
         return unit.errors != null && !unit.errors.isEmpty();
@@ -127,6 +145,7 @@ public class TestUtils {
             if (unit.params != null) {
                 params = unit.params;
                 rewriteDates(params);
+                rewriteDecimals(params);
             }
             String result = mf.formatToString(params);
             if (expectsErrors(unit)) {
