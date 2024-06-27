@@ -1684,8 +1684,8 @@ const char *IntlTest::getSourceTestData(UErrorCode& /*err*/) {
  */
 const char *IntlTest::getRootTestData(UErrorCode& /*err*/) {
     const char *srcDataDir = nullptr;
-// TODO: This just shouldn't be called if U_TOPSRCDIR is defined
 #ifdef U_TOPSRCDIR
+    // This assumes that U_TOPSRCDIR/../../testdata exists
     srcDataDir = U_TOPSRCDIR U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
 #else
     srcDataDir = ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
