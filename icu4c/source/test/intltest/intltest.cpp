@@ -20,6 +20,7 @@
 #include <string.h>
 #include <cmath>
 #include <math.h>
+#include <sys/stat.h>
 
 #include "unicode/ctest.h" // for str_timeDelta
 #include "unicode/curramt.h"
@@ -1679,29 +1680,45 @@ const char *IntlTest::getSourceTestData(UErrorCode& /*err*/) {
     return srcDataDir;
 }
 
+static bool directoryExists(const char* dirName) {
+    struct stat sb;
+    return (stat(dirName, &sb) == 0) && ((sb.st_mode & S_IFMT) == S_IFDIR);
+}
+
 /**
  * Returns the path to icu/testdata/
  */
-const char *IntlTest::getRootTestData(UErrorCode& /*err*/) {
+const char *IntlTest::getRootTestData(UErrorCode& err) {
     const char *srcDataDir = nullptr;
+    if (U_SUCCESS(err)) {
+        char cwd[512];
+        getcwd(cwd, sizeof(cwd));
 #ifdef U_TOPSRCDIR
-    // This assumes that U_TOPSRCDIR/../../testdata exists
-    srcDataDir = U_TOPSRCDIR U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
+        // Try U_TOPSRCDIR/../testdata (source tarball)
+        srcDataDir = U_TOPSRCDIR U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
+        if (!directoryExists(srcDataDir)) {
+            // If that doesn't exist, try U_TOPSRCDIR/../../testdata (in-repo)
+            srcDataDir = U_TOPSRCDIR U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
+            if (!directoryExists(srcDataDir)) {
+                // If neither exists, return null
+                err = U_FILE_ACCESS_ERROR;
+                srcDataDir = nullptr;
+            }
+        }
 #else
-    srcDataDir = ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
-    FILE *f = fopen(".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "test" U_FILE_SEP_STRING
-                      "testdata" U_FILE_SEP_STRING "rbbitst.txt",
-                      "r");
-    if (f) {
-        /* We're in icu/source/test/intltest/ */
-        fclose(f);
-    }
-    else {
-        /* We're in icu/source/test/intltest/Platform/(Debug|Release) */
-        srcDataDir = ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING
-                     ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
-    }
+        // Try ../../../../testdata (if we're in icu/source/test/intltest)
+        // and ../../../../../../testdata (if we're in icu/source/test/intltest/Platform/(Debug|Release)
+        srcDataDir = ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
+        if (!directoryExists(srcDataDir)) {
+            srcDataDir = ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING
+                ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
+            if (!directoryExists(srcDataDir)) {
+                err = U_FILE_ACCESS_ERROR;
+                srcDataDir = nullptr;
+            }
+        }
 #endif
+    }
     return srcDataDir;
 }
 
