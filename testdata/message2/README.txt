@@ -29,8 +29,9 @@ The field may have any value; if it's
 present, the test is ignored. (The value can be a comment explaining
 why it's expected to fail.)
 
-Tests in the `spec/` subdirectory are taken from https://github.com/unicode-org/message-format-wg/blob/main/test
-and need to be manually updated if the contents change upstream.
+Tests in the `spec/` subdirectory are taken from https://github.com/unicode-org/message-format-wg/blob/main/test .
+If the contents change upstream, then the corresponding tests in CLDR
+need to be updated (also see https://unicode-org.atlassian.net/browse/ICU-22812 ).
 
 ## ICU4J only
 
