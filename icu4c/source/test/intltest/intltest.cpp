@@ -1688,7 +1688,7 @@ static bool directoryExists(const char* dirName) {
 /**
  * Returns the path to icu/testdata/
  */
-const char *IntlTest::getRootTestData(UErrorCode& err) {
+const char *IntlTest::getSharedTestData(UErrorCode& err) {
     const char *srcDataDir = nullptr;
     if (U_SUCCESS(err)) {
         char cwd[512];

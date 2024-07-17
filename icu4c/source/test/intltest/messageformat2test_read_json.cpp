@@ -217,7 +217,7 @@ static void runSyntaxErrorTest(TestMessageFormat2& icuTest,
 static void runICU4JSyntaxTestsFromJsonFile(TestMessageFormat2& t,
                                             const std::string& fileName,
                                             IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getSharedTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string testFileName(testDataDirectory);
@@ -259,7 +259,7 @@ static void runICU4JSyntaxTestsFromJsonFile(TestMessageFormat2& t,
 static void runICU4JSelectionTestsFromJsonFile(TestMessageFormat2& t,
                                             const std::string& fileName,
                                             IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getSharedTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string testFileName(testDataDirectory);
@@ -322,7 +322,7 @@ static void runICU4JSelectionTestsFromJsonFile(TestMessageFormat2& t,
 static void runValidTestsFromJsonFile(TestMessageFormat2& t,
                                       const std::string& fileName,
                                       IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getSharedTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string testFileName(testDataDirectory);
@@ -348,7 +348,7 @@ static void runValidTestsFromJsonFile(TestMessageFormat2& t,
 static void runDataModelErrorTestsFromJsonFile(TestMessageFormat2& t,
                                                const std::string& fileName,
                                                IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getSharedTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string dataModelErrorsFileName(testDataDirectory);
@@ -393,7 +393,7 @@ static void runDataModelErrorTestsFromJsonFile(TestMessageFormat2& t,
 static void runSyntaxErrorTestsFromJsonFile(TestMessageFormat2& t,
                                             const std::string& fileName,
                                             IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getSharedTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string syntaxErrorsFileName(testDataDirectory);
@@ -427,7 +427,7 @@ static void runSyntaxErrorTestsFromJsonFile(TestMessageFormat2& t,
 static void runSyntaxTestsWithDiagnosticsFromJsonFile(TestMessageFormat2& t,
                                                       const std::string& fileName,
                                                       IcuTestErrorCode& errorCode) {
-    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getSharedTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string testFileName(testDataDirectory);
@@ -453,7 +453,7 @@ static void runFunctionTestsFromJsonFile(TestMessageFormat2& t,
                                          const std::string& fileName,
                                          IcuTestErrorCode& errorCode) {
     // Get the test data directory
-    const char* testDataDirectory = IntlTest::getRootTestData(errorCode);
+    const char* testDataDirectory = IntlTest::getSharedTestData(errorCode);
     CHECK_ERROR(errorCode);
 
     std::string functionTestsFileName(testDataDirectory);
