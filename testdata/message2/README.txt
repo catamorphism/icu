@@ -1,8 +1,6 @@
 © 2024 and later: Unicode, Inc. and others.
 License & terms of use: http://www.unicode.org/copyright.html
 
-TODO: the following only applies to C++
-
 The format of the JSON files in this directory follows the same format as `test-core.json`
 in the spec, described in:
 
