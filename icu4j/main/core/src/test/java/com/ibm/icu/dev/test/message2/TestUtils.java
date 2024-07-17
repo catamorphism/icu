@@ -173,12 +173,16 @@ public class TestUtils {
         return Files.newBufferedReader(json, StandardCharsets.UTF_8);
     }
 
-    private static Path getTestFile(Class<?> cls, String fileName) throws URISyntaxException {
+    private static Path getTestFile(Class<?> cls, String fileName) throws URISyntaxException, IOException {
         String packageName = cls.getPackage().getName().replace('.', '/');
         URI getPath = cls.getClassLoader().getResource(packageName).toURI();
         Path filePath = Paths.get(getPath);
         Path json = Paths.get(fileName);
         // Test files are in icu/testdata/
         Path icuTestdataDir = filePath.resolve("../../../../../../../../../../../testdata/message2/").normalize();
+        if (!Files.isDirectory(icuTestdataDir)) {
+            throw new java.io.FileNotFoundException("Test data directory "
+                                                    + icuTestdataDir + " does not exist");
+        }
         return icuTestdataDir.resolve(json);
     }}
