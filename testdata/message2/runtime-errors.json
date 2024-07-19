@@ -1,26 +1,32 @@
-[
+{
+  "scenario": "Runtime errors",
+  "description": "Tests for bad-selector and bad-operand errors",
+  "defaultTestProperties": {
+    "locale": "en-US"
+  },
+  "tests": [
     {
         "src": ".match {|horse| :date}\n   1 {{The value is one.}}\n  * {{Formatter used as selector.}}",
         "exp": "Formatter used as selector.",
-        "errors": [{"type": "selector-error"}],
-        "ignoreJava": "ICU4J doesn't signal runtime errors?"
+        "expErrors": [{"type": "bad-selector"}],
+        "ignoreJava": "ICU4J doesn't signal runtime expErrors?"
     },
     {
         "src": ".match {|horse| :string}\n  1 {{The value is one.}}\n  * {{Selector used as formatter: {|horse| :string}}}",
         "exp": "Selector used as formatter: {|horse|}",
-        "errors": [{"type": "formatting-error"}],
-        "ignoreJava": "ICU4J doesn't signal runtime errors?"
+        "expErrors": [{"type": "bad-operand"}],
+        "ignoreJava": "ICU4J doesn't signal runtime expErrors?"
     },
     {
         "src": ".match {|horse| :number}\n  1 {{The value is one.}}\n  * {{horse is not a number.}}",
         "exp": "horse is not a number.",
-        "errors": [{"type": "selector-error"}],
-        "ignoreJava": "ICU4J doesn't signal runtime errors?"
+        "expErrors": [{"type": "bad-selector"}],
+        "ignoreJava": "ICU4J doesn't signal runtime expErrors?"
     },
     {
         "src": ".local $sel = {|horse| :number}\n  .match {$sel}\n    1 {{The value is one.}}\n   * {{horse is not a number.}}",
         "exp": "horse is not a number.",
-        "errors": [{"type": "selector-error"}],
-        "ignoreJava": "ICU4J doesn't signal runtime errors?"
+        "expErrors": [{"type": "bad-selector"}],
+        "ignoreJava": "ICU4J doesn't signal runtime expErrors?"
     }
 ]

@@ -1,0 +1,22 @@
+{
+  "scenario": "Function tests 3",
+  "description": "More tests for ICU-specific formatting behavior - multiline messages",
+  "defaultTestProperties": {
+    "locale": "en-US"
+  },
+  "tests": [
+    {
+      "srcs": [".local $dateStr = {$date :datetime}\n",
+               "{{Testing date formatting: {$dateStr :datetime}.}}"],
+      "exp": "Testing date formatting: 23.11.2022, 19:42.",
+      "locale": "ro",
+      "params": [{ "name": "date", "value": 1669261357000 }]
+    },
+    {
+      "srcs": [".local $num = {|42| :number}\n",
+               "{{Testing date formatting: {$num :datetime}}}"],
+      "exp": "Testing date formatting: {|42|}",
+      "expErrors": [{"type": "bad-operand"}]
+    }
+  ]
+}
