@@ -47,6 +47,7 @@
     },
     {
       "ignoreJava": "Can't pass null in a map",
+      "ignoreCpp": "Same as Java",
       "src": ".match {$foo} 1 {{one}} * {{other}}",
       "params": [{ "name": "foo", "value": null }],
       "exp": "other"

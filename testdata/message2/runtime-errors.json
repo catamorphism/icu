@@ -29,4 +29,5 @@
         "expErrors": [{"type": "bad-selector"}],
         "ignoreJava": "ICU4J doesn't signal runtime expErrors?"
     }
-]
+  ]
+}
