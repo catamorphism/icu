@@ -33,6 +33,8 @@ checkThatJdk8IsDefault
 reportTitle Prepare folder with artifacts for GitHub release
 
 mvn clean install -DskipITs -DskipTests -P with_sources,with_javadoc
+#mvn clean install -DskipITs -DskipTests -P with_sources
+#mvn install -DskipITs -DskipTests -P with_javadoc
 
 rm   -fr ${release_folder}
 mkdir -p ${release_folder}

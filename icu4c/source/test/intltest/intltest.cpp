@@ -1691,8 +1691,6 @@ static bool directoryExists(const char* dirName) {
 const char *IntlTest::getSharedTestData(UErrorCode& err) {
     const char *srcDataDir = nullptr;
     if (U_SUCCESS(err)) {
-        char cwd[512];
-        getcwd(cwd, sizeof(cwd));
 #ifdef U_TOPSRCDIR
         // Try U_TOPSRCDIR/../testdata (source tarball)
         srcDataDir = U_TOPSRCDIR U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
