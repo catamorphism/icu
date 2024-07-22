@@ -52,7 +52,7 @@ static UErrorCode getExpectedRuntimeErrorFromString(const std::string& errorName
     if (errorName == "duplicate-option-name") {
         return U_MF_DUPLICATE_OPTION_NAME_ERROR;
     }
-    if (errorName == "selector-error") {
+    if (errorName == "bad-selector") {
         return U_MF_SELECTOR_ERROR;
     }
     if (errorName == "formatting-error") {
