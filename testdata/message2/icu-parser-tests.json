@@ -1,13 +1,8 @@
 {
-  "scenario": "Syntax errors",
-  "description": "Strings that produce syntax errors when parsed. Includes simple messages; tests with attributes; reserved and private annotations; messages with one or more declarations.",
+  "scenario": "Valid tests",
+  "description": "Additional valid tests",
   "defaultTestProperties": {
-    "locale": "en-US",
-    "expErrors": [
-      {
-        "type": "syntax-error"
-      }
-    ]
+    "locale": "en-US"
   },
   "tests": [
     { "src": "" },
