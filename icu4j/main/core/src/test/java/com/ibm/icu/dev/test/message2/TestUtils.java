@@ -17,6 +17,7 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.junit.Ignore;
 
@@ -72,51 +73,64 @@ public class TestUtils {
 
     // ======= Same functionality with Unit, usable with JSON ========
 
-    static void rewriteDates(Map<String, Object> params) {
+    static void rewriteDates(Param[] params) {
         // For each value in `params` that's a map with the single key
         // `date` and a double value d,
         // return a map with that value changed to Date(d)
         // In JSON this looks like:
-        //    "params": {"exp": { "date": 1722746637000 } }
-        for (Map.Entry<String, Object> pair : params.entrySet()) {
-            if (pair.getValue() instanceof Map) {
-                Map innerMap = (Map) pair.getValue();
+        //    "params": [{"name": "exp"}, { "value": { "date": 1722746637000 } }]
+        for (int i = 0; i < params.length; i++) {
+            Param pair = params[i];
+            if (pair.value instanceof Map) {
+                Map innerMap = (Map) pair.value;
                 if (innerMap.size() == 1 && innerMap.containsKey("date") && innerMap.get("date") instanceof Double) {
                     Long dateValue = Double.valueOf((Double) innerMap.get("date")).longValue();
-                    params.put(pair.getKey(), new Date(dateValue));
+                    params[i] = new Param(pair.name, new Date(dateValue));
                 }
             }
         }
     }
 
-    static void rewriteDecimals(Map<String, Object> params) {
+    static void rewriteDecimals(Param[] params) {
         // For each value in `params` that's a map with the single key
         // `decimal` and a string value s
         // return a map with that value changed to Decimal(s)
         // In JSON this looks like:
-        //    "params": {"val": {"decimal": "1234567890123456789.987654321"}},
-        for (Map.Entry<String, Object> pair : params.entrySet()) {
-            if (pair.getValue() instanceof Map) {
-                Map innerMap = (Map) pair.getValue();
+        //    "params": [{"name": "val"}, {"value": {"decimal": "1234567890123456789.987654321"}}]
+        for (int i = 0; i < params.length; i++) {
+            Param pair = params[i];
+            if (pair.value instanceof Map) {
+                Map innerMap = (Map) pair.value;
                 if (innerMap.size() == 1 && innerMap.containsKey("decimal")
                     && innerMap.get("decimal") instanceof String) {
                     String decimalValue = (String) innerMap.get("decimal");
-                    params.put(pair.getKey(), new com.ibm.icu.math.BigDecimal(decimalValue));
+                    params[i] = new Param(pair.name, new com.ibm.icu.math.BigDecimal(decimalValue));
                 }
             }
         }
     }
 
-
-    static boolean expectsErrors(Unit unit) {
-        return unit.errors != null && !unit.errors.isEmpty();
+    static Map<String, Object> paramsToMap(Param[] params) {
+        if (params == null) {
+            return null;
+        }
+        TreeMap<String, Object> result = new TreeMap<String, Object>();
+        for (Param pair : params) {
+            result.put(pair.name, pair.value);
+        }
+        return result;
     }
 
-    static void runTestCase(Unit unit) {
-        runTestCase(unit, null);
+    static boolean expectsErrors(DefaultTestProperties defaults, Unit unit) {
+        return (unit.expErrors != null && !unit.expErrors.isEmpty())
+            || (defaults.expErrors != null && defaults.expErrors.length > 0);
     }
 
-    static void runTestCase(Unit unit, Map<String, Object> params) {
+    static void runTestCase(DefaultTestProperties defaults, Unit unit) {
+        runTestCase(defaults, unit, null);
+    }
+
+    static void runTestCase(DefaultTestProperties defaults, Unit unit, Param[] params) {
         if (unit.ignoreJava != null) {
             return;
         }
@@ -136,6 +150,8 @@ public class TestUtils {
                 MessageFormatter.builder().setPattern(pattern.toString());
         if (unit.locale != null && !unit.locale.isEmpty()) {
             mfBuilder.setLocale(Locale.forLanguageTag(unit.locale));
+        } else if (defaults.locale != null) {
+            mfBuilder.setLocale(Locale.forLanguageTag(defaults.locale));
         } else {
             mfBuilder.setLocale(Locale.US);
         }
@@ -147,16 +163,18 @@ public class TestUtils {
                 rewriteDates(params);
                 rewriteDecimals(params);
             }
-            String result = mf.formatToString(params);
-            if (expectsErrors(unit)) {
+            String result = mf.formatToString(paramsToMap(params));
+            if (expectsErrors(defaults, unit)) {
                 fail(reportCase(unit)
                         + "\nExpected error, but it didn't happen.\n"
                         + "Result: '" + result + "'");
             } else {
-                assertEquals(reportCase(unit), unit.exp, result);
+                if (unit.exp != null) {
+                    assertEquals(reportCase(unit), unit.exp, result);
+                }
             }
         } catch (IllegalArgumentException | NullPointerException e) {
-            if (!expectsErrors(unit)) {
+            if (!expectsErrors(defaults, unit)) {
                 fail(reportCase(unit)
                         + "\nNo error was expected here, but it happened:\n"
                         + e.getMessage());

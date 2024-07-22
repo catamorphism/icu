@@ -13,26 +13,26 @@ class Unit {
     final String src;
     final List<String> srcs;
     final String locale;
-    final Map<String, Object> params;
+    final Param[] params;
     final String exp;
     final String ignoreJava;
-    final List<Error> errors;
+    final List<Error> expErrors;
 
     Unit(
             String src,
             List<String> srcs,
             String locale,
-            Map<String, Object> params,
+            Param[] params,
             String exp,
             String ignoreJava,
-            List<Error> errors) {
+            List<Error> expErrors) {
         this.src = src;
         this.srcs = srcs;
         this.locale = locale;
         this.params = params;
         this.exp = exp;
         this.ignoreJava = ignoreJava;
-        this.errors = errors;
+        this.expErrors = expErrors;
     }
 
     class Error {
@@ -78,11 +78,11 @@ class Unit {
         String newSrc = other.src != null ? other.src : this.src;
         List<String> newSrcs = other.srcs != null ? other.srcs : this.srcs;
         String newLocale = other.locale != null ? other.locale : this.locale;
-        Map<String, Object> newParams = other.params != null ? other.params : this.params;
+        Param[] newParams = other.params != null ? other.params : this.params;
         String newExp = other.exp != null ? other.exp : this.exp;
         String newIgnore = other.ignoreJava != null ? other.ignoreJava : this.ignoreJava;
-        List<Error> newErrors = other.errors != null ? other.errors : this.errors;
-        return new Unit(newSrc, newSrcs, newLocale, newParams, newExp, newIgnore, newErrors);
+        List<Error> newExpErrors = other.expErrors != null ? other.expErrors : this.expErrors;
+        return new Unit(newSrc, newSrcs, newLocale, newParams, newExp, newIgnore, newExpErrors);
     }
 
     private static String escapeString(String str) {
