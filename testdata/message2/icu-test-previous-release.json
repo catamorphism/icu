@@ -17,6 +17,7 @@
     {
       "comment": "This is not an error! foo is not used before the local declaration, so the local declaration of $foo shadows the input variable.",
       "src": ".local $foo = {bar} {{bar {$foo}}}",
+      "exp": "bar bar",
       "params": [{ "name": "foo", "value": "foo" }]
     },
     {
