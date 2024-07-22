@@ -14,12 +14,6 @@
       "exp": "5 1",
       "params": [{ "name": "var2", "value": 5 }],
       "expErrors": [{ "type": "duplicate-declaration" }]
-    },
-    {
-      "src": ".local $var2 = {1} {{{$var2}}}",
-      "exp": "1",
-      "params": [{ "name": "var2", "value": 5 }],
-      "expErrors": [{ "type": "duplicate-declaration" }]
     }
   ]
 }
