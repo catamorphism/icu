@@ -54,8 +54,8 @@
     { "src": ".something |reserved=| {$foo :date} {{}}" },
     { "src": ".input {$a :date} .local $exp = {$a :date style=full} {{Your card expires on {$exp}!}}" },
     { "src": ".input {$a :date} .local $b = {$a :date year=numeric month=long day=numeric} .local $c = {$b :date month=medium} .someting |reserved = \\| and more| {$x :date} {$y :date} {$z :number} {{}}" },
-    { "src": ".input {$x :number}" },
-    { "src": ".local $foo = {|1|}" },
-    { "src": ".unsupported |statement| {$x :number}" }
+    { "src": ".input {$x :number} {{_}}" },
+    { "src": ".local $foo = {|1|} {{_}}" },
+    { "src": ".unsupported |statement| {$x :number} {{_}}" }
   ]
 }
