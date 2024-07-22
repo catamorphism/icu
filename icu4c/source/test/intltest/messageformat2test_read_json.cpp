@@ -103,7 +103,7 @@ static bool setArguments(TestMessageFormat2& t,
                     // from number values
                     auto obj = val.template get<json::object_t>();
                     if (obj["date"].is_number()) {
-                        test.setDateArgument(argName, obj["date"]);
+                        test.setDateArgument(argName, val["date"]);
                     } else if (obj["decimal"].is_string()) {
                         // Decimal strings: represent in tests as { "decimal" : string },
                         // to distinguish from string values
