@@ -32,7 +32,7 @@
         "one {{{$count} file}}\n",
         " *  {{{$count} files}}"
      ],
-     "params": [{"name": "count", "value": 1}],
+     "params": [{"name": "count", "value": 3}],
      "exp": "3 files"
   },
   {
@@ -65,7 +65,7 @@
         "one {{{$count} file}}\n",
         " *  {{{$count} files}}"
      ],
-     "params": [{"name": "count", "value": 1}],
+     "params": [{"name": "count", "value": 3}],
      "exp": "3 files"
   },
   {
@@ -245,7 +245,7 @@
     ],
     "params": [{"name": "fileCount", "value": 7},
                {"name": "folderCount", "value": 1}],
-    "exp": "You found 7 file in 1 folder"
+    "exp": "You found 7 files in 1 folder"
   },
   {
     "comment": "Plural combinations, mixed order",
@@ -258,7 +258,7 @@
     ],
     "params": [{"name": "fileCount", "value": 7},
                {"name": "folderCount", "value": 3}],
-    "exp": "You found 7 file in 3 folders"
+    "exp": "You found 7 files in 3 folders"
   },
   {
     "comment": "Test that the selection honors the formatting option (`1.00 dollars`)",
@@ -268,8 +268,8 @@
         "  one {{{$c} dollar}}\n",
         "   *  {{{$c} dollars}}"
       ],
-      "params": [{ "name": "price", "value": 1,
-                   "name": "minF", "value": 0 }],
+      "params": [{ "name": "price", "value": 1 },
+                 { "name": "minF", "value": 0 }],
       "exp": "1 dollar"
   },
   {
@@ -280,8 +280,8 @@
         "  one {{{$c} dollar}}\n",
         "   *  {{{$c} dollars}}"
       ],
-      "params": [{ "name": "price", "value": 1,
-                   "name": "minF", "value": 2 }],
+      "params": [{ "name": "price", "value": 1},
+                 { "name": "minF", "value": 2 }],
       "exp": "1.00 dollars"
   },
   {
@@ -292,8 +292,8 @@
         "  one {{{$c} dollar}}\n",
         "   *  {{{$c} dollars}}"
       ],
-      "params": [{ "name": "price", "value": 1.25,
-                   "name": "maxF", "value": 0 }],
+      "params": [{ "name": "price", "value": 1.25},
+                 { "name": "maxF", "value": 0 }],
       "exp": "1 dollar"
   },
   {
@@ -304,8 +304,8 @@
         "  one {{{$c} dollar}}\n",
         "   *  {{{$c} dollars}}"
       ],
-      "params": [{ "name": "price", "value": 1.25,
-                   "name": "maxF", "value": 2 }],
+      "params": [{ "name": "price", "value": 1.25},
+                 { "name": "maxF", "value": 2 }],
       "exp": "1.25 dollars"
   },
   {
@@ -316,8 +316,8 @@
         "  one {{{$c} dollar}}\n",
         "   *  {{{$c} dollars}}"
       ],
-      "params": [{ "name": "price", "value": 1,
-                   "name": "maxF", "value": 0 }],
+      "params": [{ "name": "price", "value": 1},
+                 { "name": "maxF", "value": 0 }],
       "exp": "1 dollar"
   },
   {
@@ -328,8 +328,8 @@
         "  one {{{$c} dollar}}\n",
         "   *  {{{$c} dollars}}"
       ],
-      "params": [{ "name": "price", "value": 1,
-                   "name": "maxF", "value": 2 }],
+      "params": [{ "name": "price", "value": 1},
+                 { "name": "maxF", "value": 2 }],
       "exp": "1 dollar"
   },
   {
@@ -340,8 +340,8 @@
         "  one {{{$c} dollar}}\n",
         "   *  {{{$c} dollars}}"
       ],
-      "params": [{ "name": "price", "value": 1.25,
-                   "name": "maxF", "value": 0 }],
+      "params": [{ "name": "price", "value": 1.25},
+                 { "name": "maxF", "value": 0 }],
       "exp": "1 dollar"
   },
   {
@@ -352,8 +352,8 @@
         "  one {{{$c} dollar}}\n",
         "   *  {{{$c} dollars}}"
       ],
-      "params": [{ "name": "price", "value": 1.25,
-                   "name": "maxF", "value": 2 }],
+      "params": [{ "name": "price", "value": 1.25 },
+                 { "name": "maxF", "value": 2 }],
       "exp": "1 dollar"
   },
   {
@@ -364,8 +364,8 @@
         "  one {{{$c} dollar}}\n",
         "   *  {{{$c} dollars}}"
       ],
-      "params": [{ "name": "price", "value": 4.12345,
-                   "name": "maxF", "value": 4 }],
+      "params": [{ "name": "price", "value": 4.12345 },
+                 { "name": "maxF", "value": 4 }],
       "exp": "4 dollars"
   }
  ]
