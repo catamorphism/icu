@@ -44,7 +44,7 @@
     { "src": "Reserved {$exp &foo |something more protected|} and more" },
     { "src": "Reserved {$exp %foo |something quoted \\| inside|} and more" },
     { "src": "{{.starting with dot is OK here}}" },
-    { "src": "{{Some string pattern }, with {$foo} and {$exp :date style=long}!}}" },
+    { "src": "{{Some string pattern \\}, with {$foo} and {$exp :date style=long}!}}" },
     { "src": ".input {$pi :number} {{}}" },
     { "src": ".input {$exp :date} {{}}" },
     { "src": ".local $foo = {$exp} {{}}" },
