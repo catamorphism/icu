@@ -20,7 +20,6 @@ import com.google.gson.stream.JsonToken;
 // to get ArrayList<String>.class
 public class StringToListAdapter extends TypeAdapter<Sources> {
     public Sources read(JsonReader reader) throws IOException {
-        System.out.println("in read() ~~~~~~~");
         if (reader.peek() == JsonToken.NULL) {
             reader.nextNull();
             return null;
