@@ -11,7 +11,8 @@ import java.util.StringJoiner;
 // Since this is serialized by Gson, the field names should match the keys in the .json files.
 class Unit {
     final String src;
-    final List<String> srcs;
+    // For why this is not an ArrayList<String>, see StringToListAdapter.java
+    final Sources srcs;
     final String locale;
     final Param[] params;
     final String exp;
@@ -20,7 +21,7 @@ class Unit {
 
     Unit(
             String src,
-            List<String> srcs,
+            Sources srcs,
             String locale,
             Param[] params,
             String exp,
@@ -76,7 +77,7 @@ class Unit {
      */
     public Unit merge(Unit other) {
         String newSrc = other.src != null ? other.src : this.src;
-        List<String> newSrcs = other.srcs != null ? other.srcs : this.srcs;
+        Sources newSrcs = other.srcs != null ? other.srcs : this.srcs;
         String newLocale = other.locale != null ? other.locale : this.locale;
         Param[] newParams = other.params != null ? other.params : this.params;
         String newExp = other.exp != null ? other.exp : this.exp;

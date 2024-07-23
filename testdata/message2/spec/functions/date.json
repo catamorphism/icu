@@ -22,7 +22,7 @@
       "expErrors": [
         {
           "type": "bad-operand"
-        },
+        }
       ],
       "ignoreJava": "See https://github.com/unicode-org/message-format-wg/issues/782"
     },

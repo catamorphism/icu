@@ -4,7 +4,13 @@
   "defaultTestProperties": {
     "locale": "en-US"
   },
-  "tests": [
+    "tests": [
+    {
+      "srcs": "Format {123456789.9876 :number} number",
+      "locale": "en-IN",
+      "exp": "Format 12,34,56,789.9876 number",
+      "comment": "From ICU4J tests, with explicit formatter added"
+    },
     {
       "srcs": [".local $dateStr = {$date :datetime}\n",
                "{{Testing date formatting: {$dateStr :datetime}.}}"],

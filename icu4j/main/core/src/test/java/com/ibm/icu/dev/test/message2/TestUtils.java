@@ -29,7 +29,11 @@ import com.ibm.icu.message2.MessageFormatter;
 /** Utility class, has no test methods. */
 @Ignore("Utility class, has no test methods.")
 public class TestUtils {
-    static final Gson GSON = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
+
+    static final Gson GSON = new GsonBuilder()
+        .setDateFormat("yyyy-MM-dd HH:mm:ss")
+        .registerTypeAdapter(Sources.class, new StringToListAdapter())
+        .create();
 
     // ======= Legacy TestCase utilities, no json-compatible ========
 
@@ -137,7 +141,7 @@ public class TestUtils {
 
         StringBuilder pattern = new StringBuilder();
         if (unit.srcs != null) {
-            for (String src : unit.srcs) {
+            for (String src : unit.srcs.sources) {
                 pattern.append(src);
             }
         } else if (unit.src != null) {
