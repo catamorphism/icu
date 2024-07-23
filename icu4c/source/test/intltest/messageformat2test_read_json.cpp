@@ -144,18 +144,19 @@ static void runValidTest(TestMessageFormat2& icuTest,
     auto j_object = j.template get<json::object_t>();
     std::string messageText;
 
+    // src can be a single string or an array of strings
     if (!j_object["src"].is_null()) {
-        messageText = j_object["src"].template get<std::string>();
-    } else {
-        if (!j_object["srcs"].is_null()) {
-            auto strings = j_object["srcs"].template get<std::vector<std::string>>();
+        if (j_object["src"].is_string()) {
+            messageText = j_object["src"].template get<std::string>();
+        } else {
+            auto strings = j_object["src"].template get<std::vector<std::string>>();
             for (const auto &piece : strings) {
                 messageText += piece;
             }
         }
-        // Otherwise, it should probably be an error, but we just
-        // treat this as the empty string
     }
+    // Otherwise, it should probably be an error, but we just
+    // treat this as the empty string
 
     TestCase::Builder test = successTest(testName, messageText);
 
