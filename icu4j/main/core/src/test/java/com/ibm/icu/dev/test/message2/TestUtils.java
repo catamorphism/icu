@@ -140,12 +140,10 @@ public class TestUtils {
         }
 
         StringBuilder pattern = new StringBuilder();
-        if (unit.srcs != null) {
-            for (String src : unit.srcs.sources) {
+        if (unit.src != null) {
+            for (String src : unit.src.sources) {
                 pattern.append(src);
             }
-        } else if (unit.src != null) {
-            pattern.append(unit.src);
         }
 
         // We can call the "complete" constructor with null values, but we want to test that

@@ -49,8 +49,5 @@ public class StringToListAdapter extends TypeAdapter<Sources> {
         }
         writer.endArray();
     }
-    public StringToListAdapter() {
-        System.out.println("***** stringtolistadapter()");
-    }
 }
 

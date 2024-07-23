@@ -7,7 +7,7 @@
   "tests": [
     {
       "comment": "Horibly long, but I really wanted to test multiple declarations with overrides, and you can't join strings in JSON",
-      "srcs": [
+      "src": [
         ".input {$exp :datetime timeStyle=short}\n",
         ".input {$user :string}\n",
         ".local $longExp = {$exp :datetime dateStyle=long}\n",
@@ -21,7 +21,7 @@
       "ignoreCpp": "ICU-22754 ICU4C doesn't implement this kind of function composition yet. See https://github.com/unicode-org/message-format-wg/issues/515"
     },
     {
-      "srcs": [
+      "src": [
         ".input {$exp :datetime year=numeric month=numeric day=|2-digit|}\n",
         ".local $longExp = {$exp :datetime month=long weekday=long}\n",
         "{{Expires on '{$exp}' ('{$longExp}').}}"

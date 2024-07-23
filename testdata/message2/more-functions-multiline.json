@@ -6,20 +6,20 @@
   },
     "tests": [
     {
-      "srcs": "Format {123456789.9876 :number} number",
+      "src": "Format {123456789.9876 :number} number",
       "locale": "en-IN",
       "exp": "Format 12,34,56,789.9876 number",
       "comment": "From ICU4J tests, with explicit formatter added"
     },
     {
-      "srcs": [".local $dateStr = {$date :datetime}\n",
+      "src": [".local $dateStr = {$date :datetime}\n",
                "{{Testing date formatting: {$dateStr :datetime}.}}"],
       "exp": "Testing date formatting: 23.11.2022, 19:42.",
       "locale": "ro",
       "params": [{ "name": "date", "value": 1669261357000 }]
     },
     {
-      "srcs": [".local $num = {|42| :number}\n",
+      "src": [".local $num = {|42| :number}\n",
                "{{Testing date formatting: {$num :datetime}}}"],
       "exp": "Testing date formatting: {|42|}",
       "expErrors": [{"type": "bad-operand"}]

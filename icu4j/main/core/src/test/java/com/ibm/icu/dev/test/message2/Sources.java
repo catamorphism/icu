@@ -19,4 +19,11 @@ class Sources {
             List<String> sources) {
         this.sources = sources;
     }
+
+    @Override
+    public String toString() {
+        StringJoiner result = new StringJoiner(", ", "[", "]");
+        result.add(sources.toString());
+        return result.toString();
+    }
 }
