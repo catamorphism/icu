@@ -287,11 +287,9 @@ MFFunctionRegistry::~MFFunctionRegistry() {
             nf = nf.notation(notation);
         }
 
-        // Style options -- specific to `:number`
-        if (!isInteger) {
-            if (number.usePercent(opts)) {
-                nf = nf.unit(NoUnit::percent()).scale(Scale::powerOfTen(2));
-            }
+        // percent applies to both :integer and :number
+        if (number.usePercent(opts)) {
+            nf = nf.unit(NoUnit::percent()).scale(Scale::powerOfTen(2));
         }
 
         int32_t maxSignificantDigits = number.maximumSignificantDigits(opts);
@@ -691,8 +689,7 @@ int32_t StandardFunctions::Number::maximumSignificantDigits(const FunctionOption
 
 bool StandardFunctions::Number::usePercent(const FunctionOptions& opts) const {
     Formattable opt;
-    if (isInteger
-        || !opts.getFunctionOption(UnicodeString("style"), opt)
+    if (!opts.getFunctionOption(UnicodeString("style"), opt)
         || opt.getType() != UFMT_STRING) {
         return false;
     }
