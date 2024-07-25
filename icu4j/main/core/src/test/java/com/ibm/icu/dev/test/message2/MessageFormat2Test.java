@@ -101,10 +101,10 @@ public class MessageFormat2Test extends CoreTestFmwk {
                 .setPattern("Your card expires on {$exp}!")
                 .build();
         assertEquals("date format",
-                "Your card expires on 10/27/22, 12:00\u202FAM!",
+                "Your card expires on Oct 27, 2022, 12:00\u202FAM!",
                 mf2.formatToString(Args.of("exp", expiration)));
         assertEquals("date format",
-                "Your card expires on 10/27/22, 12:00\u202FAM!",
+                "Your card expires on Oct 27, 2022, 12:00\u202FAM!",
                 mf2.formatToString(Args.of("exp", cal)));
 
         // Implied function based on type of the object to format

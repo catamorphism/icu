@@ -99,10 +99,10 @@ class DateTimeFormatterFactory implements FormatterFactory {
                 return new DateTimeFormatter(locale, df);
             }
 
-            // No skeletons, custom or otherwise, match fallback to short / short as per spec.
+            // No skeletons, custom or otherwise, match fallback to medium / short as per spec.
             switch (kind) {
                 case "date":
-                    dateStyle = DateFormat.SHORT;
+                    dateStyle = DateFormat.MEDIUM;
                     timeStyle = DateFormat.NONE;
                     break;
                 case "time":
@@ -111,7 +111,7 @@ class DateTimeFormatterFactory implements FormatterFactory {
                     break;
                 case "datetime": // $FALL-THROUGH$
                 default:
-                    dateStyle = DateFormat.SHORT;
+                    dateStyle = DateFormat.MEDIUM;
                     timeStyle = DateFormat.SHORT;
             }
         }

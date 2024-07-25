@@ -14,7 +14,7 @@
     {
       "src": [".local $dateStr = {$date :datetime}\n",
                "{{Testing date formatting: {$dateStr :datetime}.}}"],
-      "exp": "Testing date formatting: 23.11.2022, 19:42.",
+      "exp": "Testing date formatting: 23 nov. 2022, 19:42.",
       "locale": "ro",
       "params": [{ "name": "date", "value": 1669261357000 }]
     },

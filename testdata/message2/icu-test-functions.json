@@ -7,13 +7,13 @@
   "tests": [
     {
       "src": "Expires on {$exp}",
-      "exp": "Expires on 8/3/24, 9:43 PM",
+      "exp": "Expires on Aug 3, 2024, 9:43 PM",
       "comment": "Modified from ICU4J copy to add params (likewise with the other date/time tests); 1722746637000 is 2024-08-03 21:43:57 PDT",
       "params": [{ "name": "exp", "value": { "date": 1722746637000 } }]
     },
     {
       "src": "Expires on {$exp :datetime}",
-      "exp": "Expires on 8/3/24, 9:43 PM",
+      "exp": "Expires on Aug 3, 2024, 9:43 PM",
       "params": [{ "name": "exp", "value": { "date": 1722746637000 } }]
     },
     {
