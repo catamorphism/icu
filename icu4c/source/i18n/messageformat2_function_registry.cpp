@@ -1211,11 +1211,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
                     ADD_PATTERN("h");
                 } else if (hour == UnicodeString("2-digit")) {
                     /*
-                      See SimpleDateFormat::subFormat() in smpdtfmt.cpp,
-                      case UDAT_HOUR1_FIELD. "h" and "hh" seem to be
-                      treated the same way, contrary to what
-                      https://unicode-org.github.io/icu/userguide/format_parse/datetime/#date-field-symbol-table
-                      says.
+                      This doesn't work -- See https://unicode-org.atlassian.net/issues/ICU-22428
                      */
                     ADD_PATTERN("hh");
                 }
