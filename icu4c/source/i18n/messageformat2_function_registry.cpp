@@ -1180,7 +1180,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
                 if (weekday == UnicodeString("long")) {
                     ADD_PATTERN("EEEE");
                 } else if (weekday == UnicodeString("short")) {
-                    ADD_PATTERN("EEEEE");
+                    ADD_PATTERN("E");
                 } else if (weekday == UnicodeString("narrow")) {
                     ADD_PATTERN("EEEEE");
                 }
