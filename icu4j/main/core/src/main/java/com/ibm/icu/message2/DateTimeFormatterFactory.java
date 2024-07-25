@@ -145,7 +145,7 @@ class DateTimeFormatterFactory implements FormatterFactory {
                 skeleton.append("E");
                 break;
             case "narrow":
-                skeleton.append("EEEEEE");
+                skeleton.append("EEEEE");
                 break;
             default:
                 // invalid value, we just ignore it.
