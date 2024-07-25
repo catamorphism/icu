@@ -47,7 +47,12 @@ public class CoreTest extends CoreTestFmwk {
                                                 "syntax-errors-diagnostics-multiline.json",
                                                 "syntax-errors-end-of-input.json",
                                                 "tricky-declarations.json",
-                                                "valid-tests.json"};
+                                                "valid-date-options.json",
+                                                "valid-datetime-options.json",
+                                                "valid-integer-options.json",
+                                                "valid-number-options.json",
+                                                "valid-time-options.json",
+                                                "valid-tests.json",};
 
     @Test
     public void test() throws Exception {
