@@ -12,6 +12,7 @@ import java.util.Objects;
 
 import com.ibm.icu.math.BigDecimal;
 import com.ibm.icu.number.FormattedNumber;
+import com.ibm.icu.number.IntegerWidth;
 import com.ibm.icu.number.LocalizedNumberFormatter;
 import com.ibm.icu.number.Notation;
 import com.ibm.icu.number.NumberFormatter;
@@ -278,6 +279,17 @@ class NumberFormatterFactory implements FormatterFactory, SelectorFactory {
         Integer option;
         String strOption;
         nf = NumberFormatter.with();
+        boolean notationCompact = false;
+
+        Precision p = Precision.unlimited();
+        // Keep track of whether notation=compact.
+        // The reason is that if p is Precision.unlimited(),
+        // this test fails:
+        // {
+        // "src": "Compact {123456789.97531 :number notation=compact}",
+        // "exp": "Compact 123M"
+        // }
+        boolean noPrecision = false;
 
         // These options don't apply to `:integer`
         if ("number".equals(kind)) {
@@ -291,6 +303,7 @@ class NumberFormatterFactory implements FormatterFactory, SelectorFactory {
                     break;
                 case "compact":
                     {
+                        notationCompact = true;
                         switch (OptUtils.getString(fixedOptions, "compactDisplay", "short")) {
                             case "long":
                                 notation = Notation.compactLong();
@@ -307,24 +320,42 @@ class NumberFormatterFactory implements FormatterFactory, SelectorFactory {
             }
             nf = nf.notation(notation);
 
-            strOption = OptUtils.getString(fixedOptions, "style", "decimal");
-            if (strOption.equals("percent")) {
-                nf = nf.unit(MeasureUnit.PERCENT).scale(Scale.powerOfTen(2));
-            }
-
             option = OptUtils.getInteger(fixedOptions, "minimumFractionDigits");
+            Integer maxFraction = OptUtils.getInteger(fixedOptions, "maximumFractionDigits");
+            Integer minSignificant = OptUtils.getInteger(fixedOptions, "minimumSignificantDigits");
+            // We have to check for each combination of minFraction and maxFraction
+            // because calling minFraction after maxFraction may result in wrong behavior.
+            // Also, use a default of 6 for maxFraction to match ICU4C behavior.
             if (option != null) {
-                nf = nf.precision(Precision.minFraction(option));
+                if (maxFraction != null) {
+                    p = Precision.minMaxFraction(option, maxFraction);
+                } else {
+                    if (notationCompact) {
+                        p = Precision.minFraction(option);
+                    } else {
+                        p = Precision.minMaxFraction(option, 6);
+                    }
+                }
+            } else if (minSignificant != null) {
+                if (maxFraction != null) {
+                    p = Precision.minSignificantDigits(minSignificant);
+                    p = p.maxFraction(maxFraction);
+                } else {
+                    p = Precision.maxFraction(6).minSignificantDigits(minSignificant);
+                }
+            } else {
+                if (maxFraction != null) {
+                    p = Precision.maxFraction(maxFraction);
+                } else if (!notationCompact) {
+                    p = Precision.maxFraction(6);
+                } else {
+                    noPrecision = true;
+                }
             }
-            option = OptUtils.getInteger(fixedOptions, "maximumFractionDigits");
-            if (option != null) {
-                nf = nf.precision(Precision.maxFraction(option));
-            }
-            option = OptUtils.getInteger(fixedOptions, "minimumSignificantDigits");
-            if (option != null) {
-                nf = nf.precision(Precision.minSignificantDigits(option));
-            }
-        } // end of `:number` specific options
+        } else { // end of `:number` specific options
+            // integer() has to be called before setting other options
+            p = Precision.integer();
+        }
 
         strOption = OptUtils.getString(fixedOptions, "numberingSystem", "");
         if (!strOption.isEmpty()) {
@@ -335,13 +366,19 @@ class NumberFormatterFactory implements FormatterFactory, SelectorFactory {
         }
 
         // The options below apply to both `:number` and `:integer`
+        strOption = OptUtils.getString(fixedOptions, "style", "decimal");
+        if (strOption.equals("percent")) {
+            nf = nf.unit(MeasureUnit.PERCENT).scale(Scale.powerOfTen(2));
+        }
+
         option = OptUtils.getInteger(fixedOptions, "minimumIntegerDigits");
         if (option != null) {
             // TODO! Ask Shane. nf.integerWidth(null) ?
+            nf = nf.integerWidth(IntegerWidth.zeroFillTo(option));
         }
         option = OptUtils.getInteger(fixedOptions, "maximumSignificantDigits");
         if (option != null) {
-            nf = nf.precision(Precision.maxSignificantDigits(option));
+            p = p.maxSignificantDigits(option);
         }
 
         strOption = OptUtils.getString(fixedOptions, "signDisplay", "auto");
@@ -382,9 +419,8 @@ class NumberFormatterFactory implements FormatterFactory, SelectorFactory {
                 grp = GroupingStrategy.AUTO;
         }
         nf = nf.grouping(grp);
-
-        if (kind.equals("integer")) {
-            nf = nf.precision(Precision.integer());
+        if (!noPrecision) {
+            nf = nf.precision(p);
         }
 
         return nf.locale(locale);
