@@ -1,0 +1,30 @@
+{
+  "scenario": "Time function",
+  "description": "Tests for various options on the built-in formatter for times.",
+  "defaultTestProperties": {
+    "locale": "en-US"
+  },
+  "tests": [
+    {
+      "src": "{|2024-07-24T15:04:06| :time style=full}",
+      "exp": "3:04:06 PM Pacific Daylight Time"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :time style=long}",
+      "exp": "3:04:06 PM PDT"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :time style=medium}",
+      "exp": "3:04:06 PM"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :time style=short}",
+      "exp": "3:04 PM"
+    },
+    {
+      "comment": "Default is short",
+      "src": "{|2024-07-24T15:04:06| :time}",
+      "exp": "3:04 PM"
+    }
+  ]
+}

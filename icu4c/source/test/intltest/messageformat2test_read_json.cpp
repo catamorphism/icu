@@ -316,6 +316,11 @@ void TestMessageFormat2::jsonTestsFromFiles(IcuTestErrorCode& errorCode) {
     runTestsFromJsonFile(*this, "matches-whitespace.json", errorCode);
     runTestsFromJsonFile(*this, "alias-selector-annotations.json", errorCode);
     runTestsFromJsonFile(*this, "runtime-errors.json", errorCode);
+    runTestsFromJsonFile(*this, "valid-number-options.json", errorCode);
+    runTestsFromJsonFile(*this, "valid-integer-options.json", errorCode);
+    runTestsFromJsonFile(*this, "valid-date-options.json", errorCode);
+    runTestsFromJsonFile(*this, "valid-time-options.json", errorCode);
+    runTestsFromJsonFile(*this, "valid-datetime-options.json", errorCode);
 
     // Re: the expected output for the first test in this file:
     // Note: the more "correct" fallback output seems like it should be "1.000 3" (ignoring the

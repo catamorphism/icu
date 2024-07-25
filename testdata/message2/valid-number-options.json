@@ -1,0 +1,144 @@
+{
+  "scenario": "Number function",
+  "description": "Tests for various options on the built-in formatter for numbers.",
+  "defaultTestProperties": {
+    "locale": "en-US"
+  },
+  "tests": [
+    {
+      "src": "{4200 :number compactDisplay=short notation=compact}",
+      "exp": "4.2K"
+    },
+    {
+      "src": "{4200 :number compactDisplay=long notation=compact}",
+      "exp": "4.2 thousand"
+    },
+    {
+      "comment": "From spec: this option only has meaning when combined with the option notation=compact. Should be ignored",
+      "src": "{4200 :number compactDisplay=long}",
+      "exp": "4,200"
+    },
+    {
+      "comment": "Default is 'short'",
+      "src": "{4200 :number notation=compact}",
+      "exp": "4.2K"
+    },
+    {
+      "src": "{4200 :number notation=standard}",
+      "exp": "4,200"
+    },
+    {
+      "src": "{543 :number notation=scientific}",
+      "exp": "5.43E2"
+    },
+    {
+      "src": "{543 :number notation=engineering}",
+      "exp": "543E0"
+    },
+    {
+      "src": "{543 :number numberingSystem=arab}",
+      "exp": "٥٤٣"
+    },
+    {
+      "src": "{543 :number signDisplay=auto}",
+      "exp": "543"
+    },
+    {
+      "src": "{-543 :number signDisplay=auto}",
+      "exp": "-543"
+    },
+    {
+      "src": "{0 :number signDisplay=auto}",
+      "exp": "0"
+    },
+    {
+      "src": "{543 :number signDisplay=always}",
+      "exp": "+543"
+    },
+    {
+      "src": "{-543 :number signDisplay=always}",
+      "exp": "-543"
+    },
+    {
+      "src": "{0 :number signDisplay=always}",
+      "exp": "+0"
+    },
+    {
+      "src": "{543 :number signDisplay=exceptZero}",
+      "exp": "+543"
+    },
+    {
+      "src": "{-543 :number signDisplay=exceptZero}",
+      "exp": "-543"
+    },
+    {
+      "src": "{0 :number signDisplay=exceptZero}",
+      "exp": "0"
+    },
+    {
+      "src": "{-0 :number signDisplay=exceptZero}",
+      "exp": "0"
+    },
+    {
+      "src": "{543 :number signDisplay=negative}",
+      "exp": "543"
+    },
+    {
+      "src": "{-543 :number signDisplay=negative}",
+      "exp": "-543"
+    },
+    {
+      "src": "{0 :number signDisplay=negative}",
+      "exp": "0"
+    },
+    {
+      "src": "{-0 :number signDisplay=negative}",
+      "exp": "0"
+    },
+    {
+      "src": "{543 :number signDisplay=never}",
+      "exp": "543"
+    },
+    {
+      "src": "{-543 :number signDisplay=never}",
+      "exp": "543"
+    },
+    {
+      "src": "{0.543 :number style=decimal}",
+      "exp": ".543"
+    },
+    {
+      "src": "{0.543 :number style=percent}",
+      "exp": "54.3%"
+    },
+    {
+      "src": "{-0.543 :number style=percent}",
+      "exp": "-54.3%"
+    },
+    {
+      "src": "{1000 :number useGrouping=always}",
+      "locale": "de-DE",
+      "exp": "1.000"
+    },
+    {
+      "src": "{10000 :number useGrouping=auto}",
+      "exp": "10,000"
+    },
+    {
+      "src": "{1000 :number useGrouping=auto}",
+      "exp": "1,000"
+    },
+    {
+      "src": "{10000 :number useGrouping=never}",
+      "exp": "10000"
+    },
+    {
+      "src": "{10000 :number useGrouping=min2}",
+      "exp": "10,000"
+    },
+    {
+      "src": "{1000 :number useGrouping=min2}",
+      "exp": "1000"
+    }
+  ]
+}

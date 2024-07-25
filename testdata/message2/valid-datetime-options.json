@@ -1,0 +1,137 @@
+{
+  "scenario": "Datetime function",
+  "description": "Tests for various options on the built-in datetime formatter.",
+  "defaultTestProperties": {
+    "locale": "en-US"
+  },
+  "tests": [
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime dateStyle=full timeStyle=full}",
+      "exp": "Wednesday, July 24, 2024 at 3:04:06 PM Pacific Daylight Time"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime dateStyle=long timeStyle=medium}",
+      "exp": "July 24, 2024 at 3:04:06 PM"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime dateStyle=short timeStyle=medium}",
+      "exp": "7/24/24, 3:04:06 PM"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime dateStyle=medium timeStyle=short}",
+      "exp": "Jul 24, 2024, 3:04 PM"
+    },
+    {
+      "comment": "Default is date medium, time short",
+      "src": "{|2024-07-24T15:04:06| :datetime}",
+      "exp": "Jul 24, 2024, 3:04 PM"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime dateStyle=full}",
+      "exp": "Wednesday, July 24, 2024"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime dateStyle=long}",
+      "exp": "July 24, 2024"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime dateStyle=short}",
+      "exp": "7/24/24"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime dateStyle=medium}",
+      "exp": "Jul 24, 2024"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime timeStyle=full}",
+      "exp": "3:04:06 PM Pacific Daylight Time"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime timeStyle=long}",
+      "exp": "3:04:06 PM PDT"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime timeStyle=short}",
+      "exp": "3:04 PM"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime timeStyle=medium}",
+      "exp": "3:04:06 PM"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime weekday=long}",
+      "exp": "Wednesday"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime weekday=short}",
+      "exp": "Wed"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime weekday=narrow}",
+      "exp": "W"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime year=numeric}",
+      "exp": "2024"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime year=|2-digit|}",
+      "exp": "24"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime month=numeric}",
+      "exp": "7"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime month=|2-digit|}",
+      "exp": "07"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime month=long}",
+      "exp": "July"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime month=short}",
+      "exp": "Jul"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime month=narrow}",
+      "exp": "J"
+    },
+    {
+      "src": "{|2024-07-01T15:04:06| :datetime day=numeric}",
+      "exp": "1"
+    },
+    {
+      "src": "{|2024-07-01T15:04:06| :datetime day=|2-digit|}",
+      "exp": "01"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime hour=numeric}",
+      "exp": "3 PM"
+    },
+    {
+      "ignoreCpp": "See comment in messageformat2_function_registry.cpp",
+      "src": "{|2024-07-24T15:04:06| :datetime hour=|2-digit|}",
+      "exp": "03 PM"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :datetime minute=numeric}",
+      "exp": "4"
+    },
+    {
+      "ignoreCpp": "Same issue as with hour=|2-digit|",
+      "src": "{|2024-07-24T15:04:06| :datetime minute=|2-digit|}",
+      "exp": "04"
+    },
+    {
+      "src": "{|2024-07-01T15:04:06| :datetime second=numeric}",
+      "exp": "6"
+    },
+    {
+      "ignoreCpp": "Same issue as with hour=|2-digit|",
+      "src": "{|2024-07-01T15:04:06| :datetime second=|2-digit|}",
+      "exp": "06"
+    }
+  ]
+}

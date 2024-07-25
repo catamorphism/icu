@@ -1,0 +1,122 @@
+{
+  "scenario": "Integer function",
+  "description": "Tests for various options on the built-in formatter for integers.",
+  "defaultTestProperties": {
+    "locale": "en-US"
+  },
+  "tests": [
+    {
+      "src": "{543 :integer numberingSystem=arab}",
+      "exp": "٥٤٣"
+    },
+    {
+      "src": "{543 :integer signDisplay=auto}",
+      "exp": "543"
+    },
+    {
+      "src": "{-543 :integer signDisplay=auto}",
+      "exp": "-543"
+    },
+    {
+      "src": "{0 :integer signDisplay=auto}",
+      "exp": "0"
+    },
+    {
+      "src": "{543 :integer signDisplay=always}",
+      "exp": "+543"
+    },
+    {
+      "src": "{-543 :integer signDisplay=always}",
+      "exp": "-543"
+    },
+    {
+      "src": "{0 :integer signDisplay=always}",
+      "exp": "+0"
+    },
+    {
+      "src": "{543 :integer signDisplay=exceptZero}",
+      "exp": "+543"
+    },
+    {
+      "src": "{-543 :integer signDisplay=exceptZero}",
+      "exp": "-543"
+    },
+    {
+      "src": "{0 :integer signDisplay=exceptZero}",
+      "exp": "0"
+    },
+    {
+      "src": "{-0 :integer signDisplay=exceptZero}",
+      "exp": "0"
+    },
+    {
+      "src": "{543 :integer signDisplay=negative}",
+      "exp": "543"
+    },
+    {
+      "src": "{-543 :integer signDisplay=negative}",
+      "exp": "-543"
+    },
+    {
+      "src": "{0 :integer signDisplay=negative}",
+      "exp": "0"
+    },
+    {
+      "src": "{-0 :integer signDisplay=negative}",
+      "exp": "0"
+    },
+    {
+      "src": "{543 :integer signDisplay=never}",
+      "exp": "543"
+    },
+    {
+      "src": "{-543 :integer signDisplay=never}",
+      "exp": "543"
+    },
+    {
+      "src": "{3.1415 :integer style=decimal}",
+      "exp": "3"
+    },
+    {
+      "src": "{0.543 :integer style=percent}",
+      "exp": "54%"
+    },
+    {
+      "src": "{-0.543 :integer style=percent}",
+      "exp": "-54%"
+    },
+    {
+      "src": "{1000 :integer useGrouping=always}",
+      "locale": "de-DE",
+      "exp": "1.000"
+    },
+    {
+      "src": "{10000 :integer useGrouping=auto}",
+      "exp": "10,000"
+    },
+    {
+      "src": "{1000 :integer useGrouping=auto}",
+      "exp": "1,000"
+    },
+    {
+      "src": "{10000 :integer useGrouping=never}",
+      "exp": "10000"
+    },
+    {
+      "src": "{10000 :integer useGrouping=min2}",
+      "exp": "10,000"
+    },
+    {
+      "src": "{1000 :integer useGrouping=min2}",
+      "exp": "1000"
+    },
+    {
+      "src": "{1000 :integer minimumIntegerDigits=6}",
+      "exp": "001,000"
+    },
+    {
+      "src": "{1023 :integer maximumSignificantDigits=2}",
+      "exp": "1,000"
+    }
+  ]
+}

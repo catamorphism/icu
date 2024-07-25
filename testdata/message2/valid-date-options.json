@@ -1,0 +1,30 @@
+{
+  "scenario": "Date function",
+  "description": "Tests for various options on the built-in formatter for dates.",
+  "defaultTestProperties": {
+    "locale": "en-US"
+  },
+  "tests": [
+    {
+        "src": "{|2024-07-24T15:04:06| :date style=full}",
+      "exp": "Wednesday, July 24, 2024"
+    },
+      {
+      "src": "{|2024-07-24T15:04:06| :date style=long}",
+      "exp": "July 24, 2024"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :date style=medium}",
+      "exp": "Jul 24, 2024"
+    },
+    {
+      "src": "{|2024-07-24T15:04:06| :date style=short}",
+      "exp": "7/24/24"
+    },
+    {
+      "comment": "Default is medium",
+      "src": "{|2024-07-24T15:04:06| :date}",
+      "exp": "Jul 24, 2024"
+    }
+  ]
+}
