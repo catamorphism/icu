@@ -940,9 +940,10 @@ StandardFunctions::PluralFactory::~PluralFactory() {}
 
 // Date/time options only
 static UnicodeString defaultForOption(const UnicodeString& optionName) {
-    if (optionName == UnicodeString("dateStyle")
-        || optionName == UnicodeString("timeStyle")
-        || optionName == UnicodeString("style")) {
+    if (optionName == UnicodeString("dateStyle")) {
+        return UnicodeString("medium");
+    }
+    if (optionName == UnicodeString("timeStyle")) {
         return UnicodeString("short");
     }
     return {}; // Empty string is default
@@ -1080,7 +1081,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
     LocalPointer<DateFormat> df;
     Formattable opt;
 
-    DateFormat::EStyle dateStyle = DateFormat::kShort;
+    DateFormat::EStyle dateStyle = DateFormat::kMedium;
     DateFormat::EStyle timeStyle = DateFormat::kShort;
 
     UnicodeString dateStyleName("dateStyle");
@@ -1089,6 +1090,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
 
     bool hasDateStyleOption = opts.getFunctionOption(dateStyleName, opt);
     bool hasTimeStyleOption = opts.getFunctionOption(timeStyleName, opt);
+    bool hasStyleOption = opts.getFunctionOption(styleName, opt);
     bool noOptions = opts.optionsCount() == 0;
 
     bool useStyle = (type == DateTimeFactory::DateTimeType::DateTime
@@ -1120,11 +1122,15 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
                 df.adoptInstead(DateFormat::createDateTimeInstance(dateStyle, timeStyle, locale));
             }
         } else if (type == DateTimeFactory::DateTimeType::Date) {
-            dateStyle = stringToStyle(getFunctionOption(toFormat, opts, styleName), errorCode);
+            if (hasStyleOption) {
+                dateStyle = stringToStyle(getFunctionOption(toFormat, opts, styleName), errorCode);
+            }
             df.adoptInstead(DateFormat::createDateInstance(dateStyle, locale));
         } else {
             // :time
-            timeStyle = stringToStyle(getFunctionOption(toFormat, opts, styleName), errorCode);
+            if (hasStyleOption) {
+                timeStyle = stringToStyle(getFunctionOption(toFormat, opts, styleName), errorCode);
+            }
             df.adoptInstead(DateFormat::createTimeInstance(timeStyle, locale));
         }
     } else {
