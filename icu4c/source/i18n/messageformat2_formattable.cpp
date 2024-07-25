@@ -215,7 +215,7 @@ namespace message2 {
 
     DateFormat* defaultDateTimeInstance(const Locale& locale, UErrorCode& errorCode) {
         NULL_ON_ERROR(errorCode);
-        LocalPointer<DateFormat> df(DateFormat::createDateTimeInstance(DateFormat::SHORT, DateFormat::SHORT, locale));
+        LocalPointer<DateFormat> df(DateFormat::createDateTimeInstance(DateFormat::MEDIUM, DateFormat::SHORT, locale));
         if (!df.isValid()) {
             errorCode = U_MEMORY_ALLOCATION_ERROR;
             return nullptr;
