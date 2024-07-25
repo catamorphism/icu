@@ -1206,6 +1206,13 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
                 if (hour == UnicodeString("numeric")) {
                     ADD_PATTERN("h");
                 } else if (hour == UnicodeString("2-digit")) {
+                    /*
+                      See SimpleDateFormat::subFormat() in smpdtfmt.cpp,
+                      case UDAT_HOUR1_FIELD. "h" and "hh" seem to be
+                      treated the same way, contrary to what
+                      https://unicode-org.github.io/icu/userguide/format_parse/datetime/#date-field-symbol-table
+                      says.
+                     */
                     ADD_PATTERN("hh");
                 }
             }
@@ -1218,6 +1225,7 @@ FormattedPlaceholder StandardFunctions::DateTime::format(FormattedPlaceholder&& 
                 if (minute == UnicodeString("numeric")) {
                     ADD_PATTERN("m");
                 } else if (minute == UnicodeString("2-digit")) {
+                    /* See previous comment about "hour" case */
                     ADD_PATTERN("mm");
                 }
             }
