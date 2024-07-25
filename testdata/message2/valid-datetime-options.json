@@ -111,7 +111,8 @@
       "exp": "3 PM"
     },
     {
-      "ignoreCpp": "See comment in messageformat2_function_registry.cpp",
+      "ignoreCpp": "See ICU-22428",
+      "ignoreJava": "Same as C++",
       "src": "{|2024-07-24T15:04:06| :datetime hour=|2-digit|}",
       "exp": "03 PM"
     },
@@ -120,7 +121,8 @@
       "exp": "4"
     },
     {
-      "ignoreCpp": "Same issue as with hour=|2-digit|",
+      "ignoreCpp": "See ICU-22428",
+      "ignoreJava": "Same as C++",
       "src": "{|2024-07-24T15:04:06| :datetime minute=|2-digit|}",
       "exp": "04"
     },
@@ -129,7 +131,8 @@
       "exp": "6"
     },
     {
-      "ignoreCpp": "Same issue as with hour=|2-digit|",
+      "ignoreCpp": "See ICU-22428",
+      "ignoreJava": "Same as C++",
       "src": "{|2024-07-01T15:04:06| :datetime second=|2-digit|}",
       "exp": "06"
     }

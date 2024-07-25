@@ -104,8 +104,12 @@
       "exp": "543"
     },
     {
+      "src": "{0.543 :number}",
+      "exp": "0.543"
+    },
+    {
       "src": "{0.543 :number style=decimal}",
-      "exp": ".543"
+      "exp": "0.543"
     },
     {
       "src": "{0.543 :number style=percent}",

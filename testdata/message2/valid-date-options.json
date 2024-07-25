@@ -6,7 +6,7 @@
   },
   "tests": [
     {
-        "src": "{|2024-07-24T15:04:06| :date style=full}",
+      "src": "{|2024-07-24T15:04:06| :date style=full}",
       "exp": "Wednesday, July 24, 2024"
     },
       {
