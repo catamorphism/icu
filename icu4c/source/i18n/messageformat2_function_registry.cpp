@@ -334,7 +334,11 @@ MFFunctionRegistry::~MFFunctionRegistry() {
 
         // All other options apply to both `:number` and `:integer`
         int32_t minIntegerDigits = number.minimumIntegerDigits(opts);
-        nf = nf.integerWidth(IntegerWidth::zeroFillTo(minIntegerDigits));
+        if (minIntegerDigits != 0) {
+            // If integerWidth() is called with IntegerWidth::zeroFillTo(0),
+            // then 0.543 is incorrectly formatted as ".543"
+            nf = nf.integerWidth(IntegerWidth::zeroFillTo(minIntegerDigits));
+        }
 
         // signDisplay
         UnicodeString sd = opts.getStringFunctionOption(UnicodeString("signDisplay"));
