@@ -1027,10 +1027,7 @@ static DateInfo createDateInfoFromString(const UnicodeString& sourceStr, UErrorC
         TimeZone::getCanonicalID(tzID, canonicalID, errorCode);
     }
 
-    // Empty string for Gregorian calendar (default);
-    // `:datetime` `calendar` option not implemented yet,
-    // so other calendars aren't implemented
-    return { absoluteDate, canonicalID, {} };
+    return { absoluteDate, canonicalID };
 }
 
 void formatDateWithDefaults(const Locale& locale,
@@ -1042,8 +1039,6 @@ void formatDateWithDefaults(const Locale& locale,
     LocalPointer<DateFormat> df(defaultDateTimeInstance(locale, errorCode));
     CHECK_ERROR(errorCode);
 
-    // Non-Gregorian calendars not supported yet
-    U_ASSERT(dateInfo.calendarName.isEmpty());
     df->adoptTimeZone(createTimeZone(dateInfo, errorCode));
     CHECK_ERROR(errorCode);
     df->format(dateInfo.date, result, nullptr, errorCode);
