@@ -47,6 +47,36 @@ public class MessageFormat2Test extends CoreTestFmwk {
     }
 
     @Test
+    public void testHighLoneSurrogate() {
+        try {
+            MessageFormatter mf2 = MessageFormatter.builder()
+                .setPattern("\uda02").build();
+            assertEquals("testHighLoneSurrogate: expected to throw, but didn't",
+                         false, true);
+        } catch (IllegalArgumentException e) {
+            // Parse error was thrown, as expected
+        } catch (Exception e) {
+            assertEquals("testHighLoneSurrogate: expected IllegalArgumentException "
+                         + "but threw " + e.toString(), false, true);
+        }
+    }
+
+    @Test
+    public void testLowLoneSurrogate() {
+        try {
+            MessageFormatter mf2 = MessageFormatter.builder()
+                .setPattern("\udc02").build();
+            assertEquals("testLowLoneSurrogate: expected to throw, but didn't",
+                         false, true);
+        } catch (IllegalArgumentException e) {
+            // Parse error was thrown, as expected
+        } catch (Exception e) {
+            assertEquals("testLowLoneSurrogate: expected IllegalArgumentException "
+                         + "but threw " + e.toString(), false, true);
+        }
+    }
+
+    @Test
     public void testDateFormat() {
         Date expiration = new Date(2022 - 1900, java.util.Calendar.OCTOBER, 27);
         MessageFormatter mf2 = MessageFormatter.builder()

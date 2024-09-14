@@ -29,6 +29,13 @@ class InputSource {
         return buffer.charAt(cursor);
     }
 
+    // Used when checking for unpaired surrogates
+    int readChar() {
+        int ch = peekChar();
+        cursor++;
+        return (char) ch;
+    }
+
     int readCodePoint() {
         // TODO: remove this?
         // START Detect possible infinite loop

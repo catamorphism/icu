@@ -113,9 +113,17 @@ public class MFParser {
         }
     }
 
-    private String getText() {
+    private String getText() throws MFParseException {
         StringBuilder result = new StringBuilder();
         while (true) {
+            int ch = input.readChar();
+            // Check for unmatched surrogates
+            checkCondition(!(Character.isHighSurrogate((char) ch)
+                             && (input.atEnd()
+                                 || !Character.isLowSurrogate((char) input.peekChar()))),
+                           "Unpaired high surrogate");
+            checkCondition (!Character.isLowSurrogate((char) ch), "Unpaired low surrogate");
+            input.backup(1);
             int cp = input.readCodePoint();
             switch (cp) {
                 case EOF:
