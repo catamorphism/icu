@@ -123,6 +123,10 @@
       "comment": "message -> complex-message -> *(declaration [s]) complex-body -> declaration complex-body -> input-declaration complex-body -> input variable-expression complex-body",
       "src": ".input{$x}{{}}",
       "exp": ""
+    },
+    {
+      "src": "{\u0000 \u0000/\u0000/\u0000\u0000\u001ah",
+      "expErrors": [{"type": "syntax-error"}]
     }
   ]
 }

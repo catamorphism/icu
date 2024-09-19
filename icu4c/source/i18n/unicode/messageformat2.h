@@ -378,7 +378,7 @@ namespace message2 {
         // Must be a raw pointer to avoid including the internal header file
         // defining StaticErrors
         // Owned by `this`
-        StaticErrors* errors;
+        StaticErrors* errors = nullptr;
 
     }; // class MessageFormatter
 
