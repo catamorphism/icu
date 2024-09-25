@@ -300,8 +300,6 @@ void TestMessageFormat2::jsonTestsFromFiles(IcuTestErrorCode& errorCode) {
     // Do valid spec tests
     runTestsFromJsonFile(*this, "spec/syntax.json", errorCode);
 
-    // Uncomment when test functions are implemented in the registry
-    // See https://unicode-org.atlassian.net/browse/ICU-22907
     runTestsFromJsonFile(*this, "spec/pattern-selection.json", errorCode);
 
     // Do valid function tests
