@@ -89,6 +89,7 @@ FunctionOptions::FunctionOptions(FunctionOptions&& other) {
 FunctionOptions::~FunctionOptions() {
     if (options != nullptr) {
         delete[] options;
+        options = nullptr;
     }
 }
 
@@ -107,13 +108,15 @@ static bool containsOption(const UVector& opts, const ResolvedFunctionOption& op
 FunctionOptions FunctionOptions::mergeOptions(FunctionOptions&& other,
                                               UErrorCode& status) {
     UVector mergedOptions(status);
+    mergedOptions.setDeleter(uprv_deleteUObject);
+
     if (U_FAILURE(status)) {
         return {};
     }
 
     // Create a new vector consisting of the options from this `FunctionOptions`
     for (int32_t i = 0; i < functionOptionsLen; i++) {
-        mergedOptions.addElement(create<ResolvedFunctionOption>(std::move(options[i]), status),
+        mergedOptions.adoptElement(create<ResolvedFunctionOption>(std::move(options[i]), status),
                                  status);
     }
 
@@ -121,11 +124,15 @@ FunctionOptions FunctionOptions::mergeOptions(FunctionOptions&& other,
     for (int i = 0; i < other.functionOptionsLen; i++) {
         // Note: this is quadratic in the length of `options`
         if (!containsOption(mergedOptions, other.options[i])) {
-            mergedOptions.addElement(create<ResolvedFunctionOption>(std::move(other.options[i]),
+            mergedOptions.adoptElement(create<ResolvedFunctionOption>(std::move(other.options[i]),
                                                                     status),
                                      status);
         }
     }
+
+    delete[] options;
+    options = nullptr;
+    functionOptionsLen = 0;
 
     return FunctionOptions(std::move(mergedOptions), status);
 }
@@ -304,7 +311,6 @@ PrioritizedVariant::~PrioritizedVariant() {}
                 return;
             }
             InternalValue* next = *std::get_if<InternalValue*>(&p->argument);
-            p->argument = nullptr;
             p = next;
         }
         FormattedPlaceholder arg = std::move(*std::get_if<FormattedPlaceholder>(&p->argument));

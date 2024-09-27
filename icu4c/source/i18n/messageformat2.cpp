@@ -177,13 +177,15 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
 // Overload that dispatches on function name
 // Adopts `arg`
 [[nodiscard]] InternalValue* MessageFormatter::evalFunctionCall(const FunctionName& functionName,
-                                                                InternalValue* arg,
+                                                                InternalValue* arg_,
                                                                 FunctionOptions&& options,
                                                                 MessageContext& context,
                                                                 UErrorCode& status) const {
     if (U_FAILURE(status)) {
         return {};
     }
+
+    LocalPointer arg(arg_);
 
     // Look up the formatter or selector
     LocalPointer<Formatter> formatterImpl(nullptr);
@@ -209,7 +211,7 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
             return new InternalValue(FormattedPlaceholder(arg->getFallback()));
         }
     }
-    return new InternalValue(arg,
+    return new InternalValue(arg.orphan(),
                              std::move(options),
                              functionName,
                              formatterImpl.isValid() ? formatterImpl.orphan() : nullptr,
@@ -305,7 +307,7 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
     // 2. For each expression exp of the message's selectors
     for (int32_t i = 0; i < dataModel.numSelectors(); i++) {
         // 2i. Let rv be the resolved value of exp.
-        InternalValue* rv = formatOperand(env, Operand(selectors[i]), context, status);
+        LocalPointer<InternalValue> rv(formatOperand(env, Operand(selectors[i]), context, status));
         if (rv->canSelect()) {
             // 2ii. If selection is supported for rv:
             // (True if this code has been reached)
@@ -317,15 +319,15 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
             // (Note: in this case, rv, being a fallback, serves as `nomatch`)
             DynamicErrors& err = context.getErrors();
             err.setSelectorError(rv->getFunctionName(), status);
-            rv = new InternalValue(FormattedPlaceholder(rv->getFallback()));
-            if (rv == nullptr) {
+            rv.adoptInstead(new InternalValue(FormattedPlaceholder(rv->getFallback())));
+            if (!rv.isValid()) {
                 status = U_MEMORY_ALLOCATION_ERROR;
                 return;
             }
         }
         // 2ii(a). Append rv as the last element of the list res.
         // (Also fulfills 2iii)
-        res.adoptElement(rv, status);
+        res.adoptElement(rv.orphan(), status);
     }
 }
 
@@ -582,7 +584,7 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
     // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
 
     // Resolve Selectors
-    // res is a vector of FormattedPlaceholders
+    // res is a vector of InternalValues
     LocalPointer<UVector> res(createUVector(status));
     CHECK_ERROR(status);
     resolveSelectors(context, env, status, *res);
@@ -623,15 +625,19 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
 UnicodeString MessageFormatter::formatToString(const MessageArguments& arguments, UErrorCode &status) {
     EMPTY_ON_ERROR(status);
 
-    // Create a new environment that will store closures for all local variables
-    Environment* env = Environment::create(status);
     // Create a new context with the given arguments and the `errors` structure
     MessageContext context(arguments, *errors, status);
     UnicodeString result;
 
     if (!(errors->hasSyntaxError() || errors->hasDataModelError())) {
+        // Create a new environment that will store closures for all local variables
         // Check for unresolved variable errors
+        // checkDeclarations needs a reference to the pointer to the environment
+        // since it uses its `env` argument as an out-parameter. So it needs to be
+        // temporarily not a LocalPointer...
+        Environment* env(Environment::create(status));
         checkDeclarations(context, env, status);
+        // ...and then it's adopted to avoid leaks
         LocalPointer<Environment> globalEnv(env);
 
         if (dataModel.hasPattern()) {
