@@ -185,7 +185,7 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
         return {};
     }
 
-    LocalPointer arg(arg_);
+    LocalPointer<InternalValue> arg(arg_);
 
     // Look up the formatter or selector
     LocalPointer<Formatter> formatterImpl(nullptr);
