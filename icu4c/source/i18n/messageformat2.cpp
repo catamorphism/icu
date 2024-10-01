@@ -51,6 +51,18 @@ static Formattable evalLiteral(const Literal& lit) {
     return FormattedPlaceholder(evalLiteral(lit), lit.quoted(), errorCode);
 }
 
+
+InternalValue::~InternalValue() {}
+InternalValue& InternalValue::operator=(InternalValue&& other) {
+    fallbackString = other.fallbackString;
+    val = std::move(other.val);
+    return *this;
+}
+
+InternalValue::InternalValue(InternalValue&& other) {
+    *this = std::move(other);
+}
+
 [[nodiscard]] InternalValue MessageFormatter::formatOperand(const Environment& env,
                                                              const Operand& rand,
                                                              MessageContext& context,
@@ -658,14 +670,17 @@ ResolvedSelector MessageFormatter::resolveVariables(const Environment& env,
         // Already checked that rator is non-reserved
         const FunctionName& selectorName = rator->getFunctionName();
         if (isSelector(selectorName)) {
-            auto selector = getSelector(context, selectorName, status);
+            LocalPointer<Selector> selector(getSelector(context, selectorName, status));
             if (U_SUCCESS(status)) {
                 FunctionOptions resolvedOptions = resolveOptions(env, rator->getOptionsInternal(), context, status);
                 InternalValue argument = formatOperand(env, expr.getOperand(), context, status);
                 if (argument.isFallback()) {
                     return ResolvedSelector(argument.asFallback());
                 } else {
-                    return ResolvedSelector(selectorName, selector, std::move(resolvedOptions), argument.value());
+                    return ResolvedSelector(selectorName,
+                                            selector.orphan(),
+                                            std::move(resolvedOptions),
+                                            argument.value());
                 }
             }
         } else if (isFormatter(selectorName)) {

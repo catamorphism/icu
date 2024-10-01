@@ -106,6 +106,7 @@ FunctionOptions::FunctionOptions(FunctionOptions&& other) {
 FunctionOptions::~FunctionOptions() {
     if (options != nullptr) {
         delete[] options;
+        options = nullptr;
     }
 }
 // ResolvedSelector
