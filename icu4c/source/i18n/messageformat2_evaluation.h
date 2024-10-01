@@ -74,6 +74,8 @@ namespace message2 {
                          FormattedPlaceholder&& value);
         // Used either for errors, or when selector isn't yet known
         explicit ResolvedSelector(FormattedPlaceholder&& value);
+        // Used for fallback values
+        explicit ResolvedSelector(const UnicodeString& fb);
         bool hasSelector() const { return selector.isValid(); }
         const FormattedPlaceholder& argument() const { return value; }
         FormattedPlaceholder&& takeArgument() { return std::move(value); }
@@ -88,11 +90,14 @@ namespace message2 {
         virtual ~ResolvedSelector();
         ResolvedSelector& operator=(ResolvedSelector&&) noexcept;
         ResolvedSelector(ResolvedSelector&&);
+        bool isFallback() const { return !fallback.isEmpty(); }
+        const UnicodeString& getFallback() const { return fallback; }
     private:
         FunctionName selectorName; // For error reporting
         LocalPointer<Selector> selector;
         FunctionOptions options;
         FormattedPlaceholder value;
+        UnicodeString fallback; // Non-empty if this is a fallback
     }; // class ResolvedSelector
 
     // Closures and environments

@@ -28,6 +28,19 @@ ResolvedFunctionOption::ResolvedFunctionOption(ResolvedFunctionOption&& other) {
     value = std::move(other.value);
 }
 
+ResolvedFunctionOption::ResolvedFunctionOption(const UnicodeString& n,
+                                               FormattedPlaceholder&& v,
+                                               UErrorCode& status) {
+    CHECK_ERROR(status);
+
+    name = n;
+    LocalPointer<FormattedPlaceholder>
+        temp(create<FormattedPlaceholder>(std::move(v), status));
+    if (U_SUCCESS(status)) {
+        value.adoptInstead(temp.orphan());
+    }
+}
+
 ResolvedFunctionOption::~ResolvedFunctionOption() {}
 
 
@@ -44,27 +57,31 @@ FunctionOptions::FunctionOptions(UVector&& optionsVector, UErrorCode& status) {
     options = moveVectorToArray<ResolvedFunctionOption>(optionsVector, status);
 }
 
-UBool FunctionOptions::getFunctionOption(const UnicodeString& key, Formattable& option) const {
+const FormattedPlaceholder*
+FunctionOptions::getFunctionOption(const UnicodeString& key,
+                                   UErrorCode& status) const {
     if (options == nullptr) {
         U_ASSERT(functionOptionsLen == 0);
     }
     for (int32_t i = 0; i < functionOptionsLen; i++) {
         const ResolvedFunctionOption& opt = options[i];
         if (opt.getName() == key) {
-            option = opt.getValue();
-            return true;
+            return opt.getValue();
         }
     }
-    return false;
+    status = U_ILLEGAL_ARGUMENT_ERROR;
+    return nullptr;
 }
 
 UnicodeString FunctionOptions::getStringFunctionOption(const UnicodeString& key) const {
-    Formattable option;
-    if (getFunctionOption(key, option)) {
-        if (option.getType() == UFMT_STRING) {
-            UErrorCode localErrorCode = U_ZERO_ERROR;
-            UnicodeString val = option.getString(localErrorCode);
-            U_ASSERT(U_SUCCESS(localErrorCode));
+    UErrorCode localStatus = U_ZERO_ERROR;
+    const FormattedPlaceholder* option = getFunctionOption(key, localStatus);
+    if (U_SUCCESS(localStatus)) {
+        const Formattable* source = option->getSource(localStatus);
+        // Null operand should never appear as an option value
+        U_ASSERT(U_SUCCESS(localStatus));
+        UnicodeString val = source->getString(localStatus);
+        if (U_SUCCESS(localStatus)) {
             return val;
         }
     }
@@ -94,6 +111,8 @@ FunctionOptions::~FunctionOptions() {
 // ResolvedSelector
 // ----------------
 
+ResolvedSelector::ResolvedSelector(const UnicodeString& fb) : selector(nullptr), fallback(fb) {}
+
 ResolvedSelector::ResolvedSelector(const FunctionName& fn,
                                    Selector* sel,
                                    FunctionOptions&& opts,
@@ -106,9 +125,15 @@ ResolvedSelector::ResolvedSelector(FormattedPlaceholder&& val) : value(std::move
 
 ResolvedSelector& ResolvedSelector::operator=(ResolvedSelector&& other) noexcept {
     selectorName = std::move(other.selectorName);
-    selector.adoptInstead(other.selector.orphan());
+    if (other.selector.isValid()) {
+        selector.adoptInstead(other.selector.orphan());
+        other.selector.adoptInstead(nullptr);
+    } else {
+        selector.adoptInstead(nullptr);
+    }
     options = std::move(other.options);
     value = std::move(other.value);
+    fallback = std::move(other.fallback);
     return *this;
 }
 
