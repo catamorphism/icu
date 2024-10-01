@@ -109,40 +109,79 @@ FunctionOptions::~FunctionOptions() {
         options = nullptr;
     }
 }
-// ResolvedSelector
-// ----------------
 
-ResolvedSelector::ResolvedSelector(const UnicodeString& fb) : selector(nullptr), fallback(fb) {}
+// InternalValue
+// -------------
 
-ResolvedSelector::ResolvedSelector(const FunctionName& fn,
-                                   Selector* sel,
-                                   FunctionOptions&& opts,
-                                   FormattedPlaceholder&& val)
-    : selectorName(fn), selector(sel), options(std::move(opts)), value(std::move(val))  {
-    U_ASSERT(sel != nullptr);
-}
 
-ResolvedSelector::ResolvedSelector(FormattedPlaceholder&& val) : value(std::move(val)) {}
-
-ResolvedSelector& ResolvedSelector::operator=(ResolvedSelector&& other) noexcept {
-    selectorName = std::move(other.selectorName);
-    if (other.selector.isValid()) {
-        selector.adoptInstead(other.selector.orphan());
-        other.selector.adoptInstead(nullptr);
-    } else {
-        selector.adoptInstead(nullptr);
-    }
-    options = std::move(other.options);
-    value = std::move(other.value);
-    fallback = std::move(other.fallback);
+InternalValue::~InternalValue() {}
+InternalValue& InternalValue::operator=(InternalValue&& other) {
+    fallbackString = other.fallbackString;
+    functionName = other.functionName;
+    resolvedOptions = std::move(other.resolvedOptions);
+    operand = std::move(other.operand);
     return *this;
 }
 
-ResolvedSelector::ResolvedSelector(ResolvedSelector&& other) {
+InternalValue::InternalValue(InternalValue&& other) {
     *this = std::move(other);
 }
 
-ResolvedSelector::~ResolvedSelector() {}
+InternalValue::InternalValue(const FunctionName& name,
+                  FunctionOptions&& options,
+                  FormattedPlaceholder&& rand,
+                  UErrorCode& status) : fallbackString(""), functionName(name) {
+    if (U_FAILURE(status)) {
+        return;
+    }
+    resolvedOptions.adoptInstead(create<FunctionOptions>(std::move(options), status));
+    operand = std::move(rand);
+}
+
+FormattedPlaceholder InternalValue::takeValue(UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+    if (!functionName.isEmpty() || !fallbackString.isEmpty()) {
+        status = U_ILLEGAL_ARGUMENT_ERROR;
+        return {};
+    }
+    return std::move(operand);
+}
+// Only works if not fully evaluated
+FormattedPlaceholder InternalValue::takeOperand(UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+    if (functionName.isEmpty()) {
+        status = U_ILLEGAL_ARGUMENT_ERROR;
+        return {};
+    }
+    return std::move(operand);
+}
+// Only works if not fully evaluated
+FunctionOptions InternalValue::takeOptions(UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+    if (!resolvedOptions.isValid()) {
+        status = U_ILLEGAL_ARGUMENT_ERROR;
+        return {};
+    }
+    return std::move(*resolvedOptions.orphan());
+}
+// Only works if not fully evaluated
+FunctionName InternalValue::getFunctionName(UErrorCode& status) const {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+    if (functionName.isEmpty()) {
+        status = U_ILLEGAL_ARGUMENT_ERROR;
+        return {};
+    }
+    return functionName;
+}
+
 
 // PrioritizedVariant
 // ------------------
