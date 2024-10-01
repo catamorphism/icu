@@ -39,16 +39,16 @@ static Formattable evalLiteral(const Literal& lit) {
         str += var;
         const Formattable* val = context.getGlobal(var, errorCode);
         if (U_SUCCESS(errorCode)) {
-            return (FormattedPlaceholder(*val, str, errorCode));
+            return FormattedPlaceholder(*val, str);
         }
     }
     return {};
 }
 
 // Returns the contents of the literal
-[[nodiscard]] FormattedPlaceholder MessageFormatter::formatLiteral(const Literal& lit, UErrorCode& errorCode) const {
+[[nodiscard]] FormattedPlaceholder MessageFormatter::formatLiteral(const Literal& lit) const {
     // The fallback for a literal is itself.
-    return FormattedPlaceholder(evalLiteral(lit), lit.quoted(), errorCode);
+    return FormattedPlaceholder(evalLiteral(lit), lit.quoted());
 }
 
 [[nodiscard]] InternalValue MessageFormatter::formatOperand(const Environment& env,
@@ -93,7 +93,7 @@ static Formattable evalLiteral(const Literal& lit) {
         return InternalValue(std::move(result));
     } else {
         U_ASSERT(rand.isLiteral());
-        return InternalValue(formatLiteral(rand.asLiteral(), status));
+        return InternalValue(formatLiteral(rand.asLiteral()));
     }
 }
 
