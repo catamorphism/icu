@@ -29,19 +29,16 @@ ResolvedFunctionOption::ResolvedFunctionOption(ResolvedFunctionOption&& other) {
 }
 
 ResolvedFunctionOption::ResolvedFunctionOption(const UnicodeString& n,
-                                               FormattedPlaceholder&& v,
-                                               UErrorCode& status) {
-    CHECK_ERROR(status);
-
-    name = n;
-    LocalPointer<FormattedPlaceholder>
-        temp(create<FormattedPlaceholder>(std::move(v), status));
-    if (U_SUCCESS(status)) {
-        value.adoptInstead(temp.orphan());
-    }
+                                               FunctionValue* f) : name(n), value(f) {
+    U_ASSERT(f != nullptr);
 }
 
-ResolvedFunctionOption::~ResolvedFunctionOption() {}
+ResolvedFunctionOption::~ResolvedFunctionOption() {
+    if (value != nullptr) {
+        delete value;
+        value = nullptr;
+    }
+}
 
 
 const ResolvedFunctionOption* FunctionOptions::getResolvedFunctionOptions(int32_t& len) const {
@@ -57,7 +54,7 @@ FunctionOptions::FunctionOptions(UVector&& optionsVector, UErrorCode& status) {
     options = moveVectorToArray<ResolvedFunctionOption>(optionsVector, status);
 }
 
-const FormattedPlaceholder*
+const FunctionValue*
 FunctionOptions::getFunctionOption(const UnicodeString& key,
                                    UErrorCode& status) const {
     if (options == nullptr) {
@@ -75,14 +72,11 @@ FunctionOptions::getFunctionOption(const UnicodeString& key,
 
 UnicodeString FunctionOptions::getStringFunctionOption(const UnicodeString& key) const {
     UErrorCode localStatus = U_ZERO_ERROR;
-    const FormattedPlaceholder* option = getFunctionOption(key, localStatus);
+    const FunctionValue* option = getFunctionOption(key, localStatus);
     if (U_SUCCESS(localStatus)) {
-        const Formattable* source = option->getSource(localStatus);
-        // Null operand should never appear as an option value
-        U_ASSERT(U_SUCCESS(localStatus));
-        UnicodeString val = source->getString(localStatus);
+        UnicodeString result = option->formatToString(localStatus);
         if (U_SUCCESS(localStatus)) {
-            return val;
+            return result;
         }
     }
     // For anything else, including non-string values, return "".
@@ -117,9 +111,8 @@ FunctionOptions::~FunctionOptions() {
 InternalValue::~InternalValue() {}
 InternalValue& InternalValue::operator=(InternalValue&& other) {
     fallbackString = other.fallbackString;
-    functionName = other.functionName;
-    resolvedOptions = std::move(other.resolvedOptions);
-    operand = std::move(other.operand);
+    U_ASSERT(other.val.isValid());
+    val.adoptInstead(other.val.orphan());
     return *this;
 }
 
@@ -127,56 +120,22 @@ InternalValue::InternalValue(InternalValue&& other) {
     *this = std::move(other);
 }
 
-InternalValue::InternalValue(const FunctionName& name,
-                             FunctionOptions&& options,
-                             FormattedPlaceholder&& rand)
-    : fallbackString(""), functionName(name),
-      resolvedOptions(std::move(options)), operand(std::move(rand)) {}
-
-FormattedPlaceholder InternalValue::takeValue(UErrorCode& status) {
-    if (U_FAILURE(status)) {
-        return {};
-    }
-    if (!functionName.isEmpty() || !fallbackString.isEmpty()) {
-        status = U_ILLEGAL_ARGUMENT_ERROR;
-        return {};
-    }
-    return std::move(operand);
-}
-// Only works if not fully evaluated
-FormattedPlaceholder InternalValue::takeOperand(UErrorCode& status) {
-    if (U_FAILURE(status)) {
-        return {};
-    }
-    if (functionName.isEmpty()) {
-        status = U_ILLEGAL_ARGUMENT_ERROR;
-        return {};
-    }
-    return std::move(operand);
-}
-// Only works if not fully evaluated
-FunctionOptions InternalValue::takeOptions(UErrorCode& status) {
-    if (U_FAILURE(status)) {
-        return {};
-    }
-    if (!isSuspension()) {
-        status = U_ILLEGAL_ARGUMENT_ERROR;
-        return {};
-    }
-    return std::move(resolvedOptions);
-}
-// Only works if not fully evaluated
-FunctionName InternalValue::getFunctionName(UErrorCode& status) const {
-    if (U_FAILURE(status)) {
-        return {};
-    }
-    if (functionName.isEmpty()) {
-        status = U_ILLEGAL_ARGUMENT_ERROR;
-        return {};
-    }
-    return functionName;
+InternalValue::InternalValue(FunctionValue* v)
+    : fallbackString(""), val(v) {
+    U_ASSERT(v != nullptr);
 }
 
+FunctionValue* InternalValue::takeValue(UErrorCode& status) {
+    if (U_FAILURE(status)) {
+        return {};
+    }
+    if (isFallback()) {
+        status = U_ILLEGAL_ARGUMENT_ERROR;
+        return {};
+    }
+    U_ASSERT(val.isValid());
+    return val.orphan();
+}
 
 // PrioritizedVariant
 // ------------------

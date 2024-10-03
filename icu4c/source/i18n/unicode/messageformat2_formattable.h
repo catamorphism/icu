@@ -28,10 +28,6 @@ class UVector;
 
 namespace message2 {
 
-    class Formatter;
-    class MessageContext;
-    class Selector;
-
     // Formattable
     // ----------
 
@@ -449,20 +445,20 @@ namespace message2 {
  * @deprecated This API is for technology preview only.
  */
 #ifndef U_IN_DOXYGEN
-class FormattedPlaceholder;
+class FunctionValue;
 class U_I18N_API ResolvedFunctionOption : public UObject {
   private:
 
     /* const */ UnicodeString name;
-    // This is a pointer because FormattedPlaceholder and ResolvedFunctionOption
-    // are mutually recursive
-    /* const */ LocalPointer<FormattedPlaceholder> value;
+    // This is a pointer because FunctionValue is an abstract class,
+    // and is a raw pointer because FunctionValue is forward-declared
+    /* const */ FunctionValue* value;
 
   public:
       const UnicodeString& getName() const { return name; }
-      const FormattedPlaceholder* getValue() const { return value.getAlias(); }
-      FormattedPlaceholder* takeValue() { return value.orphan(); }
-      ResolvedFunctionOption(const UnicodeString& n, FormattedPlaceholder&& f, UErrorCode& status);
+      const FunctionValue* getValue() const { return value; }
+      // Adopts `f`
+      ResolvedFunctionOption(const UnicodeString& n, FunctionValue* f);
       ResolvedFunctionOption() {}
       ResolvedFunctionOption(ResolvedFunctionOption&&);
       ResolvedFunctionOption& operator=(ResolvedFunctionOption&& other) noexcept {
@@ -587,7 +583,7 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
  * @internal ICU 75 technology preview
  * @deprecated This API is for technology preview only.
  */
-using FunctionOptionsMap = std::map<UnicodeString, const message2::FormattedPlaceholder*>;
+using FunctionOptionsMap = std::map<UnicodeString, const message2::FunctionValue*>;
 
 /**
  * Structure encapsulating named options passed to a custom selector or formatter.
@@ -656,6 +652,8 @@ class U_I18N_API FunctionOptions : public UObject {
      * @deprecated This API is for technology preview only.
      */
     FunctionOptions& operator=(const FunctionOptions&) = delete;
+    // TODO
+    FunctionOptions mergeOptions(const FunctionOptions&);
  private:
     friend class MessageFormatter;
     friend class StandardFunctions;
@@ -663,9 +661,11 @@ class U_I18N_API FunctionOptions : public UObject {
     explicit FunctionOptions(UVector&&, UErrorCode&);
 
     const ResolvedFunctionOption* getResolvedFunctionOptions(int32_t& len) const;
-    const FormattedPlaceholder* getFunctionOption(const UnicodeString&, UErrorCode&) const;
+    const FunctionValue* getFunctionOption(const UnicodeString&, UErrorCode&) const;
     // Returns empty string if option doesn't exist
     UnicodeString getStringFunctionOption(const UnicodeString&) const;
+    // Sets error code if option doesn't exist
+    UnicodeString getStringFunctionOption(const UnicodeString&, UErrorCode&) const;
     int32_t optionsCount() const { return functionOptionsLen; }
 
     // Named options passed to functions

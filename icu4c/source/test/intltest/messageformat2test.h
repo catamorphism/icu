@@ -99,10 +99,10 @@ U_NAMESPACE_BEGIN
 namespace message2 {
 
 // Custom function classes
-class PersonNameFormatterFactory : public FormatterFactory {
+class PersonNameFunctionFactory : public FunctionFactory {
 
     public:
-    Formatter* createFormatter(const Locale&, UErrorCode&) override;
+    Function* createFunction(const Locale&, UErrorCode&) override;
 };
 
 class Person : public FormattableObject {
@@ -117,10 +117,29 @@ class Person : public FormattableObject {
     const UnicodeString tagName;
 };
 
-class PersonNameFormatter : public Formatter {
+class PersonNameFunction : public Function {
     public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FunctionValue* call(FunctionValue*, FunctionOptions&&) override;
 };
+
+class PersonNameValue : public FunctionValue {
+    public:
+    UnicodeString formatToString(UErrorCode&) const;
+    const Formattable& getOperand() const;
+    const FunctionOptions& getResolvedOptions() const;
+    void selectKeys(const UnicodeString* keys,
+                    int32_t keysLen,
+                    UnicodeString* prefs,
+                    int32_t& prefsLen,
+                    UErrorCode& status);
+    PersonNameValue();
+    virtual ~PersonNameValue();
+    private:
+    Formattable operand;
+    FunctionOptions opts;
+    UnicodeString formattedString;
+    PersonNameValue(FunctionValue*, FunctionOptions&&, UErrorCode&);
+}; // class PersonNameValue
 
 class FormattableProperties : public FormattableObject {
     public:
@@ -134,33 +153,115 @@ private:
     const UnicodeString tagName;
 };
 
-class GrammarCasesFormatterFactory : public FormatterFactory {
+class GrammarCasesFunctionFactory : public FunctionFactory {
     public:
-    Formatter* createFormatter(const Locale&, UErrorCode&) override;
+    Function* createFunction(const Locale&, UErrorCode&) override;
 };
 
-class GrammarCasesFormatter : public Formatter {
+class GrammarCasesFunction : public Function {
     public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FunctionValue* call(FunctionValue*, FunctionOptions&&) override;
     static MFFunctionRegistry customRegistry(UErrorCode&);
+};
+
+class GrammarCasesValue : public FunctionValue {
+    public:
+    UnicodeString formatToString(UErrorCode&) const;
+    const Formattable& getOperand() const;
+    const FunctionOptions& getResolvedOptions() const;
+    void selectKeys(const UnicodeString* keys,
+                    int32_t keysLen,
+                    UnicodeString* prefs,
+                    int32_t& prefsLen,
+                    UErrorCode& status);
+    GrammarCasesValue();
+    virtual ~GrammarCasesValue();
     private:
+    Formattable operand;
+    FunctionOptions opts;
+    UnicodeString formattedString;
+    GrammarCasesValue(FunctionValue*, FunctionOptions&&, UErrorCode&);
     void getDativeAndGenitive(const UnicodeString&, UnicodeString& result) const;
+}; // class GrammarCasesValue
+
+class ListFunctionFactory : public FunctionFactory {
+    public:
+    Function* createFunction(const Locale&, UErrorCode&) override;
 };
 
-class ListFormatterFactory : public FormatterFactory {
+class ListFunction : public Function {
     public:
-    Formatter* createFormatter(const Locale&, UErrorCode&) override;
-};
-
-class ListFormatter : public Formatter {
-    public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FunctionValue* call(FunctionValue*, FunctionOptions&&) override;
     static MFFunctionRegistry customRegistry(UErrorCode&);
     private:
-    friend class ListFormatterFactory;
+    friend class ListFunctionFactory;
     const Locale& locale;
-    ListFormatter(const Locale& loc) : locale(loc) {}
+    ListFunction(const Locale& loc) : locale(loc) {}
 };
+
+class ListValue : public FunctionValue {
+    public:
+    UnicodeString formatToString(UErrorCode&) const;
+    const Formattable& getOperand() const;
+    const FunctionOptions& getResolvedOptions() const;
+    void selectKeys(const UnicodeString* keys,
+                    int32_t keysLen,
+                    UnicodeString* prefs,
+                    int32_t& prefsLen,
+                    UErrorCode& status);
+    ListValue();
+    virtual ~ListValue();
+    private:
+    Formattable operand;
+    FunctionOptions opts;
+    UnicodeString formattedString;
+    ListValue(const Locale&,
+              FunctionValue*,
+              FunctionOptions&&,
+              UErrorCode&);
+}; // class ListValue
+
+class NounValue : public FunctionValue {
+    public:
+    UnicodeString formatToString(UErrorCode&) const;
+    const Formattable& getOperand() const;
+    const FunctionOptions& getResolvedOptions() const;
+    void selectKeys(const UnicodeString* keys,
+                    int32_t keysLen,
+                    UnicodeString* prefs,
+                    int32_t& prefsLen,
+                    UErrorCode& status);
+    NounValue();
+    virtual ~NounValue();
+    private:
+    Formattable operand;
+    FunctionOptions opts;
+    UnicodeString formattedString;
+    NounValue(FunctionValue*,
+              FunctionOptions&&,
+              UErrorCode&);
+}; // class NounValue
+
+class AdjectiveValue : public FunctionValue {
+    public:
+    UnicodeString formatToString(UErrorCode&) const;
+    const Formattable& getOperand() const;
+    const FunctionOptions& getResolvedOptions() const;
+    void selectKeys(const UnicodeString* keys,
+                    int32_t keysLen,
+                    UnicodeString* prefs,
+                    int32_t& prefsLen,
+                    UErrorCode& status);
+    AdjectiveValue();
+    virtual ~AdjectiveValue();
+    private:
+    Formattable operand;
+    FunctionOptions opts;
+    UnicodeString formattedString;
+    AdjectiveValue(FunctionValue*,
+                   FunctionOptions&&,
+                   UErrorCode&);
+}; // class AdjectiveValue
 
 /*
 class ResourceManagerFactory : public FormatterFactory {
@@ -183,32 +284,32 @@ class ResourceManager : public Formatter {
 };
 */
 
-class NounFormatterFactory : public FormatterFactory {
+class NounFunctionFactory : public FunctionFactory {
 
     public:
-    Formatter* createFormatter(const Locale&, UErrorCode&) override;
+    Function* createFunction(const Locale&, UErrorCode&) override;
 };
 
-class AdjectiveFormatterFactory : public FormatterFactory {
+class AdjectiveFunctionFactory : public FunctionFactory {
 
     public:
-    Formatter* createFormatter(const Locale&, UErrorCode&) override;
+    Function* createFunction(const Locale&, UErrorCode&) override;
 };
 
-class NounFormatter : public Formatter {
+class NounFunction : public Function {
     public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FunctionValue* call(FunctionValue*, FunctionOptions&&) override;
     private:
-    friend class NounFormatterFactory;
-    NounFormatter() { }
+    friend class NounFunctionFactory;
+    NounFunction() { }
 };
 
-class AdjectiveFormatter : public Formatter {
+class AdjectiveFunction : public Function {
     public:
-    FormattedPlaceholder format(FormattedPlaceholder&&, FunctionOptions&& opts, UErrorCode& errorCode) const override;
+    FunctionValue* call(FunctionValue*, FunctionOptions&&) override;
     private:
-    friend class AdjectiveFormatterFactory;
-    AdjectiveFormatter() { }
+    friend class AdjectiveFunctionFactory;
+    AdjectiveFunction() { }
 };
 
 } // namespace message2

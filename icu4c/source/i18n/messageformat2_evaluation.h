@@ -53,35 +53,39 @@ namespace message2 {
     class InternalValue : public UObject {
     public:
         bool isFallback() const { return !fallbackString.isEmpty(); }
-        bool isSuspension() const { return !functionName.isEmpty(); }
+        bool isSelectable() const;
         InternalValue() : fallbackString("") {}
         // Fallback constructor
         explicit InternalValue(UnicodeString fb) : fallbackString(fb) {}
         // Fully-evaluated value constructor
-        explicit InternalValue(FormattedPlaceholder&& f)
-            : fallbackString(""), functionName(""), operand(std::move(f)) {}
-        // Suspension constructor
-        InternalValue(const FunctionName& name,
-                      FunctionOptions&& options,
-                      FormattedPlaceholder&& rand);
-        // Error code is set if this isn't fully evaluated
-        FormattedPlaceholder takeValue(UErrorCode& status);
-        // Error code is set if this is not a suspension
-        FormattedPlaceholder takeOperand(UErrorCode& status);
-        // Error code is set if this is not a suspension
-        FunctionOptions takeOptions(UErrorCode& status);
-        // Error code is set if this is not a suspension
-        FunctionName getFunctionName(UErrorCode& status) const;
+        explicit InternalValue(FunctionValue* v);
+        // Error code is set if this is a fallback
+        FunctionValue* takeValue(UErrorCode& status);
         UnicodeString asFallback() const { return fallbackString; }
         virtual ~InternalValue();
         InternalValue& operator=(InternalValue&&);
         InternalValue(InternalValue&&);
     private:
         UnicodeString fallbackString; // Non-empty if fallback
-        FunctionName functionName; // Non-empty if this is a suspension
-        FunctionOptions resolvedOptions; // Ignored unless this is a suspension
-        FormattedPlaceholder operand;
+        LocalPointer<FunctionValue> val;
     }; // class InternalValue
+
+// Used for arguments and literals
+    class BaseValue : public FunctionValue {
+        public:
+            static BaseValue create(Formattable&& f);
+            // Apply default formatters to the argument value
+            UnicodeString formatToString(UErrorCode&) const;
+            const Formattable& getOperand() const;
+            const FunctionOptions& getResolvedOptions() const;
+            void selectKeys(const UnicodeString* keys,
+                            int32_t keysLen,
+                            UnicodeString* prefs,
+                            int32_t& prefsLen,
+                            UErrorCode& status); // Errors out
+            BaseValue(const Formattable&, const UnicodeString&);
+            BaseValue();
+    }; // class BaseValue
 
     // PrioritizedVariant
 
