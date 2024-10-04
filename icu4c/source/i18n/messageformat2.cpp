@@ -70,7 +70,7 @@ static Formattable evalLiteral(const Literal& lit) {
     }
 
     if (rand.isNull()) {
-        return InternalValue(status);
+        return InternalValue::null(status);
     }
     if (rand.isVariable()) {
         // Check if it's local or global
@@ -98,7 +98,7 @@ static Formattable evalLiteral(const Literal& lit) {
             // https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#fallback-resolution
             UnicodeString str(DOLLAR);
             str += var;
-            return InternalValue(str);
+            return InternalValue::fallback(str);
         }
         return result;
     } else {
@@ -186,7 +186,7 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env,
         if (U_FAILURE(status)) {
             status = U_ZERO_ERROR;
             context.getErrors().setUnknownFunction(functionName, status);
-            return InternalValue(fallbackStr);
+            return InternalValue::fallback(fallbackStr);
         }
         // Calling takeValue() won't error out because we already checked the fallback case
         // Nullptr represents an absent argument
@@ -197,12 +197,12 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env,
         if (status == U_MF_OPERAND_MISMATCH_ERROR) {
             status = U_ZERO_ERROR;
             context.getErrors().setOperandMismatchError(functionName, status);
-            return InternalValue(fallbackStr);
+            return InternalValue::fallback(fallbackStr);
         }
         if (status == U_MF_FORMATTING_ERROR) {
             status = U_ZERO_ERROR;
             context.getErrors().setFormattingError(functionName, status);
-            return InternalValue(fallbackStr);
+            return InternalValue::fallback(fallbackStr);
         }
         if (U_FAILURE(status)) {
             return {};
