@@ -317,16 +317,14 @@ void TestMessageFormat2::testAPICustomFunctions() {
     assertEquals("testAPICustomFunctions", "Hello Mr. John Doe", result);
 
     // By type
-// TODO
-/*
     MFFunctionRegistry::Builder builderByType(errorCode);
-    FunctionName personFormatterName("person");
+    FunctionName personFunctionName("person");
     MFFunctionRegistry functionRegistryByType =
-        builderByType.adoptFormatter(personFormatterName,
-                                   new PersonNameFormatterFactory(),
-                                   errorCode)
+        builderByType.adoptFunction(personFunctionName,
+                                    new PersonNameFunction(),
+                                    errorCode)
                      .setDefaultFormatterNameByType("person",
-                                                    personFormatterName,
+                                                    personFunctionName,
                                                     errorCode)
                      .build();
     mfBuilder.setFunctionRegistry(functionRegistryByType);
@@ -338,7 +336,6 @@ void TestMessageFormat2::testAPICustomFunctions() {
     // Expect "Hello John" because in the custom function we registered,
     // "informal" is the default formality and "length" is the default length
     assertEquals("testAPICustomFunctions", "Hello John", result);
-*/
 
     delete person;
 }
