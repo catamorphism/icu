@@ -34,54 +34,46 @@ namespace message2 {
         class DateTime;
         class DateTimeValue;
 
-        class DateTimeFactory : public FunctionFactory {
-        public:
-            Function* createFunction(const Locale& locale, UErrorCode& status) override;
-            static DateTimeFactory* date(UErrorCode&);
-            static DateTimeFactory* time(UErrorCode&);
-            static DateTimeFactory* dateTime(UErrorCode&);
-            DateTimeFactory() = delete;
-            virtual ~DateTimeFactory();
-
-        private:
-            friend class DateTime;
-            friend class DateTimeValue;
-
-            typedef enum DateTimeType {
-                Date,
-                Time,
-                DateTime
-            } DateTimeType;
-
-            DateTimeType type;
-            DateTimeFactory(DateTimeType t) : type(t) {}
-        };
-
         class DateTime : public Function {
         public:
-            FunctionValue* call(FunctionValue* operand, FunctionOptions&& options) override;
+            FunctionValue* call(FunctionValue* operand,
+                                FunctionOptions&& options,
+                                UErrorCode& errorCode) override;
+            static DateTime* date(const Locale&, UErrorCode&);
+            static DateTime* time(const Locale&, UErrorCode&);
+            static DateTime* dateTime(const Locale&, UErrorCode&);
             virtual ~DateTime();
 
         private:
+            friend class DateTimeValue;
+
+            typedef enum DateTimeType {
+                kDate,
+                kTime,
+                kDateTime
+            } DateTimeType;
             const Locale& locale;
-            const DateTimeFactory::DateTimeType type;
-            friend class DateTimeFactory;
-            DateTime(const Locale& l, DateTimeFactory::DateTimeType t) : locale(l), type(t) {}
+            const DateTimeType type;
+            static DateTime* create(const Locale&, DateTimeType, UErrorCode&);
+            DateTime(const Locale& l, DateTimeType t) : locale(l), type(t) {}
             const LocalPointer<icu::DateFormat> icuFormatter;
         };
 
-        class Number;
         class NumberValue;
 
-        class NumberFactory : public FunctionFactory {
+        class Number : public Function {
         public:
-            Function* createFunction(const Locale& locale, UErrorCode& status) override;
-            static FunctionFactory* integerFactory(UErrorCode& status);
-            NumberFactory();
-            virtual ~NumberFactory();
+            static Number* integer(const Locale& loc, UErrorCode& success);
+            static Number* number(const Locale& loc, UErrorCode& success);
+
+            FunctionValue* call(FunctionValue* operand,
+                                FunctionOptions&& options,
+                                UErrorCode& errorCode) override;
+            virtual ~Number();
+
         private:
-            friend class Number;
             friend class NumberValue;
+            friend class StandardFunctions;
 
             typedef enum PluralType {
                 PLURAL_ORDINAL,
@@ -89,24 +81,8 @@ namespace message2 {
                 PLURAL_EXACT
             } PluralType;
 
-            NumberFactory(bool, PluralType);
-            const Locale& locale;
-            const bool isInteger = false;
-        };
-
-        class Number : public Function {
-        public:
-            FunctionValue* call(FunctionValue* operand, FunctionOptions&& options) override;
-            virtual ~Number();
-
-        private:
-            friend class NumberFactory;
-            friend class NumberValue;
-            friend class StandardFunctions;
-
-            Number(const Locale& loc) : locale(loc), icuFormatter(number::NumberFormatter::withLocale(loc)) {}
+            static Number* create(const Locale&, bool, UErrorCode&);
             Number(const Locale& loc, bool isInt) : locale(loc), isInteger(isInt), icuFormatter(number::NumberFormatter::withLocale(loc)) {}
-            static Number integer(const Locale& loc);
 
         // These options have their own accessor methods, since they have different default values.
             int32_t digitSizeOption(const FunctionOptions&, const UnicodeString&) const;
@@ -121,7 +97,7 @@ namespace message2 {
             const bool isInteger = false;
             const number::LocalizedNumberFormatter icuFormatter;
 
-            static NumberFactory::PluralType pluralType(const FunctionOptions& opts);
+            static PluralType pluralType(const FunctionOptions& opts);
         };
 
         static number::LocalizedNumberFormatter formatterForOptions(const Number& number,
@@ -131,17 +107,17 @@ namespace message2 {
 
         class NumberValue : public FunctionValue {
         public:
-            UnicodeString formatToString(UErrorCode&) const;
-            const Formattable& getOperand() const;
-            const FunctionOptions& getResolvedOptions() const;
+            UnicodeString formatToString(UErrorCode&) const override;
             void selectKeys(const UnicodeString* keys,
                             int32_t keysLen,
                             UnicodeString* prefs,
                             int32_t& prefsLen,
-                            UErrorCode& status);
+                            UErrorCode& status) override;
             NumberValue();
             virtual ~NumberValue();
         private:
+            friend class Number;
+
             Locale locale;
             Formattable operand;
             FunctionOptions opts;
@@ -152,34 +128,26 @@ namespace message2 {
         class DateTimeValue : public FunctionValue {
         public:
             UnicodeString formatToString(UErrorCode&) const;
-            const Formattable& getOperand() const;
-            const FunctionOptions& getResolvedOptions() const;
-            void selectKeys(const UnicodeString* keys,
-                            int32_t keysLen,
-                            UnicodeString* prefs,
-                            int32_t& prefsLen,
-                            UErrorCode& status);
             DateTimeValue();
             virtual ~DateTimeValue();
         private:
+            friend class DateTime;
+
             Locale locale;
             Formattable operand;
             FunctionOptions opts;
             UDate date;
             UnicodeString formattedDate;
-            DateTimeValue(const Locale&, DateTimeFactory::DateTimeType type,
+            DateTimeValue(const Locale&, DateTime::DateTimeType type,
                           FunctionValue*, FunctionOptions&&, UErrorCode&);
         }; // class DateTimeValue
 
-        class StringFactory : public FunctionFactory {
-        public:
-            Function* createFunction(const Locale& locale, UErrorCode& status) override;
-            virtual ~StringFactory();
-        };
-
         class String : public Function {
         public:
-            FunctionValue* call(FunctionValue* val, FunctionOptions&& opts) override;
+            FunctionValue* call(FunctionValue* val,
+                                FunctionOptions&& opts,
+                                UErrorCode& errorCode) override;
+            static String* string(const Locale& locale, UErrorCode& status);
             virtual ~String();
 
         private:
@@ -193,17 +161,16 @@ namespace message2 {
 
         class StringValue : public FunctionValue {
         public:
-            UnicodeString formatToString(UErrorCode&) const;
-            const Formattable& getOperand() const;
-            const FunctionOptions& getResolvedOptions() const;
+            UnicodeString formatToString(UErrorCode&) const override;
             void selectKeys(const UnicodeString* keys,
                             int32_t keysLen,
                             UnicodeString* prefs,
                             int32_t& prefsLen,
-                            UErrorCode& status);
-            StringValue();
+                            UErrorCode& status) override;
             virtual ~StringValue();
         private:
+            friend class String;
+
             Formattable operand;
             FunctionOptions opts;
             UnicodeString formattedString;

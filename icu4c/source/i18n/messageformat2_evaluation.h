@@ -52,13 +52,14 @@ namespace message2 {
     // to be until the body of the message is processed.
     class InternalValue : public UObject {
     public:
-        bool isFallback() const { return !fallbackString.isEmpty(); }
+        bool isFallback() const { return isFallbackValue; }
         bool isSelectable() const;
-        InternalValue() : fallbackString("") {}
+        InternalValue() : isFallbackValue(true), fallbackString("") {}
         // Fallback constructor
-        explicit InternalValue(UnicodeString fb) : fallbackString(fb) {}
+        explicit InternalValue(const UnicodeString& fb)
+            : isFallbackValue(true), fallbackString(fb) {}
         // Fully-evaluated value constructor
-        explicit InternalValue(FunctionValue* v);
+        explicit InternalValue(FunctionValue* v, const UnicodeString& fb);
         // Error code is set if this is a fallback
         FunctionValue* takeValue(UErrorCode& status);
         UnicodeString asFallback() const { return fallbackString; }
@@ -66,25 +67,24 @@ namespace message2 {
         InternalValue& operator=(InternalValue&&);
         InternalValue(InternalValue&&);
     private:
-        UnicodeString fallbackString; // Non-empty if fallback
+        bool isFallbackValue = false;
+        UnicodeString fallbackString;
         LocalPointer<FunctionValue> val;
     }; // class InternalValue
 
 // Used for arguments and literals
     class BaseValue : public FunctionValue {
         public:
-            static BaseValue create(Formattable&& f);
+            static BaseValue* create(const Locale&, const Formattable&, UErrorCode&);
             // Apply default formatters to the argument value
-            UnicodeString formatToString(UErrorCode&) const;
-            const Formattable& getOperand() const;
-            const FunctionOptions& getResolvedOptions() const;
-            void selectKeys(const UnicodeString* keys,
-                            int32_t keysLen,
-                            UnicodeString* prefs,
-                            int32_t& prefsLen,
-                            UErrorCode& status); // Errors out
-            BaseValue(const Formattable&, const UnicodeString&);
-            BaseValue();
+            UnicodeString formatToString(UErrorCode&) const override;
+            BaseValue() {}
+            BaseValue(BaseValue&&);
+            BaseValue& operator=(BaseValue&&) noexcept;
+       private:
+            Locale locale;
+
+            BaseValue(const Locale&, const Formattable&);
     }; // class BaseValue
 
     // PrioritizedVariant

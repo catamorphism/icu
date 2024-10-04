@@ -278,7 +278,7 @@ void TestMessageFormat2::testAPICustomFunctions() {
     // Set up custom function registry
     MFFunctionRegistry::Builder builder(errorCode);
     MFFunctionRegistry functionRegistry =
-        builder.adoptFunction(data_model::FunctionName("person"), new PersonNameFunctionFactory(), errorCode)
+        builder.adoptFunction(data_model::FunctionName("person"), new PersonNameFunction(), errorCode)
                .build();
 
     Person* person = new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe"));
@@ -342,6 +342,8 @@ void TestMessageFormat2::testAPICustomFunctions() {
 
     delete person;
 }
+
+PersonNameFunction::~PersonNameFunction() {}
 
 // ICU-22890 lone surrogate cause infinity loop
 void TestMessageFormat2::testHighLoneSurrogate() {

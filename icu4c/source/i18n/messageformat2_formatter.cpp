@@ -122,18 +122,18 @@ namespace message2 {
         // Set up the standard function registry
         MFFunctionRegistry::Builder standardFunctionsBuilder(success);
 
-        FunctionFactory* dateTime = StandardFunctions::DateTimeFactory::dateTime(success);
-        FunctionFactory* date = StandardFunctions::DateTimeFactory::date(success);
-        FunctionFactory* time = StandardFunctions::DateTimeFactory::time(success);
+        Function* dateTime = StandardFunctions::DateTime::dateTime(locale, success);
+        Function* date = StandardFunctions::DateTime::date(locale, success);
+        Function* time = StandardFunctions::DateTime::time(locale, success);
         standardFunctionsBuilder.adoptFunction(FunctionName(UnicodeString("datetime")), dateTime, success)
             .adoptFunction(FunctionName(UnicodeString("date")), date, success)
             .adoptFunction(FunctionName(UnicodeString("time")), time, success)
             .adoptFunction(FunctionName(UnicodeString("number")),
-                           new StandardFunctions::NumberFactory(), success)
+                           StandardFunctions::Number::number(locale, success), success)
             .adoptFunction(FunctionName(UnicodeString("integer")),
-                           StandardFunctions::NumberFactory::integerFactory(success), success)
+                           StandardFunctions::Number::integer(locale, success), success)
             .adoptFunction(FunctionName(UnicodeString("string")),
-                           new StandardFunctions::StringFactory(), success);
+                           StandardFunctions::String::string(locale, success), success);
         CHECK_ERROR(success);
         standardMFFunctionRegistry = standardFunctionsBuilder.build();
         CHECK_ERROR(success);
@@ -213,25 +213,6 @@ namespace message2 {
         cleanup();
     }
 
-    // Function lookup
-    // ---------------
-
-    // Returns an owned pointer
-    Function* MessageFormatter::getFunction(const FunctionName& functionName, UErrorCode& status) const {
-        NULL_ON_ERROR(status);
-
-        // Create the function
-
-        // First, look up the factory for this function
-        FunctionFactory* functionFactory = lookupFunctionFactory(functionName, status);
-        NULL_ON_ERROR(status);
-
-        // Create a specific instance of the function
-        Function* function = functionFactory->createFunction(locale, status);
-        NULL_ON_ERROR(status);
-        return function;
-    }
-
     // ---------------------------------------------------
     // Function registry
 
@@ -239,8 +220,8 @@ namespace message2 {
         return standardMFFunctionRegistry.hasFunction(functionName);
     }
 
-    FunctionFactory* MessageFormatter::lookupFunctionFactory(const FunctionName& functionName,
-                                                             UErrorCode& status) const {
+    Function* MessageFormatter::lookupFunction(const FunctionName& functionName,
+                                               UErrorCode& status) const {
         NULL_ON_ERROR(status);
 
         if (isBuiltInFunction(functionName)) {
@@ -248,9 +229,9 @@ namespace message2 {
         }
         if (hasCustomMFFunctionRegistry()) {
             const MFFunctionRegistry& customMFFunctionRegistry = getCustomMFFunctionRegistry();
-            FunctionFactory* functionFactory = customMFFunctionRegistry.getFunction(functionName);
-            if (functionFactory != nullptr) {
-                return functionFactory;
+            Function* function = customMFFunctionRegistry.getFunction(functionName);
+            if (function != nullptr) {
+                return function;
             }
         }
         // Either there is no custom function registry and the function

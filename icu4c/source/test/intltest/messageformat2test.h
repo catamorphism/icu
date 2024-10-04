@@ -99,11 +99,6 @@ U_NAMESPACE_BEGIN
 namespace message2 {
 
 // Custom function classes
-class PersonNameFunctionFactory : public FunctionFactory {
-
-    public:
-    Function* createFunction(const Locale&, UErrorCode&) override;
-};
 
 class Person : public FormattableObject {
     public:
@@ -119,24 +114,18 @@ class Person : public FormattableObject {
 
 class PersonNameFunction : public Function {
     public:
-    FunctionValue* call(FunctionValue*, FunctionOptions&&) override;
+    FunctionValue* call(FunctionValue*, FunctionOptions&&, UErrorCode&) override;
+    virtual ~PersonNameFunction();
 };
 
 class PersonNameValue : public FunctionValue {
     public:
-    UnicodeString formatToString(UErrorCode&) const;
-    const Formattable& getOperand() const;
-    const FunctionOptions& getResolvedOptions() const;
-    void selectKeys(const UnicodeString* keys,
-                    int32_t keysLen,
-                    UnicodeString* prefs,
-                    int32_t& prefsLen,
-                    UErrorCode& status);
+    UnicodeString formatToString(UErrorCode&) const override;
     PersonNameValue();
     virtual ~PersonNameValue();
     private:
-    Formattable operand;
-    FunctionOptions opts;
+    friend class PersonNameFunction;
+
     UnicodeString formattedString;
     PersonNameValue(FunctionValue*, FunctionOptions&&, UErrorCode&);
 }; // class PersonNameValue
@@ -153,67 +142,42 @@ private:
     const UnicodeString tagName;
 };
 
-class GrammarCasesFunctionFactory : public FunctionFactory {
-    public:
-    Function* createFunction(const Locale&, UErrorCode&) override;
-};
-
 class GrammarCasesFunction : public Function {
     public:
-    FunctionValue* call(FunctionValue*, FunctionOptions&&) override;
+    FunctionValue* call(FunctionValue*, FunctionOptions&&, UErrorCode&) override;
     static MFFunctionRegistry customRegistry(UErrorCode&);
 };
 
 class GrammarCasesValue : public FunctionValue {
     public:
-    UnicodeString formatToString(UErrorCode&) const;
-    const Formattable& getOperand() const;
-    const FunctionOptions& getResolvedOptions() const;
-    void selectKeys(const UnicodeString* keys,
-                    int32_t keysLen,
-                    UnicodeString* prefs,
-                    int32_t& prefsLen,
-                    UErrorCode& status);
+    UnicodeString formatToString(UErrorCode&) const override;
     GrammarCasesValue();
     virtual ~GrammarCasesValue();
     private:
-    Formattable operand;
-    FunctionOptions opts;
+    friend class GrammarCasesFunction;
+
     UnicodeString formattedString;
     GrammarCasesValue(FunctionValue*, FunctionOptions&&, UErrorCode&);
     void getDativeAndGenitive(const UnicodeString&, UnicodeString& result) const;
 }; // class GrammarCasesValue
 
-class ListFunctionFactory : public FunctionFactory {
-    public:
-    Function* createFunction(const Locale&, UErrorCode&) override;
-};
-
 class ListFunction : public Function {
     public:
-    FunctionValue* call(FunctionValue*, FunctionOptions&&) override;
+    FunctionValue* call(FunctionValue*, FunctionOptions&&, UErrorCode&) override;
     static MFFunctionRegistry customRegistry(UErrorCode&);
-    private:
-    friend class ListFunctionFactory;
-    const Locale& locale;
     ListFunction(const Locale& loc) : locale(loc) {}
+    virtual ~ListFunction();
+    private:
+    Locale locale;
 };
 
 class ListValue : public FunctionValue {
     public:
-    UnicodeString formatToString(UErrorCode&) const;
-    const Formattable& getOperand() const;
-    const FunctionOptions& getResolvedOptions() const;
-    void selectKeys(const UnicodeString* keys,
-                    int32_t keysLen,
-                    UnicodeString* prefs,
-                    int32_t& prefsLen,
-                    UErrorCode& status);
-    ListValue();
+    UnicodeString formatToString(UErrorCode&) const override;
     virtual ~ListValue();
     private:
-    Formattable operand;
-    FunctionOptions opts;
+    friend class ListFunction;
+
     UnicodeString formattedString;
     ListValue(const Locale&,
               FunctionValue*,
@@ -223,19 +187,12 @@ class ListValue : public FunctionValue {
 
 class NounValue : public FunctionValue {
     public:
-    UnicodeString formatToString(UErrorCode&) const;
-    const Formattable& getOperand() const;
-    const FunctionOptions& getResolvedOptions() const;
-    void selectKeys(const UnicodeString* keys,
-                    int32_t keysLen,
-                    UnicodeString* prefs,
-                    int32_t& prefsLen,
-                    UErrorCode& status);
+    UnicodeString formatToString(UErrorCode&) const override;
     NounValue();
     virtual ~NounValue();
     private:
-    Formattable operand;
-    FunctionOptions opts;
+    friend class NounFunction;
+
     UnicodeString formattedString;
     NounValue(FunctionValue*,
               FunctionOptions&&,
@@ -244,19 +201,12 @@ class NounValue : public FunctionValue {
 
 class AdjectiveValue : public FunctionValue {
     public:
-    UnicodeString formatToString(UErrorCode&) const;
-    const Formattable& getOperand() const;
-    const FunctionOptions& getResolvedOptions() const;
-    void selectKeys(const UnicodeString* keys,
-                    int32_t keysLen,
-                    UnicodeString* prefs,
-                    int32_t& prefsLen,
-                    UErrorCode& status);
+    UnicodeString formatToString(UErrorCode&) const override;
     AdjectiveValue();
     virtual ~AdjectiveValue();
     private:
-    Formattable operand;
-    FunctionOptions opts;
+    friend class AdjectiveFunction;
+
     UnicodeString formattedString;
     AdjectiveValue(FunctionValue*,
                    FunctionOptions&&,
@@ -284,32 +234,18 @@ class ResourceManager : public Formatter {
 };
 */
 
-class NounFunctionFactory : public FunctionFactory {
-
-    public:
-    Function* createFunction(const Locale&, UErrorCode&) override;
-};
-
-class AdjectiveFunctionFactory : public FunctionFactory {
-
-    public:
-    Function* createFunction(const Locale&, UErrorCode&) override;
-};
-
 class NounFunction : public Function {
     public:
-    FunctionValue* call(FunctionValue*, FunctionOptions&&) override;
-    private:
-    friend class NounFunctionFactory;
+    FunctionValue* call(FunctionValue*, FunctionOptions&&, UErrorCode&) override;
     NounFunction() { }
+    virtual ~NounFunction();
 };
 
 class AdjectiveFunction : public Function {
     public:
-    FunctionValue* call(FunctionValue*, FunctionOptions&&) override;
-    private:
-    friend class AdjectiveFunctionFactory;
+    FunctionValue* call(FunctionValue*, FunctionOptions&&, UErrorCode&) override;
     AdjectiveFunction() { }
+    virtual ~AdjectiveFunction();
 };
 
 } // namespace message2

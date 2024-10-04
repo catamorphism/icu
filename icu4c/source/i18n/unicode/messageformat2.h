@@ -337,7 +337,6 @@ namespace message2 {
 
         // Selection methods
 
-        bool isSelectable(const InternalValue&) const;
         // Takes a vector of FormattedPlaceholders
         void resolveSelectors(MessageContext&, const Environment& env, UErrorCode&, UVector&) const;
         // Takes a vector of vectors of strings (input) and a vector of PrioritizedVariants (output)
@@ -351,7 +350,7 @@ namespace message2 {
         void resolvePreferences(MessageContext&, UVector&, UVector&, UErrorCode&) const;
 
         // Formatting methods
-        [[nodiscard]] BaseValue formatLiteral(const data_model::Literal&) const;
+        [[nodiscard]] InternalValue formatLiteral(const data_model::Literal&, UErrorCode&) const;
         void formatPattern(MessageContext&, const Environment&, const data_model::Pattern&, UErrorCode&, UnicodeString&) const;
         [[nodiscard]] InternalValue eval(MessageContext&, InternalValue, UErrorCode&) const;
         // Dispatches on argument type
@@ -367,7 +366,7 @@ namespace message2 {
         [[nodiscard]] InternalValue formatExpression(const Environment&, const data_model::Expression&, MessageContext&, UErrorCode&) const;
         [[nodiscard]] FunctionOptions resolveOptions(const Environment& env, const OptionMap&, MessageContext&, UErrorCode&) const;
         [[nodiscard]] InternalValue formatOperand(const Environment&, const data_model::Operand&, MessageContext&, UErrorCode&) const;
-        [[nodiscard]] BaseValue evalArgument(const data_model::VariableName&, MessageContext&, UErrorCode&) const;
+        [[nodiscard]] InternalValue evalArgument(const data_model::VariableName&, MessageContext&, UErrorCode&) const;
         void formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const;
 
         // Function registry methods
@@ -381,13 +380,10 @@ namespace message2 {
         const MFFunctionRegistry& getCustomMFFunctionRegistry() const;
 
         bool isCustomFunction(const FunctionName&) const;
-        FunctionFactory* lookupFunctionFactory(const FunctionName&, UErrorCode& status) const;
         bool isBuiltInFunction(const FunctionName&) const;
         bool isFunction(const FunctionName& fn) const { return isBuiltInFunction(fn) || isCustomFunction(fn); }
         void setNotSelectableError(MessageContext&, const InternalValue&, UErrorCode&) const;
-        const Function* lookupFunction(const FunctionName&, UErrorCode&) const;
-
-        Function* getFunction(const FunctionName&, UErrorCode&) const;
+        Function* lookupFunction(const FunctionName&, UErrorCode&) const;
 
         // Checking for resolution errors
         void checkDeclarations(MessageContext&, Environment*&, UErrorCode&) const;

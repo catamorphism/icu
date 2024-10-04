@@ -32,7 +32,7 @@ static Formattable evalLiteral(const Literal& lit) {
 }
 
 // Assumes that `var` is a message argument; returns the argument's value.
-[[nodiscard]] BaseValue MessageFormatter::evalArgument(const VariableName& var,
+[[nodiscard]] InternalValue MessageFormatter::evalArgument(const VariableName& var,
                                                            MessageContext& context,
                                                            UErrorCode& errorCode) const {
     if (U_SUCCESS(errorCode)) {
@@ -41,16 +41,24 @@ static Formattable evalLiteral(const Literal& lit) {
         str += var;
         const Formattable* val = context.getGlobal(var, errorCode);
         if (U_SUCCESS(errorCode)) {
-            return BaseValue(*val, str);
+            LocalPointer<BaseValue> result(BaseValue::create(locale, *val, errorCode));
+            if (U_SUCCESS(errorCode)) {
+                return InternalValue(result.orphan(), str);
+            }
         }
     }
     return {};
 }
 
 // Returns the contents of the literal
-[[nodiscard]] BaseValue MessageFormatter::formatLiteral(const Literal& lit) const {
+[[nodiscard]] InternalValue MessageFormatter::formatLiteral(const Literal& lit,
+                                                            UErrorCode& errorCode) const {
     // The fallback for a literal is itself.
-    return BaseValue(evalLiteral(lit), lit.quoted());
+    LocalPointer<BaseValue> val(BaseValue::create(locale, evalLiteral(lit), errorCode));
+    if (U_SUCCESS(errorCode)) {
+        return InternalValue(val.orphan(), lit.quoted());
+    }
+    return {};
 }
 
 [[nodiscard]] InternalValue MessageFormatter::formatOperand(const Environment& env,
@@ -81,7 +89,7 @@ static Formattable evalLiteral(const Literal& lit) {
           return formatExpression(rhs.getEnv(), rhs.getExpr(), context, status);
         }
         // Variable wasn't found in locals -- check if it's global
-        BaseValue result = evalArgument(var, context, status);
+        InternalValue result = evalArgument(var, context, status);
         if (status == U_ILLEGAL_ARGUMENT_ERROR) {
             status = U_ZERO_ERROR;
             // Unbound variable -- set a resolution error
@@ -92,10 +100,10 @@ static Formattable evalLiteral(const Literal& lit) {
             str += var;
             return InternalValue(str);
         }
-        return InternalValue(create<BaseValue>(std::move(result), status));
+        return result;
     } else {
         U_ASSERT(rand.isLiteral());
-        return InternalValue(create<BaseValue>(formatLiteral(rand.asLiteral()), status));
+        return formatLiteral(rand.asLiteral(), status);
     }
 }
 
@@ -250,14 +258,22 @@ FunctionOptions MessageFormatter::resolveOptions(const Environment& env, const O
         FunctionOptions resolvedOptions = resolveOptions(globalEnv, options, context, status);
 
         // Call the function
-        Function* function = getFunction(functionName, status);
+        Function* function = lookupFunction(functionName, status);
         if (U_FAILURE(status)) {
             context.getErrors().setUnknownFunction(functionName, status);
             return {};
         }
+        UnicodeString fallbackStr;
+        if (rand.isNull()) {
+            fallbackStr = UnicodeString(COLON);
+            fallbackStr += functionName;
+        } else {
+            fallbackStr = randVal.asFallback();
+        }
         // Calling takeValue() won't error out because we already checked the fallback case
         return InternalValue(function->call(randVal.takeValue(status),
-                                            std::move(resolvedOptions)));
+                                            std::move(resolvedOptions), status),
+                             fallbackStr);
     }
 }
 
@@ -339,7 +355,7 @@ void MessageFormatter::matchSelectorKeys(const UVector& keys,
 					 UErrorCode& status) const {
     CHECK_ERROR(status);
 
-    if (!isSelectable(rv)) {
+    if (!rv.isSelectable()) {
         return;
     }
 

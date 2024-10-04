@@ -20,6 +20,38 @@ namespace message2 {
 
 using namespace data_model;
 
+// BaseValue
+// ---------
+
+BaseValue::BaseValue(const Locale& loc, const Formattable& source)
+    : locale(loc) {
+    operand = source;
+}
+
+/* static */ BaseValue* BaseValue::create(const Locale& locale,
+                                          const Formattable& source,
+                                          UErrorCode& errorCode) {
+    return message2::create<BaseValue>(BaseValue(locale, source), errorCode);
+}
+
+extern UnicodeString formattableToString(const Locale&, const Formattable&, UErrorCode&);
+
+UnicodeString BaseValue::formatToString(UErrorCode& errorCode) const {
+    return formattableToString(locale, operand, errorCode);
+}
+
+BaseValue& BaseValue::operator=(BaseValue&& other) noexcept {
+    operand = std::move(other.operand);
+    opts = std::move(other.opts);
+    locale = other.locale;
+
+    return *this;
+}
+
+BaseValue::BaseValue(BaseValue&& other) {
+    *this = std::move(other);
+}
+
 // Functions
 // -------------
 
@@ -70,19 +102,27 @@ FunctionOptions::getFunctionOption(const UnicodeString& key,
     return nullptr;
 }
 
-UnicodeString FunctionOptions::getStringFunctionOption(const UnicodeString& key) const {
-    UErrorCode localStatus = U_ZERO_ERROR;
-    const FunctionValue* option = getFunctionOption(key, localStatus);
-    if (U_SUCCESS(localStatus)) {
-        UnicodeString result = option->formatToString(localStatus);
-        if (U_SUCCESS(localStatus)) {
+
+UnicodeString
+FunctionOptions::getStringFunctionOption(const UnicodeString& k, UErrorCode& errorCode) const {
+    const FunctionValue* option = getFunctionOption(k, errorCode);
+    if (U_SUCCESS(errorCode)) {
+        UnicodeString result = option->formatToString(errorCode);
+        if (U_SUCCESS(errorCode)) {
             return result;
         }
     }
-    // For anything else, including non-string values, return "".
-    // Alternately, could try to stringify the non-string option.
-    // (Currently, no tests require that.)
     return {};
+}
+
+UnicodeString FunctionOptions::getStringFunctionOption(const UnicodeString& key) const {
+    UErrorCode localStatus = U_ZERO_ERROR;
+
+    UnicodeString result = getStringFunctionOption(key, localStatus);
+    if (U_FAILURE(localStatus)) {
+        return {};
+    }
+    return result;
 }
 
 FunctionOptions& FunctionOptions::operator=(FunctionOptions&& other) noexcept {
@@ -104,6 +144,50 @@ FunctionOptions::~FunctionOptions() {
     }
 }
 
+static bool containsOption(const UVector& opts, const ResolvedFunctionOption& opt) {
+    for (int32_t i = 0; i < opts.size(); i++) {
+        if (static_cast<ResolvedFunctionOption*>(opts[i])->getName()
+            == opt.getName()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Options in `this` take precedence
+// `this` can't be used after mergeOptions is called
+FunctionOptions FunctionOptions::mergeOptions(FunctionOptions&& other,
+                                              UErrorCode& status) {
+    UVector mergedOptions(status);
+    mergedOptions.setDeleter(uprv_deleteUObject);
+
+    if (U_FAILURE(status)) {
+        return {};
+    }
+
+    // Create a new vector consisting of the options from this `FunctionOptions`
+    for (int32_t i = 0; i < functionOptionsLen; i++) {
+        mergedOptions.adoptElement(create<ResolvedFunctionOption>(std::move(options[i]), status),
+                                 status);
+    }
+
+    // Add each option from `other` that doesn't appear in this `FunctionOptions`
+    for (int i = 0; i < other.functionOptionsLen; i++) {
+        // Note: this is quadratic in the length of `options`
+        if (!containsOption(mergedOptions, other.options[i])) {
+            mergedOptions.adoptElement(create<ResolvedFunctionOption>(std::move(other.options[i]),
+                                                                    status),
+                                     status);
+        }
+    }
+
+    delete[] options;
+    options = nullptr;
+    functionOptionsLen = 0;
+
+    return FunctionOptions(std::move(mergedOptions), status);
+}
+
 // InternalValue
 // -------------
 
@@ -120,8 +204,8 @@ InternalValue::InternalValue(InternalValue&& other) {
     *this = std::move(other);
 }
 
-InternalValue::InternalValue(FunctionValue* v)
-    : fallbackString(""), val(v) {
+InternalValue::InternalValue(FunctionValue* v, const UnicodeString& fb)
+    : fallbackString(fb), val(v) {
     U_ASSERT(v != nullptr);
 }
 
@@ -135,6 +219,13 @@ FunctionValue* InternalValue::takeValue(UErrorCode& status) {
     }
     U_ASSERT(val.isValid());
     return val.orphan();
+}
+
+bool InternalValue::isSelectable() const {
+    if (isFallbackValue) {
+        return false;
+    }
+    return val->isSelectable();
 }
 
 // PrioritizedVariant

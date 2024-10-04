@@ -32,7 +32,7 @@ void TestMessageFormat2::testPersonFormatter(IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
     MFFunctionRegistry customRegistry(MFFunctionRegistry::Builder(errorCode)
-                                      .adoptFunction(FunctionName("person"), new PersonNameFunctionFactory(), errorCode)
+                                      .adoptFunction(FunctionName("person"), new PersonNameFunction(), errorCode)
                                       .build());
     UnicodeString name = "name";
     LocalPointer<Person> person(new Person(UnicodeString("Mr."), UnicodeString("John"), UnicodeString("Doe")));
@@ -98,7 +98,7 @@ void TestMessageFormat2::testCustomFunctionsComplexMessage(IcuTestErrorCode& err
     CHECK_ERROR(errorCode);
 
     MFFunctionRegistry customRegistry(MFFunctionRegistry::Builder(errorCode)
-                                      .adoptFunction(FunctionName("person"), new PersonNameFunctionFactory(), errorCode)
+                                      .adoptFunction(FunctionName("person"), new PersonNameFunction(), errorCode)
                                       .build());
     UnicodeString host = "host";
     UnicodeString hostGender = "hostGender";
@@ -188,8 +188,8 @@ void TestMessageFormat2::testComplexOptions(IcuTestErrorCode& errorCode) {
     CHECK_ERROR(errorCode);
 
     MFFunctionRegistry customRegistry(MFFunctionRegistry::Builder(errorCode)
-                                      .adoptFunction(FunctionName("noun"), new NounFunctionFactory(), errorCode)
-                                      .adoptFunction(FunctionName("adjective"), new AdjectiveFunctionFactory(), errorCode)
+                                      .adoptFunction(FunctionName("noun"), new NounFunction(), errorCode)
+                                      .adoptFunction(FunctionName("adjective"), new AdjectiveFunction(), errorCode)
                                       .build());
     UnicodeString name = "name";
     TestCase::Builder testBuilder;
@@ -239,21 +239,6 @@ void TestMessageFormat2::testCustomFunctions() {
 
 // -------------- Custom function implementations
 
-Function* PersonNameFunctionFactory::createFunction(const Locale& locale, UErrorCode& errorCode) {
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-
-    // Locale not used
-    (void) locale;
-
-    Function* result = new PersonNameFunction();
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
 static UnicodeString getStringOption(const FunctionOptionsMap& opt,
                                      const UnicodeString& k) {
     if (opt.count(k) == 0) {
@@ -278,6 +263,18 @@ static UnicodeString getStringOption(const FunctionOptionsMap& opt,
 static bool hasStringOption(const FunctionOptionsMap& opt,
                             const UnicodeString& k, const UnicodeString& v) {
     return getStringOption(opt, k) == v;
+}
+
+FunctionValue* PersonNameFunction::call(FunctionValue* arg,
+                                        FunctionOptions&& opts,
+                                        UErrorCode& errorCode) {
+    NULL_ON_ERROR(errorCode);
+
+    PersonNameValue* v = new PersonNameValue(arg, std::move(opts), errorCode);
+    if (U_SUCCESS(errorCode) && v == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return v;
 }
 
 UnicodeString PersonNameValue::formatToString(UErrorCode& status) const {
@@ -352,25 +349,11 @@ PersonNameValue::PersonNameValue(FunctionValue* arg,
 
 FormattableProperties::~FormattableProperties() {}
 Person::~Person() {}
+PersonNameValue::~PersonNameValue() {}
 
 /*
   See ICU4J: CustomFormatterGrammarCaseTest.java
 */
-Function* GrammarCasesFunctionFactory::createFunction(const Locale& locale, UErrorCode& errorCode) {
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-
-    // Locale not used
-    (void) locale;
-
-    Function* result = new GrammarCasesFunction();
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
-}
-
 
 /* static */ void GrammarCasesValue::getDativeAndGenitive(const UnicodeString& value, UnicodeString& result) const {
     UnicodeString postfix;
@@ -394,6 +377,18 @@ Function* GrammarCasesFunctionFactory::createFunction(const Locale& locale, UErr
         postfix = "lui " + value;
     }
     result += postfix;
+}
+
+FunctionValue* GrammarCasesFunction::call(FunctionValue* arg,
+                                  FunctionOptions&& opts,
+                                  UErrorCode& errorCode) {
+    NULL_ON_ERROR(errorCode);
+
+    GrammarCasesValue* v = new GrammarCasesValue(arg, std::move(opts), errorCode);
+    if (U_SUCCESS(errorCode) && v == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return v;
 }
 
 UnicodeString GrammarCasesValue::formatToString(UErrorCode& status) const {
@@ -449,7 +444,7 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
     CHECK_ERROR(errorCode);
 
     MFFunctionRegistry customRegistry = MFFunctionRegistry::Builder(errorCode)
-        .adoptFunction(FunctionName("grammarBB"), new GrammarCasesFunctionFactory(), errorCode)
+        .adoptFunction(FunctionName("grammarBB"), new GrammarCasesFunction(), errorCode)
         .build();
 
     TestCase::Builder testBuilder;
@@ -501,19 +496,28 @@ void TestMessageFormat2::testGrammarCasesFormatter(IcuTestErrorCode& errorCode) 
     TestUtils::runTestCase(*this, test, errorCode);
 }
 
+GrammarCasesValue::~GrammarCasesValue() {}
+
 /*
   See ICU4J: CustomFormatterListTest.java
 */
-Function* ListFunctionFactory::createFunction(const Locale& locale, UErrorCode& errorCode) {
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
 
-    Function* result = new ListFunction(locale);
-    if (result == nullptr) {
+FunctionValue* ListFunction::call(FunctionValue* arg,
+                                  FunctionOptions&& opts,
+                                  UErrorCode& errorCode) {
+    NULL_ON_ERROR(errorCode);
+
+    ListValue* v = new ListValue(locale, arg, std::move(opts), errorCode);
+    if (U_SUCCESS(errorCode) && v == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
-    return result;
+    return v;
+}
+
+UnicodeString ListValue::formatToString(UErrorCode& errorCode) const {
+    (void) errorCode;
+
+    return formattedString;
 }
 
 message2::ListValue::ListValue(const Locale& locale,
@@ -581,6 +585,9 @@ message2::ListValue::ListValue(const Locale& locale,
     }
 }
 
+ListValue::~ListValue() {}
+ListFunction::~ListFunction() {}
+
 void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     if (U_FAILURE(errorCode)) {
         return;
@@ -594,10 +601,11 @@ void TestMessageFormat2::testListFormatter(IcuTestErrorCode& errorCode) {
     TestCase::Builder testBuilder;
 
     MFFunctionRegistry reg = MFFunctionRegistry::Builder(errorCode)
-        .adoptFunction(FunctionName("listformat"), new ListFunctionFactory(), errorCode)
+        .adoptFunction(FunctionName("listformat"), new ListFunction(Locale("en")), errorCode)
         .build();
     CHECK_ERROR(errorCode);
 
+    testBuilder.setLocale(Locale("en"));
     testBuilder.setFunctionRegistry(&reg);
     testBuilder.setArgument("languages", progLanguages, 3);
 
@@ -818,34 +826,16 @@ void TestMessageFormat2::testMessageRefFormatter(IcuTestErrorCode& errorCode) {
 }
 #endif
 
-Function* NounFunctionFactory::createFunction(const Locale& locale, UErrorCode& errorCode) {
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
+FunctionValue* NounFunction::call(FunctionValue* arg,
+                                  FunctionOptions&& opts,
+                                  UErrorCode& errorCode) {
+    NULL_ON_ERROR(errorCode);
 
-    // Locale not used
-    (void) locale;
-
-    Function* result = new NounFunction();
-    if (result == nullptr) {
+    NounValue* v = new NounValue(arg, std::move(opts), errorCode);
+    if (U_SUCCESS(errorCode) && v == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
-    return result;
-}
-
-Function* AdjectiveFunctionFactory::createFunction(const Locale& locale, UErrorCode& errorCode) {
-    if (U_FAILURE(errorCode)) {
-        return nullptr;
-    }
-
-    // Locale not used
-    (void) locale;
-
-    Function* result = new AdjectiveFunction();
-    if (result == nullptr) {
-        errorCode = U_MEMORY_ALLOCATION_ERROR;
-    }
-    return result;
+    return v;
 }
 
 UnicodeString NounValue::formatToString(UErrorCode& status) const {
@@ -891,6 +881,18 @@ NounValue::NounValue(FunctionValue* arg,
     }
 }
 
+FunctionValue* AdjectiveFunction::call(FunctionValue* arg,
+                                  FunctionOptions&& opts,
+                                  UErrorCode& errorCode) {
+    NULL_ON_ERROR(errorCode);
+
+    AdjectiveValue* v = new AdjectiveValue(arg, std::move(opts), errorCode);
+    if (U_SUCCESS(errorCode) && v == nullptr) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return v;
+}
+
 UnicodeString AdjectiveValue::formatToString(UErrorCode& status) const {
     (void) status;
 
@@ -915,7 +917,7 @@ AdjectiveValue::AdjectiveValue(FunctionValue* arg,
         return;
     }
 
-    const FunctionValue& accordOpt = *opt.at("accord");
+    FunctionValue& accordOpt = *opt.at("accord");
     const Formattable& accordSrc = accordOpt.getOperand();
     UnicodeString accord = accordSrc.getString(errorCode);
     const UnicodeString& adjective = toFormat->getString(errorCode);
@@ -926,7 +928,7 @@ AdjectiveValue::AdjectiveValue(FunctionValue* arg,
 
     formattedString = adjective + " " + accord;
     // very simplified example
-    const FunctionOptionsMap accordOptionsMap = accordOpt.getResolvedOptions().getOptions();
+    FunctionOptionsMap accordOptionsMap = accordOpt.getResolvedOptions().getOptions();
     bool accordIsAccusative = hasStringOption(accordOptionsMap, "case", "accusative");
     bool accordIsSingular = hasStringOption(accordOptionsMap, "count", "1");
     if (accordIsAccusative) {
@@ -944,6 +946,10 @@ AdjectiveValue::AdjectiveValue(FunctionValue* arg,
     }
 }
 
+NounFunction::~NounFunction() {}
+AdjectiveFunction::~AdjectiveFunction() {}
+NounValue::~NounValue() {}
+AdjectiveValue::~AdjectiveValue() {}
 
 #endif /* #if !UCONFIG_NO_MF2 */
 

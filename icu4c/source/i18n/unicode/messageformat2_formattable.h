@@ -456,7 +456,7 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
 
   public:
       const UnicodeString& getName() const { return name; }
-      const FunctionValue* getValue() const { return value; }
+      FunctionValue* getValue() const { return value; }
       // Adopts `f`
       ResolvedFunctionOption(const UnicodeString& n, FunctionValue* f);
       ResolvedFunctionOption() {}
@@ -583,7 +583,7 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
  * @internal ICU 75 technology preview
  * @deprecated This API is for technology preview only.
  */
-using FunctionOptionsMap = std::map<UnicodeString, const message2::FunctionValue*>;
+using FunctionOptionsMap = std::map<UnicodeString, message2::FunctionValue*>;
 
 /**
  * Structure encapsulating named options passed to a custom selector or formatter.
@@ -606,10 +606,10 @@ class U_I18N_API FunctionOptions : public UObject {
      * @internal ICU 75 technology preview
      * @deprecated This API is for technology preview only.
      */
-    FunctionOptionsMap getOptions() const {
+    FunctionOptionsMap getOptions() {
         FunctionOptionsMap result;
         for (int32_t i = 0; i < functionOptionsLen; i++) {
-            const ResolvedFunctionOption& opt = options[i];
+            ResolvedFunctionOption& opt = options[i];
             result[opt.getName()] = opt.getValue();
         }
         return result;
@@ -653,7 +653,7 @@ class U_I18N_API FunctionOptions : public UObject {
      */
     FunctionOptions& operator=(const FunctionOptions&) = delete;
     // TODO
-    FunctionOptions mergeOptions(const FunctionOptions&);
+    FunctionOptions mergeOptions(FunctionOptions&&, UErrorCode&);
  private:
     friend class MessageFormatter;
     friend class StandardFunctions;

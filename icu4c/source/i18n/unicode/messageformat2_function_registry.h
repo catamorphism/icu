@@ -31,47 +31,6 @@ namespace message2 {
     class Function;
 
     /**
-     * Interface that factory classes for creating formatters must implement.
-     *
-     * @internal ICU 75 technology preview
-     * @deprecated This API is for technology preview only.
-     */
-    class U_I18N_API FunctionFactory : public UObject {
-        // TODO: the coding guidelines say that interface classes
-        // shouldn't inherit from UObject, but if I change it so these
-        // classes don't, and the individual formatter factory classes
-        // inherit from public FormatterFactory, public UObject, then
-        // memory leaks ensue
-    public:
-        /**
-         * Constructs a new function object. This method is not const;
-         * function factories with local state may be defined.
-         *
-         * @param locale Locale to be used by the function
-         * @param status    Input/output error code.
-         * @return The new Function, which is non-null if U_SUCCESS(status).
-         *
-         * @internal ICU 75 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        virtual Function* createFunction(const Locale& locale, UErrorCode& status) = 0;
-        /**
-         * Destructor.
-         *
-         * @internal ICU 75 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        virtual ~FunctionFactory();
-        /**
-         * Copy constructor.
-         *
-         * @internal ICU 75 technology preview
-         * @deprecated This API is for technology preview only.
-         */
-        FunctionFactory& operator=(const FunctionFactory&) = delete;
-    }; // class FormatterFactory
-
-    /**
      * Defines mappings from names of formatters and selectors to functions implementing them.
      * The required set of formatter and selector functions is defined in the spec. Users can
      * also define custom formatter and selector functions.
@@ -88,19 +47,19 @@ namespace message2 {
 
     public:
         /**
-         * Looks up a function factory by the name of the function. The result is non-const,
-         * since function factories may have local state. Returns the result by pointer
+         * Looks up a function by the name of the function. The result is non-const,
+         * since functions may have local state. Returns the result by pointer
          * rather than by reference since it can fail.
          *
          * @param functionName Name of the desired function.
-         * @return A pointer to the `FunctionFactory` registered under `functionName`, or null
+         * @return A pointer to the Function registered under `functionName`, or null
          *         if no function was registered under that name. The pointer is not owned
          *         by the caller.
          *
          * @internal ICU 75 technology preview
          * @deprecated This API is for technology preview only.
          */
-        FunctionFactory* getFunction(const FunctionName& formatterName) const;
+        Function* getFunction(const FunctionName& functionName) const;
         /**
          * The mutable Builder class allows each formatter and selector factory
          * to be initialized separately; calling its `build()` method yields an
@@ -138,18 +97,20 @@ namespace message2 {
               be re-thought.
               */
             /**
-             * Registers a formatter factory to a given formatter name.
+             * Registers a function to a given name.
              *
-             * @param formatterName Name of the formatter being registered.
-             * @param formatterFactory A pointer to a FormatterFactory object to use
-             *        for creating `formatterName` formatters. This argument is adopted.
+             * @param functionName Name of the formatter being registered.
+             * @param function A pointer to a Function object.
+             *                 This argument is adopted.
              * @param errorCode Input/output error code
              * @return A reference to the builder.
              *
-             * @internal ICU 75 technology preview
+             * @internal ICU 77 technology preview
              * @deprecated This API is for technology preview only.
              */
-            Builder& adoptFunction(const data_model::FunctionName& functionName, FunctionFactory* formatterFactory, UErrorCode& errorCode);
+            Builder& adoptFunction(const data_model::FunctionName& functionName,
+                                   Function* function,
+                                   UErrorCode& errorCode);
             /**
              * Creates an immutable `MFFunctionRegistry` object with the selectors and formatters
              * that were previously registered. The builder cannot be used after this call.
@@ -234,7 +195,7 @@ namespace message2 {
     class FunctionValue;
 
     /**
-     * Interface that formatter classes must implement.
+     * Interface that function handler classes must implement.
      *
      * @internal ICU 75 technology preview
      * @deprecated This API is for technology preview only.
@@ -242,22 +203,39 @@ namespace message2 {
     class U_I18N_API Function : public UObject {
     public:
         // Adopts its argument
-        virtual FunctionValue* call(FunctionValue*, FunctionOptions&&);
+        virtual FunctionValue* call(FunctionValue*, FunctionOptions&&, UErrorCode&) = 0;
         virtual ~Function();
     }; // class Function
 
     class U_I18N_API FunctionValue : public UObject {
         public:
-            virtual UnicodeString formatToString(UErrorCode&) const = 0;
-            virtual const Formattable& getOperand() const = 0;
-            virtual const FunctionOptions& getResolvedOptions() const = 0;
+            virtual UnicodeString formatToString(UErrorCode& status) const {
+                if (U_SUCCESS(status)) {
+                    status = U_MF_FORMATTING_ERROR;
+                }
+                return {};
+            }
+            virtual const Formattable& getOperand() const { return operand; }
+            // `this` can't be used after calling this method
+            virtual FunctionOptions getResolvedOptions() { return std::move(opts); }
+            virtual UBool isSelectable() const { return false; }
             virtual void selectKeys(const UnicodeString* keys,
                                     int32_t keysLen,
                                     UnicodeString* prefs,
                                     int32_t& prefsLen,
-                                    UErrorCode& status) = 0;
-            FunctionValue(FormattedPlaceholder&&, FunctionOptions&&);
-            FunctionValue();
+                                    UErrorCode& status) {
+                (void) keys;
+                (void) keysLen;
+                (void) prefs;
+                (void) prefsLen;
+                if (U_SUCCESS(status)) {
+                    status = U_MF_SELECTOR_ERROR;
+                }
+            }
+            virtual ~FunctionValue();
+         protected:
+            Formattable operand;
+            FunctionOptions opts;
     }; // class FunctionValue
 
 
