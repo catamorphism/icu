@@ -318,6 +318,9 @@ void TestMessageFormat2::jsonTestsFromFiles(IcuTestErrorCode& errorCode) {
     // TODO: Delete this file after https://github.com/unicode-org/message-format-wg/pull/904
     // lands and the tests here are updated from the spec repo
     runTestsFromJsonFile(*this, "normalization.json", errorCode);
+    // TODO: https://github.com/unicode-org/message-format-wg/pull/902 will
+    // move the bidi tests into the spec
+    runTestsFromJsonFile(*this, "bidi.json", errorCode);
     runTestsFromJsonFile(*this, "more-functions.json", errorCode);
     runTestsFromJsonFile(*this, "valid-tests.json", errorCode);
     runTestsFromJsonFile(*this, "resolution-errors.json", errorCode);
