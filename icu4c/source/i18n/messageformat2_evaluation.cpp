@@ -190,13 +190,16 @@ PrioritizedVariant::~PrioritizedVariant() {}
         errors.checkErrors(status);
     }
 
-    const Formattable* MessageContext::getGlobal(const VariableName& v, UErrorCode& errorCode) const {
-       return arguments.getArgument(v, errorCode);
+    const Formattable* MessageContext::getGlobal(const MessageFormatter& context,
+                                                 const VariableName& v,
+                                                 UErrorCode& errorCode) const {
+       return arguments.getArgument(context, v, errorCode);
     }
 
     MessageContext::MessageContext(const MessageArguments& args,
                                    const StaticErrors& e,
                                    UErrorCode& status) : arguments(args), errors(e, status) {}
+
     MessageContext::~MessageContext() {}
 
 } // namespace message2
