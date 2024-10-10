@@ -7,8 +7,10 @@
 
 #if !UCONFIG_NO_MF2
 
+#include "unicode/messageformat2.h"
 #include "unicode/messageformat2_arguments.h"
 #include "unicode/messageformat2_data_model_names.h"
+#include "messageformat2_evaluation.h"
 #include "uvector.h" // U_ASSERT
 
 U_NAMESPACE_BEGIN
@@ -22,11 +24,15 @@ namespace message2 {
 
     using Arguments = MessageArguments;
 
-    const Formattable* Arguments::getArgument(const VariableName& arg, UErrorCode& errorCode) const {
+    const Formattable* Arguments::getArgument(const MessageFormatter& context,
+                                              const VariableName& arg,
+                                              UErrorCode& errorCode) const {
         if (U_SUCCESS(errorCode)) {
             U_ASSERT(argsLen == 0 || arguments.isValid());
             for (int32_t i = 0; i < argsLen; i++) {
-                if (argumentNames[i] == arg) {
+                UnicodeString normalized = context.normalizeNFC(argumentNames[i]);
+                // arg already assumed to be normalized
+                if (normalized == arg) {
                     return &arguments[i];
                 }
             }

@@ -56,13 +56,18 @@ namespace message2 {
                                         // an explicit declaration
     }; // class TypeEnvironment
 
+    class MessageFormatter;
+
     // Checks a data model for semantic errors
     // (Errors are defined in https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md       )
     class Checker {
     public:
         void check(UErrorCode&);
-        Checker(const MFDataModel& m, StaticErrors& e) : dataModel(m), errors(e) {}
+        Checker(const MFDataModel& d, StaticErrors& e, const MessageFormatter& mf)
+            : dataModel(d), errors(e), context(mf) {}
     private:
+
+        UnicodeString normalizeNFC(const Key&) const;
 
         void requireAnnotated(const TypeEnvironment&, const Expression&, UErrorCode&);
         void addFreeVars(TypeEnvironment& t, const Operand&, UErrorCode&);
@@ -78,6 +83,9 @@ namespace message2 {
         void check(const Pattern&);
         const MFDataModel& dataModel;
         StaticErrors& errors;
+
+        // Used for NFC normalization
+        const MessageFormatter& context;
     }; // class Checker
 
 } // namespace message2

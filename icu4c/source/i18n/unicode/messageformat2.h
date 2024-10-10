@@ -20,6 +20,7 @@
 #include "unicode/messageformat2_arguments.h"
 #include "unicode/messageformat2_data_model.h"
 #include "unicode/messageformat2_function_registry.h"
+#include "unicode/normalizer2.h"
 #include "unicode/unistr.h"
 
 #ifndef U_HIDE_DEPRECATED_API
@@ -325,6 +326,8 @@ namespace message2 {
 
     private:
         friend class Builder;
+        friend class Checker;
+        friend class MessageArguments;
         friend class MessageContext;
 
         MessageFormatter(const MessageFormatter::Builder& builder, UErrorCode &status);
@@ -352,6 +355,9 @@ namespace message2 {
         void resolvePreferences(MessageContext&, UVector&, UVector&, UErrorCode&) const;
 
         // Formatting methods
+
+        // Used for normalizing variable names and keys for comparison
+        UnicodeString normalizeNFC(const UnicodeString&) const;
         [[nodiscard]] FormattedPlaceholder formatLiteral(const data_model::Literal&) const;
         void formatPattern(MessageContext&, const Environment&, const data_model::Pattern&, UErrorCode&, UnicodeString&) const;
         // Formats a call to a formatting function
@@ -445,6 +451,10 @@ namespace message2 {
         // formatting methods return best-effort output.
         // The default is false.
         bool signalErrors = false;
+
+        // Used for implementing normalizeNFC()
+        const Normalizer2* nfcNormalizer = nullptr;
+
     }; // class MessageFormatter
 
 } // namespace message2
