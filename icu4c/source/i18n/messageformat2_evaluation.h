@@ -14,6 +14,7 @@
  * \file
  * \brief C++ API: Formats messages using the draft MessageFormat 2.0.
  */
+#if !UCONFIG_NO_NORMALIZATION
 
 #if !UCONFIG_NO_FORMATTING
 
@@ -205,6 +206,8 @@ U_NAMESPACE_END
 #endif /* #if !UCONFIG_NO_MF2 */
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
+
+#endif /* #if !UCONFIG_NO_NORMALIZATION */
 
 #endif /* U_SHOW_CPLUSPLUS_API */
 
