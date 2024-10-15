@@ -251,10 +251,10 @@ StandardFunctions::NumberFactory::create(bool isInteger,
 }
 
 Function*
-StandardFunctions::NumberFactory::createFunction(const Locale& locale, UErrorCode& errorCode) {
+StandardFunctions::NumberFactory::createFunction(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
-    Number* result = new Number(locale, isInteger);
+    Number* result = new Number(isInteger);
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
@@ -274,8 +274,9 @@ StandardFunctions::Number::number(const Locale& loc, UErrorCode& success) {
 /* static */ StandardFunctions::Number*
 StandardFunctions::Number::create(const Locale& loc, bool isInteger, UErrorCode& success) {
     NULL_ON_ERROR(success);
+    (void) loc;
 
-    LocalPointer<Number> result(new Number(loc, isInteger));
+    LocalPointer<Number> result(new Number(isInteger));
     if (!result.isValid()) {
         success = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
@@ -283,11 +284,12 @@ StandardFunctions::Number::create(const Locale& loc, bool isInteger, UErrorCode&
     return result.orphan();
 }
 
-FunctionValue* StandardFunctions::Number::call(FunctionValue& operand,
+FunctionValue* StandardFunctions::Number::call(const FunctionContext& context,
+                                               FunctionValue& operand,
                                                FunctionOptions&& options,
                                                UErrorCode& errorCode) {
     LocalPointer<NumberValue>
-        val(new NumberValue(*this, operand, std::move(options), errorCode));
+        val(new NumberValue(*this, context, operand, std::move(options), errorCode));
     if (val.isValid()) {
         return val.orphan();
     }
@@ -296,6 +298,7 @@ FunctionValue* StandardFunctions::Number::call(FunctionValue& operand,
 }
 
 /* static */ number::LocalizedNumberFormatter StandardFunctions::formatterForOptions(const Number& number,
+                                                                                     const Locale& locale,
                                                                                      const FunctionOptions& opts,
                                                                                      UErrorCode& status) {
     number::UnlocalizedNumberFormatter nf;
@@ -438,7 +441,7 @@ FunctionValue* StandardFunctions::Number::call(FunctionValue& operand,
             }
         }
     }
-    return nf.locale(number.locale);
+    return nf.locale(locale);
 }
 
 static double parseNumberLiteral(const UnicodeString& inputStr, UErrorCode& errorCode) {
@@ -499,13 +502,13 @@ int32_t StandardFunctions::Number::digitSizeOption(const FunctionOptions& opts,
         UnicodeString formatted = opt->formatToString(localStatus);
         int64_t val = 0;
         if (U_SUCCESS(localStatus)) {
-            val = getInt64Value(locale, Formattable(formatted), localStatus);
+            val = getInt64Value(Locale("en-US"), Formattable(formatted), localStatus);
         }
         if (U_FAILURE(localStatus)) {
             localStatus = U_ZERO_ERROR;
         }
         // Next try the operand
-        val = getInt64Value(locale, opt->getOperand(), localStatus);
+        val = getInt64Value(Locale("en-US"), opt->getOperand(), localStatus);
         if (U_SUCCESS(localStatus)) {
             return static_cast<int32_t>(val);
         }
@@ -557,6 +560,7 @@ bool StandardFunctions::Number::usePercent(const FunctionOptions& opts) const {
 }
 
 StandardFunctions::NumberValue::NumberValue(const Number& parent,
+                                            const FunctionContext& context,
                                             FunctionValue& arg,
                                             FunctionOptions&& options,
                                             UErrorCode& errorCode) {
@@ -567,12 +571,12 @@ StandardFunctions::NumberValue::NumberValue(const Number& parent,
         return;
     }
 
-    locale = parent.locale;
+    locale = context.getLocale();
     opts = options.mergeOptions(arg.getResolvedOptions(), errorCode);
     operand = arg.getOperand();
 
     number::LocalizedNumberFormatter realFormatter;
-    realFormatter = formatterForOptions(parent, opts, errorCode);
+    realFormatter = formatterForOptions(parent, locale, opts, errorCode);
 
     if (U_SUCCESS(errorCode)) {
         switch (operand.getType()) {
@@ -765,10 +769,10 @@ StandardFunctions::DateTimeFactory::create(DateTimeFactory::DateTimeType type,
 }
 
 Function*
-StandardFunctions::DateTimeFactory::createFunction(const Locale& locale, UErrorCode& errorCode) {
+StandardFunctions::DateTimeFactory::createFunction(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
-    DateTime* result = new DateTime(locale, type);
+    DateTime* result = new DateTime(type);
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
@@ -776,12 +780,11 @@ StandardFunctions::DateTimeFactory::createFunction(const Locale& locale, UErrorC
 }
 
 /* static */ StandardFunctions::DateTime*
-StandardFunctions::DateTime::create(const Locale& loc,
-                                    DateTimeFactory::DateTimeType type,
+StandardFunctions::DateTime::create(DateTimeFactory::DateTimeType type,
                                     UErrorCode& success) {
     NULL_ON_ERROR(success);
 
-    LocalPointer<DateTime> result(new DateTime(loc, type));
+    LocalPointer<DateTime> result(new DateTime(type));
     if (!result.isValid()) {
         success = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
@@ -790,10 +793,13 @@ StandardFunctions::DateTime::create(const Locale& loc,
 }
 
 FunctionValue*
-StandardFunctions::DateTime::call(FunctionValue& val, FunctionOptions&& opts, UErrorCode& errorCode) {
+StandardFunctions::DateTime::call(const FunctionContext& context,
+                                  FunctionValue& val,
+                                  FunctionOptions&& opts,
+                                  UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
-    auto result = new DateTimeValue(locale, type, val, std::move(opts), errorCode);
+    auto result = new DateTimeValue(type, context, val, std::move(opts), errorCode);
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
@@ -829,8 +835,8 @@ UnicodeString StandardFunctions::DateTimeValue::formatToString(UErrorCode& statu
     return formattedDate;
 }
 
-StandardFunctions::DateTimeValue::DateTimeValue(const Locale& locale,
-                                                DateTimeFactory::DateTimeType type,
+StandardFunctions::DateTimeValue::DateTimeValue(DateTimeFactory::DateTimeType type,
+                                                const FunctionContext& context,
                                                 FunctionValue& val,
                                                 FunctionOptions&& options,
                                                 UErrorCode& errorCode) {
@@ -842,6 +848,7 @@ StandardFunctions::DateTimeValue::DateTimeValue(const Locale& locale,
         return;
     }
 
+    const Locale& locale = context.getLocale();
     operand = val.getOperand();
     opts = options.mergeOptions(val.getResolvedOptions(), errorCode);
 
@@ -1099,10 +1106,10 @@ StandardFunctions::StringFactory::string(UErrorCode& success) {
 }
 
 /* static */ StandardFunctions::String*
-StandardFunctions::String::string(const Locale& loc, UErrorCode& success) {
+StandardFunctions::String::string(UErrorCode& success) {
     NULL_ON_ERROR(success);
 
-    LocalPointer<String> result(new String(loc));
+    LocalPointer<String> result(new String());
     if (!result.isValid()) {
         success = U_MEMORY_ALLOCATION_ERROR;
         return nullptr;
@@ -1111,21 +1118,27 @@ StandardFunctions::String::string(const Locale& loc, UErrorCode& success) {
 }
 
 Function*
-StandardFunctions::StringFactory::createFunction(const Locale& locale, UErrorCode& errorCode) {
+StandardFunctions::StringFactory::createFunction(UErrorCode& errorCode) {
     NULL_ON_ERROR(errorCode);
 
-    String* result = new String(locale);
+    String* result = new String();
     if (result == nullptr) {
         errorCode = U_MEMORY_ALLOCATION_ERROR;
     }
     return result;
 }
 
-extern UnicodeString formattableToString(const Locale&, const Formattable&, UErrorCode&);
+extern UnicodeString formattableToString(const Locale&,
+                                         const UBiDiDirection,
+                                         const Formattable&,
+                                         UErrorCode&);
 
 FunctionValue*
-StandardFunctions::String::call(FunctionValue& val, FunctionOptions&& opts, UErrorCode& errorCode) {
-    return new StringValue(locale, val, std::move(opts), errorCode);
+StandardFunctions::String::call(const FunctionContext& context,
+                                FunctionValue& val,
+                                FunctionOptions&& opts,
+                                UErrorCode& errorCode) {
+    return new StringValue(context, val, std::move(opts), errorCode);
 }
 
 UnicodeString StandardFunctions::StringValue::formatToString(UErrorCode& errorCode) const {
@@ -1134,7 +1147,7 @@ UnicodeString StandardFunctions::StringValue::formatToString(UErrorCode& errorCo
     return formattedString;
 }
 
-StandardFunctions::StringValue::StringValue(const Locale& locale,
+StandardFunctions::StringValue::StringValue(const FunctionContext& context,
                                             FunctionValue& val,
                                             FunctionOptions&& options,
                                             UErrorCode& status) {
@@ -1142,7 +1155,7 @@ StandardFunctions::StringValue::StringValue(const Locale& locale,
     operand = val.getOperand();
     opts = std::move(options); // No options
     // Convert to string
-    formattedString = formattableToString(locale, operand, status);
+    formattedString = formattableToString(context.getLocale(), context.getDirection(), operand, status);
 }
 
 void StandardFunctions::StringValue::selectKeys(const UnicodeString* keys,
