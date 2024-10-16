@@ -122,22 +122,22 @@ namespace message2 {
         // Set up the standard function registry
         MFFunctionRegistry::Builder standardFunctionsBuilder(success);
 
-        LocalPointer<FunctionFactory> dateTime(StandardFunctions::DateTimeFactory::dateTime(success));
-        LocalPointer<FunctionFactory> date(StandardFunctions::DateTimeFactory::date(success));
-        LocalPointer<FunctionFactory> time(StandardFunctions::DateTimeFactory::time(success));
-        LocalPointer<FunctionFactory> number(StandardFunctions::NumberFactory::number(success));
-        LocalPointer<FunctionFactory> integer(StandardFunctions::NumberFactory::integer(success));
-        LocalPointer<FunctionFactory> string(StandardFunctions::StringFactory::string(success));
+        LocalPointer<Function> dateTime(StandardFunctions::DateTime::dateTime(success));
+        LocalPointer<Function> date(StandardFunctions::DateTime::date(success));
+        LocalPointer<Function> time(StandardFunctions::DateTime::time(success));
+        LocalPointer<Function> number(StandardFunctions::Number::number(success));
+        LocalPointer<Function> integer(StandardFunctions::Number::integer(success));
+        LocalPointer<Function> string(StandardFunctions::String::string(success));
         CHECK_ERROR(success);
-        standardFunctionsBuilder.adoptFunctionFactory(FunctionName(UnicodeString("datetime")),
+        standardFunctionsBuilder.adoptFunction(FunctionName(UnicodeString("datetime")),
                                                       dateTime.orphan(), success)
-            .adoptFunctionFactory(FunctionName(UnicodeString("date")), date.orphan(), success)
-            .adoptFunctionFactory(FunctionName(UnicodeString("time")), time.orphan(), success)
-            .adoptFunctionFactory(FunctionName(UnicodeString("number")),
+            .adoptFunction(FunctionName(UnicodeString("date")), date.orphan(), success)
+            .adoptFunction(FunctionName(UnicodeString("time")), time.orphan(), success)
+            .adoptFunction(FunctionName(UnicodeString("number")),
                                   number.orphan(), success)
-            .adoptFunctionFactory(FunctionName(UnicodeString("integer")),
+            .adoptFunction(FunctionName(UnicodeString("integer")),
                                   integer.orphan(), success)
-            .adoptFunctionFactory(FunctionName(UnicodeString("string")),
+            .adoptFunction(FunctionName(UnicodeString("string")),
                                   string.orphan(), success);
         CHECK_ERROR(success);
         standardMFFunctionRegistry = standardFunctionsBuilder.build();
@@ -225,9 +225,9 @@ namespace message2 {
         return standardMFFunctionRegistry.hasFunction(functionName);
     }
 
-    FunctionFactory*
-    MessageFormatter::lookupFunctionFactory(const FunctionName& functionName,
-                                            UErrorCode& status) const {
+    Function*
+    MessageFormatter::lookupFunction(const FunctionName& functionName,
+                                     UErrorCode& status) const {
         NULL_ON_ERROR(status);
 
         if (isBuiltInFunction(functionName)) {
@@ -235,7 +235,7 @@ namespace message2 {
         }
         if (hasCustomMFFunctionRegistry()) {
             const MFFunctionRegistry& customMFFunctionRegistry = getCustomMFFunctionRegistry();
-            FunctionFactory* function = customMFFunctionRegistry.getFunction(functionName);
+            Function* function = customMFFunctionRegistry.getFunction(functionName);
             if (function != nullptr) {
                 return function;
             }
