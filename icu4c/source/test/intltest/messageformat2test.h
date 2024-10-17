@@ -114,7 +114,7 @@ class Person : public FormattableObject {
 
 class PersonNameFunction : public Function {
     public:
-    FunctionValue* call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
+    LocalPointer<FunctionValue> call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
     virtual ~PersonNameFunction();
     PersonNameFunction() {}
 };
@@ -145,7 +145,7 @@ private:
 
 class GrammarCasesFunction : public Function {
     public:
-    FunctionValue* call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
+    LocalPointer<FunctionValue> call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
     static MFFunctionRegistry customRegistry(UErrorCode&);
 };
 
@@ -164,7 +164,7 @@ class GrammarCasesValue : public FunctionValue {
 
 class ListFunction : public Function {
     public:
-    FunctionValue* call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
+    LocalPointer<FunctionValue> call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
     static MFFunctionRegistry customRegistry(UErrorCode&);
     ListFunction() {}
     virtual ~ListFunction();
@@ -215,7 +215,7 @@ class AdjectiveValue : public FunctionValue {
 
 class ResourceManager : public Function {
     public:
-    FunctionValue* call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
+    LocalPointer<FunctionValue> call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
     static MFFunctionRegistry customRegistry(UErrorCode&);
     static Hashtable* properties(UErrorCode&);
     static UnicodeString propertiesAsString(const Hashtable&);
@@ -240,14 +240,14 @@ class ResourceManagerValue : public FunctionValue {
 
 class NounFunction : public Function {
     public:
-    FunctionValue* call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
+    LocalPointer<FunctionValue> call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
     NounFunction() { }
     virtual ~NounFunction();
 };
 
 class AdjectiveFunction : public Function {
     public:
-    FunctionValue* call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
+    LocalPointer<FunctionValue> call(const FunctionContext&, FunctionValue&, FunctionOptions&&, UErrorCode&) override;
     AdjectiveFunction() { }
     virtual ~AdjectiveFunction();
 };

@@ -40,7 +40,7 @@ namespace message2 {
             static DateTime* time(UErrorCode&);
             static DateTime* dateTime(UErrorCode&);
 
-            FunctionValue* call(const FunctionContext& context,
+            LocalPointer<FunctionValue> call(const FunctionContext& context,
                                 FunctionValue& operand,
                                 FunctionOptions&& options,
                                 UErrorCode& errorCode) override;
@@ -69,7 +69,7 @@ namespace message2 {
             static Number* integer(UErrorCode& success);
             static Number* number( UErrorCode& success);
 
-            FunctionValue* call(const FunctionContext& context,
+            LocalPointer<FunctionValue> call(const FunctionContext& context,
                                 FunctionValue& operand,
                                 FunctionOptions&& options,
                                 UErrorCode& errorCode) override;
@@ -147,7 +147,7 @@ namespace message2 {
 
         class String : public Function {
         public:
-            FunctionValue* call(const FunctionContext& context,
+            LocalPointer<FunctionValue> call(const FunctionContext& context,
                                 FunctionValue& val,
                                 FunctionOptions&& opts,
                                 UErrorCode& errorCode) override;
