@@ -193,7 +193,8 @@ UnicodeSet* initNameStartChars(UErrorCode& status) {
     result->add(0x00F8, 0x02FF);
     result->add(0x0370, 0x037D);
     result->add(0x037F, 0x061B);
-    result->add(0x061D, 0x200D);
+    result->add(0x061D, 0x1FFF);
+    result->add(0x200C, 0x200D);
     result->add(0x2070, 0x218F);
     result->add(0x2C00, 0x2FEF);
     result->add(0x3001, 0xD7FF);
