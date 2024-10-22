@@ -280,6 +280,6 @@ You should be able to use your preferred IDE (Eclipse, IntelliJ, Visual Studio C
 
 ### ICU4C
 
-Documentation for ICU4C in MF2 is being developed at [messageformat.dev](https://messageformat.dev/docs/integration/cpp/),
-which also contains [MF2 syntax documentation](https://messageformat.dev/docs/quick-start/)
+Some helpful documentation for ICU4C in MF2 is being developed at [messageformat.dev](https://messageformat.dev/docs/integration/cpp/),
+as well an unofficial [MF2 syntax documentation](https://messageformat.dev/docs/quick-start/)
 and an interactive [playground](https://messageformat.dev/playground/) for testing messages.
