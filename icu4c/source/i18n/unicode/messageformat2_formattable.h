@@ -450,25 +450,19 @@ class U_I18N_API ResolvedFunctionOption : public UObject {
   private:
 
     /* const */ UnicodeString name;
-    // This is a pointer because FunctionValue is an abstract class,
-    // and is a raw pointer because FunctionValue is forward-declared
-    /* const */ FunctionValue* value;
+    // owned by the global environment
+    const FunctionValue* value;
 
   public:
       const UnicodeString& getName() const { return name; }
-      FunctionValue* getValue() const { return value; }
+      const FunctionValue& getValue() const { return *value; }
       // Adopts `f`
-      ResolvedFunctionOption(const UnicodeString& n, FunctionValue* f);
+      ResolvedFunctionOption(const UnicodeString& n, FunctionValue& f);
       ResolvedFunctionOption() {}
       ResolvedFunctionOption(ResolvedFunctionOption&&);
-      ResolvedFunctionOption& operator=(ResolvedFunctionOption&& other) noexcept {
-          name = std::move(other.name);
-          value = std::move(other.value);
-          other.value = nullptr;
-          return *this;
-    }
-    ResolvedFunctionOption& operator=(const ResolvedFunctionOption& other) = delete;
-    ResolvedFunctionOption(const ResolvedFunctionOption&) = delete;
+      ResolvedFunctionOption& operator=(ResolvedFunctionOption&& other) = default;
+    ResolvedFunctionOption& operator=(const ResolvedFunctionOption& other) = default;
+    ResolvedFunctionOption(const ResolvedFunctionOption&) = default;
     virtual ~ResolvedFunctionOption();
 }; // class ResolvedFunctionOption
 #endif
@@ -485,7 +479,7 @@ using FunctionOptionsMap = std::map<UnicodeString, const message2::FunctionValue
 /**
  * Structure encapsulating named options passed to a custom selector or formatter.
  *
- * This class is immutable and movable but not copyable.
+ * This class is immutable and movable. It is not copyable.
  *
  * @internal ICU 75 technology preview
  * @deprecated This API is for technology preview only.
@@ -507,7 +501,7 @@ class U_I18N_API FunctionOptions : public UObject {
         FunctionOptionsMap result;
         for (int32_t i = 0; i < functionOptionsLen; i++) {
             ResolvedFunctionOption& opt = options[i];
-            result[opt.getName()] = opt.getValue();
+            result[opt.getName()] = &opt.getValue();
         }
         return result;
     }
@@ -515,14 +509,13 @@ class U_I18N_API FunctionOptions : public UObject {
      * Returns a new FunctionOptions object containing all the key-value
      * pairs from `this` and `other`. When `this` and `other` define options with
      * the same name, `this` takes preference.
-     * `this` cannot be used after calling this method.
      *
      * @return The result of merging `this` and `other`.
      *
      * @internal ICU 77 technology preview
      * @deprecated This API is for technology preview only.
      */
-    FunctionOptions mergeOptions(FunctionOptions&& other, UErrorCode&);
+    FunctionOptions mergeOptions(const FunctionOptions& other, UErrorCode&) const;
     /**
      * Default constructor.
      * Returns an empty mapping.
@@ -555,13 +548,12 @@ class U_I18N_API FunctionOptions : public UObject {
      */
     FunctionOptions(FunctionOptions&&);
     /**
-     * Copy constructor.
+     * Copy assignment operator.
      *
      * @internal ICU 75 technology preview
      * @deprecated This API is for technology preview only.
      */
     FunctionOptions& operator=(const FunctionOptions&) = delete;
-
  private:
     friend class MessageFormatter;
     friend class StandardFunctions;

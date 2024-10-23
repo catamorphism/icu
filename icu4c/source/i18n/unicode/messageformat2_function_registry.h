@@ -302,8 +302,8 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             virtual LocalPointer<FunctionValue> call(const FunctionContext& context,
-                                                     FunctionValue& operand,
-                                                     FunctionOptions&& options,
+                                                     const FunctionValue& operand,
+                                                     const FunctionOptions& options,
                                                      UErrorCode& status) = 0;
             /**
              * Destructor.
@@ -354,18 +354,6 @@ namespace message2 {
              * @deprecated This API is for technology preview only.
              */
             virtual const Formattable& getOperand() const { return operand; }
-            /**
-             * Returns the resolved options that were used to construct this value.
-             * `this` may not be used after calling this method. This overload
-             * is provided so that mergeOptions(), which passes its `this` argument
-             * by move, can be called.
-             *
-             * @return The resolved options for this value.
-             *
-             * @internal ICU 77 technology preview
-             * @deprecated This API is for technology preview only.
-             */
-            virtual FunctionOptions getResolvedOptions() { return std::move(opts); }
             /**
              * Returns a reference to the resolved options for this value.
              *
