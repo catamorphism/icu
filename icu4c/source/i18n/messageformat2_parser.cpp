@@ -2022,7 +2022,7 @@ void Parser::parseSelectors(UErrorCode& status) {
         return;
     }
 
-    while (isWhitespace(peek()) || isBidiControl(peek()) isKeyStart(peek())) {
+    while (isWhitespace(peek()) || isBidiControl(peek()) || isKeyStart(peek())) {
         parseOptionalWhitespace();
         // Restore the precondition.
         // Trailing whitespace is allowed.

@@ -54,7 +54,7 @@
     {
         "comment": "match-statement s variant *(o variant)",
         "src": [".local $x = {1 :number}\n",
-                ".match {$x}\n",
+                ".match $x\n",
                 "1 {{one}}\n",
                 "\u061C * {{other}}"],
         "exp": "one"
@@ -62,7 +62,7 @@
     {
         "comment": "match-statement s variant *(o variant)",
         "src": [".local $x = {1 :number}",
-                ".match {$x} \u061c",
+                ".match $x \u061c",
                 "1 {{one}}",
                 "* {{other}}"],
         "exp": "one"
@@ -70,7 +70,7 @@
     {
         "comment": "match-statement s variant *(o variant)",
         "src": [".local $x = {1 :number}",
-                ".match {$x}\u061c",
+                ".match $x \u061c",
                 "1 {{one}}",
                 "* {{other}}"],
         "exp": "one"
@@ -78,7 +78,7 @@
     {
         "comment": "variant = key *(s key) quoted-pattern",
         "src": [".local $x = {1 :number} .local $y = {$x :number}",
-                ".match {$x} {$y}",
+                ".match $x $y\n",
                 "1 \u200E 1 {{one}}",
                 "* * {{other}}"],
         "exp": "one"
@@ -86,7 +86,7 @@
     {
         "comment": "variant = key *(s key) quoted-pattern",
         "src": [".local $x = {1 :number} .local $y = {$x :number}",
-                ".match {$x} {$y}",
+                ".match $x $y\n",
                 "1\u200E 1 {{one}}",
                 "* * {{other}}"],
         "exp": "one"
