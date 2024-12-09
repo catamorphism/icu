@@ -2039,6 +2039,10 @@ void Parser::parseSelectors(UErrorCode& status) {
         // Because if we don't check it here, the `isWhitespace()` call in
         // the loop head will read off the end of the input string.
         CHECK_END_OF_INPUT
+
+        if (errors.hasSyntaxError() || U_FAILURE(status)) {
+            break;
+        }
     }
 }
 
