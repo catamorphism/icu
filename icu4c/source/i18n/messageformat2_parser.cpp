@@ -1931,7 +1931,7 @@ Pattern Parser::parseSimpleMessage(UErrorCode& status) {
                 break;
             }
             // Don't loop infinitely
-            if (errors.hasSyntaxError()) {
+            if (errors.hasSyntaxError() || U_FAILURE(status)) {
                 break;
             }
         }
