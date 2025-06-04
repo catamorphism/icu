@@ -162,13 +162,13 @@ namespace message2 {
 
         class Plural : public Selector {
         public:
-            void selectKey(FormattedPlaceholder&& val,
-                           FunctionOptions&& options,
-                           const UnicodeString* keys,
-                           int32_t keysLen,
-                           UnicodeString* prefs,
-                           int32_t& prefsLen,
-                           UErrorCode& status) const override;
+            bool match(FormattedPlaceholder&& toFormat,
+                       FunctionOptions&& functionOptions,
+                       const UnicodeString& key,
+                       UErrorCode& errorCode) const override;
+            SelectorCompareResult compare(const UnicodeString& key1,
+                                          const UnicodeString& key2,
+                                          UErrorCode& errorCode) const override;
             virtual ~Plural();
 
         private:
@@ -199,13 +199,13 @@ namespace message2 {
 
         class TextSelector : public Selector {
         public:
-            void selectKey(FormattedPlaceholder&& val,
-                           FunctionOptions&& options,
-                           const UnicodeString* keys,
-                           int32_t keysLen,
-                           UnicodeString* prefs,
-                           int32_t& prefsLen,
-                           UErrorCode& status) const override;
+            bool match(FormattedPlaceholder&& arg,
+                       FunctionOptions&& functionOptions,
+                       const UnicodeString& key,
+                       UErrorCode& errorCode) const override;
+            SelectorCompareResult compare(const UnicodeString& key1,
+                                          const UnicodeString& key2,
+                                          UErrorCode& errorCode) const override;
             virtual ~TextSelector();
 
         private:
@@ -256,13 +256,13 @@ namespace message2 {
 
         class TestSelect : public Selector {
         public:
-            void selectKey(FormattedPlaceholder&& val,
-                           FunctionOptions&& options,
-                           const UnicodeString* keys,
-                           int32_t keysLen,
-                           UnicodeString* prefs,
-                           int32_t& prefsLen,
-                           UErrorCode& status) const override;
+            bool match(FormattedPlaceholder&& arg,
+                       FunctionOptions&& options,
+                       const UnicodeString& key,
+                       UErrorCode& errorCode) const override;
+            SelectorCompareResult compare(const UnicodeString& key1,
+                                          const UnicodeString& key2,
+                                          UErrorCode& errorCode) const override;
             virtual ~TestSelect();
 
         private:

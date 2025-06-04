@@ -377,251 +377,58 @@ void MessageFormatter::resolveSelectors(MessageContext& context, const Environme
     }
 }
 
-// See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-preferences
-// `keys` and `matches` are vectors of strings
-void MessageFormatter::matchSelectorKeys(const UVector& keys,
-                                         MessageContext& context,
-					 InternalValue* rv, // Does not adopt `rv`
-					 UVector& keysOut,
-					 UErrorCode& status) const {
-    CHECK_ERROR(status);
-
-    if (U_FAILURE(status)) {
-        // Return an empty list of matches
-        status = U_ZERO_ERROR;
-        return;
+bool MessageFormatter::selectorsMatch(MessageContext& context, const UVector& selectorList, const SelectorKeys& keys, UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode))
+        return false;
+    int32_t len = selectorList.size(); // Guaranteed by earlier check to be the same length as keys
+    const Key* keyList = keys.getKeysInternal();
+    for (int32_t i = 0; i < len; i++) {
+        if (keyList[i].isWildcard())
+            continue;
+        UnicodeString k = StandardFunctions::normalizeNFC(keyList[i].asLiteral().unquoted());
+        InternalValue* sel = ((InternalValue*) selectorList[i]);
+        bool value = sel->matchSelector(context.getErrors(), k, errorCode);
+        if (U_FAILURE(errorCode))
+            return false;
+        if (!value)
+            return false;
     }
-
-    UErrorCode savedStatus = status;
-
-    // Convert `keys` to an array
-    int32_t keysLen = keys.size();
-    UnicodeString* keysArr = new UnicodeString[keysLen];
-    if (keysArr == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-        return;
-    }
-    for (int32_t i = 0; i < keysLen; i++) {
-        const UnicodeString* k = static_cast<UnicodeString*>(keys[i]);
-        U_ASSERT(k != nullptr);
-        keysArr[i] = *k;
-    }
-    LocalArray<UnicodeString> adoptedKeys(keysArr);
-
-    // Create an array to hold the output
-    UnicodeString* prefsArr = new UnicodeString[keysLen];
-    if (prefsArr == nullptr) {
-        status = U_MEMORY_ALLOCATION_ERROR;
-        return;
-    }
-    LocalArray<UnicodeString> adoptedPrefs(prefsArr);
-    int32_t prefsLen = 0;
-
-    // Call the selector
-    FunctionName name = rv->getFunctionName();
-    rv->forceSelection(context.getErrors(),
-                       adoptedKeys.getAlias(), keysLen,
-                       adoptedPrefs.getAlias(), prefsLen,
-                       status);
-
-    // Update errors
-    if (savedStatus != status) {
-        if (U_FAILURE(status)) {
-            status = U_ZERO_ERROR;
-            context.getErrors().setSelectorError(name, status);
-        } else {
-            // Ignore warnings
-            status = savedStatus;
-        }
-    }
-
-    CHECK_ERROR(status);
-
-    // Copy the resulting keys (if there was no error)
-    keysOut.removeAllElements();
-    for (int32_t i = 0; i < prefsLen; i++) {
-        UnicodeString* k = message2::create<UnicodeString>(std::move(prefsArr[i]), status);
-        if (k == nullptr) {
-            status = U_MEMORY_ALLOCATION_ERROR;
-            return;
-        }
-        keysOut.adoptElement(k, status);
-        CHECK_ERROR(status);
-    }
+    return true;
 }
 
-// See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#resolve-preferences
-// `res` is a vector of FormattedPlaceholders;
-// `pref` is a vector of vectors of strings
-void MessageFormatter::resolvePreferences(MessageContext& context, UVector& res, UVector& pref, UErrorCode &status) const {
-    CHECK_ERROR(status);
-
-    // 1. Let pref be a new empty list of lists of strings.
-    // (Implicit, since `pref` is an out-parameter)
-    UnicodeString ks;
-    LocalPointer<UnicodeString> ksP;
-    int32_t numVariants = dataModel.numVariants();
-    const Variant* variants = dataModel.getVariantsInternal();
-    // 2. For each index i in res
-    for (int32_t i = 0; i < res.size(); i++) {
-        // 2i. Let keys be a new empty list of strings.
-        LocalPointer<UVector> keys(createUVector(status));
-        CHECK_ERROR(status);
-        // 2ii. For each variant `var` of the message
-        for (int32_t variantNum = 0; variantNum < numVariants; variantNum++) {
-            const SelectorKeys& selectorKeys = variants[variantNum].getKeys();
-
-            // Note: Here, `var` names the key list of `var`,
-            // not a Variant itself
-            const Key* var = selectorKeys.getKeysInternal();
-            // 2ii(a). Let `key` be the `var` key at position i.
-            U_ASSERT(i < selectorKeys.len); // established by semantic check in formatSelectors()
-            const Key& key = var[i];
-            // 2ii(b). If `key` is not the catch-all key '*'
-            if (!key.isWildcard()) {
-                // 2ii(b)(a) Assert that key is a literal.
-                // (Not needed)
-                // 2ii(b)(b) Let `ks` be the resolved value of `key` in Unicode Normalization Form C.
-                ks = StandardFunctions::normalizeNFC(key.asLiteral().unquoted());
-                // 2ii(b)(c) Append `ks` as the last element of the list `keys`.
-                ksP.adoptInstead(create<UnicodeString>(std::move(ks), status));
-                CHECK_ERROR(status);
-                keys->adoptElement(ksP.orphan(), status);
-            }
-        }
-        // 2iii. Let `rv` be the resolved value at index `i` of `res`.
-        U_ASSERT(i < res.size());
-        InternalValue* rv = static_cast<InternalValue*>(res[i]);
-        // 2iv. Let matches be the result of calling the method MatchSelectorKeys(rv, keys)
-        LocalPointer<UVector> matches(createUVector(status));
-        matchSelectorKeys(*keys, context, std::move(rv), *matches, status);
-        // 2v. Append `matches` as the last element of the list `pref`
-        pref.adoptElement(matches.orphan(), status);
-    }
-}
-
-// `v` is assumed to be a vector of strings
-static int32_t vectorFind(const UVector& v, const UnicodeString& k) {
-    for (int32_t i = 0; i < v.size(); i++) {
-        if (*static_cast<UnicodeString*>(v[i]) == k) {
-            return i;
+// Returns: Better if keys1 is better than keys2;
+// Worse if keys1 is worse than keys2;
+// Same otherwise
+SelectorCompareResult MessageFormatter::selectorsCompare(MessageContext& context, const UVector& selectorList, const SelectorKeys& keys1, const SelectorKeys& keys2, UErrorCode& errorCode) const {
+    if (U_FAILURE(errorCode))
+        return { };
+    int32_t len = selectorList.size(); // Guaranteed by earlier check to be the same length as keys1 and keys2
+    const Key* keyList1 = keys1.getKeysInternal();
+    const Key* keyList2 = keys2.getKeysInternal();
+    for (int32_t i = 0; i < len; i++) {
+        // * is worse than any other key
+        if (keyList1[i].isWildcard() && (!keyList2[i].isWildcard()))
+            return SelectorCompareResult::Worse;
+        // Any other key is better than *
+        if (!keyList1[i].isWildcard() && keyList2[i].isWildcard())
+            return SelectorCompareResult::Better;
+        // If both are wildcards, compare the rest of the keys
+        if (keyList1[i].isWildcard())
+            continue;
+        UnicodeString k1 = StandardFunctions::normalizeNFC(keyList1[i].asLiteral().unquoted());
+        UnicodeString k2 = StandardFunctions::normalizeNFC(keyList2[i].asLiteral().unquoted());
+        InternalValue* sel = ((InternalValue*) selectorList[i]);
+        SelectorCompareResult result = sel->compareSelector(context.getErrors(), k1, k2, errorCode);
+        if (U_FAILURE(errorCode))
+            return { };
+        switch (result) {
+        case SelectorCompareResult::Same:
+            continue;
+        default:
+            return result;
         }
     }
-    return -1;
-}
-
-static UBool vectorContains(const UVector& v, const UnicodeString& k) {
-    return (vectorFind(v, k) != -1);
-}
-
-// See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#filter-variants
-// `pref` is a vector of vectors of strings. `vars` is a vector of PrioritizedVariants
-void MessageFormatter::filterVariants(const UVector& pref, UVector& vars, UErrorCode& status) const {
-    const Variant* variants = dataModel.getVariantsInternal();
-
-    // 1. Let `vars` be a new empty list of variants.
-    // (Not needed since `vars` is an out-parameter)
-    // 2. For each variant `var` of the message:
-    for (int32_t j = 0; j < dataModel.numVariants(); j++) {
-        const SelectorKeys& selectorKeys = variants[j].getKeys();
-        const Pattern& p = variants[j].getPattern();
-
-        // Note: Here, `var` names the key list of `var`,
-        // not a Variant itself
-        const Key* var = selectorKeys.getKeysInternal();
-        // 2i. For each index `i` in `pref`:
-        bool noMatch = false;
-        for (int32_t i = 0; i < pref.size(); i++) {
-            // 2i(a). Let `key` be the `var` key at position `i`.
-            U_ASSERT(i < selectorKeys.len);
-            const Key& key = var[i];
-            // 2i(b). If key is the catch-all key '*':
-            if (key.isWildcard()) {
-                // 2i(b)(a). Continue the inner loop on pref.
-                continue;
-            }
-            // 2i(c). Assert that `key` is a literal.
-            // (Not needed)
-            // 2i(d). Let `ks` be the resolved value of `key`.
-            UnicodeString ks = StandardFunctions::normalizeNFC(key.asLiteral().unquoted());
-            // 2i(e). Let `matches` be the list of strings at index `i` of `pref`.
-            const UVector& matches = *(static_cast<UVector*>(pref[i])); // `matches` is a vector of strings
-            // 2i(f). If `matches` includes `ks`
-            if (vectorContains(matches, ks)) {
-                // 2i(f)(a). Continue the inner loop on `pref`.
-                continue;
-            }
-            // 2i(g). Else:
-            // 2i(g)(a). Continue the outer loop on message variants.
-            noMatch = true;
-            break;
-        }
-        if (!noMatch) {
-            // Append `var` as the last element of the list `vars`.
-	    PrioritizedVariant* tuple = create<PrioritizedVariant>(PrioritizedVariant(-1, selectorKeys, p), status);
-            CHECK_ERROR(status);
-            vars.adoptElement(tuple, status);
-        }
-    }
-}
-
-// See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#sort-variants
-// Leaves the preferred variant as element 0 in `sortable`
-// Note: this sorts in-place, so `sortable` is just `vars`
-// `pref` is a vector of vectors of strings; `vars` is a vector of PrioritizedVariants
-void MessageFormatter::sortVariants(const UVector& pref, UVector& vars, UErrorCode& status) const {
-    CHECK_ERROR(status);
-
-// Note: steps 1 and 2 are omitted since we use `vars` as `sortable` (we sort in-place)
-    // 1. Let `sortable` be a new empty list of (integer, variant) tuples.
-    // (Not needed since `sortable` is an out-parameter)
-    // 2. For each variant `var` of `vars`
-    // 2i. Let tuple be a new tuple (-1, var).
-    // 2ii. Append `tuple` as the last element of the list `sortable`.
-
-    // 3. Let `len` be the integer count of items in `pref`.
-    int32_t len = pref.size();
-    // 4. Let `i` be `len` - 1.
-    int32_t i = len - 1;
-    // 5. While i >= 0:
-    while (i >= 0) {
-        // 5i. Let `matches` be the list of strings at index `i` of `pref`.
-        U_ASSERT(pref[i] != nullptr);
-	const UVector& matches = *(static_cast<UVector*>(pref[i])); // `matches` is a vector of strings
-        // 5ii. Let `minpref` be the integer count of items in `matches`.
-        int32_t minpref = matches.size();
-        // 5iii. For each tuple `tuple` of `sortable`:
-        for (int32_t j = 0; j < vars.size(); j++) {
-            U_ASSERT(vars[j] != nullptr);
-            PrioritizedVariant& tuple = *(static_cast<PrioritizedVariant*>(vars[j]));
-            // 5iii(a). Let matchpref be an integer with the value minpref.
-            int32_t matchpref = minpref;
-            // 5iii(b). Let `key` be the tuple variant key at position `i`.
-            const Key* tupleVariantKeys = tuple.keys.getKeysInternal();
-            U_ASSERT(i < tuple.keys.len); // Given by earlier semantic checking
-            const Key& key = tupleVariantKeys[i];
-            // 5iii(c) If `key` is not the catch-all key '*':
-            if (!key.isWildcard()) {
-                // 5iii(c)(a). Assert that `key` is a literal.
-                // (Not needed)
-                // 5iii(c)(b). Let `ks` be the resolved value of `key`.
-                UnicodeString ks = StandardFunctions::normalizeNFC(key.asLiteral().unquoted());
-                // 5iii(c)(c) Let matchpref be the integer position of ks in `matches`.
-                matchpref = vectorFind(matches, ks);
-                U_ASSERT(matchpref >= 0);
-            }
-            // 5iii(d) Set the `tuple` integer value as matchpref.
-            tuple.priority = matchpref;
-        }
-        // 5iv. Set `sortable` to be the result of calling the method SortVariants(`sortable`)
-        vars.sort(comparePrioritizedVariants, status);
-        CHECK_ERROR(status);
-        // 5v. Set `i` to be `i` - 1.
-        i--;
-    }
-    // The caller is responsible for steps 6 and 7
-    // 6. Let `var` be the `variant` element of the first element of `sortable`.
-    // 7. Select the pattern of `var`
+    return SelectorCompareResult::Same;
 }
 
 void MessageFormatter::formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const {
@@ -630,38 +437,33 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
     // See https://github.com/unicode-org/message-format-wg/blob/main/spec/formatting.md#pattern-selection
 
     // Resolve Selectors
-    // res is a vector of InternalValues
-    LocalPointer<UVector> res(createUVector(status));
+    // selectorList is a vector of InternalValues
+    LocalPointer<UVector> selectorList(createUVector(status));
     CHECK_ERROR(status);
-    resolveSelectors(context, env, status, *res);
-
-    // Resolve Preferences
-    // pref is a vector of vectors of strings
-    LocalPointer<UVector> pref(createUVector(status));
-    CHECK_ERROR(status);
-    resolvePreferences(context, *res, *pref, status);
-
-    // Filter Variants
-    // vars is a vector of PrioritizedVariants
-    LocalPointer<UVector> vars(createUVector(status));
-    CHECK_ERROR(status);
-    filterVariants(*pref, *vars, status);
-
-    // Sort Variants and select the final pattern
-    // Note: `sortable` in the spec is just `vars` here,
-    // which is sorted in-place
-    sortVariants(*pref, *vars, status);
-
+    resolveSelectors(context, env, status, *selectorList);
     CHECK_ERROR(status);
 
-    // 6. Let `var` be the `variant` element of the first element of `sortable`.
-    U_ASSERT(vars->size() > 0); // This should have been checked earlier (having 0 variants would be a data model error)
-    const PrioritizedVariant& var = *(static_cast<PrioritizedVariant*>(vars->elementAt(0)));
-    // 7. Select the pattern of `var`
-    const Pattern& pat = var.pat;
+    // Let bestVariant be undefined.
+    const Variant* bestVariant = nullptr;
 
-    // Format the pattern
-    formatPattern(context, env, pat, status, result);
+    // For each variant in the list:
+    const Variant* variants = dataModel.getVariantsInternal();
+    for (int32_t i = 0; i < dataModel.numVariants(); i++) {
+        const SelectorKeys& keys = variants[i].getKeys();
+        bool match = selectorsMatch(context, *selectorList, keys, status);
+        if (U_FAILURE(status))
+            return;
+        if (!match)
+            continue;
+        if (!bestVariant)
+            bestVariant = &variants[i];
+        else if (selectorsCompare(context, *selectorList, keys, bestVariant->getKeys(), status) == SelectorCompareResult::Better)
+            bestVariant = &variants[i];
+        if (U_FAILURE(status))
+            return;
+    }
+    U_ASSERT(bestVariant);
+    formatPattern(context, env, bestVariant->getPattern(), status, result);
 }
 
 // Note: this is non-const due to the function registry being non-const, which is in turn

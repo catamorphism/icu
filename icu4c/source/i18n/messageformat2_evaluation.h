@@ -175,12 +175,11 @@ namespace message2 {
         const Selector* getSelector(UErrorCode&) const;
         FormattedPlaceholder forceFormatting(DynamicErrors& errs,
                                              UErrorCode& errorCode);
-        void forceSelection(DynamicErrors& errs,
-                            const UnicodeString* keys,
-                            int32_t keysLen,
-                            UnicodeString* prefs,
-                            int32_t& prefsLen,
-                            UErrorCode& errorCode);
+        bool matchSelector(DynamicErrors& errs, const UnicodeString& key, UErrorCode& errorCode);
+        SelectorCompareResult compareSelector(DynamicErrors& errs,
+                                              const UnicodeString& key1,
+                                              const UnicodeString& key2,
+                                              UErrorCode& errorCode);
         // Needs to be deep-copyable and movable
         virtual ~InternalValue();
         InternalValue(FormattedPlaceholder&&);

@@ -284,48 +284,86 @@ PrioritizedVariant::~PrioritizedVariant() {}
         U_ASSERT(selector != nullptr || formatter != nullptr);
     }
 
-    // `this` cannot be used after calling this method
-    void InternalValue::forceSelection(DynamicErrors& errs,
-                                       const UnicodeString* keys,
-                                       int32_t keysLen,
-                                       UnicodeString* prefs,
-                                       int32_t& prefsLen,
-                                       UErrorCode& errorCode) {
+    bool InternalValue::matchSelector(DynamicErrors& errs,
+                                      const UnicodeString& key,
+                                      UErrorCode& errorCode) {
         if (U_FAILURE(errorCode)) {
-            return;
+            return false;
         }
 
+        FunctionName selectorName = name;
         if (!canSelect()) {
-            errorCode = U_ILLEGAL_ARGUMENT_ERROR;
-            return;
+            errs.setSelectorError(selectorName, errorCode);
+            return false;
         }
         // Find the argument and complete set of options by traversing `argument`
         FunctionOptions opts;
         InternalValue* p = this;
-        FunctionName selectorName = name;
         while (std::holds_alternative<InternalValue*>(p->argument)) {
             if (p->name != selectorName) {
                 // Can only compose calls to the same selector
                 errorCode = U_ILLEGAL_ARGUMENT_ERROR;
-                return;
+                return false;
             }
             // First argument to mergeOptions takes precedence
             opts = opts.mergeOptions(std::move(p->options), errorCode);
             if (U_FAILURE(errorCode)) {
-                return;
+                return false;
             }
             InternalValue* next = *std::get_if<InternalValue*>(&p->argument);
             p = next;
         }
         FormattedPlaceholder arg = std::move(*std::get_if<FormattedPlaceholder>(&p->argument));
 
-        selector->selectKey(std::move(arg), std::move(opts),
-                            keys, keysLen,
-                            prefs, prefsLen, errorCode);
+        bool result = selector->match(std::move(arg), std::move(opts),
+                        key, errorCode);
         if (U_FAILURE(errorCode)) {
             errorCode = U_ZERO_ERROR;
             errs.setSelectorError(selectorName, errorCode);
         }
+
+        return result;
+    }
+
+    SelectorCompareResult InternalValue::compareSelector(DynamicErrors& errs,
+                                                         const UnicodeString& key1,
+                                                         const UnicodeString& key2,
+                                                         UErrorCode& errorCode) {
+        if (U_FAILURE(errorCode)) {
+            return { };
+        }
+
+        FunctionName selectorName = name;
+        if (!canSelect()) {
+            errs.setSelectorError(selectorName, errorCode);
+            return { };
+        }
+        // Find the argument and complete set of options by traversing `argument`
+        FunctionOptions opts;
+        InternalValue* p = this;
+        while (std::holds_alternative<InternalValue*>(p->argument)) {
+            if (p->name != selectorName) {
+                // Can only compose calls to the same selector
+                errorCode = U_ILLEGAL_ARGUMENT_ERROR;
+                return { };
+            }
+            // First argument to mergeOptions takes precedence
+            opts = opts.mergeOptions(std::move(p->options), errorCode);
+            if (U_FAILURE(errorCode)) {
+                return { };
+            }
+            InternalValue* next = *std::get_if<InternalValue*>(&p->argument);
+            p = next;
+        }
+        FormattedPlaceholder arg = std::move(*std::get_if<FormattedPlaceholder>(&p->argument));
+
+        SelectorCompareResult result = selector->compare(key1, key2, errorCode);
+        if (U_FAILURE(errorCode)) {
+            errorCode = U_ZERO_ERROR;
+            errs.setSelectorError(selectorName, errorCode);
+        }
+
+        return result;
     }
 
     FormattedPlaceholder InternalValue::forceFormatting(DynamicErrors& errs, UErrorCode& errorCode) {

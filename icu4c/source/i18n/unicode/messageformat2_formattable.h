@@ -1004,6 +1004,12 @@ class U_I18N_API FunctionOptions : public UObject {
         virtual ~FormattedMessage();
     }; // class FormattedMessage
 
+enum class SelectorCompareResult {
+    Worse,
+    Same,
+    Better,
+};
+
 } // namespace message2
 
 U_NAMESPACE_END

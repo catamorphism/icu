@@ -343,16 +343,8 @@ namespace message2 {
 
         // Takes a vector of FormattedPlaceholders
         void resolveSelectors(MessageContext&, const Environment& env, UErrorCode&, UVector&) const;
-        // Takes a vector of vectors of strings (input) and a vector of PrioritizedVariants (output)
-        void filterVariants(const UVector&, UVector&, UErrorCode&) const;
-        // Takes a vector of vectors of strings (input) and a vector of PrioritizedVariants (input/output)
-        void sortVariants(const UVector&, UVector&, UErrorCode&) const;
-        // Takes a vector of strings (input) and a vector of strings (output)
-        void matchSelectorKeys(const UVector&, MessageContext&, InternalValue* rv, UVector&, UErrorCode&) const;
-        // Takes a vector of FormattedPlaceholders (input),
-        // and a vector of vectors of strings (output)
-        void resolvePreferences(MessageContext&, UVector&, UVector&, UErrorCode&) const;
-
+        bool selectorsMatch(MessageContext&, const UVector&, const SelectorKeys&, UErrorCode&) const;
+        SelectorCompareResult selectorsCompare(MessageContext&, const UVector&, const SelectorKeys&, const SelectorKeys&, UErrorCode&) const;
         // Formatting methods
 
         [[nodiscard]] FormattedPlaceholder formatLiteral(const UnicodeString&, const data_model::Literal&) const;

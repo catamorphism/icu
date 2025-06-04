@@ -786,19 +786,16 @@ Selector* StandardFunctions::PluralFactory::createSelector(const Locale& locale,
     return result;
 }
 
-void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
-                                          FunctionOptions&& opts,
-                                          const UnicodeString* keys,
-                                          int32_t keysLen,
-                                          UnicodeString* prefs,
-                                          int32_t& prefsLen,
-					  UErrorCode& errorCode) const {
-    CHECK_ERROR(errorCode);
+bool StandardFunctions::Plural::match(FormattedPlaceholder&& toFormat,
+                                      FunctionOptions&& opts,
+                                      const UnicodeString& key,
+                                      UErrorCode& errorCode) const {
+    EMPTY_ON_ERROR(errorCode);
 
     // No argument => return "NaN"
     if (!toFormat.canFormat()) {
         errorCode = U_MF_SELECTOR_ERROR;
-        return;
+        return false;
     }
 
     // Handle any formatting options
@@ -806,7 +803,7 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
     FormattedPlaceholder resolvedSelector = numberFormatter->format(std::move(toFormat),
                                                                     std::move(opts),
                                                                     errorCode);
-    CHECK_ERROR(errorCode);
+    EMPTY_ON_ERROR(errorCode);
 
     U_ASSERT(resolvedSelector.isEvaluated() && resolvedSelector.output().isNumber());
 
@@ -818,7 +815,7 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
     if (U_FAILURE(errorCode)) {
         // Non-number => selector error
         errorCode = U_MF_SELECTOR_ERROR;
-        return;
+        return false;
     }
 
     // Step 2. Let keyword be a string which is the result of rule selection on resolvedSelector.
@@ -828,61 +825,63 @@ void StandardFunctions::Plural::selectKey(FormattedPlaceholder&& toFormat,
         UPluralType t = type == PluralType::PLURAL_ORDINAL ? UPLURAL_TYPE_ORDINAL : UPLURAL_TYPE_CARDINAL;
         // Look up plural rules by locale and type
         LocalPointer<PluralRules> rules(PluralRules::forLocale(locale, t, errorCode));
-        CHECK_ERROR(errorCode);
+        EMPTY_ON_ERROR(errorCode);
 
         keyword = rules->select(formattedNumber, errorCode);
     }
 
-    // Steps 3-4 elided:
-    // 3. Let resultExact be a new empty list of strings.
-    // 4. Let resultKeyword be a new empty list of strings.
-    // Instead, we use `prefs` the concatenation of `resultExact`
-    // and `resultKeyword`.
-
-    prefsLen = 0;
-
-    // 5. For each string key in keys:
     double keyAsDouble = 0;
-    for (int32_t i = 0; i < keysLen; i++) {
-        // Try parsing the key as a double
-        UErrorCode localErrorCode = U_ZERO_ERROR;
-        strToDouble(keys[i], keyAsDouble, localErrorCode);
-        // 5i. If the value of key matches the production number-literal, then
-        if (U_SUCCESS(localErrorCode)) {
-            // 5i(a). If key and exact consist of the same sequence of Unicode code points, then
-            if (exact == keys[i]) {
-                // 5i(a)(a) Append key as the last element of the list resultExact.
-		prefs[prefsLen] = keys[i];
-                prefsLen++;
-                break;
-            }
+    // Try parsing the key as a double
+    UErrorCode localErrorCode = U_ZERO_ERROR;
+    strToDouble(key, keyAsDouble, localErrorCode);
+    // 5i. If the value of key matches the production number-literal, then
+    if (U_SUCCESS(localErrorCode)) {
+        // 5i(a). If key and exact consist of the same sequence of Unicode code points, then
+        if (exact == key) {
+            return true;
         }
     }
 
     // Return immediately if exact matching was requested
-    if (prefsLen == keysLen || type == PluralType::PLURAL_EXACT) {
-        return;
+    if (type == PluralType::PLURAL_EXACT) {
+        return false;
     }
 
+    if (keyword == key)
+        return true;
 
-    for (int32_t i = 0; i < keysLen; i ++) {
-        if (prefsLen >= keysLen) {
-            break;
-        }
-        // 5ii. Else if key is one of the keywords zero, one, two, few, many, or other, then
-        // 5ii(a). If key and keyword consist of the same sequence of Unicode code points, then
-        if (keyword == keys[i]) {
-            // 5ii(a)(a) Append key as the last element of the list resultKeyword.
-            prefs[prefsLen] = keys[i];
-            prefsLen++;
-        }
-    }
+    return false;
+}
 
-    // Note: Step 5(iii) "Else, emit a Selection Error" is omitted in both loops
+SelectorCompareResult StandardFunctions::Plural::compare(const UnicodeString& key1,
+                                                         const UnicodeString& key2,
+                                                         UErrorCode& errorCode) const {
+    EMPTY_ON_ERROR(errorCode);
 
-    // 6. Return a new list whose elements are the concatenation of the elements
-    // (in order) of resultExact followed by the elements (in order) of resultKeyword.
-    // (Implicit, since `prefs` is an out-parameter)
+    if (key1 == key2)
+        return SelectorCompareResult::Same;
+
+    bool key1Numeric = false;
+    bool key2Numeric = false;
+    double keyAsDouble = 0;
+
+    UErrorCode localErrorCode = U_ZERO_ERROR;
+    strToDouble(key1, keyAsDouble, localErrorCode);
+    if (U_FAILURE(localErrorCode))
+        localErrorCode = U_ZERO_ERROR;
+    else
+        key1Numeric = true;
+    strToDouble(key2, keyAsDouble, localErrorCode);
+    key2Numeric = U_SUCCESS(localErrorCode);
+
+    // An exact match is better than a keyword match
+    if (key1Numeric && key2Numeric)
+        return SelectorCompareResult::Same;
+
+    if (key1Numeric && !key2Numeric)
+        return SelectorCompareResult::Better;
+
+    return SelectorCompareResult::Worse;
 }
 
 StandardFunctions::Plural::Plural(const Locale& loc, UErrorCode& status) : locale(loc) {
@@ -1309,43 +1308,39 @@ Selector* StandardFunctions::TextFactory::createSelector(const Locale& locale, U
     return result;
 }
 
-void StandardFunctions::TextSelector::selectKey(FormattedPlaceholder&& toFormat,
-                                                FunctionOptions&& opts,
-                                                const UnicodeString* keys,
-                                                int32_t keysLen,
-                                                UnicodeString* prefs,
-                                                int32_t& prefsLen,
-						UErrorCode& errorCode) const {
+bool StandardFunctions::TextSelector::match(FormattedPlaceholder&& toFormat,
+                                            FunctionOptions&& opts,
+                                            const UnicodeString& key,
+                                            UErrorCode& errorCode) const {
     // No options
     (void) opts;
 
-    CHECK_ERROR(errorCode);
+    EMPTY_ON_ERROR(errorCode);
 
     // Just compares the key and value as strings
 
     // Argument must be present
     if (!toFormat.canFormat()) {
         errorCode = U_MF_SELECTOR_ERROR;
-        return;
+        return false;
     }
-
-    prefsLen = 0;
 
     // Convert to string
     const UnicodeString& formattedValue = toFormat.formatToString(locale, errorCode);
     if (U_FAILURE(errorCode)) {
-        return;
+        return false;
     }
     // Normalize result
     UnicodeString normalized = normalizeNFC(formattedValue);
 
-    for (int32_t i = 0; i < keysLen; i++) {
-        if (keys[i] == normalized) {
-	    prefs[0] = keys[i];
-            prefsLen = 1;
-            break;
-        }
-    }
+    return key == normalized;
+}
+
+SelectorCompareResult StandardFunctions::TextSelector::compare(const UnicodeString&,
+                                                               const UnicodeString&,
+                                                               UErrorCode&) const {
+    // Both keys are assumed to match. So the only possible result is "Same".
+    return SelectorCompareResult::Same;
 }
 
 StandardFunctions::TextFactory::~TextFactory() {}
@@ -1571,13 +1566,10 @@ Selector* StandardFunctions::TestSelectFactory::createSelector(const Locale& loc
     return result;
 }
 
-void StandardFunctions::TestSelect::selectKey(FormattedPlaceholder&& val,
-                                              FunctionOptions&& options,
-                                              const UnicodeString* keys,
-                                              int32_t keysLen,
-                                              UnicodeString* prefs,
-                                              int32_t& prefsLen,
-                                              UErrorCode& status) const {
+bool StandardFunctions::TestSelect::match(FormattedPlaceholder&& val,
+                                          FunctionOptions&& options,
+                                          const UnicodeString& key,
+                                          UErrorCode& status) const {
     int32_t decimalPlaces;
     bool failsFormat;
     bool failsSelect;
@@ -1587,12 +1579,12 @@ void StandardFunctions::TestSelect::selectKey(FormattedPlaceholder&& val,
                                        failsFormat, failsSelect, input, status);
 
     if (U_FAILURE(status)) {
-        return;
+        return false;
     }
 
     if (failsSelect) {
         status = U_MF_SELECTOR_ERROR;
-        return;
+        return false;
     }
 
     // If the Input is 1 and DecimalPlaces is 1, the method will return some slice
@@ -1609,13 +1601,21 @@ void StandardFunctions::TestSelect::selectKey(FormattedPlaceholder&& val,
     // If the Input is 1 and DecimalPlaces is 0, the method will return the list « '1' » if
     // keys includes '1', or an empty list otherwise.
     // If the Input is any other value, the method will return an empty list.
-    for (int32_t i = 0; i < keysLen; i++) {
-        if ((keys[i] == u"1" && include1)
-            || (keys[i] == u"1.0" && include1point0)) {
-            prefs[prefsLen] = keys[i];
-            prefsLen++;
-        }
-    }
+
+    return((key == u"1" && include1)
+        || (key == u"1.0" && include1point0));
+}
+
+SelectorCompareResult StandardFunctions::TestSelect::compare(const UnicodeString& key1,
+                                                             const UnicodeString& key2,
+                                                             UErrorCode&) const {
+    if (key1 == key2)
+        return SelectorCompareResult::Same;
+
+    if (key1 == u"1.0")
+        return SelectorCompareResult::Better;
+
+    return SelectorCompareResult::Worse;
 }
 
 } // namespace message2
