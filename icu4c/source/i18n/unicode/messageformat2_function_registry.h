@@ -381,9 +381,9 @@ namespace message2 {
         // This means comparison can only be based on the structure of
         // the keys themselves, not on comparing the keys to the argument
         // (which in turn is because the argument has to be passed by-move)
-        virtual SelectorCompareResult compare(const UnicodeString& key1,
-                                              const UnicodeString& key2,
-                                              UErrorCode& errorCode) const = 0;
+        virtual bool betterThan(const UnicodeString& key1,
+                                const UnicodeString& key2,
+                                UErrorCode& errorCode) const = 0;
         /**
          * Destructor.
          *

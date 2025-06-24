@@ -396,10 +396,9 @@ bool MessageFormatter::selectorsMatch(MessageContext& context, const UVector& se
     return true;
 }
 
-// Returns: Better if keys1 is better than keys2;
-// Worse if keys1 is worse than keys2;
-// Same otherwise
-SelectorCompareResult MessageFormatter::selectorsCompare(MessageContext& context, const UVector& selectorList, const SelectorKeys& keys1, const SelectorKeys& keys2, UErrorCode& errorCode) const {
+// Returns: true if keys1 is better than keys2;
+// false if keys1 is the same as keys2 or worse than keys2
+bool MessageFormatter::selectorsBetterThan(MessageContext& context, const UVector& selectorList, const SelectorKeys& keys1, const SelectorKeys& keys2, UErrorCode& errorCode) const {
     if (U_FAILURE(errorCode))
         return { };
     int32_t len = selectorList.size(); // Guaranteed by earlier check to be the same length as keys1 and keys2
@@ -408,27 +407,23 @@ SelectorCompareResult MessageFormatter::selectorsCompare(MessageContext& context
     for (int32_t i = 0; i < len; i++) {
         // * is worse than any other key
         if (keyList1[i].isWildcard() && (!keyList2[i].isWildcard()))
-            return SelectorCompareResult::Worse;
+            return false;
         // Any other key is better than *
         if (!keyList1[i].isWildcard() && keyList2[i].isWildcard())
-            return SelectorCompareResult::Better;
+            return true;
         // If both are wildcards, compare the rest of the keys
         if (keyList1[i].isWildcard())
             continue;
         UnicodeString k1 = StandardFunctions::normalizeNFC(keyList1[i].asLiteral().unquoted());
         UnicodeString k2 = StandardFunctions::normalizeNFC(keyList2[i].asLiteral().unquoted());
         InternalValue* sel = ((InternalValue*) selectorList[i]);
-        SelectorCompareResult result = sel->compareSelector(context.getErrors(), k1, k2, errorCode);
+        bool result = sel->betterThanSelector(context.getErrors(), k1, k2, errorCode);
         if (U_FAILURE(errorCode))
             return { };
-        switch (result) {
-        case SelectorCompareResult::Same:
-            continue;
-        default:
-            return result;
-        }
+        if (result)
+            return true;
     }
-    return SelectorCompareResult::Same;
+    return false;
 }
 
 void MessageFormatter::formatSelectors(MessageContext& context, const Environment& env, UErrorCode &status, UnicodeString& result) const {
@@ -455,9 +450,8 @@ void MessageFormatter::formatSelectors(MessageContext& context, const Environmen
             return;
         if (!match)
             continue;
-        if (!bestVariant)
-            bestVariant = &variants[i];
-        else if (selectorsCompare(context, *selectorList, keys, bestVariant->getKeys(), status) == SelectorCompareResult::Better)
+        if (!bestVariant
+            || selectorsBetterThan(context, *selectorList, keys, bestVariant->getKeys(), status))
             bestVariant = &variants[i];
         if (U_FAILURE(status))
             return;

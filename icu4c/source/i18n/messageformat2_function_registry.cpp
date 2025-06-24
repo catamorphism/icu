@@ -853,13 +853,13 @@ bool StandardFunctions::Plural::match(FormattedPlaceholder&& toFormat,
     return false;
 }
 
-SelectorCompareResult StandardFunctions::Plural::compare(const UnicodeString& key1,
-                                                         const UnicodeString& key2,
-                                                         UErrorCode& errorCode) const {
+bool StandardFunctions::Plural::betterThan(const UnicodeString& key1,
+                                           const UnicodeString& key2,
+                                           UErrorCode& errorCode) const {
     EMPTY_ON_ERROR(errorCode);
 
     if (key1 == key2)
-        return SelectorCompareResult::Same;
+        return false;
 
     bool key1Numeric = false;
     bool key2Numeric = false;
@@ -875,13 +875,9 @@ SelectorCompareResult StandardFunctions::Plural::compare(const UnicodeString& ke
     key2Numeric = U_SUCCESS(localErrorCode);
 
     // An exact match is better than a keyword match
-    if (key1Numeric && key2Numeric)
-        return SelectorCompareResult::Same;
-
     if (key1Numeric && !key2Numeric)
-        return SelectorCompareResult::Better;
-
-    return SelectorCompareResult::Worse;
+        return true;
+    return false;
 }
 
 StandardFunctions::Plural::Plural(const Locale& loc, UErrorCode& status) : locale(loc) {
@@ -1336,11 +1332,11 @@ bool StandardFunctions::TextSelector::match(FormattedPlaceholder&& toFormat,
     return key == normalized;
 }
 
-SelectorCompareResult StandardFunctions::TextSelector::compare(const UnicodeString&,
-                                                               const UnicodeString&,
-                                                               UErrorCode&) const {
-    // Both keys are assumed to match. So the only possible result is "Same".
-    return SelectorCompareResult::Same;
+bool StandardFunctions::TextSelector::betterThan(const UnicodeString&,
+                                                 const UnicodeString&,
+                                                 UErrorCode&) const {
+    // Both keys are assumed to match. So the only possible result is false.
+    return false;
 }
 
 StandardFunctions::TextFactory::~TextFactory() {}
@@ -1606,16 +1602,10 @@ bool StandardFunctions::TestSelect::match(FormattedPlaceholder&& val,
         || (key == u"1.0" && include1point0));
 }
 
-SelectorCompareResult StandardFunctions::TestSelect::compare(const UnicodeString& key1,
-                                                             const UnicodeString& key2,
-                                                             UErrorCode&) const {
-    if (key1 == key2)
-        return SelectorCompareResult::Same;
-
-    if (key1 == u"1.0")
-        return SelectorCompareResult::Better;
-
-    return SelectorCompareResult::Worse;
+bool StandardFunctions::TestSelect::betterThan(const UnicodeString& key1,
+                                               const UnicodeString&,
+                                               UErrorCode&) const {
+    return (key1 == u"1.0");
 }
 
 } // namespace message2

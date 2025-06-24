@@ -176,10 +176,10 @@ namespace message2 {
         FormattedPlaceholder forceFormatting(DynamicErrors& errs,
                                              UErrorCode& errorCode);
         bool matchSelector(DynamicErrors& errs, const UnicodeString& key, UErrorCode& errorCode);
-        SelectorCompareResult compareSelector(DynamicErrors& errs,
-                                              const UnicodeString& key1,
-                                              const UnicodeString& key2,
-                                              UErrorCode& errorCode);
+        bool betterThanSelector(DynamicErrors& errs,
+                                const UnicodeString& key1,
+                                const UnicodeString& key2,
+                                UErrorCode& errorCode);
         // Needs to be deep-copyable and movable
         virtual ~InternalValue();
         InternalValue(FormattedPlaceholder&&);

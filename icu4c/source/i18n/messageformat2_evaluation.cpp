@@ -325,10 +325,10 @@ PrioritizedVariant::~PrioritizedVariant() {}
         return result;
     }
 
-    SelectorCompareResult InternalValue::compareSelector(DynamicErrors& errs,
-                                                         const UnicodeString& key1,
-                                                         const UnicodeString& key2,
-                                                         UErrorCode& errorCode) {
+    bool InternalValue::betterThanSelector(DynamicErrors& errs,
+                                           const UnicodeString& key1,
+                                           const UnicodeString& key2,
+                                           UErrorCode& errorCode) {
         if (U_FAILURE(errorCode)) {
             return { };
         }
@@ -357,7 +357,7 @@ PrioritizedVariant::~PrioritizedVariant() {}
         }
         FormattedPlaceholder arg = std::move(*std::get_if<FormattedPlaceholder>(&p->argument));
 
-        SelectorCompareResult result = selector->compare(key1, key2, errorCode);
+        bool result = selector->betterThan(key1, key2, errorCode);
         if (U_FAILURE(errorCode)) {
             errorCode = U_ZERO_ERROR;
             errs.setSelectorError(selectorName, errorCode);

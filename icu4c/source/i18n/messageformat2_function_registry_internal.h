@@ -166,9 +166,9 @@ namespace message2 {
                        FunctionOptions&& functionOptions,
                        const UnicodeString& key,
                        UErrorCode& errorCode) const override;
-            SelectorCompareResult compare(const UnicodeString& key1,
-                                          const UnicodeString& key2,
-                                          UErrorCode& errorCode) const override;
+            bool betterThan(const UnicodeString& key1,
+                            const UnicodeString& key2,
+                            UErrorCode& errorCode) const override;
             virtual ~Plural();
 
         private:
@@ -203,9 +203,9 @@ namespace message2 {
                        FunctionOptions&& functionOptions,
                        const UnicodeString& key,
                        UErrorCode& errorCode) const override;
-            SelectorCompareResult compare(const UnicodeString& key1,
-                                          const UnicodeString& key2,
-                                          UErrorCode& errorCode) const override;
+            bool betterThan(const UnicodeString& key1,
+                            const UnicodeString& key2,
+                            UErrorCode& errorCode) const override;
             virtual ~TextSelector();
 
         private:
@@ -260,9 +260,9 @@ namespace message2 {
                        FunctionOptions&& options,
                        const UnicodeString& key,
                        UErrorCode& errorCode) const override;
-            SelectorCompareResult compare(const UnicodeString& key1,
-                                          const UnicodeString& key2,
-                                          UErrorCode& errorCode) const override;
+            bool betterThan(const UnicodeString& key1,
+                            const UnicodeString& key2,
+                            UErrorCode& errorCode) const override;
             virtual ~TestSelect();
 
         private:

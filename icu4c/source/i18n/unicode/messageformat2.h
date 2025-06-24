@@ -344,7 +344,7 @@ namespace message2 {
         // Takes a vector of FormattedPlaceholders
         void resolveSelectors(MessageContext&, const Environment& env, UErrorCode&, UVector&) const;
         bool selectorsMatch(MessageContext&, const UVector&, const SelectorKeys&, UErrorCode&) const;
-        SelectorCompareResult selectorsCompare(MessageContext&, const UVector&, const SelectorKeys&, const SelectorKeys&, UErrorCode&) const;
+        bool selectorsBetterThan(MessageContext&, const UVector&, const SelectorKeys&, const SelectorKeys&, UErrorCode&) const;
         // Formatting methods
 
         [[nodiscard]] FormattedPlaceholder formatLiteral(const UnicodeString&, const data_model::Literal&) const;
