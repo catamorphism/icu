@@ -632,6 +632,23 @@ namespace message2 {
             virtual UBool wasCreatedFromLiteral() const { return false; }
     }; // class FunctionValue
 
+    /**
+     * Used with FormattableObject to pass an argument used in the :currency default formatter
+     *
+     *
+     * @internal ICU 78 technology preview
+     * @deprecated This API is for technology preview only.
+     */
+    class WrappedCurrency : public FormattableObject {
+    public:
+        CurrencyAmount currencyAmount;
+        WrappedCurrency(CurrencyAmount&& c) : currencyAmount(std::move(c)), tagName("currencyAmount") {}
+        ~WrappedCurrency();
+        const UnicodeString& tag() const override { return tagName; }
+    private:
+        const UnicodeString tagName;
+    };
+
 } // namespace message2
 
 U_NAMESPACE_END

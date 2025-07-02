@@ -12,6 +12,8 @@
 #include <math.h>
 #include <cmath>
 
+#include "unicode/curramt.h"
+#include "unicode/currunit.h"
 #include "unicode/dtptngen.h"
 #include "unicode/messageformat2.h"
 #include "unicode/messageformat2_data_model_names.h"
@@ -172,22 +174,7 @@ void MFFunctionRegistry::checkStandard() const {
     return normalized;
 }
 
-// Converts `s` to a double, indicating failure via `errorCode`
-static void strToDouble(const UnicodeString& s, double& result, UErrorCode& errorCode) {
-    CHECK_ERROR(errorCode);
-
-    // Using en-US locale because it happens to correspond to the spec:
-    // https://github.com/unicode-org/message-format-wg/blob/main/spec/registry.md#number-operands
-    // Ideally, this should re-use the code for parsing number literals (Parser::parseUnquotedLiteral())
-    // It's hard to reuse the same code because of how parse errors work.
-    // TODO: Refactor
-    LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(Locale("en-US"), errorCode));
-    CHECK_ERROR(errorCode);
-    icu::Formattable asNumber;
-    numberFormat->parse(s, asNumber, errorCode);
-    CHECK_ERROR(errorCode);
-    result = asNumber.getDouble(errorCode);
-}
+extern void strToDouble(const UnicodeString& s, double& result, UErrorCode& errorCode);
 
 static double tryStringAsNumber(const Locale& locale, const Formattable& val, UErrorCode& errorCode) {
     // Check for a string option, try to parse it as a number if present
@@ -440,6 +427,187 @@ LocalPointer<FunctionValue> StandardFunctions::Number::call(const FunctionContex
     return val;
 }
 
+static void validateRoundingIncrement(int32_t increment, UErrorCode& errorCode) {
+    // See https://github.com/unicode-org/message-format-wg/blob/main/spec/functions/number.md#options-2
+    // Permissible values of `roundingIncrement` are:
+    // 1 (default), 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, and 5000
+
+    CHECK_ERROR(errorCode);
+
+    switch (increment) {
+        case -1:
+        case 1:
+        case 2:
+        case 5:
+        case 10:
+        case 20:
+        case 25:
+        case 50:
+        case 100:
+        case 200:
+        case 250:
+        case 500:
+        case 1000:
+        case 2000:
+        case 2500:
+        case 5000:
+            break;
+        default:
+            errorCode = U_MF_BAD_OPTION;
+            break;
+    }
+}
+
+static UNumberFormatRoundingMode getRoundingMode(const UnicodeString& val, UErrorCode& errorCode) {
+    EMPTY_ON_ERROR(errorCode);
+
+    if (val == options::CEIL || val == options::FLOOR || val == options::EXPAND
+        || val == options::TRUNC || val == options::HALF_TRUNC) {
+        // not supported? TODO
+        // UNumberFormatRoundingMode doesn't include these
+        errorCode = U_MF_BAD_OPTION;
+        return {};
+    }
+    if (val == options::HALF_CEIL) {
+        return UNUM_ROUND_HALF_CEILING;
+    }
+    if (val == options::HALF_FLOOR) {
+        return UNUM_ROUND_HALF_FLOOR;
+    }
+    if (val == options::HALF_EXPAND) {
+        // Wrong, but this is the default and it's not supported
+        // TODO
+        return UNUM_ROUND_HALF_CEILING;
+    }
+    if (val == options::HALF_EVEN) {
+        return UNUM_ROUND_HALFEVEN;
+    }
+    if (!val.isEmpty()) {
+        errorCode = U_MF_BAD_OPTION;
+    }
+    return {};
+}
+
+/* static */ number::LocalizedNumberFormatter StandardFunctions::currencyFormatter(const Locale& locale,
+                                                                                   const CurrencyUnit& unit,
+                                                                                   const FunctionOptions& opts,
+                                                                                   UErrorCode& errorCode) {
+    using namespace number;
+
+    EMPTY_ON_ERROR(errorCode);
+
+    number::UnlocalizedNumberFormatter nf = NumberFormatter::with();
+
+    // currencySign
+    UnicodeString currencySign = opts.getStringFunctionOption(options::CURRENCY_SIGN);
+    if (currencySign == options::ACCOUNTING) {
+        nf = nf.sign(UNUM_SIGN_ACCOUNTING);
+    }
+
+    // currencyDisplay
+    UnicodeString currencyDisplay = opts.getStringFunctionOption(options::CURRENCY_DISPLAY);
+    UNumberUnitWidth unitWidth = UNUM_UNIT_WIDTH_SHORT;
+    if (currencyDisplay == options::NARROW_SYMBOL) {
+        unitWidth = UNUM_UNIT_WIDTH_NARROW;
+    } else if (currencyDisplay == options::NAME) {
+        unitWidth = UNUM_UNIT_WIDTH_FULL_NAME;
+    } else if (currencyDisplay == options::CODE) {
+        unitWidth = UNUM_UNIT_WIDTH_ISO_CODE;
+    } else if (currencyDisplay == options::NEVER) {
+        unitWidth = UNUM_UNIT_WIDTH_HIDDEN;
+    }
+    nf = nf.unitWidth(unitWidth);
+
+    // useGrouping
+    UnicodeString ug = opts.getStringFunctionOption(options::USE_GROUPING);
+    UNumberGroupingStrategy grp;
+    if (ug == options::ALWAYS) {
+        grp = UNumberGroupingStrategy::UNUM_GROUPING_ON_ALIGNED;
+    } else if (ug == options::NEVER) {
+        grp = UNumberGroupingStrategy::UNUM_GROUPING_OFF;
+    } else if (ug == options::MIN2) {
+        grp = UNumberGroupingStrategy::UNUM_GROUPING_MIN2;
+    } else {
+        // Default is "auto"
+        grp = UNumberGroupingStrategy::UNUM_GROUPING_AUTO;
+    }
+    nf = nf.grouping(grp);
+
+    // minimumIntegerDigits
+    int32_t minIntegerDigits = Number::digitSizeOption(opts, options::MINIMUM_INTEGER_DIGITS);
+    if (minIntegerDigits != -1) {
+        nf = nf.integerWidth(IntegerWidth::zeroFillTo(minIntegerDigits));
+    }
+
+    // fractionDigits
+    int32_t fractionDigits = Number::digitSizeOption(opts, options::FRACTION_DIGITS);
+    // trailingZeroDisplay
+    UnicodeString trailingZeroDisplay = opts.getStringFunctionOption(options::TRAILING_ZERO_DISPLAY);
+    // minimumSignificantDigits
+    int32_t minSignificantDigits = Number::digitSizeOption(opts, options::MINIMUM_SIGNIFICANT_DIGITS);
+    // maximumSignificantDigits
+    int32_t maxSignificantDigits = Number::digitSizeOption(opts, options::MAXIMUM_SIGNIFICANT_DIGITS);
+    // roundingPriority
+    UnicodeString roundingPriority = opts.getStringFunctionOption(options::ROUNDING_PRIORITY);
+    // roundingIncrement
+    int32_t roundingIncrement = opts.getIntegerFunctionOption(options::ROUNDING_INCREMENT);
+    validateRoundingIncrement(roundingIncrement, errorCode);
+    if (U_FAILURE(errorCode)) {
+        return nf.locale(locale);
+    }
+    // roundingMode
+    UnicodeString roundingMode = opts.getStringFunctionOption(options::ROUNDING_MODE);
+    UNumberFormatRoundingMode parsedRoundingMode = getRoundingMode(roundingMode, errorCode);
+    if (U_FAILURE(errorCode)) {
+        return nf.locale(locale);
+    }
+
+    Precision p = Precision::unlimited();
+    bool precisionOptions = fractionDigits != -1 || minSignificantDigits != -1 || maxSignificantDigits != -1
+        || !trailingZeroDisplay.isEmpty() || !roundingPriority.isEmpty() || roundingIncrement != -1
+        || !roundingMode.isEmpty();
+    if (fractionDigits != -1 || trailingZeroDisplay != options::STRIP_IF_INTEGER) {
+        p = Precision::fixedFraction(fractionDigits != -1 ? fractionDigits : 2);
+    }
+
+    if (roundingPriority == options::MORE_PRECISION || roundingPriority == options::LESS_PRECISION) {
+        if (minSignificantDigits == -1 || maxSignificantDigits == -1 || fractionDigits == -1) {
+            errorCode = U_MF_BAD_OPTION;
+            return nf.locale(locale);
+        }
+        UNumberRoundingPriority priority = roundingPriority == options::MORE_PRECISION
+            ? UNUM_ROUNDING_PRIORITY_RELAXED : UNUM_ROUNDING_PRIORITY_STRICT;
+        FractionPrecision fp = Precision::fixedFraction(fractionDigits);
+        p = fp.withSignificantDigits(minSignificantDigits, maxSignificantDigits, priority);
+    }
+    else {
+        if (minSignificantDigits != -1) {
+            p = p.minSignificantDigits(minSignificantDigits);
+        }
+        if (maxSignificantDigits != -1) {
+            p = p.maxSignificantDigits(maxSignificantDigits);
+        }
+    }
+    if (roundingIncrement != -1) {
+        p = p.increment(roundingIncrement);
+    }
+    if (trailingZeroDisplay == options::STRIP_IF_INTEGER) {
+        p = p.trailingZeroDisplay(UNUM_TRAILING_ZERO_HIDE_IF_WHOLE);
+    } else {
+        p = p.trailingZeroDisplay(UNUM_TRAILING_ZERO_AUTO);
+    }
+
+    if (precisionOptions) {
+        nf = nf.precision(p);
+    }
+
+    if (!roundingMode.isEmpty()) {
+        nf = nf.roundingMode(parsedRoundingMode);
+    }
+
+    return nf.locale(locale).unit(unit);
+}
+
 /* static */ number::LocalizedNumberFormatter StandardFunctions::formatterForOptions(const Number& number,
                                                                                      const Locale& locale,
                                                                                      const FunctionOptions& opts,
@@ -655,8 +823,8 @@ static UChar32 digitToChar(int32_t val, UErrorCode errorCode) {
     return '0';
 }
 
-int32_t StandardFunctions::Number::digitSizeOption(const FunctionOptions& opts,
-                                                   const UnicodeString& k) const {
+/* static */ int32_t StandardFunctions::Number::digitSizeOption(const FunctionOptions& opts,
+                                                                const std::u16string_view k) {
     UErrorCode localStatus = U_ZERO_ERROR;
     const FunctionValue* opt = opts.getFunctionOption(k,
                                                       localStatus);
@@ -908,6 +1076,158 @@ void StandardFunctions::NumberValue::selectKeys(const UnicodeString* keys,
     // (in order) of resultExact followed by the elements (in order) of resultKeyword.
     // (Implicit, since `prefs` is an out-parameter)
 }
+
+// --------- Currency
+
+/* static */ StandardFunctions::Currency*
+StandardFunctions::Currency::create(UErrorCode& success) {
+    NULL_ON_ERROR(success);
+
+    LocalPointer<Currency> result(new Currency());
+    if (!result.isValid()) {
+        success = U_MEMORY_ALLOCATION_ERROR;
+        return nullptr;
+    }
+    return result.orphan();
+}
+
+LocalPointer<FunctionValue> StandardFunctions::Currency::call(const FunctionContext& context,
+                                                            const FunctionValue& operand,
+                                                            const FunctionOptions& options,
+                                                            UErrorCode& errorCode) {
+    if (U_FAILURE(errorCode)) {
+        return LocalPointer<FunctionValue>();
+    }
+    LocalPointer<FunctionValue>
+        val(new CurrencyValue(context, operand, options, errorCode));
+    if (!val.isValid()) {
+        errorCode = U_MEMORY_ALLOCATION_ERROR;
+    }
+    return val;
+}
+
+StandardFunctions::Currency::~Currency() {}
+
+StandardFunctions::CurrencyValue::CurrencyValue(const FunctionContext& context,
+                                                const FunctionValue& arg,
+                                                const FunctionOptions& options,
+                                                UErrorCode& errorCode) {
+    CHECK_ERROR(errorCode);
+    // Must have an argument
+    if (arg.isNullOperand()) {
+        errorCode = U_MF_OPERAND_MISMATCH_ERROR;
+        return;
+    }
+
+    locale = context.getLocale();
+    opts = options.mergeOptions(arg.getResolvedOptions(), errorCode);
+    innerValue = arg.unwrap();
+    functionName = UnicodeString("currency");
+    inputDir = context.getDirection();
+    dir = outputDirectionalityFromUDir(inputDir, locale);
+
+    // TODO: Support CurrencyAmount type. For now, require a number operand
+    // with a `currency` option.
+
+    double numberOperand = 0;
+    bool useCurrencyAmount = false;
+    CurrencyAmount currencyAmount(0, u"USD", errorCode);
+
+    switch (innerValue.getType()) {
+        case UFMT_DOUBLE:
+            numberOperand = innerValue.getDouble(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            break;
+        case UFMT_LONG:
+            numberOperand = static_cast<double>(innerValue.getLong(errorCode));
+            U_ASSERT(U_SUCCESS(errorCode));
+            break;
+        case UFMT_INT64:
+            numberOperand = static_cast<double>(innerValue.getInt64(errorCode));
+            U_ASSERT(U_SUCCESS(errorCode));
+            break;
+        case UFMT_STRING: {
+            const UnicodeString& s = innerValue.getString(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            numberOperand = parseNumberLiteral(s, errorCode);
+            if (U_FAILURE(errorCode)) {
+                return;
+            }
+            break;
+        }
+        case UFMT_OBJECT: {
+            const FormattableObject* obj = innerValue.getObject(errorCode);
+            U_ASSERT(U_SUCCESS(errorCode));
+            U_ASSERT(obj != nullptr);
+            if (obj->tag() == u"currencyAmount") {
+                useCurrencyAmount = true;
+                const WrappedCurrency* wrapped = static_cast<const WrappedCurrency*>(obj);
+                currencyAmount = wrapped->currencyAmount;
+            } else {
+                errorCode = U_MF_OPERAND_MISMATCH_ERROR;
+                return;
+            }
+            break;
+        }
+        default: {
+            // Other types can't be parsed as a number
+            errorCode = U_MF_OPERAND_MISMATCH_ERROR;
+            return;
+        }
+    }
+
+    // Ignore U_USING_DEFAULT_WARNING
+    if (errorCode == U_USING_DEFAULT_WARNING) {
+        errorCode = U_ZERO_ERROR;
+    }
+
+    // Now handle options
+    if (!useCurrencyAmount) {
+        UnicodeString currencyCode = opts.getStringFunctionOption(options::CURRENCY);
+        if (currencyCode.isEmpty()) {
+            errorCode = U_MF_OPERAND_MISMATCH_ERROR; // Option is required
+            return;
+        }
+        // Convert to ConstChar16Ptr
+        int32_t len = currencyCode.length();
+        char16_t* buf = static_cast<char16_t*>(uprv_malloc(len + 1));
+        currencyCode.extract(0, len, buf);
+        buf[len] = 0;
+        currencyAmount = CurrencyAmount(numberOperand, ConstChar16Ptr(buf), errorCode);
+        uprv_free(buf);
+        // Interpret failure as a bad currency code
+        if (U_FAILURE(errorCode)) {
+            errorCode = U_MF_BAD_OPTION;
+            return;
+        }
+    }
+
+    number::LocalizedNumberFormatter realFormatter;
+    realFormatter = currencyFormatter(locale, currencyAmount.getCurrency(), opts, errorCode);
+    CHECK_ERROR(errorCode);
+
+    icu::Formattable number = currencyAmount.getNumber();
+    switch (number.getType()) {
+        case icu::Formattable::Type::kDouble:
+            formattedResult = realFormatter.formatDouble(number.getDouble(errorCode), errorCode);
+            break;
+        case icu::Formattable::Type::kLong:
+            formattedResult = realFormatter.formatInt(static_cast<int64_t>(number.getLong(errorCode)), errorCode);
+            break;
+        case icu::Formattable::Type::kInt64:
+            formattedResult = realFormatter.formatInt(number.getInt64(errorCode), errorCode);
+            break;
+        default:
+            errorCode = U_ILLEGAL_ARGUMENT_ERROR;
+            return;
+    }
+}
+
+UnicodeString StandardFunctions::CurrencyValue::formatToString(UErrorCode& status) const {
+    return formattedResult.toString(status);
+}
+
+StandardFunctions::CurrencyValue::~CurrencyValue() {}
 
 // --------- DateTime
 
@@ -1862,6 +2182,8 @@ StandardFunctions::TestFunction::TestFunction(bool format, bool select) : canFor
 /* static */ StandardFunctions::TestFunction* StandardFunctions::TestFunction::testSelect(UErrorCode& status) {
     return create<TestFunction>(TestFunction(false, true), status);
 }
+
+message2::WrappedCurrency::~WrappedCurrency() {}
 
 } // namespace message2
 U_NAMESPACE_END

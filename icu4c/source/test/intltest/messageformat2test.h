@@ -51,6 +51,10 @@ public:
     void testFormatterAPI(void);
     // Test API functions for setting bidi preferences
     void testBidiAPI(void);
+    // Test currency formatter with CurrencyAmount objects
+    void testCurrencyFormatter(void);
+    // Test different currency rounding modes
+    void testCurrencyRoundingModes(void);
     void testAPI(void);
     void testAPISimple(void);
 

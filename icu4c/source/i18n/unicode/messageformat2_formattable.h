@@ -613,6 +613,8 @@ class U_I18N_API FunctionOptions : public UObject {
     UBool wasSetFromLiteral(const std::u16string_view) const;
     // Sets error code if option doesn't exist
     UnicodeString getStringFunctionOption(const std::u16string_view, UErrorCode&) const;
+    // Returns -1 if option doesn't exist
+    int32_t getIntegerFunctionOption(const std::u16string_view) const;
     int32_t optionsCount() const { return functionOptionsLen; }
 
     bool bogus = false; // Used in case a copy fails

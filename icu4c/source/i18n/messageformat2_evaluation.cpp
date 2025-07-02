@@ -174,6 +174,38 @@ UnicodeString FunctionOptions::getStringFunctionOption(std::u16string_view key) 
     return result;
 }
 
+// Converts `s` to a double, indicating failure via `errorCode`
+void strToDouble(const UnicodeString& s, double& result, UErrorCode& errorCode) {
+    CHECK_ERROR(errorCode);
+
+    // Using en-US locale because it happens to correspond to the spec:
+    // https://github.com/unicode-org/message-format-wg/blob/main/spec/registry.md#number-operands
+    // Ideally, this should re-use the code for parsing number literals (Parser::parseUnquotedLiteral())
+    // It's hard to reuse the same code because of how parse errors work.
+    // TODO: Refactor
+    LocalPointer<NumberFormat> numberFormat(NumberFormat::createInstance(Locale("en-US"), errorCode));
+    CHECK_ERROR(errorCode);
+    icu::Formattable asNumber;
+    numberFormat->parse(s, asNumber, errorCode);
+    CHECK_ERROR(errorCode);
+    result = asNumber.getDouble(errorCode);
+}
+
+int32_t
+FunctionOptions::getIntegerFunctionOption(std::u16string_view key) const {
+    UnicodeString stringVal = getStringFunctionOption(key);
+    if (stringVal.isEmpty()) {
+        return -1;
+    }
+    double result = 0;
+    UErrorCode localErrorCode = U_ZERO_ERROR;
+    strToDouble(stringVal, result, localErrorCode);
+    if (U_FAILURE(localErrorCode)) {
+        return -1;
+    }
+    return static_cast<int32_t>(result);
+}
+
 FunctionOptions& FunctionOptions::operator=(FunctionOptions other) noexcept {
     swap(*this, other);
     return *this;

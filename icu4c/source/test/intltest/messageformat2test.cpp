@@ -10,6 +10,7 @@
 #if !UCONFIG_NO_MF2
 
 #include "unicode/gregocal.h"
+#include "unicode/ustdio.h"
 #include "messageformat2test.h"
 
 using namespace icu::message2;
@@ -28,6 +29,8 @@ TestMessageFormat2::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(testHighLoneSurrogate);
     TESTCASE_AUTO(testLowLoneSurrogate);
     TESTCASE_AUTO(testLoneSurrogateInQuotedLiteral);
+    TESTCASE_AUTO(testCurrencyFormatter);
+    TESTCASE_AUTO(testCurrencyRoundingModes);
     TESTCASE_AUTO(dataDrivenTests);
     TESTCASE_AUTO_END;
 }
@@ -469,6 +472,78 @@ void TestMessageFormat2::testLoneSurrogateInQuotedLiteral() {
     UnicodeString result = msgfmt2.formatToString({}, errorCode);
     assertEquals("testLoneSurrogateInQuotedLiteral", expectedResult, result);
     errorCode.errIfFailureAndReset("testLoneSurrogateInQuotedLiteral");
+}
+
+void TestMessageFormat2::testCurrencyRoundingModes() {
+    IcuTestErrorCode errorCode(*this, "testCurrencyFormatter");
+    UParseError pe = { 0, 0, {0}, {0} };
+
+    char pattern[100];
+    char expected[10];
+
+    // Table from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat/NumberFormat
+    std::string roundingModeNames[] = { "ceil", "floor", "expand", "trunc", "halfCeil", "halfFloor", "halfExpand", "halfTrunc", "halfEven" };
+    double valuesToRound[] = { 2.23, 2.25, 2.28, -2.23, -2.25, -2.28 };
+    int32_t columns = 6;
+    int32_t rows = 9;
+    double roundingModeResult[9][6] =
+        { {2.3, 2.3, 2.3, -2.2, -2.2, -2.2 },
+          {2.2, 2.2, 2.2, -2.3, -2.3, -2.3 },
+          {2.3, 2.3, 2.3, -2.3, -2.3, -2.3 },
+          {2.2, 2.2, 2.2, -2.2, -2.2, -2.2 },
+          {2.2, 2.3, 2.3, -2.2, -2.2, -2.3 },
+          {2.2, 2.2, 2.3, -2.2, -2.3, -2.3 },
+          {2.2, 2.3, 2.3, -2.2, -2.3, -2.3 },
+          {2.2, 2.2, 2.3, -2.2, -2.2, -2.3 },
+          {2.2, 2.2, 2.3, -2.2, -2.2, -2.3 } };
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++) {
+            snprintf(pattern, sizeof(pattern), "{%.2lf :currency currency=USD fractionDigits=1 roundingMode=%s}", valuesToRound[j], roundingModeNames[i].c_str());
+            snprintf(expected, sizeof(expected), "$%.1lf", roundingModeResult[i][j]);
+            if (roundingModeResult[i][j] < 0) {
+                expected[0] = '-';
+                expected[1] = '$';
+            }
+
+            icu::message2::MessageFormatter msgfmt2 =
+                icu::message2::MessageFormatter::Builder(errorCode)
+                .setBidiIsolationStrategy(MessageFormatter::U_MF_BIDI_OFF)
+                .setPattern(UnicodeString(pattern), pe, errorCode)
+                .build(errorCode);
+            UnicodeString result = msgfmt2.formatToString({}, errorCode);
+            assertEquals(pattern, UnicodeString(expected), result);
+            errorCode.errIfFailureAndReset("testCurrencyRoundingModes");
+        }
+    }
+
+}
+
+void TestMessageFormat2::testCurrencyFormatter() {
+    IcuTestErrorCode errorCode(*this, "testCurrencyFormatter");
+    UParseError pe = { 0, 0, {0}, {0} };
+
+    // Test that :currency works with an argument that's a CurrencyAmount
+    CurrencyAmount amount(42, u"EUR", errorCode);
+    errorCode.errIfFailureAndReset("testCurrencyFormatter: creating CurrencyAmount failed");
+    message2::WrappedCurrency wrappedAmount(std::move(amount));
+
+    UnicodeString pattern("{$c :currency}");
+
+    std::map<UnicodeString, message2::Formattable> argsBuilder;
+    argsBuilder["c"] = message2::Formattable(&wrappedAmount);
+    MessageArguments args(argsBuilder, errorCode);
+    errorCode.errIfFailureAndReset("testCurrencyFormatter: creating arguments failed");
+
+    icu::message2::MessageFormatter msgfmt2 =
+      icu::message2::MessageFormatter::Builder(errorCode)
+      .setBidiIsolationStrategy(MessageFormatter::U_MF_BIDI_OFF)
+      .setPattern(pattern, pe, errorCode)
+      .build(errorCode);
+
+    UnicodeString expectedResult(u"€42.00");
+    UnicodeString result = msgfmt2.formatToString(args, errorCode);
+    assertEquals("testCurrencyFormatter", expectedResult, result);
+    errorCode.errIfFailureAndReset("testCurrencyFormatter");
 }
 
 void TestMessageFormat2::dataDrivenTests() {

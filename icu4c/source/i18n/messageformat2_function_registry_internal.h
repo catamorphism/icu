@@ -23,12 +23,18 @@ U_NAMESPACE_BEGIN
 
 namespace message2 {
 
-// Constants for option names
+// Constants for option names and values
 namespace options {
+static constexpr std::u16string_view ACCOUNTING = u"accounting";
 static constexpr std::u16string_view ALWAYS = u"always";
 static constexpr std::u16string_view AUTO = u"auto";
+static constexpr std::u16string_view CEIL = u"ceil";
+static constexpr std::u16string_view CODE = u"code";
 static constexpr std::u16string_view COMPACT = u"compact";
 static constexpr std::u16string_view COMPACT_DISPLAY = u"compactDisplay";
+static constexpr std::u16string_view CURRENCY = u"currency";
+static constexpr std::u16string_view CURRENCY_DISPLAY = u"currencyDisplay";
+static constexpr std::u16string_view CURRENCY_SIGN = u"currencySign";
 static constexpr std::u16string_view DATE_STYLE = u"dateStyle";
 static constexpr std::u16string_view DAY = u"day";
 static constexpr std::u16string_view DECIMAL_PLACES = u"decimalPlaces";
@@ -36,10 +42,19 @@ static constexpr std::u16string_view DEFAULT_UPPER = u"DEFAULT";
 static constexpr std::u16string_view ENGINEERING = u"engineering";
 static constexpr std::u16string_view EXACT = u"exact";
 static constexpr std::u16string_view EXCEPT_ZERO = u"exceptZero";
+static constexpr std::u16string_view EXPAND = u"expand";
 static constexpr std::u16string_view FAILS = u"fails";
+static constexpr std::u16string_view FLOOR = u"floor";
+static constexpr std::u16string_view FRACTION_DIGITS = u"fractionDigits";
 static constexpr std::u16string_view FULL_UPPER = u"FULL";
+static constexpr std::u16string_view HALF_CEIL = u"halfCeil";
+static constexpr std::u16string_view HALF_EVEN = u"halfEven";
+static constexpr std::u16string_view HALF_EXPAND = u"halfExpand";
+static constexpr std::u16string_view HALF_FLOOR = u"halfFloor";
+static constexpr std::u16string_view HALF_TRUNC = u"halfTrunc";
 static constexpr std::u16string_view HOUR = u"hour";
 static constexpr std::u16string_view INHERIT = u"inherit";
+static constexpr std::u16string_view LESS_PRECISION = u"lessPrecision";
 static constexpr std::u16string_view LONG = u"long";
 static constexpr std::u16string_view LONG_UPPER = u"LONG";
 static constexpr std::u16string_view LTR = u"ltr";
@@ -52,7 +67,10 @@ static constexpr std::u16string_view MINIMUM_INTEGER_DIGITS = u"minimumIntegerDi
 static constexpr std::u16string_view MINIMUM_SIGNIFICANT_DIGITS = u"minimumSignificantDigits";
 static constexpr std::u16string_view MINUTE = u"minute";
 static constexpr std::u16string_view MONTH = u"month";
+static constexpr std::u16string_view MORE_PRECISION = u"morePrecision";
+static constexpr std::u16string_view NAME = u"name";
 static constexpr std::u16string_view NARROW = u"narrow";
+static constexpr std::u16string_view NARROW_SYMBOL = u"narrowSymbol";
 static constexpr std::u16string_view NEGATIVE = u"negative";
 static constexpr std::u16string_view NEVER = u"never";
 static constexpr std::u16string_view NOTATION = u"notation";
@@ -60,6 +78,9 @@ static constexpr std::u16string_view NUMBERING_SYSTEM = u"numberingSystem";
 static constexpr std::u16string_view NUMERIC = u"numeric";
 static constexpr std::u16string_view ORDINAL = u"ordinal";
 static constexpr std::u16string_view PERCENT_STRING = u"percent";
+static constexpr std::u16string_view ROUNDING_INCREMENT = u"roundingIncrement";
+static constexpr std::u16string_view ROUNDING_MODE = u"roundingMode";
+static constexpr std::u16string_view ROUNDING_PRIORITY = u"roundingPriority";
 static constexpr std::u16string_view RTL = u"rtl";
 static constexpr std::u16string_view SCIENTIFIC = u"scientific";
 static constexpr std::u16string_view SECOND = u"second";
@@ -67,8 +88,11 @@ static constexpr std::u16string_view SELECT = u"select";
 static constexpr std::u16string_view SHORT = u"short";
 static constexpr std::u16string_view SHORT_UPPER = u"SHORT";
 static constexpr std::u16string_view SIGN_DISPLAY = u"signDisplay";
+static constexpr std::u16string_view STRIP_IF_INTEGER = u"stripIfInteger";
 static constexpr std::u16string_view STYLE = u"style";
 static constexpr std::u16string_view TIME_STYLE = u"timeStyle";
+static constexpr std::u16string_view TRAILING_ZERO_DISPLAY = u"trailingZeroDisplay";
+static constexpr std::u16string_view TRUNC = u"trunc";
 static constexpr std::u16string_view TWO_DIGIT = u"2-digit";
 static constexpr std::u16string_view U_DIR = u"u:dir";
 static constexpr std::u16string_view U_ID = u"u:id";
@@ -115,7 +139,6 @@ static constexpr std::u16string_view YEAR = u"year";
             virtual ~DateTime();
 
         private:
-            friend class DateTimeFactory;
             friend class DateTimeValue;
 
             // Methods for parsing date literals
@@ -162,7 +185,7 @@ static constexpr std::u16string_view YEAR = u"year";
             Number(bool isInt) : isInteger(isInt) /*, icuFormatter(number::NumberFormatter::withLocale(loc))*/ {}
 
         // These options have their own accessor methods, since they have different default values.
-            int32_t digitSizeOption(const FunctionOptions&, const UnicodeString&) const;
+            static int32_t digitSizeOption(const FunctionOptions&, const std::u16string_view);
             int32_t maximumFractionDigits(const FunctionOptions& options) const;
             int32_t minimumFractionDigits(const FunctionOptions& options) const;
             int32_t minimumSignificantDigits(const FunctionOptions& options) const;
@@ -180,7 +203,22 @@ static constexpr std::u16string_view YEAR = u"year";
                                                                     const Locale& locale,
                                                                     const FunctionOptions& opts,
                                                                     UErrorCode& status);
+        static number::LocalizedNumberFormatter currencyFormatter(const Locale&,
+                                                                  const CurrencyUnit&,
+                                                                  const FunctionOptions&,
+                                                                  UErrorCode&);
 
+        class Currency : public Function {
+        public:
+            static Currency* create(UErrorCode&);
+            LocalPointer<FunctionValue> call(const FunctionContext& context,
+                                             const FunctionValue& operand,
+                                             const FunctionOptions& options,
+                                             UErrorCode& errorCode) override;
+            virtual ~Currency();
+        private:
+            Currency() {}
+        }; // class Currency
 
         class NumberValue : public FunctionValue {
         public:
@@ -218,6 +256,22 @@ static constexpr std::u16string_view YEAR = u"year";
             DateTimeValue(DateTime::DateTimeType type, const FunctionContext& context,
                           const FunctionValue&, const FunctionOptions&, UErrorCode&);
         }; // class DateTimeValue
+
+        class CurrencyValue : public FunctionValue {
+        public:
+            UnicodeString formatToString(UErrorCode&) const override;
+            CurrencyValue() {}
+            const UnicodeString& getFunctionName() const override { return functionName; }
+            virtual ~CurrencyValue();
+        private:
+            friend class Currency;
+
+            number::FormattedNumber formattedResult;
+            CurrencyValue(const FunctionContext&,
+                          const FunctionValue&,
+                          const FunctionOptions&,
+                          UErrorCode&);
+        }; // class CurrencyValue
 
         class String : public Function {
         public:

@@ -339,6 +339,7 @@ void TestMessageFormat2::jsonTestsFromFiles(IcuTestErrorCode& errorCode) {
     runTestsFromJsonFile(*this, "spec/functions/number.json", errorCode);
     runTestsFromJsonFile(*this, "spec/functions/string.json", errorCode);
     runTestsFromJsonFile(*this, "spec/functions/time.json", errorCode);
+    runTestsFromJsonFile(*this, "spec/functions/currency.json", errorCode);
 
     // Other tests (non-spec)
     runTestsFromJsonFile(*this, "more-functions.json", errorCode);
@@ -347,6 +348,7 @@ void TestMessageFormat2::jsonTestsFromFiles(IcuTestErrorCode& errorCode) {
     runTestsFromJsonFile(*this, "matches-whitespace.json", errorCode);
     runTestsFromJsonFile(*this, "alias-selector-annotations.json", errorCode);
     runTestsFromJsonFile(*this, "tricky-declarations.json", errorCode);
+    runTestsFromJsonFile(*this, "icu-currency.json", errorCode);
 
     // Markup is ignored when formatting to string
     runTestsFromJsonFile(*this, "markup.json", errorCode);
